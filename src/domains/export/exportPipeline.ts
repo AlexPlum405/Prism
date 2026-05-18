@@ -100,10 +100,16 @@ const EXPORT_MERMAID_RENDER_TIMEOUT_MS = 20_000;
 const EXPORT_FONT_READY_TIMEOUT_MS = 3_000;
 const DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS = 60_000;
 const DOCX_VISUAL_BLOCK_WIDTH = 760;
+const DOCX_IMAGE_MAX_WIDTH = 500;
+const DOCX_MERMAID_IMAGE_MAX_WIDTH = 650;
 
 function normalizeExportRasterScale(scale: unknown, fallback = 2) {
   if (typeof scale !== 'number' || !Number.isFinite(scale)) return fallback;
   return Math.min(4, Math.max(1, Math.round(scale)));
+}
+
+function getPreviewBackgroundColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff';
 }
 
 function assertExportCanvasWithinLimits(width: number, height: number, scale: number, label: string) {
@@ -1200,6 +1206,97 @@ async function svgToDocxPngImage(svgText: string, scale = 2) {
   };
 }
 
+async function renderMermaidSvgToDocxPngImage(svgText: string, contentTheme: ContentTheme, scale = 2): Promise<RasterDocxImage | null> {
+  const { default: html2canvas } = await import('html2canvas');
+  const background = getPreviewBackgroundColor();
+  const root = document.createElement('div');
+  root.className = [
+    'prism-export-document',
+    'prism-export-template--theme',
+    'preview-compat',
+    `preview-compat--${contentTheme}`,
+  ].join(' ');
+  Object.assign(root.style, {
+    position: 'fixed',
+    left: '-12000px',
+    top: '0',
+    width: `${DOCX_VISUAL_BLOCK_WIDTH}px`,
+    pointerEvents: 'none',
+    background,
+  });
+  root.innerHTML = [
+    `<div id="write" class="${writeClassByTheme[contentTheme]}">`,
+    '<div data-prism-docx-mermaid-target="true" class="mermaid-placeholder"></div>',
+    '</div>',
+  ].join('');
+  document.body.appendChild(root);
+
+  try {
+    const target = root.querySelector<HTMLElement>('[data-prism-docx-mermaid-target="true"]');
+    if (!target) return null;
+    Object.assign(target.style, {
+      display: 'flex',
+      justifyContent: 'center',
+      margin: '0',
+      padding: '24px 16px',
+      width: '100%',
+      boxSizing: 'border-box',
+      overflow: 'visible',
+      background,
+    });
+    target.innerHTML = svgText;
+    const svg = target.querySelector('svg');
+    if (!svg) return null;
+    normalizeMermaidSvg(svg);
+
+    if ('fonts' in document) {
+      try {
+        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, '导出字体加载超时');
+      } catch {
+        // Font readiness is best effort for Mermaid screenshot fallback.
+      }
+    }
+    await nextFrame();
+    await nextFrame();
+    normalizeRasterComputedColors(target);
+
+    const rect = target.getBoundingClientRect();
+    const width = Math.max(
+      320,
+      Math.ceil(rect.width || target.scrollWidth || DOCX_VISUAL_BLOCK_WIDTH),
+    );
+    const height = Math.max(
+      180,
+      Math.ceil(rect.height || target.scrollHeight || getSvgSize(svgText).height),
+    );
+    assertExportCanvasWithinLimits(width, height, scale, 'DOCX Mermaid');
+
+    const canvas = await withTimeout(
+      html2canvas(target, {
+        backgroundColor: background,
+        scale,
+        width,
+        height,
+        windowWidth: width,
+        windowHeight: height,
+        scrollX: 0,
+        scrollY: 0,
+      }),
+      DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS,
+      'DOCX Mermaid 渲染超时',
+    );
+
+    return {
+      type: 'png',
+      data: await canvasToPngBytes(canvas, 'DOCX Mermaid 图像生成失败'),
+      width,
+      height,
+    };
+  } finally {
+    root.remove();
+  }
+}
+
 async function svgToDocxImage(svgText: string, scale = 2): Promise<SvgDocxImage> {
   const docxSvg = prepareSvgForDocx(svgText);
   const fallback = await svgToDocxPngImage(docxSvg, scale);
@@ -1236,7 +1333,7 @@ async function renderMermaidImage(source: string, contentTheme: ContentTheme, sc
           EXPORT_MERMAID_RENDER_TIMEOUT_MS,
           `Mermaid 图表 ${sourceIndex + 1} 渲染超时`,
         );
-        const image = await svgToDocxPngImage(svg, scale).catch(() => null);
+        const image = await renderMermaidSvgToDocxPngImage(svg, contentTheme, scale).catch(() => null);
         if (image) {
           return image satisfies MermaidDocxImage;
         }
@@ -1284,9 +1381,10 @@ function createDocxImageRun(
   docx: DocxModule,
   image: ExportDocxImage | MermaidDocxImage,
   altText: { title: string; description: string; name: string },
+  options: { maxWidth?: number } = {},
 ) {
   const { ImageRun } = docx;
-  const width = Math.min(500, image.width);
+  const width = Math.min(options.maxWidth ?? DOCX_IMAGE_MAX_WIDTH, image.width);
   const height = Math.round(width * (image.height / image.width));
   if (image.type === 'svg') {
     return new ImageRun({
@@ -2678,7 +2776,7 @@ async function mdastToDocxBlocks(
                 title: 'Mermaid diagram',
                 description: 'Mermaid diagram exported from Prism',
                 name: 'Mermaid diagram',
-              }),
+              }, { maxWidth: DOCX_MERMAID_IMAGE_MAX_WIDTH }),
             ],
           }));
           continue;

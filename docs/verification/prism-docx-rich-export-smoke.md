@@ -95,6 +95,14 @@ qlmanage -t -s 1024 -o .codex-smoke/docx-rich-export \
 - 普通本地 SVG 图片不受影响，仍保持 SVG + PNG fallback。
 - 单元测试断言 Mermaid DOCX 产物 `word/media/` 不再包含 Mermaid SVG，必须包含 PNG，并且 `document.xml` 不泄漏 `graph TD` 源码。
 
+## 2026-05-18 Mermaid 预览截图链路修正
+
+继续复查发现：仅 PNG-first 仍不够，若直接把 Mermaid SVG 交给图片解码再画到 canvas，尺寸读取和 Word 缩放仍可能让复杂图在 Word / WPS 中出现文字挤压或箭头线条变细、缺失。修正后：
+
+- Mermaid DOCX PNG 改为放入 Prism 预览同构的隐藏 DOM，等待字体与布局稳定后用 `html2canvas` 截图。
+- Mermaid DOCX 插图使用 760px 预览捕获宽度，并以 650px 上限写入 Word，避免复杂图继续被通用 500px 图片上限过度缩小。
+- 普通本地 SVG 图片仍保持原有 SVG + PNG fallback，不进入 Mermaid 专用截图链路。
+
 ## 验证命令
 
 ```bash

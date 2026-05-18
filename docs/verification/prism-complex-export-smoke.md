@@ -273,6 +273,7 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 - 真实 `.app` 通过底部导出菜单生成 `.codex-smoke/docx-rich-export/docx-rich-export.docx`；`jszip` 检查 `drawingCount 5`、`hasSvg true`、`hasPng true`、`containsGraphSource false`、`containsTaskDone true`、`containsTaskTodo true`、`containsTableText true`、`containsCodeText true`。
 - Quick Look thumbnail 可见本地 SVG、正常宽度表格、正常宽度代码块和 Mermaid 图，Mermaid 节点文字与边标签可见。
 - 2026-05-18 WPS 复查发现 Mermaid SVG 主图仍可能因 WPS SVG 文本度量差异产生样式偏差；已改为 Mermaid PNG-first，本地普通 SVG 图片继续 SVG + PNG fallback。
+- 2026-05-18 继续修正 Mermaid PNG-first 后的 Word / WPS 缩放偏差：Mermaid 改为进入 Prism 预览同构隐藏 DOM 后用 `html2canvas` 截图，DOCX 中以 650px 上限插入，避免复杂图被通用 500px 图片上限过度缩小。
 - `npm test -- --run`：通过，59 files / 359 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在，主要来自 `export-pipeline` 与 Mermaid 相关异步 chunk，但导出链路已不再位于主入口 chunk。
 

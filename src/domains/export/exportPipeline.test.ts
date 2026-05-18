@@ -1281,6 +1281,7 @@ describe('export pipeline docx header and footer', () => {
 
   it('renders Mermaid docx diagrams as png-first images with root-level non-html labels', async () => {
     fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
     mermaidMock.initialize.mockClear();
     mermaidMock.render.mockResolvedValueOnce({
       svg: [
@@ -1315,6 +1316,11 @@ describe('export pipeline docx header and footer', () => {
     expect(mediaFiles.some((filePath) => /\.svg$/.test(filePath))).toBe(false);
     expect(mediaFiles.some((filePath) => /\.png$/.test(filePath))).toBe(true);
     expect(documentXml).not.toContain('graph TD');
+    expect(canvasRenderMock.render).toHaveBeenCalledWith(expect.any(HTMLElement), expect.objectContaining({
+      width: 760,
+      backgroundColor: expect.any(String),
+    }));
+    expect(documentXml).toContain('wp:extent cx="6191250"');
   });
 
   it('rasterizes rendered math and sanitized html blocks for docx visual fallback', async () => {
