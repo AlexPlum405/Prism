@@ -5,12 +5,16 @@ import { EditorPaneHandle } from '../../editor/components/EditorPane';
 
 interface DocumentViewProps {
   onCursorChange?: (cursor: { line: number; column: number }) => void;
+  onOpenDocumentLink?: (
+    target: string,
+    options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
+  ) => void | Promise<void>;
   onSelectionTextChange?: (text: string) => void;
   onNotice?: (message: string) => void;
 }
 
 export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
-  function DocumentView({ onCursorChange, onSelectionTextChange, onNotice }, ref) {
+  function DocumentView({ onCursorChange, onOpenDocumentLink, onSelectionTextChange, onNotice }, ref) {
     const currentDocument = useDocumentStore((s) => s.currentDocument);
     const updateContent = useDocumentStore((s) => s.updateContent);
     const updateScrollState = useDocumentStore((s) => s.updateScrollState);
@@ -51,6 +55,7 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
           viewMode={currentDocument.viewMode}
           onChange={updateContent}
           onCursorChange={onCursorChange}
+          onOpenDocumentLink={onOpenDocumentLink}
           onSelectionTextChange={onSelectionTextChange}
           onNotice={onNotice}
           onScrollStateChange={updateScrollState}

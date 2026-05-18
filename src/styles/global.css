@@ -1360,6 +1360,19 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   font-family: var(--theme-code-font);
 }
 
+.preview-compat .prism-wiki-link {
+  color: inherit;
+  text-decoration-color: color-mix(in srgb, currentColor 34%, transparent);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.preview-compat .prism-wiki-link:hover {
+  text-decoration-color: currentColor;
+}
+
 .preview-compat .prism-frontmatter-preview {
   --frontmatter-preview-border: var(--c-fog);
   --frontmatter-preview-muted: var(--c-graphite);

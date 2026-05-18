@@ -195,6 +195,48 @@ function remarkMark() {
   };
 }
 
+function remarkWikiLinks() {
+  return (tree: any) => {
+    visit(tree, 'text', (node: any, index, parent) => {
+      if (index === undefined || !parent) return;
+      const value: string = node.value;
+      if (!value.includes('[[')) return;
+
+      const pattern = /\[\[([^\]\n|]+)(?:\|([^\]\n]+))?\]\]/g;
+      const children: any[] = [];
+      let lastIndex = 0;
+      let match;
+      while ((match = pattern.exec(value)) !== null) {
+        const target = match[1].trim();
+        if (!target) continue;
+        const label = (match[2] ?? target).trim() || target;
+        if (match.index > lastIndex) {
+          children.push({ type: 'text', value: value.slice(lastIndex, match.index) });
+        }
+        children.push({
+          type: 'wikiLink',
+          data: {
+            hName: 'a',
+            hProperties: {
+              href: '#',
+              className: ['prism-wiki-link'],
+              dataPrismWikiTarget: target,
+            },
+            hChildren: [{ type: 'text', value: label }],
+          },
+          children: [{ type: 'text', value: label }],
+        });
+        lastIndex = match.index + match[0].length;
+      }
+      if (children.length === 0) return;
+      if (lastIndex < value.length) {
+        children.push({ type: 'text', value: value.slice(lastIndex) });
+      }
+      parent.children.splice(index, 1, ...children);
+    });
+  };
+}
+
 function remarkCitations() {
   return (tree: any) => {
     visit(tree, 'text', (node: any, index, parent) => {
@@ -372,6 +414,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
     .use(remarkMath)
     .use(() => remarkCollectMathLines(displayMathLines))
     .use(remarkMark)
+    .use(remarkWikiLinks)
     .use(remarkCitations)
     .use(remarkBlockLines)
     .use(remarkCallouts)

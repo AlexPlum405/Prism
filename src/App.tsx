@@ -65,6 +65,7 @@ import {
   flattenFiles,
   isSamePath,
   joinPath,
+  resolveDocumentLinkTarget,
   scanBacklinks,
 } from './domains/workspace/services';
 import type { ExportDefaultLocation } from './domains/settings/types';
@@ -594,6 +595,40 @@ function App() {
     await handleFileAction({ action: 'openFile', path });
   }, [handleFileAction]);
 
+  const handleOpenDocumentLink = useCallback(async (
+    target: string,
+    options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
+  ) => {
+    if (!workspace.rootPath) {
+      showToast('请先打开一个工作区文件夹');
+      return;
+    }
+
+    const workspaceFiles = flattenFiles(workspace.fileTree, workspace.rootPath)
+      .map(({ node }) => ({ name: node.name, path: node.path }))
+      .filter((file) => MARKDOWN_FILE_RE.test(file.name));
+    const resolved = resolveDocumentLinkTarget({
+      kind: options.kind,
+      target,
+      sourcePath: options.sourcePath ?? currentDocument?.path,
+      workspaceFiles,
+      workspaceRoot: workspace.rootPath,
+    });
+
+    if (!resolved) {
+      showToast(`没有找到链接文档：${target}`);
+      return;
+    }
+
+    await handleFileAction({ action: 'openFile', path: resolved.path });
+  }, [
+    currentDocument?.path,
+    handleFileAction,
+    showToast,
+    workspace.fileTree,
+    workspace.rootPath,
+  ]);
+
   const handleSelectBacklink = useCallback(async (reference: BacklinkReference) => {
     setBacklinksVisible(false);
     setPendingBacklinkJump({ path: reference.path, line: reference.line });
@@ -949,6 +984,7 @@ function App() {
           key={currentDocument?.path || 'new-doc'}
           ref={editorRef}
           onCursorChange={setCursor}
+          onOpenDocumentLink={handleOpenDocumentLink}
           onSelectionTextChange={setSelectionText}
           onNotice={showToast}
         />

@@ -324,7 +324,7 @@ describe('PreviewPane theme switching', () => {
     fireEvent.click(screen.getByText('危险链接'));
 
     expect(openerMock.openUrl).not.toHaveBeenCalled();
-    expect(onNotice).toHaveBeenCalledWith('预览中的本地链接已拦截，请通过文件树打开');
+    expect(onNotice).toHaveBeenCalledWith('预览中的链接不可打开');
   });
 
   it('blocks local preview links and reports a notice', () => {
@@ -336,5 +336,49 @@ describe('PreviewPane theme switching', () => {
 
     expect(openerMock.openUrl).not.toHaveBeenCalled();
     expect(onNotice).toHaveBeenCalledWith('预览中的本地链接已拦截，请通过文件树打开');
+  });
+
+  it('opens local markdown links through the document link handler', async () => {
+    const onOpenDocumentLink = vi.fn();
+    vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="docs/local.md">本地链接</a>');
+
+    render(
+      <PreviewPane
+        content="[本地链接](docs/local.md)"
+        documentPath="/repo/current.md"
+        onOpenDocumentLink={onOpenDocumentLink}
+      />,
+    );
+    fireEvent.click(screen.getByText('本地链接'));
+
+    await waitFor(() => {
+      expect(onOpenDocumentLink).toHaveBeenCalledWith('docs/local.md', {
+        kind: 'markdown',
+        sourcePath: '/repo/current.md',
+      });
+    });
+  });
+
+  it('opens wiki document links through the document link handler', async () => {
+    const onOpenDocumentLink = vi.fn();
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      '<a href="#" class="prism-wiki-link" data-prism-wiki-target="manual-test">manual-test</a>',
+    );
+
+    render(
+      <PreviewPane
+        content="[[manual-test]]"
+        documentPath="/repo/current.md"
+        onOpenDocumentLink={onOpenDocumentLink}
+      />,
+    );
+    fireEvent.click(screen.getByText('manual-test'));
+
+    await waitFor(() => {
+      expect(onOpenDocumentLink).toHaveBeenCalledWith('manual-test', {
+        kind: 'wiki',
+        sourcePath: '/repo/current.md',
+      });
+    });
   });
 });

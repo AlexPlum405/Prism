@@ -11,6 +11,10 @@ interface PreviewPaneProps {
   content: string;
   documentPath?: string;
   onNotice?: (message: string) => void;
+  onOpenDocumentLink?: (
+    target: string,
+    options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
+  ) => void | Promise<void>;
 }
 
 const PREVIEW_RENDER_DEBOUNCE_MS = 120;
@@ -33,6 +37,12 @@ function isWindowsAbsolutePath(value: string) {
 
 function isExternalMediaSrc(value: string) {
   if (/^https?:\/\//i.test(value) || value.startsWith('//')) return true;
+  if (isWindowsAbsolutePath(value)) return false;
+  return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value);
+}
+
+function hasUnsupportedLinkProtocol(value: string) {
+  if (value.startsWith('//') || value.startsWith('/') || value.startsWith('./') || value.startsWith('../')) return false;
   if (isWindowsAbsolutePath(value)) return false;
   return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value);
 }
@@ -254,7 +264,7 @@ function normalizeMermaidSvg(svg: SVGSVGElement) {
   }
 }
 
-export function PreviewPane({ content, documentPath, onNotice }: PreviewPaneProps) {
+export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLink }: PreviewPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [contentTheme, setContentTheme] = useState<ContentTheme>(getCurrentContentTheme);
   const [renderContent, setRenderContent] = useState(content);
@@ -317,6 +327,17 @@ export function PreviewPane({ content, documentPath, onNotice }: PreviewPaneProp
       const target = e.target as HTMLElement;
       const anchor = target.closest('a');
       if (anchor && anchor.href) {
+        const wikiTarget = anchor.getAttribute('data-prism-wiki-target')?.trim();
+        if (wikiTarget) {
+          e.preventDefault();
+          if (onOpenDocumentLink) {
+            await onOpenDocumentLink(wikiTarget, { kind: 'wiki', sourcePath: documentPath });
+          } else {
+            onNotice?.('未找到可打开的链接文档');
+          }
+          return;
+        }
+
         const rawHref = anchor.getAttribute('href')?.trim() ?? '';
         if (!rawHref || rawHref.startsWith('#')) return;
 
@@ -331,14 +352,24 @@ export function PreviewPane({ content, documentPath, onNotice }: PreviewPaneProp
           return;
         }
 
+        if (hasUnsupportedLinkProtocol(rawHref)) {
+          e.preventDefault();
+          onNotice?.('预览中的链接不可打开');
+          return;
+        }
+
         e.preventDefault();
-        onNotice?.('预览中的本地链接已拦截，请通过文件树打开');
+        if (onOpenDocumentLink) {
+          await onOpenDocumentLink(rawHref, { kind: 'markdown', sourcePath: documentPath });
+        } else {
+          onNotice?.('预览中的本地链接已拦截，请通过文件树打开');
+        }
       }
     };
 
     container.addEventListener('click', handleLinkClick);
     return () => container.removeEventListener('click', handleLinkClick);
-  }, [html, onNotice]);
+  }, [documentPath, html, onNotice, onOpenDocumentLink]);
 
   useEffect(() => {
     const container = containerRef.current;

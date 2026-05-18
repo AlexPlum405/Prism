@@ -190,6 +190,17 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('[@doe2024; @smith-2023, p. 12]');
   });
 
+  it('renders wiki document links as clickable preview anchors', () => {
+    const html = markdownToHtml('关联 [[docs/manual-test|人工测试]] 和 [[linking-note]]。');
+
+    expect(html).toContain('class="prism-wiki-link"');
+    expect(html).toContain('data-prism-wiki-target="docs/manual-test"');
+    expect(html).toContain('人工测试');
+    expect(html).toContain('data-prism-wiki-target="linking-note"');
+    expect(html).toContain('linking-note');
+    expect(html).not.toContain('[[docs/manual-test');
+  });
+
   it('renders suppress-author and richer Pandoc citekeys as citation placeholders', () => {
     const html = markdownToHtml('研究结论参考 [-@doe/2024; @team+paper_2026]。');
 

@@ -20,6 +20,10 @@ interface SplitViewProps {
   onCursorChange?: (cursor: { line: number; column: number }) => void;
   onSelectionTextChange?: (text: string) => void;
   onNotice?: (message: string) => void;
+  onOpenDocumentLink?: (
+    target: string,
+    options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
+  ) => void | Promise<void>;
   onScrollStateChange?: (scrollState: Partial<DocumentScrollState>) => void;
 }
 
@@ -359,6 +363,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     onCursorChange,
     onSelectionTextChange,
     onNotice,
+    onOpenDocumentLink,
     onScrollStateChange,
   }, ref) {
     const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -846,7 +851,12 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
                 overflowX: 'hidden',
               }}
             >
-              <PreviewPane content={content} documentPath={documentPath} onNotice={onNotice} />
+              <PreviewPane
+                content={content}
+                documentPath={documentPath}
+                onNotice={onNotice}
+                onOpenDocumentLink={onOpenDocumentLink}
+              />
             </div>
             <HorizontalScrollbar getScroller={getPreviewScroller} />
           </div>

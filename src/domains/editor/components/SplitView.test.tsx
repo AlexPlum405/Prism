@@ -63,10 +63,22 @@ vi.mock('./EditorPane', async () => {
 });
 
 vi.mock('./PreviewPane', () => ({
-  PreviewPane: ({ content }: { content: string }) => (
+  PreviewPane: ({
+    content,
+    onOpenDocumentLink,
+  }: {
+    content: string;
+    onOpenDocumentLink?: (target: string, options: { kind: 'markdown' | 'wiki'; sourcePath?: string }) => void;
+  }) => (
     <div data-testid="preview-pane">
       <p data-source-line="6">{content}</p>
       <button type="button" data-preview-source-line="9">跳到源码</button>
+      <button
+        type="button"
+        onClick={() => onOpenDocumentLink?.('manual-test', { kind: 'wiki', sourcePath: '/repo/current.md' })}
+      >
+        manual-test
+      </button>
     </div>
   ),
 }));
@@ -134,6 +146,27 @@ describe('SplitView editor lifecycle', () => {
     fireEvent.click(screen.getByRole('button', { name: '跳到源码' }));
 
     expect(mockState.jumpToLine).toHaveBeenCalledWith(9);
+  });
+
+  it('forwards preview document link clicks', () => {
+    const onOpenDocumentLink = vi.fn();
+    render(
+      <SplitView
+        content="[[manual-test]]"
+        documentPath="/repo/current.md"
+        viewMode="split"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+        onOpenDocumentLink={onOpenDocumentLink}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'manual-test' }));
+
+    expect(onOpenDocumentLink).toHaveBeenCalledWith('manual-test', {
+      kind: 'wiki',
+      sourcePath: '/repo/current.md',
+    });
   });
 
   it('reports editor and preview scroll ratios for the current document', () => {

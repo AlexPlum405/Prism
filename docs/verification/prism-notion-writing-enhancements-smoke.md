@@ -153,6 +153,25 @@ npm test -- --run src/domains/workspace/components/BacklinksPanel.test.tsx src/d
 
 - 3 files / 11 tests passed。
 
+### 2026-05-18 追加修复：预览文档链接直达
+
+改动范围：
+
+- `markdownToHtml` 支持把 `[[文档名]]` / `[[路径/文档|显示名]]` 渲染为预览中的可点击文档链接。
+- `PreviewPane` 点击 wiki link 或普通本地 Markdown 链接时，不再提示“通过文件树打开”，而是把目标交给 App 解析并打开。
+- 新增 `resolveDocumentLinkTarget` 工作区链接解析服务，支持相对 Markdown 链接、wiki basename、wiki 工作区相对路径；外部链接仍走系统浏览器，危险协议仍拦截。
+- `DocumentView` / `SplitView` 只透传点击事件，实际打开文件仍由 App 使用现有 `openFile` action 完成，避免引入新文件状态模型。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/workspace/services/documentLinks.test.ts src/lib/markdownToHtml.test.ts src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx
+```
+
+结果：
+
+- 4 files / 53 tests passed。
+
 ## 2026-05-18 Phase 5：YAML Front Matter 轻量属性面板
 
 改动范围：

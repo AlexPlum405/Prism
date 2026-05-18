@@ -46,3 +46,9 @@ export {
   type BacklinkReference,
   type BacklinkSourceDocument,
 } from './backlinks';
+export {
+  resolveDocumentLinkTarget,
+  type DocumentLinkFile,
+  type DocumentLinkKind,
+  type ResolvedDocumentLink,
+} from './documentLinks';
