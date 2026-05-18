@@ -8,7 +8,8 @@
 本轮没有把整篇 Markdown 直接截图塞进 DOCX。采用混合方案：
 
 - 标题、段落、强调、链接、引用、列表、任务列表、代码块、表格、目录、页眉页脚仍走原生 DOCX 结构，保证正文可编辑。
-- 本地 SVG 和 Mermaid 输出 SVG，并附带 PNG fallback，兼顾 Word / WPS / Quick Look 的兼容性。
+- 本地普通 SVG 图片输出 SVG，并附带 PNG fallback，兼顾 Word / WPS / Quick Look 的兼容性。
+- Mermaid 在 DOCX 中改为高分辨率 PNG 主图，不再把复杂 Mermaid SVG 作为首选显示资源，避免 WPS / Word / Pages 走 SVG 文本度量后出现节点文字、边标签压缩或重叠。
 - KaTeX 行内公式、块级公式和安全 HTML 块先按 Prism 预览主题渲染，再以 PNG 视觉 fallback 写入 DOCX。
 - 表格和代码块写入明确的 dxa 页面内容宽度，避免 Word / Quick Look 把列宽按默认 `100` twips 解释成竖排。
 - Mermaid DOCX 链路优先使用 root-level `htmlLabels: false`，保留 `flowchart.htmlLabels: false` 兼容旧配置，避免 foreignObject 标签在 Word 中只剩方框或丢文字。
@@ -17,12 +18,13 @@
 
 - `src/domains/export/exportPipeline.ts`
   - 新增 DOCX SVG 图片类型：`ImageRun` 写入 SVG，并提供 PNG fallback。
-  - SVG 本地图片和 Mermaid 图表都进入 SVG + PNG fallback 链路。
+  - SVG 本地图片继续进入 SVG + PNG fallback 链路。
+  - Mermaid 图表改为先按 Prism 预览链路渲染 SVG，再栅格化成高分辨率 PNG 写入 DOCX 主图。
   - 新增 KaTeX / HTML 块视觉 fallback，失败时产生 warning 并回退文本，不静默空白。
   - DOCX 表格和代码块改为基于 A4 / Letter 与边距计算的 dxa 宽度。
 - `src/domains/export/exportPipeline.test.ts`
   - 覆盖 SVG + PNG fallback。
-  - 覆盖 Mermaid root-level `htmlLabels: false` 与 SVG + PNG fallback。
+  - 覆盖 Mermaid root-level `htmlLabels: false` 与 PNG-first DOCX 输出。
   - 覆盖行内公式、块级公式、HTML 块会生成视觉 drawing。
   - 覆盖 DOCX 表格写入 `tcW` / `gridCol` 宽度。
 
@@ -82,19 +84,33 @@ qlmanage -t -s 1024 -o .codex-smoke/docx-rich-export \
 - 本地 SVG 图可见。
 - 表格不再竖排。
 - 代码块不再竖排。
-- Mermaid 图在第一页可见，节点文字和边标签可见。
+- Mermaid 图在第一页可见，节点文字和边标签可见；WPS 反馈暴露 SVG 主图仍可能有文本度量偏差，因此后续已将 Mermaid 改为 PNG-first。
 - KaTeX / HTML fallback 已通过 `word/media/` 和 `drawingCount` 证明进入 DOCX；逐页视觉仍建议用 Word / Pages 人工补查。
+
+## 2026-05-18 Mermaid PNG-first 修正
+
+用户在 WPS 中复查发现：Mermaid 以 SVG 主图写入 DOCX 时，WPS 会优先渲染 SVG 而不是 PNG fallback，导致节点文字、边标签和箭头布局与 Prism 预览不一致。修正后：
+
+- `renderMermaidImage()` 返回 `RasterDocxImage`，只把 Mermaid 作为 PNG 主图交给 `ImageRun`。
+- 普通本地 SVG 图片不受影响，仍保持 SVG + PNG fallback。
+- 单元测试断言 Mermaid DOCX 产物 `word/media/` 不再包含 Mermaid SVG，必须包含 PNG，并且 `document.xml` 不泄漏 `graph TD` 源码。
 
 ## 验证命令
 
 ```bash
 npm test -- --run src/domains/export/exportPipeline.test.ts
+npm test -- --run
+npm run build
+git diff --check
 npm run tauri:build:app-smoke
 ```
 
 结果：
 
 - `src/domains/export/exportPipeline.test.ts`：通过，1 file / 42 tests。
+- `npm test -- --run`：通过，59 files / 359 tests。
+- `npm run build`：通过；Vite large chunk warning 仍存在，和既有导出异步 chunk / Mermaid chunk 体积有关。
+- `git diff --check`：通过。
 - `npm run tauri:build:app-smoke`：通过，生成 `src-tauri/target/release/bundle/macos/Prism.app`。
 
 ## 剩余风险

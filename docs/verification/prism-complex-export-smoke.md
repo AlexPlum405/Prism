@@ -265,13 +265,14 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 ### 2026-05-18 DOCX 富内容导出保真
 
 - 方案记录见 `docs/verification/prism-docx-rich-export-smoke.md`。
-- `src/domains/export/exportPipeline.ts` 将 DOCX 导出改为混合策略：正文结构继续原生 DOCX，SVG / Mermaid 写入 SVG + PNG fallback，KaTeX / HTML 块按 Prism 预览主题渲染为 PNG fallback。
+- `src/domains/export/exportPipeline.ts` 将 DOCX 导出改为混合策略：正文结构继续原生 DOCX，本地普通 SVG 写入 SVG + PNG fallback，Mermaid 改为 PNG-first 主图，KaTeX / HTML 块按 Prism 预览主题渲染为 PNG fallback。
 - Mermaid DOCX 渲染优先 root-level `htmlLabels: false`，同时保留 `flowchart.htmlLabels: false`，避免 Word 兼容性差的 `foreignObject` 标签导致节点文字丢失。
 - 表格和代码块都写入基于页面内容宽度的 dxa `tblW` / `tcW` / `tblGrid`，避免 Quick Look / Word 把列宽按默认 `100` twips 解释成竖排。
 - `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 42 tests。
 - `npm run tauri:build:app-smoke`：通过，生成当前 `src-tauri/target/release/bundle/macos/Prism.app`。
 - 真实 `.app` 通过底部导出菜单生成 `.codex-smoke/docx-rich-export/docx-rich-export.docx`；`jszip` 检查 `drawingCount 5`、`hasSvg true`、`hasPng true`、`containsGraphSource false`、`containsTaskDone true`、`containsTaskTodo true`、`containsTableText true`、`containsCodeText true`。
 - Quick Look thumbnail 可见本地 SVG、正常宽度表格、正常宽度代码块和 Mermaid 图，Mermaid 节点文字与边标签可见。
+- 2026-05-18 WPS 复查发现 Mermaid SVG 主图仍可能因 WPS SVG 文本度量差异产生样式偏差；已改为 Mermaid PNG-first，本地普通 SVG 图片继续 SVG + PNG fallback。
 - `npm test -- --run`：通过，59 files / 359 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在，主要来自 `export-pipeline` 与 Mermaid 相关异步 chunk，但导出链路已不再位于主入口 chunk。
 

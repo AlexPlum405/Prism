@@ -1279,7 +1279,7 @@ describe('export pipeline docx header and footer', () => {
     expect(mediaFiles.some((filePath) => /\.png$/.test(filePath))).toBe(true);
   });
 
-  it('renders Mermaid docx diagrams with root-level non-html labels and svg png fallback', async () => {
+  it('renders Mermaid docx diagrams as png-first images with root-level non-html labels', async () => {
     fsMock.writeFile.mockClear();
     mermaidMock.initialize.mockClear();
     mermaidMock.render.mockResolvedValueOnce({
@@ -1312,8 +1312,9 @@ describe('export pipeline docx header and footer', () => {
       flowchart: expect.objectContaining({ htmlLabels: false }),
     }));
     expect(documentXml).toContain('<w:drawing>');
-    expect(mediaFiles.some((filePath) => /\.svg$/.test(filePath))).toBe(true);
+    expect(mediaFiles.some((filePath) => /\.svg$/.test(filePath))).toBe(false);
     expect(mediaFiles.some((filePath) => /\.png$/.test(filePath))).toBe(true);
+    expect(documentXml).not.toContain('graph TD');
   });
 
   it('rasterizes rendered math and sanitized html blocks for docx visual fallback', async () => {

@@ -45,7 +45,7 @@ type SvgDocxImage = {
   height: number;
 };
 type ExportDocxImage = RasterDocxImage | SvgDocxImage;
-type MermaidDocxImage = ExportDocxImage;
+type MermaidDocxImage = RasterDocxImage;
 type ExportFileLabel = 'HTML' | 'PDF' | 'PNG' | 'Word';
 interface PdfRenderedPage {
   data: Uint8Array;
@@ -1213,7 +1213,7 @@ async function svgToDocxImage(svgText: string, scale = 2): Promise<SvgDocxImage>
   };
 }
 
-async function renderMermaidImage(source: string, contentTheme: ContentTheme, scale = 2) {
+async function renderMermaidImage(source: string, contentTheme: ContentTheme, scale = 2): Promise<MermaidDocxImage | null> {
   const { default: mermaid } = await import('mermaid');
   const candidates = [
     source,
@@ -1236,7 +1236,7 @@ async function renderMermaidImage(source: string, contentTheme: ContentTheme, sc
           EXPORT_MERMAID_RENDER_TIMEOUT_MS,
           `Mermaid 图表 ${sourceIndex + 1} 渲染超时`,
         );
-        const image = await svgToDocxImage(svg, scale).catch(() => null);
+        const image = await svgToDocxPngImage(svg, scale).catch(() => null);
         if (image) {
           return image satisfies MermaidDocxImage;
         }
