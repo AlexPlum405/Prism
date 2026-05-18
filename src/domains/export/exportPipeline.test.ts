@@ -173,7 +173,7 @@ describe('export pipeline html', () => {
     expect(html).toContain('<title>Export Title</title>');
     expect(html).toContain('<meta name="author" content="Alex">');
     expect(html).toContain('<meta name="date" content="2026-05-15">');
-    expect(html).toContain('class="prism-export-toc"');
+    expect(html).toContain('prism-export-toc');
     expect(html).toContain('href="#intro"');
     expect(html).toContain('href="#details"');
     expect(html).toContain('id="intro"');
@@ -184,7 +184,7 @@ describe('export pipeline html', () => {
     await exportHtml(createInput({ toc: false }), '/tmp/demo.html');
 
     const html = fsMock.writeTextFile.mock.calls[0][1] as string;
-    expect(html).not.toContain('<nav class="prism-export-toc"');
+    expect(html).not.toContain('<nav class');
     expect(html).not.toContain('href="#intro"');
   });
 
@@ -209,7 +209,7 @@ describe('export pipeline html', () => {
     expect(html).toContain('<title>导出验收文档</title>');
     expect(html).toContain('<meta name="author" content="Prism QA">');
     expect(html).toContain('<meta name="date" content="2026-05-15">');
-    expect(html).toContain('class="prism-export-toc"');
+    expect(html).toContain('prism-export-toc');
     expect(html).toContain('<span>导出验收文档</span>');
     expect(html).toContain('id="导出验收文档"');
     expect(html).toContain('<table');
@@ -374,7 +374,7 @@ describe('export pipeline html', () => {
         '<p>',
         '<a href="javascript:alert(1)" onclick="alert(2)">bad link</a>',
         '<a href="https://example.com/ref">safe link</a>',
-        '<img src="javascript:alert(3)" onerror="alert(4)" style="width: 999px" alt="bad image">',
+        '<img src="javascript:alert(3)" onerror="alert(4)" style="width: 999px; background: url(javascript:alert(6))" alt="bad image">',
         '<script>alert(5)</script>',
         '</p>',
       ].join(''),
@@ -403,7 +403,6 @@ describe('export pipeline html', () => {
     expect(html).not.toContain('onclick');
     expect(html).not.toContain('onerror');
     expect(html).not.toContain('<script>');
-    expect(html).not.toContain('width: 999px');
   });
 
   it('falls back to built-in HTML export when pandoc citation rendering fails', async () => {
@@ -563,6 +562,18 @@ describe('export pipeline raster CSS compatibility', () => {
         '0 0 0 1px color(display-p3 0.1 0.2 0.3)',
       ),
     ).toBe('0 0 0 1px rgb(26, 51, 77)');
+  });
+
+  it('marks styled raw html blocks as atomic export blocks', () => {
+    const root = document.createElement('div');
+    root.className = 'prism-export-document';
+    root.innerHTML = '<div style="border:1px solid #f59e0b;background:#fff7cc;padding:12px">警告</div>';
+
+    __exportPipelineTesting.markExportAtomicBlocks(root);
+
+    const block = root.querySelector<HTMLElement>('div[style]');
+    expect(block?.classList.contains('prism-export-atomic')).toBe(true);
+    expect(block?.dataset.prismExportAtomic).toBe('true');
   });
 });
 
@@ -850,6 +861,52 @@ describe('export pipeline image progress', () => {
     expect(canvasRenderMock.render).toHaveBeenCalled();
   });
 
+  it('inserts pdf pagination spacers before atomic blocks that would be cut by a page boundary', async () => {
+    const root = document.createElement('div');
+    const block = document.createElement('div');
+    block.className = 'prism-export-atomic';
+    root.appendChild(block);
+    document.body.appendChild(root);
+
+    try {
+      root.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 980,
+        bottom: 300,
+        width: 980,
+        height: 300,
+        toJSON: () => ({}),
+      } as DOMRect));
+      block.getBoundingClientRect = vi.fn(() => {
+        const hasSpacer = Boolean(root.querySelector('.prism-export-page-spacer'));
+        const top = hasSpacer ? 100 : 80;
+        return {
+          x: 0,
+          y: top,
+          top,
+          left: 0,
+          right: 400,
+          bottom: top + 40,
+          width: 400,
+          height: 40,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+
+      await __exportPipelineTesting.prepareExportAtomicPagination(root, 100);
+
+      const spacer = root.querySelector<HTMLElement>('.prism-export-page-spacer');
+      expect(spacer).toBeTruthy();
+      expect(spacer?.style.height).toBe('20px');
+      expect(spacer?.nextSibling).toBe(block);
+    } finally {
+      root.remove();
+    }
+  });
+
   it('uses the WebKit PDF engine inside the Tauri export worker before raster fallback', async () => {
     (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
     (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
@@ -1106,7 +1163,7 @@ describe('export pipeline image progress', () => {
 
       const html = await readFile(outputPaths.html, 'utf8');
       expect(html).toContain('<title>导出 Smoke 验收文档</title>');
-      expect(html).toContain('class="prism-export-toc"');
+      expect(html).toContain('prism-export-toc');
       expect(html).toContain('<table');
       expect(html).toContain('Golden Mermaid');
       expect(html).toContain('class="katex');

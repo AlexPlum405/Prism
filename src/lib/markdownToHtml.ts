@@ -3,6 +3,7 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkRehype from 'remark-rehype';
+import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
 import rehypeHighlight from 'rehype-highlight';
@@ -85,9 +86,14 @@ function isUnsafePreviewUrl(value: unknown, allowedProtocols: Set<string>) {
 function rehypePreviewUrlSafety() {
   const linkProtocols = new Set(['http:', 'https:', 'mailto:']);
   const mediaProtocols = new Set(['http:', 'https:']);
+  const dangerousTags = new Set(['script', 'iframe', 'object', 'embed', 'base', 'meta', 'link', 'style']);
 
   return (tree: any) => {
-    visit(tree, 'element', (node: any) => {
+    visit(tree, 'element', (node: any, index, parent) => {
+      if (dangerousTags.has(node.tagName) && parent && typeof index === 'number') {
+        parent.children.splice(index, 1);
+        return ['skip', index] as any;
+      }
       if (!node.properties) return;
       if (node.tagName === 'a' && isUnsafePreviewUrl(node.properties.href, linkProtocols)) {
         delete node.properties.href;
@@ -95,6 +101,15 @@ function rehypePreviewUrlSafety() {
       if ((node.tagName === 'img' || node.tagName === 'source') && isUnsafePreviewUrl(node.properties.src, mediaProtocols)) {
         delete node.properties.src;
       }
+      const style = node.properties.style;
+      if (typeof style === 'string' && /expression\s*\(|javascript:|url\s*\(\s*['"]?javascript:/i.test(style)) {
+        delete node.properties.style;
+      }
+      Object.keys(node.properties).forEach((key) => {
+        if (key.toLowerCase().startsWith('on')) {
+          delete node.properties[key];
+        }
+      });
     });
   };
 }
@@ -222,7 +237,8 @@ export function markdownToHtml(content: string, _options: MarkdownToHtmlOptions 
     .use(remarkCitations)
     .use(remarkBlockLines)
     .use(remarkMermaid)
-    .use(remarkRehype)
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeRaw)
     // MiaoYan hands unlabeled fenced blocks to Highlightr for auto detection.
     .use(rehypeHighlight as any, { ignoreMissing: true, detect: true });
 

@@ -102,6 +102,24 @@ const DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS = 60_000;
 const DOCX_VISUAL_BLOCK_WIDTH = 760;
 const DOCX_IMAGE_MAX_WIDTH = 500;
 const DOCX_MERMAID_IMAGE_MAX_WIDTH = 650;
+const EXPORT_PAGE_SPLIT_EPSILON = 2;
+const EXPORT_ATOMIC_SPACER_CLASS = 'prism-export-page-spacer';
+const EXPORT_ATOMIC_BLOCK_CLASS = 'prism-export-atomic';
+const EXPORT_ATOMIC_BLOCK_SELECTOR = [
+  'img',
+  'svg',
+  'canvas',
+  'figure',
+  'table',
+  'pre',
+  '.mermaid-placeholder',
+  '.katex-display',
+  '.prism-export-toc',
+  '.prism-html-block',
+  '[data-prism-docx-visual-target]',
+  '[data-prism-docx-mermaid-target]',
+  `[data-prism-export-atomic="true"]`,
+].join(',');
 
 function normalizeExportRasterScale(scale: unknown, fallback = 2) {
   if (typeof scale !== 'number' || !Number.isFinite(scale)) return fallback;
@@ -110,6 +128,100 @@ function normalizeExportRasterScale(scale: unknown, fallback = 2) {
 
 function getPreviewBackgroundColor() {
   return getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff';
+}
+
+function isElementInsideAtomicBlock(element: Element) {
+  const parent = element.parentElement?.closest(`.${EXPORT_ATOMIC_BLOCK_CLASS}, ${EXPORT_ATOMIC_BLOCK_SELECTOR}`);
+  return Boolean(parent);
+}
+
+function isStyledVisualBlock(element: Element) {
+  if (element.matches('.prism-export-document, .prism-export-document #write')) return false;
+  if (!/^(div|section|article|aside|details|blockquote)$/i.test(element.tagName)) return false;
+  const style = element.getAttribute('style') ?? '';
+  return /\b(background(?:-color)?|border(?:-[a-z]+)?|box-shadow|outline)\s*:/i.test(style);
+}
+
+function isScalableAtomicBlock(element: HTMLElement) {
+  return element.matches('img, svg, canvas, figure, .mermaid-placeholder, .katex-display, .prism-html-block, [data-prism-export-atomic="true"]')
+    || isStyledVisualBlock(element);
+}
+
+function markExportAtomicBlocks(root: HTMLElement) {
+  const candidates = Array.from(root.querySelectorAll<HTMLElement>(EXPORT_ATOMIC_BLOCK_SELECTOR));
+  root.querySelectorAll<HTMLElement>('div, section, article, aside, details, blockquote').forEach((element) => {
+    if (isStyledVisualBlock(element)) candidates.push(element);
+  });
+
+  candidates.forEach((element) => {
+    if (isElementInsideAtomicBlock(element)) return;
+    element.classList.add(EXPORT_ATOMIC_BLOCK_CLASS);
+    element.dataset.prismExportAtomic = 'true';
+  });
+}
+
+function scaleOversizedAtomicBlock(element: HTMLElement, pageCssHeight: number) {
+  if (!isScalableAtomicBlock(element)) return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.height <= pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) return false;
+  const scale = Math.max(0.2, Math.min(1, (pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) / rect.height));
+  element.style.transformOrigin = 'top center';
+  element.style.transform = `scale(${Number(scale.toFixed(4))})`;
+  element.style.width = `${Number((100 / scale).toFixed(4))}%`;
+  element.style.marginLeft = 'auto';
+  element.style.marginRight = 'auto';
+  element.style.breakInside = 'avoid';
+  element.style.pageBreakInside = 'avoid';
+  return true;
+}
+
+async function prepareExportAtomicPagination(root: HTMLElement, pageCssHeight: number) {
+  if (!Number.isFinite(pageCssHeight) || pageCssHeight <= 0) return;
+  markExportAtomicBlocks(root);
+  root.querySelectorAll(`.${EXPORT_ATOMIC_SPACER_CLASS}`).forEach((element) => element.remove());
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    let changed = false;
+    await nextFrame();
+    const rootRect = root.getBoundingClientRect();
+    const atomicBlocks = Array.from(root.querySelectorAll<HTMLElement>(`.${EXPORT_ATOMIC_BLOCK_CLASS}`))
+      .filter((element) => !element.closest(`.${EXPORT_ATOMIC_SPACER_CLASS}`));
+
+    for (const element of atomicBlocks) {
+      if (!element.isConnected) continue;
+      const rect = element.getBoundingClientRect();
+      if (rect.height < 2 || rect.width < 2) continue;
+
+      if (scaleOversizedAtomicBlock(element, pageCssHeight)) {
+        changed = true;
+        continue;
+      }
+
+      const top = Math.max(0, rect.top - rootRect.top);
+      const offsetInPage = top % pageCssHeight;
+      if (offsetInPage <= EXPORT_PAGE_SPLIT_EPSILON) continue;
+      const remaining = pageCssHeight - offsetInPage;
+      if (rect.height <= remaining - EXPORT_PAGE_SPLIT_EPSILON) continue;
+
+      const spacer = element.ownerDocument.createElement('div');
+      spacer.className = EXPORT_ATOMIC_SPACER_CLASS;
+      spacer.setAttribute('aria-hidden', 'true');
+      Object.assign(spacer.style, {
+        display: 'block',
+        width: '100%',
+        height: `${Math.ceil(remaining)}px`,
+        margin: '0',
+        padding: '0',
+        border: '0',
+        breakAfter: 'page',
+        pageBreakAfter: 'always',
+      });
+      element.parentNode?.insertBefore(spacer, element);
+      changed = true;
+    }
+
+    if (!changed) break;
+  }
 }
 
 function assertExportCanvasWithinLimits(width: number, height: number, scale: number, label: string) {
@@ -312,8 +424,15 @@ function sanitizeExportHtmlFragment(html: string) {
   template.content.querySelectorAll<HTMLElement>('*').forEach((element) => {
     Array.from(element.attributes).forEach((attribute) => {
       const name = attribute.name.toLowerCase();
-      if (name.startsWith('on') || name === 'style') {
+      if (name.startsWith('on')) {
         element.removeAttribute(attribute.name);
+        return;
+      }
+      if (name === 'style') {
+        const value = attribute.value;
+        if (/expression\s*\(|javascript:|url\s*\(\s*['"]?javascript:/i.test(value)) {
+          element.removeAttribute(attribute.name);
+        }
         return;
       }
 
@@ -963,6 +1082,20 @@ async function collectExportCss(
     .prism-export-heading-anchor {
       scroll-margin-top: 28px;
     }
+    .${EXPORT_ATOMIC_BLOCK_CLASS} {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+    }
+    .${EXPORT_ATOMIC_SPACER_CLASS} {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      break-after: page;
+      page-break-after: always;
+    }
     .prism-export-template--plain pre,
     .prism-export-template--plain code {
       background: transparent !important;
@@ -994,7 +1127,10 @@ async function collectExportCss(
         max-width: none !important;
         padding: 0 !important;
       }
-      pre, blockquote, table, figure, .mermaid-placeholder, .prism-export-toc { break-inside: avoid; }
+      pre, blockquote, table, figure, img, svg, canvas, .mermaid-placeholder, .katex-display, .prism-html-block, .prism-export-toc, .${EXPORT_ATOMIC_BLOCK_CLASS} {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
     }
   `;
 
@@ -1527,7 +1663,8 @@ async function renderDocxMathImage(
 async function renderDocxHtmlBlockImage(input: ExportDocumentInput, source: string, scale: number) {
   const sanitized = sanitizeExportHtmlFragment(source).trim();
   if (!sanitized) return null;
-  return renderDocxVisualHtmlFragment(input, sanitized, scale, {
+  const wrapped = `<div class="prism-html-block" style="border:1px solid #d0d7de;border-left:4px solid #2563eb;background:#f6f8fa;padding:12px 16px;border-radius:6px;line-height:1.6;">${sanitized}</div>`;
+  return renderDocxVisualHtmlFragment(input, wrapped, scale, {
     label: 'HTML 块',
   });
 }
@@ -1639,6 +1776,7 @@ async function createRenderedExportNode(input: ExportDocumentInput, options: { h
       }
     }
     await nextFrame();
+    markExportAtomicBlocks(root);
     return root;
   } catch (err) {
     root.remove();
@@ -1849,26 +1987,34 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
     const target = document.body.querySelector<HTMLElement>('.prism-export-document');
     if (!target) throw new Error('无法准备 WebKit PDF 捕获文档');
 
-    const rect = target.getBoundingClientRect();
-    const width = Math.max(
-      WEBKIT_PDF_CAPTURE_WIDTH,
-      Math.ceil(rect.width),
-      Math.ceil(target.scrollWidth),
-    );
-    const height = Math.max(
-      1,
-      Math.ceil(rect.height),
-      Math.ceil(target.scrollHeight),
-      Math.ceil(document.body.scrollHeight),
-      Math.ceil(document.documentElement.scrollHeight),
-    );
+    const measureTarget = () => {
+      const rect = target.getBoundingClientRect();
+      return {
+        rect,
+        width: Math.max(
+          WEBKIT_PDF_CAPTURE_WIDTH,
+          Math.ceil(rect.width),
+          Math.ceil(target.scrollWidth),
+        ),
+        height: Math.max(
+          1,
+          Math.ceil(rect.height),
+          Math.ceil(target.scrollHeight),
+          Math.ceil(document.body.scrollHeight),
+          Math.ceil(document.documentElement.scrollHeight),
+        ),
+      };
+    };
+    let measured = measureTarget();
     const paper = pdfPageSizePoints[input.pdfPaper ?? 'a4'];
     const margins = pdfPageMarginsPoints[input.pdfMargin ?? 'standard'];
     const contentWidth = paper.width - margins.left - margins.right;
     const contentHeight = paper.height - margins.top - margins.bottom;
-    const cssPxToPdfPoint = contentWidth / width;
+    const cssPxToPdfPoint = contentWidth / measured.width;
     const pageCssHeight = Math.max(1, contentHeight / cssPxToPdfPoint);
-    const pageCount = Math.max(1, Math.ceil(height / pageCssHeight));
+    await prepareExportAtomicPagination(target, pageCssHeight);
+    measured = measureTarget();
+    const pageCount = Math.max(1, Math.ceil(measured.height / pageCssHeight));
     if (!Number.isFinite(pageCssHeight) || !Number.isFinite(pageCount)) {
       throw new Error('WebKit PDF 页面尺寸计算失败');
     }
@@ -1878,10 +2024,10 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
 
     return {
       rect: {
-        x: Math.max(0, Math.floor(rect.left + window.scrollX)),
-        y: Math.max(0, Math.floor(rect.top + window.scrollY)),
-        width,
-        height,
+        x: Math.max(0, Math.floor(measured.rect.left + window.scrollX)),
+        y: Math.max(0, Math.floor(measured.rect.top + window.scrollY)),
+        width: measured.width,
+        height: measured.height,
       },
       pageCssHeight,
       pageCount,
@@ -2162,7 +2308,16 @@ async function createRenderedPdfPages(
 
     const cssPxToPdfPoint = options.contentWidth / width;
     const pageCssHeight = Math.max(1, options.contentHeight / cssPxToPdfPoint);
-    const pageCount = Math.max(1, Math.ceil(height / pageCssHeight));
+    await prepareExportAtomicPagination(target, pageCssHeight);
+    const paginatedHeight = Math.max(
+      200,
+      Math.ceil(target.scrollHeight),
+      Math.ceil(frameDocument.body.scrollHeight),
+      Math.ceil(frameDocument.documentElement.scrollHeight),
+    );
+    iframe.style.height = `${paginatedHeight}px`;
+    await nextFrame();
+    const pageCount = Math.max(1, Math.ceil(paginatedHeight / pageCssHeight));
     if (!Number.isFinite(pageCssHeight) || !Number.isFinite(pageCount)) {
       throw new Error('PDF 页面尺寸计算失败');
     }
@@ -2180,12 +2335,12 @@ async function createRenderedPdfPages(
         pageIndex,
         pageCount,
         pageCssHeight,
-        height,
+        paginatedHeight,
         width,
         requestedScale,
       );
       const batchStartY = Math.floor(pageIndex * pageCssHeight);
-      const batchEndY = Math.min(height, Math.floor(batchEndPage * pageCssHeight));
+      const batchEndY = Math.min(paginatedHeight, Math.floor(batchEndPage * pageCssHeight));
       const batchHeight = Math.max(1, batchEndY - batchStartY);
       const scale = requestedScale;
       const windowHeight = getPdfPageRenderWindowHeight(batchHeight);
@@ -2226,7 +2381,7 @@ async function createRenderedPdfPages(
       const pixelPerCssY = canvas.height / batchHeight;
       for (let splitPageIndex = pageIndex; splitPageIndex < batchEndPage; splitPageIndex += 1) {
         const pageStartY = Math.floor(splitPageIndex * pageCssHeight);
-        const pageEndY = Math.min(height, Math.floor((splitPageIndex + 1) * pageCssHeight));
+        const pageEndY = Math.min(paginatedHeight, Math.floor((splitPageIndex + 1) * pageCssHeight));
         const pageOffsetY = Math.max(0, pageStartY - batchStartY);
         const nextPageOffsetY = Math.max(pageOffsetY + 1, pageEndY - batchStartY);
         const pixelY = Math.round(pageOffsetY * pixelPerCssY);
@@ -2396,12 +2551,36 @@ async function inlineToRuns(
     return nested.flat();
   }
   if (node.type === 'link') {
-    const nested = await Promise.all((node.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, {
-      ...style,
-      color: theme.accent,
-      underline: { type: UnderlineType.SINGLE },
-    }, input, imageScale)));
-    return nested.flat();
+    const url = String(node.url ?? '');
+    const hasImageChild = (node.children ?? []).some((child: any) => child?.type === 'image');
+    const nested: any[] = [];
+    for (const child of (node.children ?? [])) {
+      if (child?.type === 'image') {
+        const image = await renderMarkdownImage(String(child.url ?? ''), input?.documentPath, imageScale);
+        if (image) {
+          const alt = String(child.alt || child.title || 'Markdown image');
+          nested.push(createDocxImageRun(docx, image, { title: alt, description: alt, name: alt }));
+          continue;
+        }
+        const fallback = String(child.alt || child.title || child.url || '图片无法导出');
+        nested.push(...splitMarkedText(docx, fallback, { ...style, italics: true, color: theme.muted }));
+        continue;
+      }
+      const childRuns = await inlineToRuns(docx, child, theme, {
+        ...style,
+        color: theme.accent,
+        underline: { type: UnderlineType.SINGLE },
+      }, input, imageScale);
+      nested.push(...childRuns);
+    }
+    if (url && /^https?:\/\//i.test(url)) {
+      const { ExternalHyperlink } = docx as any;
+      if (ExternalHyperlink) {
+        return [new ExternalHyperlink({ link: url, children: nested })];
+      }
+    }
+    return nested;
+    void hasImageChild;
   }
   if (node.type === 'image') {
     const label = String(node.alt || node.title || node.url || '');
@@ -3059,7 +3238,9 @@ export const __exportPipelineTesting = {
   getPdfHeaderY,
   getPdfPageNumberLabel,
   getPdfPageNumberY,
+  markExportAtomicBlocks,
   normalizeCssColorFunctionsForRaster,
   normalizePdfChromeText,
+  prepareExportAtomicPagination,
   stripRasterUnsafeColorDeclarations,
 };

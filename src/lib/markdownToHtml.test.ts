@@ -153,12 +153,13 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('literal citation [@code2026]');
   });
 
-  it('does not pass user-authored raw HTML into the preview DOM', () => {
-    const html = markdownToHtml('<img src=x onerror="alert(1)">\n\n<script>alert(1)</script>');
+  it('keeps user-authored inline HTML but strips dangerous attributes and tags', () => {
+    const html = markdownToHtml('<img src=x onerror="alert(1)">\n\n<script>alert(1)</script>\n\n<div style="color:red">styled</div>');
 
-    expect(html).not.toContain('<img');
     expect(html).not.toContain('onerror');
     expect(html).not.toContain('<script>');
+    expect(html).toContain('style="color:red"');
+    expect(html).toContain('styled');
   });
 
   it('does not preserve javascript hrefs in generated preview links', () => {

@@ -211,7 +211,7 @@ describe('export commands integration', () => {
 
     const html = await readFile(outputPaths.html, 'utf8');
     expect(html).toContain('<title>导出验收文档</title>');
-    expect(html).toContain('class="prism-export-toc"');
+    expect(html).toContain('prism-export-toc');
     expect(html).toContain('Command Mermaid');
 
     const { PDFDocument } = await import('pdf-lib');
