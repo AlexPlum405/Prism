@@ -1525,12 +1525,43 @@ describe('export pipeline docx header and footer', () => {
     const zip = await JSZip.loadAsync(bytes);
     const documentXml = await zip.file('word/document.xml')?.async('string') ?? '';
     const relsXml = await zip.file('word/_rels/document.xml.rels')?.async('string') ?? '';
+    const mediaFiles = Object.keys(zip.files).filter((filePath) => filePath.startsWith('word/media/'));
 
     expect(relsXml).toContain('Target="https://example.com"');
     expect(relsXml).toContain('relationships/hyperlink');
     expect(documentXml).toContain('<w:hyperlink');
     expect(documentXml).toContain('<a:hlinkClick');
     expect(documentXml).toContain('<w:drawing>');
+    expect(documentXml).not.toContain('asvg:svgBlip');
+    expect(mediaFiles.some((filePath) => /\.png$/.test(filePath))).toBe(true);
+    expect(mediaFiles.some((filePath) => /\.svg$/.test(filePath))).toBe(false);
+  });
+
+  it('maps safe inline html elements to docx run styling', async () => {
+    fsMock.writeFile.mockClear();
+
+    await exportDocx(createInput({
+      content: [
+        '# Inline HTML',
+        '',
+        '文字中可以混合 <mark>高亮标记</mark>、<kbd>Ctrl</kbd>+<kbd>C</kbd> 键盘按键，以及 <abbr title="超文本传输协议">HTTP</abbr> 缩写。',
+      ].join('\n'),
+    }), '/tmp/inline-html.docx');
+
+    const { default: JSZip } = await import('jszip');
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const zip = await JSZip.loadAsync(bytes);
+    const documentXml = await zip.file('word/document.xml')?.async('string') ?? '';
+
+    expect(documentXml).toContain('高亮标记');
+    expect(documentXml).toContain('Ctrl');
+    expect(documentXml).toContain('HTTP');
+    expect(documentXml).not.toContain('&lt;mark');
+    expect(documentXml).not.toContain('&lt;kbd');
+    expect(documentXml).not.toContain('&lt;abbr');
+    expect(documentXml).toContain('<w:shd w:fill="FFF3A3"');
+    expect(documentXml).toContain('<w:bdr');
+    expect(documentXml).toContain('<w:u w:val="dotted"');
   });
 
   it('renders Mermaid docx diagrams as png-first images with root-level non-html labels', async () => {

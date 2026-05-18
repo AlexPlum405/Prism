@@ -32,7 +32,7 @@
 - `src/domains/export/exportPipeline.test.ts` 覆盖 HTML golden 导出，检查 TOC、heading anchor、表格、代码高亮、KaTeX、Mermaid 渲染。
 - `src/domains/export/exportPipeline.test.ts` 覆盖 DOCX golden 导出，检查 TOC、中文、表格、代码、页眉页脚、页码、表格 / 代码块 dxa 宽度，并确认 Mermaid 源码不会原样进入 DOCX 且 `word/media/` 中存在图片。
 - `src/domains/export/exportPipeline.test.ts` 覆盖 DOCX GFM task list 导出，检查已完成 / 未完成任务分别写成可读的 `☑` / `☐` 标记。
-- `src/domains/export/exportPipeline.test.ts` 覆盖 DOCX SVG + PNG fallback、Mermaid root-level `htmlLabels: false` + SVG fallback、KaTeX / HTML 块视觉 fallback。
+- `src/domains/export/exportPipeline.test.ts` 覆盖 DOCX SVG + PNG fallback、Mermaid PNG-first、KaTeX / HTML 块视觉 fallback、链接图片和安全行内 HTML 样式映射。
 - `src/domains/export/exportPipeline.test.ts` 覆盖 PNG / PDF / DOCX / HTML progress stage。
 - `src/domains/commands/registry.test.ts` 覆盖导出进度事件接线：pipeline `onProgress` 会变成 `prism-export-progress` 事件，导出成功或失败后都会发送 `{ visible: false }` 清理进度状态。
 - `src/domains/export/templates.test.ts` 覆盖 front matter 覆盖导出设置、模板默认值、DOCX 字体策略、citation / pandoc 设置传递。
@@ -268,13 +268,14 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 - `src/domains/export/exportPipeline.ts` 将 DOCX 导出改为混合策略：正文结构继续原生 DOCX，本地普通 SVG 写入 SVG + PNG fallback，Mermaid 改为 PNG-first 主图，KaTeX / HTML 块按 Prism 预览主题渲染为 PNG fallback。
 - Mermaid DOCX 渲染优先 root-level `htmlLabels: false`，同时保留 `flowchart.htmlLabels: false`，避免 Word 兼容性差的 `foreignObject` 标签导致节点文字丢失。
 - 表格和代码块都写入基于页面内容宽度的 dxa `tblW` / `tcW` / `tblGrid`，避免 Quick Look / Word 把列宽按默认 `100` twips 解释成竖排。
-- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 42 tests。
+- 链接包裹的 SVG 图片在 DOCX 中改用 PNG 主图承载点击区域，同时保留 `w:hyperlink` 和 drawing `a:hlinkClick`；`<mark>`、`<kbd>`、`<abbr>` 这类安全行内 HTML 会映射为 DOCX run 样式，不再输出原始标签。
+- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 48 tests。
 - `npm run tauri:build:app-smoke`：通过，生成当前 `src-tauri/target/release/bundle/macos/Prism.app`。
 - 真实 `.app` 通过底部导出菜单生成 `.codex-smoke/docx-rich-export/docx-rich-export.docx`；`jszip` 检查 `drawingCount 5`、`hasSvg true`、`hasPng true`、`containsGraphSource false`、`containsTaskDone true`、`containsTaskTodo true`、`containsTableText true`、`containsCodeText true`。
 - Quick Look thumbnail 可见本地 SVG、正常宽度表格、正常宽度代码块和 Mermaid 图，Mermaid 节点文字与边标签可见。
 - 2026-05-18 WPS 复查发现 Mermaid SVG 主图仍可能因 WPS SVG 文本度量差异产生样式偏差；已改为 Mermaid PNG-first，本地普通 SVG 图片继续 SVG + PNG fallback。
 - 2026-05-18 继续修正 Mermaid PNG-first 后的 Word / WPS 缩放偏差：Mermaid 改为进入 Prism 预览同构隐藏 DOM 后用 `html2canvas` 截图，DOCX 中以 650px 上限插入，避免复杂图被通用 500px 图片上限过度缩小。
-- `npm test -- --run`：通过，59 files / 359 tests。
+- `npm test -- --run --maxWorkers=1`：通过，59 files / 365 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在，主要来自 `export-pipeline` 与 Mermaid 相关异步 chunk，但导出链路已不再位于主入口 chunk。
 
 ### 2026-05-18 导出视觉块分页保护
@@ -284,8 +285,8 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 - 标题后紧跟原始 HTML 视觉块时，导出 DOM 会把标题与视觉块包成同一个 `prism-export-atomic-group`，spacer 插在标题前，避免 `4.3 嵌套 HTML` 这类小节标题和黄色 HTML 卡片在 PDF 中被拆到两页。
 - PDF 导出会在最终 `pdf-lib` 分页产物中重建安全链接注解：导出 DOM 里的 `http` / `https` / `mailto` `<a href>` 会按真实页面坐标写入 `/Link` + `/URI`，覆盖图片被链接包裹的 Markdown 结构，如 `[![点击访问](assets/local-diagram.svg)](https://example.com)`。
 - HTML 导出保留 `break-inside: avoid` / `page-break-inside: avoid`，用于浏览器打印或二次转换；PNG 导出本身是单张长图，不存在页内切割。
-- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 47 tests。
-- `npm test -- --run --maxWorkers=1`：通过，59 files / 364 tests。
+- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 48 tests。
+- `npm test -- --run --maxWorkers=1`：通过，59 files / 365 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在。
 - 真实 `.app` 复测：使用 `npm run tauri:build:app-smoke` 生成的 `Prism.app` 打开 `.codex-smoke/docx-rich-export/docx-rich-export.md`，通过底部导出菜单覆盖生成 `.codex-smoke/docx-rich-export/docx-rich-export.pdf`；PDFKit 读取为 5 页 A4，第 3 页文本同时包含 `4.3 嵌套 HTML`、`警告`、`列表项 A` 和 `列表项 B`，确认该 HTML 小节标题与黄色视觉卡片未再跨页断开。
 - 同一真实 PDF 继续用 `pdf-lib` 检查 `/Annots`：第 4 页和第 5 页均包含 `https://example.com/` 的 `/URI` 链接注解，确认图片外层 Markdown 链接不会在最终分页 PDF 中丢失。

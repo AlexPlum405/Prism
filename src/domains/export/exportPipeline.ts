@@ -2664,6 +2664,13 @@ export async function exportPng(input: ExportDocumentInput, outputPath?: string)
 }
 
 type RunStyle = Record<string, any>;
+type DocxInlineHtmlTagName = 'mark' | 'kbd' | 'abbr';
+type DocxInlineHtmlToken =
+  | { kind: 'open'; tag: DocxInlineHtmlTagName }
+  | { kind: 'close'; tag: DocxInlineHtmlTagName }
+  | { kind: 'break' };
+
+const DOCX_INLINE_HTML_TAGS = new Set(['mark', 'kbd', 'abbr']);
 
 function splitMarkedText(docx: DocxModule, value: string, base: RunStyle = {}) {
   const { ShadingType, TextRun } = docx;
@@ -2688,6 +2695,119 @@ function splitMarkedText(docx: DocxModule, value: string, base: RunStyle = {}) {
     runs.push(new TextRun({ ...base, text: value.slice(lastIndex) }));
   }
   return runs.length > 0 ? runs : [new TextRun({ ...base, text: value })];
+}
+
+function parseDocxInlineHtmlToken(value: string): DocxInlineHtmlToken | null {
+  const trimmed = value.trim();
+  if (/^<\s*br\s*\/?\s*>$/i.test(trimmed)) return { kind: 'break' };
+
+  const closeMatch = trimmed.match(/^<\s*\/\s*([a-z][\w:-]*)\s*>$/i);
+  if (closeMatch) {
+    const tag = closeMatch[1].toLowerCase();
+    return DOCX_INLINE_HTML_TAGS.has(tag) ? { kind: 'close', tag: tag as DocxInlineHtmlTagName } : null;
+  }
+
+  const openMatch = trimmed.match(/^<\s*([a-z][\w:-]*)(?:\s[^>]*)?>$/i);
+  if (openMatch) {
+    const tag = openMatch[1].toLowerCase();
+    return DOCX_INLINE_HTML_TAGS.has(tag) ? { kind: 'open', tag: tag as DocxInlineHtmlTagName } : null;
+  }
+
+  return null;
+}
+
+function stripInlineHtmlTag(value: string) {
+  return value.replace(/<[^>]*>/g, '');
+}
+
+function applyDocxInlineHtmlStyle(docx: DocxModule, theme: DocxTheme, tag: DocxInlineHtmlTagName, style: RunStyle) {
+  const { BorderStyle, ShadingType, UnderlineType } = docx;
+  if (tag === 'mark') {
+    return {
+      ...style,
+      shading: { type: ShadingType.CLEAR, fill: 'FFF3A3' },
+    };
+  }
+
+  if (tag === 'kbd') {
+    return {
+      ...style,
+      font: theme.codeFont,
+      color: theme.text,
+      shading: { type: ShadingType.CLEAR, fill: theme.fill },
+      border: { style: BorderStyle.SINGLE, size: 2, color: theme.border, space: 1 },
+      noProof: true,
+    };
+  }
+
+  return {
+    ...style,
+    underline: { type: UnderlineType.DOTTED, color: theme.muted },
+    noProof: true,
+  };
+}
+
+function composeDocxInlineHtmlStyle(
+  docx: DocxModule,
+  theme: DocxTheme,
+  base: RunStyle,
+  stack: DocxInlineHtmlTagName[],
+) {
+  return stack.reduce((current, tag) => applyDocxInlineHtmlStyle(docx, theme, tag, current), { ...base });
+}
+
+function rasterizeLinkedDocxImage(image: ExportDocxImage | MermaidDocxImage): ExportDocxImage | MermaidDocxImage {
+  return image.type === 'svg' ? image.fallback : image;
+}
+
+async function inlineChildrenToRuns(
+  docx: DocxModule,
+  children: any[],
+  theme: DocxTheme,
+  style: RunStyle = {},
+  input?: ExportDocumentInput,
+  imageScale = 2,
+): Promise<DocxInline[]> {
+  const { TextRun } = docx;
+  const runs: DocxInline[] = [];
+  const htmlStack: DocxInlineHtmlTagName[] = [];
+
+  for (const child of children) {
+    if (child?.type === 'html') {
+      const value = String(child.value ?? '');
+      const token = parseDocxInlineHtmlToken(value);
+      if (token?.kind === 'break') {
+        runs.push(new TextRun({ text: '', break: 1 }));
+        continue;
+      }
+      if (token?.kind === 'open') {
+        htmlStack.push(token.tag);
+        continue;
+      }
+      if (token?.kind === 'close') {
+        const index = htmlStack.lastIndexOf(token.tag);
+        if (index >= 0) htmlStack.splice(index, 1);
+        continue;
+      }
+
+      const fallback = stripInlineHtmlTag(value);
+      if (fallback) {
+        runs.push(...splitMarkedText(docx, fallback, composeDocxInlineHtmlStyle(docx, theme, style, htmlStack)));
+      }
+      continue;
+    }
+
+    runs.push(...await inlineToRuns(
+      docx,
+      child,
+      theme,
+      composeDocxInlineHtmlStyle(docx, theme, style, htmlStack),
+      input,
+      imageScale,
+    ));
+  }
+
+  return runs;
 }
 
 async function inlineToRuns(
@@ -2729,40 +2849,44 @@ async function inlineToRuns(
     })];
   }
   if (node.type === 'strong') {
-    const nested = await Promise.all((node.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, { ...style, bold: true }, input, imageScale)));
-    return nested.flat();
+    return inlineChildrenToRuns(docx, node.children ?? [], theme, { ...style, bold: true }, input, imageScale);
   }
   if (node.type === 'emphasis') {
-    const nested = await Promise.all((node.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, { ...style, italics: true }, input, imageScale)));
-    return nested.flat();
+    return inlineChildrenToRuns(docx, node.children ?? [], theme, { ...style, italics: true }, input, imageScale);
   }
   if (node.type === 'delete') {
-    const nested = await Promise.all((node.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, { ...style, strike: true }, input, imageScale)));
-    return nested.flat();
+    return inlineChildrenToRuns(docx, node.children ?? [], theme, { ...style, strike: true }, input, imageScale);
   }
   if (node.type === 'link') {
     const url = String(node.url ?? '');
-    const hasImageChild = (node.children ?? []).some((child: any) => child?.type === 'image');
     const nested: any[] = [];
+    let pendingInline: any[] = [];
+    const flushInline = async () => {
+      if (pendingInline.length === 0) return;
+      nested.push(...await inlineChildrenToRuns(docx, pendingInline, theme, {
+        ...style,
+        color: theme.accent,
+        underline: { type: UnderlineType.SINGLE },
+      }, input, imageScale));
+      pendingInline = [];
+    };
+
     for (const child of (node.children ?? [])) {
       if (child?.type === 'image') {
+        await flushInline();
         const image = await renderMarkdownImage(String(child.url ?? ''), input?.documentPath, imageScale);
         if (image) {
           const alt = String(child.alt || child.title || 'Markdown image');
-          nested.push(createDocxImageRun(docx, image, { title: alt, description: alt, name: alt }));
+          nested.push(createDocxImageRun(docx, rasterizeLinkedDocxImage(image), { title: alt, description: alt, name: alt }));
           continue;
         }
         const fallback = String(child.alt || child.title || child.url || '图片无法导出');
         nested.push(...splitMarkedText(docx, fallback, { ...style, italics: true, color: theme.muted }));
         continue;
       }
-      const childRuns = await inlineToRuns(docx, child, theme, {
-        ...style,
-        color: theme.accent,
-        underline: { type: UnderlineType.SINGLE },
-      }, input, imageScale);
-      nested.push(...childRuns);
+      pendingInline.push(child);
     }
+    await flushInline();
     if (url && /^https?:\/\//i.test(url)) {
       const { ExternalHyperlink } = docx as any;
       if (ExternalHyperlink) {
@@ -2770,15 +2894,21 @@ async function inlineToRuns(
       }
     }
     return nested;
-    void hasImageChild;
   }
   if (node.type === 'image') {
     const label = String(node.alt || node.title || node.url || '');
     return label ? splitMarkedText(docx, label, { ...style, italics: true, color: theme.muted }) : [];
   }
+  if (node.type === 'html') {
+    const value = String(node.value ?? '');
+    const token = parseDocxInlineHtmlToken(value);
+    if (token?.kind === 'break') return [new TextRun({ text: '', break: 1 })];
+    if (token?.kind === 'open' || token?.kind === 'close') return [];
+    const fallback = stripInlineHtmlTag(value);
+    return fallback ? splitMarkedText(docx, fallback, style) : [];
+  }
   if (node.value && typeof node.value === 'string') return splitMarkedText(docx, node.value, style);
-  const nested = await Promise.all((node.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, style, input, imageScale)));
-  return nested.flat();
+  return inlineChildrenToRuns(docx, node.children ?? [], theme, style, input, imageScale);
 }
 
 async function paragraphFromInlineChildren(
@@ -2791,7 +2921,7 @@ async function paragraphFromInlineChildren(
 ) {
   const { Paragraph } = docx;
   return new Paragraph({
-    children: (await Promise.all(children.map((child) => inlineToRuns(docx, child, theme, style, input, imageScale)))).flat(),
+    children: await inlineChildrenToRuns(docx, children, theme, style, input, imageScale),
     spacing: { after: 180, line: 330 },
   });
 }
@@ -2885,7 +3015,7 @@ async function tableCellToDocxBlocks(
   if (children.every(isInlineMdastNode)) {
     return [
       new Paragraph({
-        children: (await Promise.all(children.map((child) => inlineToRuns(docx, child, theme, { bold: isHeader }, input, imageScale)))).flat(),
+        children: await inlineChildrenToRuns(docx, children, theme, { bold: isHeader }, input, imageScale),
         spacing: { before: 0, after: 0, line: 300 },
       }),
     ];
@@ -3103,7 +3233,7 @@ async function mdastToDocxBlocks(
           HeadingLevel.HEADING_5,
           HeadingLevel.HEADING_6,
         ][level - 1],
-        children: (await Promise.all((node.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, {}, input, imageScale)))).flat(),
+        children: await inlineChildrenToRuns(docx, node.children ?? [], theme, {}, input, imageScale),
         spacing: { before: level <= 2 ? 360 : 260, after: 160 },
       }));
       continue;
@@ -3117,7 +3247,7 @@ async function mdastToDocxBlocks(
     if (node.type === 'blockquote') {
       const textRuns = (await Promise.all((node.children ?? []).map(async (child: any) => {
         if (child.type === 'paragraph') {
-          return (await Promise.all((child.children ?? []).map((inline: any) => inlineToRuns(docx, inline, theme, {}, input, imageScale)))).flat();
+          return inlineChildrenToRuns(docx, child.children ?? [], theme, {}, input, imageScale);
         }
         return inlineToRuns(docx, child, theme, {}, input, imageScale);
       }))).flat();
@@ -3201,7 +3331,7 @@ async function mdastToDocxBlocks(
         const marker = getDocxListMarker(node, item, index);
         const paragraphChild = (item.children ?? []).find((child: any) => child.type === 'paragraph');
         const runs = paragraphChild
-          ? (await Promise.all((paragraphChild.children ?? []).map((child: any) => inlineToRuns(docx, child, theme, {}, input, imageScale)))).flat()
+          ? await inlineChildrenToRuns(docx, paragraphChild.children ?? [], theme, {}, input, imageScale)
           : [];
         blocks.push(new Paragraph({
           children: [new TextRun({ text: marker, color: theme.accent }), ...runs],
