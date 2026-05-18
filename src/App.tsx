@@ -25,6 +25,7 @@ import { exists as fsExists, readTextFile } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 import { downloadDir, homeDir } from '@tauri-apps/api/path';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
+import { DocumentPropertiesPanel } from './domains/editor/components/DocumentPropertiesPanel';
 import { LinkDiagnosticsPanel } from './domains/editor/components/LinkDiagnosticsPanel';
 import { TypographyDiagnosticsPanel } from './domains/editor/components/TypographyDiagnosticsPanel';
 import { scanMarkdownLinks } from './domains/editor/extensions/linkDiagnostics';
@@ -239,6 +240,7 @@ function App() {
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
   const [backlinks, setBacklinks] = useState<BacklinkReference[]>([]);
+  const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
@@ -444,6 +446,10 @@ function App() {
       setBacklinksVisible(false);
     }
   }, [backlinks.length]);
+
+  const handleApplyDocumentProperties = useCallback((content: string) => {
+    useDocumentStore.getState().updateContent(content);
+  }, []);
 
   const typographyDiagnostics = useMemo(
     () => currentDocument ? scanChineseTypography(currentDocument.content) : [],
@@ -945,6 +951,7 @@ function App() {
             onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
             backlinkCount={backlinks.length}
             onBacklinksClick={handleBacklinksClick}
+            onDocumentPropertiesClick={() => setDocumentPropertiesVisible(true)}
             typographyIssueCount={typographyDiagnostics.length}
             typographyIssueTitle={firstTypographyDiagnostic?.message}
             onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
@@ -1001,6 +1008,14 @@ function App() {
         backlinks={backlinks}
         onClose={() => setBacklinksVisible(false)}
         onSelect={handleSelectBacklink}
+      />
+
+      <DocumentPropertiesPanel
+        visible={documentPropertiesVisible}
+        content={currentDocument?.content ?? ''}
+        onClose={() => setDocumentPropertiesVisible(false)}
+        onApply={handleApplyDocumentProperties}
+        onNotice={showToast}
       />
 
       <TypographyDiagnosticsPanel

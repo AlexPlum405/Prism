@@ -112,6 +112,25 @@ describe('StatusBar', () => {
     expect(onBacklinksClick).toHaveBeenCalledTimes(1);
   });
 
+  it('renders document metadata entry only when a handler is provided', () => {
+    const onDocumentPropertiesClick = vi.fn();
+    render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        onDocumentPropertiesClick={onDocumentPropertiesClick}
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'META' });
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('title', '编辑 YAML Front Matter 文档属性');
+    expect(onDocumentPropertiesClick).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a recoverable background export status', () => {
     const onShowExportProgress = vi.fn();
     render(

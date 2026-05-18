@@ -74,6 +74,7 @@ interface StatusBarProps {
   onLinkDiagnosticsClick?: () => void;
   backlinkCount?: number;
   onBacklinksClick?: () => void;
+  onDocumentPropertiesClick?: () => void;
   typographyIssueCount?: number;
   typographyIssueTitle?: string;
   onTypographyDiagnosticsClick?: () => void;
@@ -101,6 +102,7 @@ export function StatusBar({
   onLinkDiagnosticsClick,
   backlinkCount = 0,
   onBacklinksClick,
+  onDocumentPropertiesClick,
   typographyIssueCount = 0,
   typographyIssueTitle,
   onTypographyDiagnosticsClick,
@@ -202,6 +204,18 @@ export function StatusBar({
             <span className={styles.statLbl}>COL</span>
             <span className={styles.statVal}>{cursor.column}</span>
           </span>
+          {onDocumentPropertiesClick && (
+            <>
+              <span className={styles.sep} />
+              <button
+                className={styles.diagnostic}
+                title="编辑 YAML Front Matter 文档属性"
+                onClick={onDocumentPropertiesClick}
+              >
+                META
+              </button>
+            </>
+          )}
           {linkIssueCount > 0 && (
             <>
               <span className={styles.sep} />

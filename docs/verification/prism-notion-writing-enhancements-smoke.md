@@ -134,3 +134,37 @@ git diff --check
 跳过项：
 
 - 未跑发布级 app/DMG smoke。本阶段是前端工作区扫描和编辑器补全增强，不触及 Tauri 权限、安装器、updater 或文件关联配置。
+
+## 2026-05-18 Phase 5：YAML Front Matter 轻量属性面板
+
+改动范围：
+
+- 新增 front matter 属性读写服务，支持 title、tags、description、author、date、status、export。
+- 新增“文档属性”modal，状态栏 `META` 入口打开；应用后写回 Markdown 顶部 YAML Front Matter。
+- 保留未知 YAML 字段；遇到无效 YAML 时禁止可视化覆盖，提示用户回到源码修正。
+
+非破坏性约束：
+
+- Front matter 仍是唯一数据源，没有数据库、隐藏副本或 Properties 表格视图。
+- 未修改现有导出 front matter 解析逻辑；新面板只负责编辑 Markdown 源文本。
+- 状态栏只增加一个小型 `META` 入口，沿用现有诊断按钮视觉。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/editor/extensions/frontMatterProperties.test.ts src/domains/editor/components/DocumentPropertiesPanel.test.tsx src/domains/workspace/components/StatusBar.test.tsx
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- Phase 5 相关测试：3 files / 13 tests passed。
+- `npm test -- --run`：64 files / 386 tests passed。
+- `npm run build`：通过；保留既有 Vite chunk size warning。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke。本阶段未触及 Tauri 权限、发布配置、安装器、updater 或文件关联。
