@@ -177,6 +177,8 @@ function mockRecoveryQueue(activeRecoverySnapshot: RecoverySnapshot | null = sna
 beforeEach(() => {
   vi.clearAllMocks();
   window.history.replaceState({}, '', '/');
+  document.documentElement.removeAttribute('data-platform');
+  document.body.className = '';
 
   useDocumentStore.setState({ currentDocument: null });
   useWorkspaceStore.setState({
@@ -203,6 +205,28 @@ beforeEach(() => {
 });
 
 describe('App recovery prompt wiring', () => {
+  it('marks the runtime platform for scoped visual compensation', () => {
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'Win32',
+    });
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
+    mockRecoveryQueue(null);
+
+    const { unmount } = render(<App />);
+
+    expect(document.documentElement).toHaveAttribute('data-platform', 'windows');
+    expect(document.body).toHaveClass('platform-windows');
+
+    unmount();
+
+    expect(document.documentElement).not.toHaveAttribute('data-platform');
+    expect(document.body).not.toHaveClass('platform-windows');
+  });
+
   it('shows the recovery modal from the active startup snapshot and forwards actions', () => {
     render(<App />);
 

@@ -10,9 +10,12 @@ Thumbs.db
 .codex-screens/
 .codex-smoke/
 .playwright-mcp/
+.tmp-icons/
 release-latest/
 scripts/*
 !scripts/generate-updater-manifest.mjs
 !scripts/generate-updater-manifest.test.ts
+!scripts/patch-windows-exe-icon.mjs
+!scripts/generate-windows-icon.mjs
 !scripts/package-macos-dmg-skip-finder.sh
 src-tauri/icons_backup/

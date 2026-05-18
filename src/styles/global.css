@@ -1758,6 +1758,53 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   margin-bottom: 24px;
 }
 
+.modal-footer .pill-ghost,
+.modal-footer .pill-filled {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+}
+
+.modal-footer .pill-ghost {
+  border: 1px solid color-mix(in srgb, var(--c-void) 12%, var(--c-fog));
+  background: transparent;
+  color: var(--c-void);
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+
+.modal-footer .pill-ghost:hover {
+  background: var(--c-chalk);
+  border-color: color-mix(in srgb, var(--c-void) 18%, var(--c-fog));
+}
+
+.modal-footer .pill-filled {
+  border: 1px solid var(--c-void);
+  background: var(--c-void);
+  color: var(--c-canvas);
+  box-shadow: var(--shadow-faint);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.modal-footer .pill-filled:hover {
+  opacity: 0.85;
+}
+
+.modal-footer .pill-filled:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .about-modal {
   max-width: 520px;
 }
@@ -5810,6 +5857,44 @@ html[data-content-theme='miaoyan'] .custom-context-menu .menu-shortcut {
   font-family: var(--miaoyan-code-font);
 }
 
+html[data-content-theme='miaoyan'] .modal-footer .pill-ghost,
+html[data-content-theme='miaoyan'] .modal-footer .pill-filled {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 0;
+  box-shadow: none;
+  font-family: var(--miaoyan-font);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+}
+
+html[data-content-theme='miaoyan'] .modal-footer .pill-ghost {
+  color: var(--miaoyan-secondary-text);
+  background: transparent;
+}
+
+html[data-content-theme='miaoyan'] .modal-footer .pill-ghost:hover {
+  background: var(--miaoyan-panel-secondary);
+  color: var(--miaoyan-text);
+}
+
+html[data-content-theme='miaoyan'] .modal-footer .pill-filled {
+  color: var(--miaoyan-accent);
+  background: transparent;
+}
+
+html[data-content-theme='miaoyan'] .modal-footer .pill-filled:hover:not(:disabled) {
+  opacity: 1;
+  background: var(--miaoyan-panel-secondary);
+}
+
+html[data-content-theme='miaoyan'] .modal-footer .pill-filled:disabled {
+  color: var(--miaoyan-tertiary-text);
+  opacity: 1;
+}
+
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu,
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-submenu {
   background: var(--theme-main-bg);
@@ -6536,4 +6621,50 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan kbd {
 
 .preview-compat details > :last-child {
   margin-bottom: 0;
+}
+
+/* Windows WebView2 can keep transformed fixed layers in a composited surface,
+   which makes modal text look soft. Keep this platform-scoped and after theme overrides. */
+html[data-platform='windows'] .modal {
+  inset: 0;
+  height: fit-content;
+  margin: auto;
+  transform: none;
+  will-change: auto;
+  animation: prism-windows-modal-in 140ms var(--ease-out) both;
+  -webkit-font-smoothing: auto;
+  font-synthesis-weight: none;
+}
+
+html[data-platform='windows'][data-content-theme='miaoyan'] .modal-overlay {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+@keyframes prism-windows-modal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Windows WebView2 uses a different CJK text pipeline than macOS.
+   This block only tightens font fallbacks; platform layout fixes live in the scoped block above.
+   This must stay after content-theme overrides so themes cannot undo the Windows readability fix. */
+html[data-platform='windows'] .cmdk,
+html[data-platform='windows'] .sp,
+html[data-platform='windows'] .modal,
+html[data-platform='windows'] .custom-context-menu,
+html[data-platform='windows'] .custom-context-submenu {
+  font-family: 'Inter', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+html[data-platform='windows'] .prism-document-property-field input,
+html[data-platform='windows'] .prism-document-property-field textarea,
+html[data-platform='windows'] .cmdk-input {
+  font-family: 'Inter', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+}
+
+html[data-platform='windows'] .prism-document-property-field textarea {
+  font-family: 'JetBrains Mono', Consolas, 'Microsoft YaHei UI', monospace;
 }

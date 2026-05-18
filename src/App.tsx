@@ -63,6 +63,7 @@ import {
   computeWritingStats,
   dirname,
   flattenFiles,
+  getRuntimePlatform,
   isSamePath,
   joinPath,
   resolveDocumentLinkTarget,
@@ -255,6 +256,19 @@ function App() {
   useAutoSave(autoSaveInterval, autoSaveEnabled);
   useExternalFileChangeMonitor();
   useWorkspaceFocusRefresh(settingsReady);
+
+  useEffect(() => {
+    const platform = getRuntimePlatform();
+    document.documentElement.setAttribute('data-platform', platform);
+    document.body.classList.add(`platform-${platform}`);
+
+    return () => {
+      if (document.documentElement.getAttribute('data-platform') === platform) {
+        document.documentElement.removeAttribute('data-platform');
+      }
+      document.body.classList.remove(`platform-${platform}`);
+    };
+  }, []);
 
   useEffect(() => {
     setSelectionText('');

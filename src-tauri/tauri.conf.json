@@ -7,7 +7,8 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run build",
+    "beforeBundleCommand": "node scripts/patch-windows-exe-icon.mjs"
   },
   "app": {
     "windows": [
@@ -19,7 +20,7 @@
         "minHeight": 620,
         "resizable": true,
         "fullscreen": false,
-        "decorations": true,
+        "decorations": false,
         "transparent": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
