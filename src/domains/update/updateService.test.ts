@@ -34,4 +34,22 @@ describe('checkForAppUpdate', () => {
       body: 'Bug fixes',
     });
   });
+
+  it('returns unavailable when the latest release has no valid updater manifest', async () => {
+    (check as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('Could not fetch a valid release JSON from https://github.com/AlexPlum405/Prism/releases/latest/download/latest.json: Not Found'),
+    );
+
+    await expect(checkForAppUpdate()).resolves.toEqual({
+      status: 'unavailable',
+      reason: '当前发布通道暂未提供可用的更新清单，请稍后再试或前往 GitHub Releases 查看最新版本。',
+    });
+  });
+
+  it('keeps unexpected updater failures visible to the caller', async () => {
+    const error = new Error('signature verification failed');
+    (check as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+
+    await expect(checkForAppUpdate()).rejects.toThrow(error);
+  });
 });

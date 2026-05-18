@@ -769,6 +769,10 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       context.showToast?.('当前已是最新版本');
       return;
     }
+    if (result.status === 'unavailable') {
+      context.showToast?.(`检查更新暂不可用: ${result.reason}`);
+      return;
+    }
 
     const shouldOpen = await ask(
       `发现新版本 ${result.version}（当前 ${result.currentVersion}）。是否打开 GitHub Releases？`,
