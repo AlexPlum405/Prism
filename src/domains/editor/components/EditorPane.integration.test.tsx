@@ -385,6 +385,40 @@ describe('EditorPane command event integration', () => {
     });
   });
 
+  it('surfaces slash menu snippets through the mounted CodeMirror editor context', async () => {
+    const { changes } = await renderEditorPane('');
+
+    act(() => {
+      const view = getMountedEditorView();
+      view.dispatch({
+        changes: { from: 0, insert: '/' },
+        selection: { anchor: 1 },
+      });
+    });
+
+    await waitFor(() => {
+      expect(latestChange(changes)).toBe('/');
+    });
+
+    act(() => {
+      const started = startCompletion(getMountedEditorView());
+      expect(started).toBe(true);
+    });
+
+    await waitFor(() => {
+      const labels = currentCompletions(getMountedEditorView().state).map((completion) => completion.label);
+      expect(labels).toEqual(expect.arrayContaining([
+        '表格',
+        'Mermaid 图表',
+        'KaTeX 公式',
+        'Callout: Note',
+        'Toggle 折叠块',
+        '模板：会议纪要',
+        '导出设置块',
+      ]));
+    });
+  });
+
   it('ignores invalid block and editor command payloads without changing the document', async () => {
     const { changes, onChange } = await renderEditorPane('Stable command text');
 

@@ -28,6 +28,7 @@ import { isCommandId } from '../../commands';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
 import { getEditorFormatResult, type EditorFormat } from '../extensions/formatting';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
+import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
 import {
   getMarkdownImageForPath,
@@ -151,6 +152,7 @@ function getLinkCompletionExtension(input: {
   return autocompletion({
     activateOnTyping: true,
     override: [
+      createSlashMenuCompletionSource(),
       createMarkdownLinkCompletionSource(() => input),
     ],
   });
