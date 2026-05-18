@@ -63,6 +63,7 @@ import {
   computeWritingStats,
   dirname,
   flattenFiles,
+  isSamePath,
   joinPath,
   scanBacklinks,
 } from './domains/workspace/services';
@@ -240,6 +241,10 @@ function App() {
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
   const [backlinks, setBacklinks] = useState<BacklinkReference[]>([]);
+  const [pendingBacklinkJump, setPendingBacklinkJump] = useState<{
+    line: number;
+    path: string;
+  } | null>(null);
   const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
@@ -447,6 +452,21 @@ function App() {
     }
   }, [backlinks.length]);
 
+  useEffect(() => {
+    if (!pendingBacklinkJump || !currentDocument?.path) return;
+    if (!isSamePath(currentDocument.path, pendingBacklinkJump.path)) return;
+
+    const { line, path } = pendingBacklinkJump;
+    const frame = window.requestAnimationFrame(() => {
+      editorRef.current?.jumpToLine(line);
+      setPendingBacklinkJump((pending) => (
+        pending && pending.line === line && isSamePath(pending.path, path) ? null : pending
+      ));
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentDocument?.path, pendingBacklinkJump]);
+
   const handleApplyDocumentProperties = useCallback((content: string) => {
     useDocumentStore.getState().updateContent(content);
   }, []);
@@ -576,8 +596,12 @@ function App() {
 
   const handleSelectBacklink = useCallback(async (reference: BacklinkReference) => {
     setBacklinksVisible(false);
+    setPendingBacklinkJump({ path: reference.path, line: reference.line });
     await handleFileAction({ action: 'openFile', path: reference.path });
-    window.setTimeout(() => editorRef.current?.jumpToLine(reference.line), 80);
+    const opened = useDocumentStore.getState().currentDocument;
+    if (!opened?.path || !isSamePath(opened.path, reference.path)) {
+      setPendingBacklinkJump(null);
+    }
   }, [handleFileAction]);
 
   const requestExportPath = useCallback(async (input: {

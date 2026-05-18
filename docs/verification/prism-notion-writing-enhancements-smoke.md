@@ -135,6 +135,24 @@ git diff --check
 
 - 未跑发布级 app/DMG smoke。本阶段是前端工作区扫描和编辑器补全增强，不触及 Tauri 权限、安装器、updater 或文件关联配置。
 
+### 2026-05-18 追加修复：Obsidian 式反向链接跳转
+
+改动范围：
+
+- `BacklinksPanel` 从平铺按钮改为按来源文档分组的引用列表；每条引用行都可直接点击打开来源文件。
+- `App` 的反链跳转从固定 `80ms` 延迟改为 pending jump：先打开来源文档，等当前文档路径确认切换到目标文件后再跳到引用行，避免文件加载稍慢时跳转丢失。
+- 保持现有轻量扫描服务不变，不引入图谱、数据库索引、实时 watcher 或 Obsidian 式完整 vault 模型。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/workspace/components/BacklinksPanel.test.tsx src/domains/workspace/services/backlinks.test.ts src/domains/workspace/components/StatusBar.test.tsx
+```
+
+结果：
+
+- 3 files / 11 tests passed。
+
 ## 2026-05-18 Phase 5：YAML Front Matter 轻量属性面板
 
 改动范围：

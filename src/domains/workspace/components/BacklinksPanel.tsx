@@ -8,12 +8,40 @@ interface BacklinksPanelProps {
   visible: boolean;
 }
 
+interface BacklinkGroup {
+  path: string;
+  references: BacklinkReference[];
+  title: string;
+}
+
+function groupBacklinks(backlinks: BacklinkReference[]): BacklinkGroup[] {
+  const groups = new Map<string, BacklinkGroup>();
+
+  backlinks.forEach((reference) => {
+    const group = groups.get(reference.path);
+    if (group) {
+      group.references.push(reference);
+      return;
+    }
+
+    groups.set(reference.path, {
+      path: reference.path,
+      references: [reference],
+      title: reference.title,
+    });
+  });
+
+  return Array.from(groups.values());
+}
+
 export function BacklinksPanel({
   backlinks,
   onClose,
   onSelect,
   visible,
 }: BacklinksPanelProps) {
+  const groups = groupBacklinks(backlinks);
+
   useEffect(() => {
     if (!visible) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -41,19 +69,29 @@ export function BacklinksPanel({
             <div className="prism-backlinks-empty">当前文档没有反向链接</div>
           ) : (
             <div className="prism-backlinks-list">
-              {backlinks.map((reference, index) => (
-                <button
-                  key={`${reference.path}-${reference.line}-${reference.column}-${index}`}
-                  type="button"
-                  className="prism-backlink-item"
-                  onClick={() => onSelect(reference)}
-                >
-                  <span className="prism-backlink-title">{reference.title}</span>
-                  <span className="prism-backlink-excerpt">{reference.excerpt}</span>
-                  <span className="prism-backlink-location">
-                    {reference.line}:{reference.column}
-                  </span>
-                </button>
+              {groups.map((group) => (
+                <section key={group.path} className="prism-backlink-group">
+                  <div className="prism-backlink-group-header">
+                    <span className="prism-backlink-group-title">{group.title}</span>
+                    <span className="prism-backlink-group-count">{group.references.length}</span>
+                  </div>
+                  <div className="prism-backlink-group-list">
+                    {group.references.map((reference, index) => (
+                      <button
+                        key={`${reference.path}-${reference.line}-${reference.column}-${index}`}
+                        type="button"
+                        className="prism-backlink-reference"
+                        onClick={() => onSelect(reference)}
+                        title={`${reference.title} ${reference.line}:${reference.column}`}
+                      >
+                        <span className="prism-backlink-reference-excerpt">{reference.excerpt}</span>
+                        <span className="prism-backlink-location">
+                          {reference.line}:{reference.column}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}
