@@ -1360,6 +1360,135 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   font-family: var(--theme-code-font);
 }
 
+.preview-compat .prism-frontmatter-preview {
+  --frontmatter-preview-border: var(--c-fog);
+  --frontmatter-preview-muted: var(--c-graphite);
+  --frontmatter-preview-text: var(--c-void);
+  --frontmatter-preview-surface: color-mix(in srgb, var(--c-chalk) 62%, transparent);
+  --frontmatter-preview-tag-surface: color-mix(in srgb, var(--c-canvas) 88%, var(--c-chalk));
+  margin: 0 0 28px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--frontmatter-preview-border);
+  color: var(--frontmatter-preview-text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat .prism-frontmatter-preview {
+  --frontmatter-preview-border: var(--miaoyan-hairline);
+  --frontmatter-preview-muted: var(--miaoyan-secondary-text);
+  --frontmatter-preview-text: var(--miaoyan-main-text);
+  --frontmatter-preview-surface: var(--miaoyan-panel-secondary);
+  --frontmatter-preview-tag-surface: var(--miaoyan-main-bg);
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .preview-compat .prism-frontmatter-preview {
+  --frontmatter-preview-border: var(--theme-hairline);
+  --frontmatter-preview-muted: var(--theme-secondary-text);
+  --frontmatter-preview-text: var(--theme-main-text);
+  --frontmatter-preview-surface: var(--theme-panel-secondary);
+  --frontmatter-preview-tag-surface: var(--theme-main-bg);
+}
+
+.preview-compat .prism-frontmatter-preview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.preview-compat .prism-frontmatter-preview__title {
+  color: var(--frontmatter-preview-text);
+  font-size: 12px;
+  font-weight: 620;
+  letter-spacing: 0;
+}
+
+.preview-compat .prism-frontmatter-preview__meta {
+  color: var(--frontmatter-preview-muted);
+  font-size: 11px;
+}
+
+.preview-compat .prism-frontmatter-preview__list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.preview-compat .prism-frontmatter-preview__row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 14px;
+  min-height: 24px;
+}
+
+.preview-compat .prism-frontmatter-preview dt,
+.preview-compat .prism-frontmatter-preview dd {
+  margin: 0;
+}
+
+.preview-compat .prism-frontmatter-preview dt {
+  color: var(--frontmatter-preview-muted);
+  font-size: 12px;
+}
+
+.preview-compat .prism-frontmatter-preview dd {
+  min-width: 0;
+  color: var(--frontmatter-preview-text);
+  overflow-wrap: anywhere;
+}
+
+.preview-compat .prism-frontmatter-preview__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-compat .prism-frontmatter-preview__tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid var(--frontmatter-preview-border);
+  border-radius: var(--r-pill);
+  background: var(--frontmatter-preview-tag-surface);
+  color: var(--frontmatter-preview-text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.preview-compat .prism-frontmatter-preview code {
+  display: inline;
+  padding: 2px 6px;
+  border: 1px solid var(--frontmatter-preview-border);
+  border-radius: var(--r-link);
+  background: var(--frontmatter-preview-surface);
+  color: var(--frontmatter-preview-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: normal;
+}
+
+.preview-compat .prism-frontmatter-preview__empty {
+  margin: 0;
+  color: var(--frontmatter-preview-muted);
+  font-size: 12px;
+}
+
+.preview-compat .prism-frontmatter-preview--invalid {
+  border-bottom-color: color-mix(in srgb, #b54708 34%, var(--frontmatter-preview-border));
+}
+
+@media (max-width: 640px) {
+  .preview-compat .prism-frontmatter-preview__row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
 /* ============================================================
    浮层：CommandPalette / ShortcutPanel / About / Settings / Toast
    （Batch 4）

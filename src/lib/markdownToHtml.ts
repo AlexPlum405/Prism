@@ -10,6 +10,10 @@ import rehypeHighlight from 'rehype-highlight';
 import { visit } from 'unist-util-visit';
 import { findPandocCitations } from '../domains/editor/extensions/citations';
 import { applyCalloutMetadataToMdastBlockquote } from '../domains/editor/extensions/callouts';
+import {
+  parseDocumentFrontMatter,
+  type DocumentFrontMatterProperties,
+} from '../domains/editor/extensions/frontMatterProperties';
 
 function remarkMermaid() {
   return (tree: any) => {
@@ -233,10 +237,112 @@ function remarkCitations() {
 
 interface MarkdownToHtmlOptions {
   compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne';
+  frontMatterMode?: 'plain' | 'hide' | 'metadata';
   stripFrontMatter?: boolean;
 }
 
 const FRONT_MATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
+const FRONT_MATTER_FIELDS: Array<{
+  className: string;
+  key: keyof DocumentFrontMatterProperties;
+  label: string;
+  renderAs?: 'tags' | 'code';
+}> = [
+  { key: 'title', label: '标题', className: 'title' },
+  { key: 'tags', label: '标签', className: 'tags', renderAs: 'tags' },
+  { key: 'description', label: '描述', className: 'description' },
+  { key: 'author', label: '作者', className: 'author' },
+  { key: 'date', label: '日期', className: 'date' },
+  { key: 'status', label: '状态', className: 'status' },
+  { key: 'exportRaw', label: '导出', className: 'export', renderAs: 'code' },
+];
+
+function escapeGeneratedHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function compactMetadataValue(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function renderFrontMatterTags(value: string) {
+  const tags = value
+    .split(',')
+    .map((tag) => compactMetadataValue(tag))
+    .filter(Boolean);
+
+  if (tags.length === 0) return '';
+
+  return `<div class="prism-frontmatter-preview__tags">${tags
+    .map((tag) => `<span class="prism-frontmatter-preview__tag">${escapeGeneratedHtml(tag)}</span>`)
+    .join('')}</div>`;
+}
+
+function renderFrontMatterField(
+  field: (typeof FRONT_MATTER_FIELDS)[number],
+  properties: DocumentFrontMatterProperties,
+) {
+  const value = compactMetadataValue(properties[field.key]);
+  if (!value) return '';
+
+  const content = field.renderAs === 'tags'
+    ? renderFrontMatterTags(value)
+    : field.renderAs === 'code'
+      ? `<code>${escapeGeneratedHtml(value)}</code>`
+      : escapeGeneratedHtml(value);
+  if (!content) return '';
+
+  return [
+    `<div class="prism-frontmatter-preview__row prism-frontmatter-preview__row--${field.className}">`,
+    `<dt>${field.label}</dt>`,
+    `<dd>${content}</dd>`,
+    '</div>',
+  ].join('');
+}
+
+function renderFrontMatterMetadataHtml(content: string) {
+  const parsed = parseDocumentFrontMatter(content);
+
+  if (parsed.error) {
+    return [
+      '<section class="prism-frontmatter-preview prism-frontmatter-preview--invalid" data-source-line="1" data-line="1" data-frontmatter-state="invalid">',
+      '<div class="prism-frontmatter-preview__header">',
+      '<span class="prism-frontmatter-preview__title">文档属性</span>',
+      '<span class="prism-frontmatter-preview__meta">YAML 错误</span>',
+      '</div>',
+      `<p class="prism-frontmatter-preview__empty">Front Matter 解析失败：${escapeGeneratedHtml(parsed.error)}</p>`,
+      '</section>',
+    ].join('');
+  }
+
+  const fields = FRONT_MATTER_FIELDS
+    .map((field) => renderFrontMatterField(field, parsed.properties))
+    .filter(Boolean);
+  const body = fields.length > 0
+    ? `<dl class="prism-frontmatter-preview__list">${fields.join('')}</dl>`
+    : '<p class="prism-frontmatter-preview__empty">未设置文档属性</p>';
+  const count = fields.length > 0 ? `${fields.length} 项` : '空';
+
+  return [
+    '<section class="prism-frontmatter-preview" data-source-line="1" data-line="1" data-frontmatter-state="valid">',
+    '<div class="prism-frontmatter-preview__header">',
+    '<span class="prism-frontmatter-preview__title">文档属性</span>',
+    `<span class="prism-frontmatter-preview__meta">${count}</span>`,
+    '</div>',
+    body,
+    '</section>',
+  ].join('');
+}
+
+function frontMatterModeForOptions(options: MarkdownToHtmlOptions) {
+  if (options.frontMatterMode) return options.frontMatterMode;
+  return options.stripFrontMatter ? 'hide' : 'plain';
+}
 
 function stripFrontMatterForPreview(content: string) {
   const match = FRONT_MATTER_PATTERN.exec(content);
@@ -246,9 +352,20 @@ function stripFrontMatterForPreview(content: string) {
   return `${'\n'.repeat(preservedLineOffset)}${content.slice(match[0].length)}`;
 }
 
+function renderFrontMatterForPreview(content: string, mode: 'plain' | 'hide' | 'metadata') {
+  if (mode === 'plain') return content;
+
+  const match = FRONT_MATTER_PATTERN.exec(content);
+  if (!match) return content;
+  if (mode === 'hide') return stripFrontMatterForPreview(content);
+
+  const preservedLineOffset = match[0].match(/\n/g)?.length ?? 0;
+  return `${renderFrontMatterMetadataHtml(content)}${'\n'.repeat(preservedLineOffset)}${content.slice(match[0].length)}`;
+}
+
 export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
   const displayMathLines: number[] = [];
-  const renderContent = options.stripFrontMatter ? stripFrontMatterForPreview(content) : content;
+  const renderContent = renderFrontMatterForPreview(content, frontMatterModeForOptions(options));
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)

@@ -78,7 +78,7 @@ describe('PreviewPane theme switching', () => {
     render(<PreviewPane content="# Hello" />);
 
     expect(markdownToHtml).toHaveBeenCalledTimes(1);
-    expect(markdownToHtml).toHaveBeenLastCalledWith('# Hello', { stripFrontMatter: true });
+    expect(markdownToHtml).toHaveBeenLastCalledWith('# Hello', { frontMatterMode: 'metadata' });
 
     act(() => {
       document.documentElement.setAttribute('data-content-theme', 'slate');
@@ -125,7 +125,7 @@ describe('PreviewPane theme switching', () => {
     });
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
-    expect(markdownToHtml).toHaveBeenLastCalledWith('# Third', { stripFrontMatter: true });
+    expect(markdownToHtml).toHaveBeenLastCalledWith('# Third', { frontMatterMode: 'metadata' });
   });
 
   it('refreshes source-line anchors after debounced content changes', () => {

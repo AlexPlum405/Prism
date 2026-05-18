@@ -209,13 +209,14 @@ git diff --check
 问题现象：
 
 - `/` 斜杠菜单使用 CodeMirror 默认 autocomplete 样式，显示默认图标、蓝色选中条和系统化详情气泡，不符合 Prism OpenAI 极简视觉。
-- YAML front matter 在预览中按普通 Markdown 渲染，`title/tags/description/author/date/status/export` 被挤成段落和列表，干扰正文阅读。
+- YAML front matter 在预览中按普通 Markdown 渲染，`title/tags/description/author/date/status/export` 被挤成段落和列表，干扰正文阅读；首次修复又把属性完全隐藏，导致用户无法在预览区确认 meta 数据。
 
 改动范围：
 
 - `src/styles/global.css`：为 `.cm-tooltip-autocomplete` / completion info 添加 Prism 风格的白底、细边框、6.08px 圆角、轻阴影、Inter 字体、紧凑行高，并隐藏 CodeMirror 默认类型图标。
-- `src/lib/markdownToHtml.ts`：新增可选 `stripFrontMatter` 渲染选项；只在预览需要时隐藏顶部 YAML front matter，并通过保留空行维持 source line 偏移。
-- `PreviewPane` 调用 `markdownToHtml(renderContent, { stripFrontMatter: true })`；导出 pipeline 和默认 `markdownToHtml` 行为保持不变，避免改变“Front matter 覆盖关闭时按普通内容导出”的既有语义。
+- `src/lib/markdownToHtml.ts`：新增 `frontMatterMode: 'metadata'` 预览模式，把顶部 YAML front matter 渲染为轻量“文档属性”结构块；保留 `stripFrontMatter` 兼容旧调用，并继续通过空行占位维持 source line 偏移。
+- `PreviewPane` 调用 `markdownToHtml(renderContent, { frontMatterMode: 'metadata' })`；导出 pipeline 和默认 `markdownToHtml` 行为保持不变，避免改变“Front matter 覆盖关闭时按普通内容导出”的既有语义。
+- `src/styles/global.css`：新增 `.prism-frontmatter-preview` 样式，用细分隔线、小号 label、tag pill 与紧凑 `dl` 展示 title、tags、description、author、date、status、export，不做大卡片堆叠。
 
 验证命令：
 
@@ -229,9 +230,9 @@ git diff --check
 
 结果：
 
-- `markdownToHtml.test.ts` + `PreviewPane.test.tsx`：2 files / 37 tests passed。
+- `markdownToHtml.test.ts` + `PreviewPane.test.tsx`：2 files / 38 tests passed。
 - `exportPipeline.test.ts`：1 file / 49 tests passed。
-- `npm test -- --run`：65 files / 398 tests passed。
+- `npm test -- --run`：65 files / 399 tests passed。
 - `npm run build`：通过；保留既有 Vite dynamic import / chunk size warning。
 - `git diff --check`：通过。
 

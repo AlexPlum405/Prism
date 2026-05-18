@@ -121,6 +121,36 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('Notion 增强人工测试');
   });
 
+  it('renders YAML front matter as structured preview metadata while preserving source line offsets', () => {
+    const html = markdownToHtml([
+      '---',
+      'title: Notion 增强人工测试',
+      'tags:',
+      '  - prism',
+      '  - smoke',
+      'description: 用于验证斜杠菜单、Callout、反链、属性面板和块级源码操作',
+      'author: Alex',
+      'date: 2026-05-18',
+      'status: draft',
+      'export:',
+      '  template: theme',
+      '---',
+      '',
+      '# Notion 增强人工测试',
+    ].join('\n'), { frontMatterMode: 'metadata' });
+
+    expect(html).toContain('class="prism-frontmatter-preview"');
+    expect(html).toContain('文档属性');
+    expect(html).toContain('Notion 增强人工测试');
+    expect(html).toContain('prism-frontmatter-preview__tag">prism');
+    expect(html).toContain('prism-frontmatter-preview__tag">smoke');
+    expect(html).toContain('用于验证斜杠菜单');
+    expect(html).toContain('template: theme');
+    expect(html).not.toContain('title: Notion 增强人工测试');
+    expect(html).not.toContain('tags:');
+    expect(html).toContain('<h1 data-source-line="14"');
+  });
+
   it('keeps YAML front matter in ordinary markdown output unless preview stripping is requested', () => {
     const html = markdownToHtml('---\ntitle: Draft\n---\n\n# Draft');
 
