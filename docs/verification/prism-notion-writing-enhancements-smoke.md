@@ -99,3 +99,38 @@ git diff --check
 跳过项：
 
 - 未跑全量测试和 build。本 checkpoint 只追加验证文档，业务代码保持上一阶段已验证状态。
+
+## 2026-05-18 Phase 4：页面链接与反向链接
+
+改动范围：
+
+- `[[...]]` 补全增加当前文档标题项，并把选择结果落成标准 Markdown 相对链接。
+- 新增轻量 backlinks 扫描服务，识别 Markdown 链接和 `[[wiki]]` 链接对当前文档的引用。
+- App 基于当前工作区 Markdown 文件异步扫描反向链接；限制最多 200 个文件、单文件 1MB，避免长文工作区阻塞前台。
+- 状态栏增加 `BACKLINK n` 入口；点击打开反向链接 modal，选择后打开引用文件并跳转到对应行。
+
+非破坏性约束：
+
+- 保留现有 `](` 文件/标题补全；`[[...]]` 只增强接受补全后的插入行为。
+- 不引入图谱、数据库、实时索引服务或 watcher；仍依赖本地工作区文件树和显式读取。
+- Backlinks 展示复用现有 modal / statusbar 视觉语言，没有改动主布局。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/editor/extensions/linkCompletion.test.ts src/domains/workspace/services/backlinks.test.ts src/domains/workspace/components/StatusBar.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- Phase 4 相关测试：4 files / 30 tests passed。
+- `npm test -- --run`：62 files / 379 tests passed。
+- `npm run build`：通过；保留既有 Vite chunk size warning。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke。本阶段是前端工作区扫描和编辑器补全增强，不触及 Tauri 权限、安装器、updater 或文件关联配置。

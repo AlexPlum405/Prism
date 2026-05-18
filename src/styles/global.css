@@ -1809,18 +1809,25 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   max-width: 640px;
 }
 
-.prism-link-diagnostics-body {
+.prism-backlinks-modal {
+  max-width: 680px;
+}
+
+.prism-link-diagnostics-body,
+.prism-backlinks-body {
   padding: 10px;
 }
 
-.prism-link-diagnostics-empty {
+.prism-link-diagnostics-empty,
+.prism-backlinks-empty {
   padding: 34px 12px;
   text-align: center;
   color: var(--c-ash);
   font-size: 13px;
 }
 
-.prism-link-diagnostics-list {
+.prism-link-diagnostics-list,
+.prism-backlinks-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1828,7 +1835,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   overflow-y: auto;
 }
 
-.prism-link-diagnostic-item {
+.prism-link-diagnostic-item,
+.prism-backlink-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1845,11 +1853,13 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   cursor: pointer;
 }
 
-.prism-link-diagnostic-item:hover {
+.prism-link-diagnostic-item:hover,
+.prism-backlink-item:hover {
   background: var(--c-chalk);
 }
 
-.prism-link-diagnostic-item:focus-visible {
+.prism-link-diagnostic-item:focus-visible,
+.prism-backlink-item:focus-visible {
   outline: 2px solid var(--c-void);
   outline-offset: 2px;
 }
@@ -1871,14 +1881,16 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   white-space: nowrap;
 }
 
-.prism-link-diagnostic-main {
+.prism-link-diagnostic-main,
+.prism-backlink-title {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 3px;
 }
 
-.prism-link-diagnostic-message {
+.prism-link-diagnostic-message,
+.prism-backlink-title {
   min-width: 0;
   color: var(--c-void);
   font-size: 13px;
@@ -1889,7 +1901,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   white-space: nowrap;
 }
 
-.prism-link-diagnostic-target {
+.prism-link-diagnostic-target,
+.prism-backlink-excerpt {
   min-width: 0;
   color: var(--c-ash);
   font-family: var(--font-mono);
@@ -1900,7 +1913,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   white-space: nowrap;
 }
 
-.prism-link-diagnostic-location {
+.prism-link-diagnostic-location,
+.prism-backlink-location {
   color: var(--c-graphite);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1908,7 +1922,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 @media (max-width: 560px) {
-  .prism-link-diagnostic-item {
+  .prism-link-diagnostic-item,
+  .prism-backlink-item {
     grid-template-columns: 1fr auto;
   }
 

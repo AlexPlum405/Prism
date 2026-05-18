@@ -92,6 +92,26 @@ describe('StatusBar', () => {
     );
   });
 
+  it('renders backlink count as a lightweight navigation entry', () => {
+    const onBacklinksClick = vi.fn();
+    render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        backlinkCount={4}
+        onBacklinksClick={onBacklinksClick}
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'BACKLINK 4' });
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('title', '查看引用当前文档的 Markdown 文件');
+    expect(onBacklinksClick).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a recoverable background export status', () => {
     const onShowExportProgress = vi.fn();
     render(

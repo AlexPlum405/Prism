@@ -72,6 +72,8 @@ interface StatusBarProps {
   linkIssueCount?: number;
   linkIssueTitle?: string;
   onLinkDiagnosticsClick?: () => void;
+  backlinkCount?: number;
+  onBacklinksClick?: () => void;
   typographyIssueCount?: number;
   typographyIssueTitle?: string;
   onTypographyDiagnosticsClick?: () => void;
@@ -97,6 +99,8 @@ export function StatusBar({
   linkIssueCount = 0,
   linkIssueTitle,
   onLinkDiagnosticsClick,
+  backlinkCount = 0,
+  onBacklinksClick,
   typographyIssueCount = 0,
   typographyIssueTitle,
   onTypographyDiagnosticsClick,
@@ -207,6 +211,18 @@ export function StatusBar({
                 onClick={onLinkDiagnosticsClick}
               >
                 LINK {linkIssueCount}
+              </button>
+            </>
+          )}
+          {backlinkCount > 0 && (
+            <>
+              <span className={styles.sep} />
+              <button
+                className={styles.diagnostic}
+                title="查看引用当前文档的 Markdown 文件"
+                onClick={onBacklinksClick}
+              >
+                BACKLINK {backlinkCount}
               </button>
             </>
           )}

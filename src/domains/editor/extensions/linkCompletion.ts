@@ -1,4 +1,5 @@
 import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import type { EditorView } from '@codemirror/view';
 import { getMarkdownHeadingSlug } from './headingSlug';
 
 export interface WorkspaceLinkFile {
@@ -36,6 +37,12 @@ function stripRoot(path: string, rootPath?: string | null): string {
 
 function stripMarkdownExtension(path: string): string {
   return path.replace(/\.(md|markdown|txt)$/i, '');
+}
+
+function basename(path: string): string {
+  const normalized = normalizePath(path);
+  const parts = normalized.split('/');
+  return parts[parts.length - 1] || path;
 }
 
 function relativePath(fromDir: string, toPath: string): string {
@@ -101,16 +108,50 @@ export function getWorkspaceFileCompletionOptions(context: MarkdownLinkCompletio
 }
 
 export function getWikiLinkCompletionOptions(context: MarkdownLinkCompletionContext): Completion[] {
+  const baseDir = context.currentDocumentPath
+    ? dirname(context.currentDocumentPath)
+    : normalizePath(context.workspaceRootPath ?? '');
+
   return context.workspaceFiles
     .filter((file) => MARKDOWN_FILE_RE.test(file.name))
     .map((file) => {
       const relative = stripRoot(file.path, context.workspaceRootPath);
+      const target = baseDir ? relativePath(baseDir, file.path) : relative;
+      const title = stripMarkdownExtension(basename(file.name));
       return {
         label: stripMarkdownExtension(relative),
         type: 'file',
         detail: file.name,
+        apply: createWikiMarkdownLinkApply(`[${title}](${target})`),
       } satisfies Completion;
     });
+}
+
+export function getWikiHeadingCompletionOptions(content: string): Completion[] {
+  return content.split('\n').flatMap((line) => {
+    const match = line.match(/^(#{1,6})\s+(.+)$/);
+    if (!match) return [];
+    const title = match[2].trim();
+    const slug = getMarkdownHeadingSlug(title);
+    if (!slug) return [];
+    return [{
+      label: `#${slug}`,
+      type: 'keyword',
+      detail: title,
+      apply: createWikiMarkdownLinkApply(`[${title}](#${slug})`),
+    } satisfies Completion];
+  });
+}
+
+function createWikiMarkdownLinkApply(insert: string): Completion['apply'] {
+  return (view: EditorView, _completion: Completion, from: number, to: number) => {
+    const replaceFrom = Math.max(0, from - 2);
+    view.dispatch({
+      changes: { from: replaceFrom, to, insert },
+      selection: { anchor: replaceFrom + insert.length },
+      scrollIntoView: true,
+    });
+  };
 }
 
 export function createMarkdownLinkCompletionSource(
@@ -123,7 +164,10 @@ export function createMarkdownLinkCompletionSource(
     if (wikiTrigger) {
       return {
         from: line.from + wikiTrigger.fromOffset,
-        options: getWikiLinkCompletionOptions(getContext()),
+        options: [
+          ...getWikiLinkCompletionOptions(getContext()),
+          ...getWikiHeadingCompletionOptions(context.state.doc.toString()),
+        ],
         validFor: /^[^\]\n]*$/,
       };
     }

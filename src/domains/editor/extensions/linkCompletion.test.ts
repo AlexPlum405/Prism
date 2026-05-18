@@ -3,6 +3,7 @@ import {
   getMarkdownHeadingCompletionOptions,
   getMarkdownLinkTrigger,
   getWorkspaceFileCompletionOptions,
+  getWikiHeadingCompletionOptions,
   getWikiLinkCompletionOptions,
   getWikiLinkTrigger,
 } from './linkCompletion';
@@ -50,7 +51,7 @@ describe('markdown link completion', () => {
   });
 
   it('suggests wiki link targets from workspace markdown files without extensions', () => {
-    expect(getWikiLinkCompletionOptions({
+    const options = getWikiLinkCompletionOptions({
       workspaceRootPath: '/repo',
       workspaceFiles: [
         { path: '/repo/docs/guide.md', name: 'guide.md' },
@@ -58,10 +59,27 @@ describe('markdown link completion', () => {
         { path: '/repo/README.md', name: 'README.md' },
         { path: '/repo/image.png', name: 'image.png' },
       ],
-    })).toEqual([
-      { label: 'docs/guide', type: 'file', detail: 'guide.md' },
-      { label: 'docs/api', type: 'file', detail: 'api.markdown' },
-      { label: 'README', type: 'file', detail: 'README.md' },
+    });
+
+    expect(options).toEqual([
+      expect.objectContaining({ label: 'docs/guide', type: 'file', detail: 'guide.md' }),
+      expect.objectContaining({ label: 'docs/api', type: 'file', detail: 'api.markdown' }),
+      expect.objectContaining({ label: 'README', type: 'file', detail: 'README.md' }),
     ]);
+    expect(options.every((option) => typeof option.apply === 'function')).toBe(true);
+  });
+
+  it('suggests current document headings as wiki-triggered Markdown links', () => {
+    const options = getWikiHeadingCompletionOptions([
+      '# API 设计',
+      'body',
+      '## 发布计划',
+    ].join('\n'));
+
+    expect(options).toEqual([
+      expect.objectContaining({ label: '#api-设计', type: 'keyword', detail: 'API 设计' }),
+      expect.objectContaining({ label: '#发布计划', type: 'keyword', detail: '发布计划' }),
+    ]);
+    expect(options.every((option) => typeof option.apply === 'function')).toBe(true);
   });
 });

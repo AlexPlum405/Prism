@@ -41,3 +41,8 @@ export {
   computeWritingStats,
   type WritingStats,
 } from './writingStats';
+export {
+  scanBacklinks,
+  type BacklinkReference,
+  type BacklinkSourceDocument,
+} from './backlinks';

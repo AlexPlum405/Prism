@@ -18,9 +18,10 @@ import {
 } from './domains/document/services/conflictResolution';
 import { StatusBar } from './domains/workspace/components/StatusBar';
 import { Sidebar } from './domains/workspace/components/Sidebar';
+import { BacklinksPanel } from './domains/workspace/components/BacklinksPanel';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
-import { exists as fsExists } from '@tauri-apps/plugin-fs';
+import { exists as fsExists, readTextFile } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 import { downloadDir, homeDir } from '@tauri-apps/api/path';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
@@ -57,10 +58,12 @@ import {
 } from './domains/commands';
 import {
   basename,
+  type BacklinkReference,
   computeWritingStats,
   dirname,
   flattenFiles,
   joinPath,
+  scanBacklinks,
 } from './domains/workspace/services';
 import type { ExportDefaultLocation } from './domains/settings/types';
 import { createToastState, type ToastInput, type ToastState } from './lib/toast';
@@ -71,6 +74,10 @@ const exportExtensionByFormat: Record<ExportFormat, string> = {
   docx: 'docx',
   png: 'png',
 };
+
+const MAX_BACKLINK_SCAN_FILES = 200;
+const MAX_BACKLINK_SCAN_BYTES = 1024 * 1024;
+const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
 
 function stripMarkdownExtension(filename: string) {
   return filename.replace(/\.(md|markdown|txt)$/i, '') || 'Untitled';
@@ -230,6 +237,8 @@ function App() {
   const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
+  const [backlinksVisible, setBacklinksVisible] = useState(false);
+  const [backlinks, setBacklinks] = useState<BacklinkReference[]>([]);
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
@@ -383,6 +392,59 @@ function App() {
     }
   }, [linkDiagnostics.length]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!currentDocument?.path || !workspace.rootPath) {
+        setBacklinks([]);
+        return;
+      }
+
+      const files = flattenFiles(workspace.fileTree, workspace.rootPath)
+        .map(({ node }) => node)
+        .filter((node) => MARKDOWN_FILE_RE.test(node.name))
+        .filter((node) => node.path !== currentDocument.path)
+        .filter((node) => (node.size ?? 0) <= MAX_BACKLINK_SCAN_BYTES)
+        .slice(0, MAX_BACKLINK_SCAN_FILES);
+
+      const documents = (await Promise.all(files.map(async (node) => {
+        try {
+          return {
+            path: node.path,
+            name: node.name,
+            content: await readTextFile(node.path),
+          };
+        } catch {
+          return null;
+        }
+      }))).filter((item): item is { path: string; name: string; content: string } => Boolean(item));
+
+      if (cancelled) return;
+      setBacklinks(scanBacklinks({
+        currentPath: currentDocument.path,
+        workspaceRoot: workspace.rootPath,
+        documents,
+      }));
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDocument?.path, workspace.fileTree, workspace.rootPath]);
+
+  const handleBacklinksClick = useCallback(() => {
+    setBacklinksVisible(true);
+  }, []);
+
+  useEffect(() => {
+    if (backlinks.length === 0) {
+      setBacklinksVisible(false);
+    }
+  }, [backlinks.length]);
+
   const typographyDiagnostics = useMemo(
     () => currentDocument ? scanChineseTypography(currentDocument.content) : [],
     [currentDocument?.content],
@@ -504,6 +566,12 @@ function App() {
 
   const handleFileClick = useCallback(async (path: string) => {
     await handleFileAction({ action: 'openFile', path });
+  }, [handleFileAction]);
+
+  const handleSelectBacklink = useCallback(async (reference: BacklinkReference) => {
+    setBacklinksVisible(false);
+    await handleFileAction({ action: 'openFile', path: reference.path });
+    window.setTimeout(() => editorRef.current?.jumpToLine(reference.line), 80);
   }, [handleFileAction]);
 
   const requestExportPath = useCallback(async (input: {
@@ -875,6 +943,8 @@ function App() {
             linkIssueCount={linkDiagnostics.length}
             linkIssueTitle={firstLinkDiagnostic?.message}
             onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
+            backlinkCount={backlinks.length}
+            onBacklinksClick={handleBacklinksClick}
             typographyIssueCount={typographyDiagnostics.length}
             typographyIssueTitle={firstTypographyDiagnostic?.message}
             onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
@@ -924,6 +994,13 @@ function App() {
         diagnostics={linkDiagnostics}
         onClose={() => setLinkDiagnosticsVisible(false)}
         onSelect={handleSelectLinkDiagnostic}
+      />
+
+      <BacklinksPanel
+        visible={backlinksVisible}
+        backlinks={backlinks}
+        onClose={() => setBacklinksVisible(false)}
+        onSelect={handleSelectBacklink}
       />
 
       <TypographyDiagnosticsPanel

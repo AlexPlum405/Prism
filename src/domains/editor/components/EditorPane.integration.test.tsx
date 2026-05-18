@@ -354,18 +354,19 @@ describe('EditorPane command event integration', () => {
   it('surfaces wiki link completions from the mounted CodeMirror editor context', async () => {
     openSavedDocument();
     openWorkspaceForLinkCompletion();
-    const { changes } = await renderEditorPane('');
+    const { changes } = await renderEditorPane('# Existing Heading\n');
 
     act(() => {
       const view = getMountedEditorView();
+      const from = view.state.doc.length;
       view.dispatch({
-        changes: { from: 0, insert: '[[' },
-        selection: { anchor: 2 },
+        changes: { from, insert: '\n[[' },
+        selection: { anchor: from + 3 },
       });
     });
 
     await waitFor(() => {
-      expect(latestChange(changes)).toBe('[[');
+      expect(latestChange(changes)).toBe('# Existing Heading\n\n[[');
     });
 
     act(() => {
@@ -379,6 +380,7 @@ describe('EditorPane command event integration', () => {
         'docs/guide',
         'docs/api',
         'README',
+        '#existing-heading',
       ]));
       expect(labels).not.toContain('photo');
       expect(labels).not.toContain('photo.png');
