@@ -233,10 +233,22 @@ function remarkCitations() {
 
 interface MarkdownToHtmlOptions {
   compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne';
+  stripFrontMatter?: boolean;
 }
 
-export function markdownToHtml(content: string, _options: MarkdownToHtmlOptions = {}): string {
+const FRONT_MATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
+
+function stripFrontMatterForPreview(content: string) {
+  const match = FRONT_MATTER_PATTERN.exec(content);
+  if (!match) return content;
+
+  const preservedLineOffset = match[0].match(/\n/g)?.length ?? 0;
+  return `${'\n'.repeat(preservedLineOffset)}${content.slice(match[0].length)}`;
+}
+
+export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
   const displayMathLines: number[] = [];
+  const renderContent = options.stripFrontMatter ? stripFrontMatterForPreview(content) : content;
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -257,7 +269,7 @@ export function markdownToHtml(content: string, _options: MarkdownToHtmlOptions 
     .use(() => rehypeDisplayMathLines(displayMathLines))
     .use(rehypePreviewUrlSafety)
     .use(rehypeStringify)
-    .processSync(content);
+    .processSync(renderContent);
 
   return String(result);
 }

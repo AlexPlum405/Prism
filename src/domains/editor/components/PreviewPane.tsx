@@ -271,7 +271,7 @@ export function PreviewPane({ content, documentPath, onNotice }: PreviewPaneProp
 
   const html = useMemo(() => {
     try {
-      return markdownToHtml(renderContent);
+      return markdownToHtml(renderContent, { stripFrontMatter: true });
     } catch {
       return '<p>渲染失败</p>';
     }

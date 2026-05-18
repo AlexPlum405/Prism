@@ -203,3 +203,38 @@ git diff --check
 跳过项：
 
 - 未跑 Tauri app / 发布级 smoke。本阶段只新增前端编辑器源码操作和命令注册，不触及 Tauri 权限、打包、updater、安装器、文件关联或导出渲染主链路。
+
+## 2026-05-18 人工测试反馈修复：斜杠菜单视觉与 Front Matter 预览
+
+问题现象：
+
+- `/` 斜杠菜单使用 CodeMirror 默认 autocomplete 样式，显示默认图标、蓝色选中条和系统化详情气泡，不符合 Prism OpenAI 极简视觉。
+- YAML front matter 在预览中按普通 Markdown 渲染，`title/tags/description/author/date/status/export` 被挤成段落和列表，干扰正文阅读。
+
+改动范围：
+
+- `src/styles/global.css`：为 `.cm-tooltip-autocomplete` / completion info 添加 Prism 风格的白底、细边框、6.08px 圆角、轻阴影、Inter 字体、紧凑行高，并隐藏 CodeMirror 默认类型图标。
+- `src/lib/markdownToHtml.ts`：新增可选 `stripFrontMatter` 渲染选项；只在预览需要时隐藏顶部 YAML front matter，并通过保留空行维持 source line 偏移。
+- `PreviewPane` 调用 `markdownToHtml(renderContent, { stripFrontMatter: true })`；导出 pipeline 和默认 `markdownToHtml` 行为保持不变，避免改变“Front matter 覆盖关闭时按普通内容导出”的既有语义。
+
+验证命令：
+
+```bash
+npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/components/PreviewPane.test.tsx
+npm test -- --run src/domains/export/exportPipeline.test.ts
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- `markdownToHtml.test.ts` + `PreviewPane.test.tsx`：2 files / 37 tests passed。
+- `exportPipeline.test.ts`：1 file / 49 tests passed。
+- `npm test -- --run`：65 files / 398 tests passed。
+- `npm run build`：通过；保留既有 Vite dynamic import / chunk size warning。
+- `git diff --check`：通过。
+
+备注：
+
+- 第一次全量测试中 `exportPipeline.test.ts` 的 PDF 链接图片用例在 5s 边界超时；单独重跑该文件通过，随后全量重跑通过，判断为并发测试耗时抖动，不是本次预览/斜杠菜单改动引入的行为回退。

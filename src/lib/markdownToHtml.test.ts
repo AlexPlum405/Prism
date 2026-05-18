@@ -98,6 +98,36 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html.match(/data-source-line="1"/g)).toHaveLength(1);
   });
 
+  it('can hide YAML front matter from preview while preserving source line offsets', () => {
+    const html = markdownToHtml([
+      '---',
+      'title: Notion 增强人工测试',
+      'tags:',
+      '  - prism',
+      '  - smoke',
+      'description: 用于验证斜杠菜单、Callout、反链、属性面板和块级源码操作',
+      'author: Alex',
+      'date: 2026-05-18',
+      'status: draft',
+      'export: theme',
+      '---',
+      '',
+      '# Notion 增强人工测试',
+    ].join('\n'), { stripFrontMatter: true });
+
+    expect(html).not.toContain('title: Notion');
+    expect(html).not.toContain('description:');
+    expect(html).toContain('<h1 data-source-line="13"');
+    expect(html).toContain('Notion 增强人工测试');
+  });
+
+  it('keeps YAML front matter in ordinary markdown output unless preview stripping is requested', () => {
+    const html = markdownToHtml('---\ntitle: Draft\n---\n\n# Draft');
+
+    expect(html).toContain('title: Draft');
+    expect(html).toContain('<h1 data-source-line="5"');
+  });
+
   it('keeps mermaid placeholders mapped to their source line', () => {
     const html = markdownToHtml('Intro\n\n```mermaid\ngraph TD\n```');
 

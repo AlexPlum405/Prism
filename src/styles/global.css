@@ -1203,6 +1203,93 @@ html[data-content-theme='nocturne'] .cm-editor {
   display: none !important;
 }
 
+.cm-tooltip-autocomplete {
+  overflow: hidden;
+  min-width: min(380px, calc(100vw - 48px));
+  max-width: min(520px, calc(100vw - 48px));
+  padding: 6px;
+  border: 1px solid var(--c-hair) !important;
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--c-canvas) 96%, var(--c-chalk)) !important;
+  box-shadow: var(--shadow-flyout);
+  color: var(--c-void);
+  font-family: var(--font-sans);
+}
+
+.cm-tooltip-autocomplete > ul {
+  max-height: min(320px, 42vh);
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+}
+
+.cm-tooltip-autocomplete > ul > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 16px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: var(--r-link);
+  color: var(--c-void);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--c-chalk) !important;
+  color: var(--c-void) !important;
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon {
+  display: none;
+}
+
+.cm-tooltip-autocomplete .cm-completionLabel {
+  overflow: hidden;
+  color: inherit;
+  font-family: var(--font-sans);
+  font-weight: 560;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-tooltip-autocomplete .cm-completionMatchedText {
+  color: inherit;
+  font-weight: 680;
+  text-decoration: none;
+}
+
+.cm-tooltip-autocomplete .cm-completionDetail {
+  overflow: hidden;
+  max-width: 240px;
+  margin-left: 0;
+  color: var(--c-graphite);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 450;
+  letter-spacing: 0;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-tooltip.cm-completionInfo {
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 7px 10px;
+  border: 1px solid var(--c-hair);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--c-canvas) 96%, var(--c-chalk));
+  box-shadow: var(--shadow-faint);
+  color: var(--c-graphite);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
 .preview-compat {
   --preview-search-match-bg: color-mix(in srgb, var(--accent, #1c5d33) 14%, transparent);
   --preview-search-current-bg: var(--c-void, #1c5d33);
