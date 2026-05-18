@@ -275,6 +275,45 @@ describe('EditorPane command event integration', () => {
     });
   });
 
+  it('handles source block operation commands without a WYSIWYG layer', async () => {
+    const { changes, onChange } = await renderEditorPane('Alpha\n\nBeta');
+    const view = getMountedEditorView();
+
+    act(() => {
+      view.dispatch({ selection: { anchor: 'Alpha\n\n'.length } });
+    });
+
+    await dispatchEditorCommand({ command: 'moveParagraphUp' });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('Beta\n\nAlpha');
+    });
+  });
+
+  it('turns the active selection into a callout through editor commands', async () => {
+    const { changes, onChange } = await renderEditorPane('Risk item');
+
+    await dispatchEditorCommand({ command: 'selectAll' });
+    await dispatchEditorCommand({ command: 'selectionCalloutWarning' });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('> [!WARNING]\n> Risk item');
+    });
+  });
+
+  it('accepts fold current heading commands without changing source text', async () => {
+    const { changes, onChange } = await renderEditorPane('## Section\nBody');
+
+    await dispatchEditorCommand({ command: 'foldCurrentHeading' });
+
+    await waitFor(() => {
+      expect(onChange).not.toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('');
+    });
+  });
+
   it('handles markdown list keys through the mounted CodeMirror keymap', async () => {
     const { changes, onChange } = await renderEditorPane('- first');
     const view = getMountedEditorView();

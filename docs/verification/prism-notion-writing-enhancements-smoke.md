@@ -168,3 +168,38 @@ git diff --check
 跳过项：
 
 - 未跑发布级 app/DMG smoke。本阶段未触及 Tauri 权限、发布配置、安装器、updater 或文件关联。
+
+## 2026-05-18 Phase 6：块级源码操作
+
+改动范围：
+
+- 新增 `src/domains/editor/extensions/blockOperations.ts`，以纯源码范围计算实现段落上/下移、章节上/下移、复制当前章节、选区转引用、选区转 NOTE / WARNING / TIP Callout、选区转无序 / 有序 / 任务列表。
+- `EditorPane` 通过既有 `prism-editor-command` 和 `prism-block-format` 事件接入块级操作；`foldCurrentHeading` 使用 CodeMirror fold range 折叠当前标题，不引入 WYSIWYG block editor。
+- 命令系统新增“块级源码操作”菜单和命令面板项，全部派发到现有编辑器命令入口。
+- 补充纯函数测试、真实挂载 CodeMirror 的命令接线测试、命令菜单 / 命令面板暴露测试。
+
+非破坏性约束：
+
+- 未重写编辑器生命周期、预览、导出 pipeline、状态栏、主题系统、toast、滚动条或视觉 token。
+- 所有新能力只操作 Markdown 源码范围；不会引入数据库、拖拽 block editor、完整 WYSIWYG 或隐藏数据副本。
+- 既有引用 / 列表菜单命令继续通过 `prism-block-format` 入口工作；有选区或当前行时转换源码块，保持 Markdown 为唯一真实数据源。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/editor/extensions/blockOperations.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/commands/registry.test.ts
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- Phase 6 相关测试：3 files / 48 tests passed。
+- `npm test -- --run`：65 files / 396 tests passed。
+- `npm run build`：通过；保留既有 Vite dynamic import / chunk size warning。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑 Tauri app / 发布级 smoke。本阶段只新增前端编辑器源码操作和命令注册，不触及 Tauri 权限、打包、updater、安装器、文件关联或导出渲染主链路。

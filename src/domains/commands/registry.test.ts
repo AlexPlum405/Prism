@@ -421,6 +421,53 @@ describe('command registry', () => {
     expect(showToast).toHaveBeenCalledWith('已创建 论文草稿 模板');
   });
 
+  it('exposes source block operations from the Format menu and command palette', () => {
+    const context = createCommandContext({
+      documentStore: {
+        ...createCommandContext().documentStore,
+        currentDocument: {
+          path: '/tmp/doc.md',
+          name: 'doc.md',
+          content: '# Draft',
+          isDirty: false,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          lastSavedAt: 0,
+          saveError: null,
+          viewMode: 'edit',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+          saveStatus: 'saved',
+        },
+      },
+    });
+    const formatMenu = getMenuSections(context)['格式'];
+    const blockMenu = formatMenu.find((item) => item.type !== 'separator' && item.label === '块级源码操作');
+    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
+
+    expect(blockMenu).toMatchObject({
+      submenu: true,
+      children: expect.arrayContaining([
+        expect.objectContaining({ action: 'moveParagraphUp' }),
+        expect.objectContaining({ action: 'moveParagraphDown' }),
+        expect.objectContaining({ action: 'moveSectionUp' }),
+        expect.objectContaining({ action: 'moveSectionDown' }),
+        expect.objectContaining({ action: 'duplicateSection' }),
+        expect.objectContaining({ action: 'foldCurrentHeading' }),
+        expect.objectContaining({ action: 'selectionCalloutNote' }),
+        expect.objectContaining({ action: 'selectionTaskList' }),
+      ]),
+    });
+    expect(paletteIds).toEqual(expect.arrayContaining([
+      'moveParagraphUp',
+      'moveSectionDown',
+      'duplicateSection',
+      'foldCurrentHeading',
+      'selectionCalloutWarning',
+      'selectionOrderedList',
+      'selectionTaskList',
+    ]));
+  });
+
   it('dispatches template insertion to the active editor when a document is open', async () => {
     const listener = vi.fn();
     window.addEventListener('prism-editor-command', listener);

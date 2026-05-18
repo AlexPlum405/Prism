@@ -13,7 +13,7 @@ import { Compartment, EditorState, Prec } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { history, historyKeymap, defaultKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
-import { indentOnInput, bracketMatching, foldGutter, foldKeymap } from '@codemirror/language';
+import { indentOnInput, bracketMatching, foldGutter, foldKeymap, foldable, foldEffect } from '@codemirror/language';
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { SearchQuery, setSearchQuery, findNext, findPrevious, replaceNext, replaceAll, search, selectMatches } from '@codemirror/search';
 import { useDocumentStore } from '../../document/store';
@@ -27,6 +27,11 @@ import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { isCommandId } from '../../commands';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
 import { getEditorFormatResult, type EditorFormat } from '../extensions/formatting';
+import {
+  getSourceBlockOperationEdit,
+  isSourceBlockOperation,
+  type SourceBlockOperation,
+} from '../extensions/blockOperations';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -197,6 +202,20 @@ function getSelectedText(view: EditorView) {
 function formatEditorError(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return String(error);
+}
+
+function getCurrentHeadingFoldRange(view: EditorView) {
+  let line = view.state.doc.lineAt(view.state.selection.main.head);
+
+  while (line.number >= 1) {
+    if (/^#{1,6}\s+\S/.test(line.text)) {
+      return foldable(view.state, line.from, line.to);
+    }
+    if (line.number === 1) break;
+    line = view.state.doc.line(line.number - 1);
+  }
+
+  return null;
 }
 
 export const __editorPaneTesting = {
@@ -502,6 +521,44 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       return true;
     }, []);
 
+    const handleSourceBlockOperation = useCallback((operation: SourceBlockOperation) => {
+      const view = viewRef.current;
+      if (!view) return false;
+
+      const selection = view.state.selection.main;
+      const result = getSourceBlockOperationEdit(
+        view.state.doc.toString(),
+        selection.from,
+        selection.to,
+        operation,
+      );
+      if (!result) return false;
+
+      view.dispatch({
+        changes: {
+          from: result.from,
+          to: result.to,
+          insert: result.insert,
+        },
+        selection: { anchor: result.selectionFrom, head: result.selectionTo },
+        scrollIntoView: true,
+      });
+      view.focus();
+      return true;
+    }, []);
+
+    const handleFoldCurrentHeading = useCallback(() => {
+      const view = viewRef.current;
+      if (!view) return false;
+
+      const range = getCurrentHeadingFoldRange(view);
+      if (!range) return false;
+
+      view.dispatch({ effects: foldEffect.of(range), scrollIntoView: true });
+      view.focus();
+      return true;
+    }, []);
+
     const handleClipboardImagePaste = useCallback(async (event: ClipboardEvent, view: EditorView) => {
       const imageItem = Array.from(event.clipboardData?.items ?? []).find((item) => item.type.startsWith('image/'));
       if (!imageItem) return;
@@ -654,6 +711,18 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           return;
         }
 
+        const selectionBlockOperationMap: Partial<Record<string, SourceBlockOperation>> = {
+          quote: 'selectionQuote',
+          orderedList: 'selectionOrderedList',
+          unorderedList: 'selectionUnorderedList',
+          taskList: 'selectionTaskList',
+        };
+        const selectionOperation = selectionBlockOperationMap[fmt];
+        if (selectionOperation) {
+          handleSourceBlockOperation(selectionOperation);
+          return;
+        }
+
         if (fmt === 'insertAbove') {
           view.dispatch({ changes: { from: line.from, insert: '\n' } });
           view.dispatch({ selection: { anchor: line.from } });
@@ -709,6 +778,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         const detail = (e as CustomEvent).detail;
         const command = typeof detail?.command === 'string' ? detail.command : '';
         if (!command) return;
+
+        if (isSourceBlockOperation(command)) {
+          handleSourceBlockOperation(command);
+          return;
+        }
 
         switch (command) {
           case 'undo':
@@ -773,6 +847,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           case 'insertTemplate':
             handleTemplateInsert(detail.templateId);
             break;
+          case 'foldCurrentHeading':
+            handleFoldCurrentHeading();
+            break;
           case 'comment': {
             const sel4 = view.state.selection.main;
             const raw2 = view.state.doc.sliceString(sel4.from, sel4.to);
@@ -793,7 +870,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         window.removeEventListener('prism-block-format', onBlock);
         window.removeEventListener('prism-editor-command', onEditorCommand);
       };
-    }, [handleFormat, handleTableCommand, handleTemplateInsert]);
+    }, [handleFoldCurrentHeading, handleFormat, handleSourceBlockOperation, handleTableCommand, handleTemplateInsert]);
 
     // 处理来自 Props 的内容同步（非重挂载情况）
     useEffect(() => {
