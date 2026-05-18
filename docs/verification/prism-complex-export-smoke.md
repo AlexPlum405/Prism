@@ -282,11 +282,13 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 - PDF / HTML 导出 DOM 新增统一 `prism-export-atomic` 标记：图片、SVG、Canvas、表格、代码块、Mermaid、KaTeX、TOC、带边框 / 背景 / 阴影的原始 HTML 视觉块都会被视为不可拆块。
 - WebKit PDF 主链路和 raster PDF fallback 在截图 / 捕获前会按真实 PDF 页高预排版：如果原子块会跨越页面切线，就在块前插入透明 spacer，把整个块推到下一页；如果视觉块本身高于单页，则按页内高度缩放。
 - 标题后紧跟原始 HTML 视觉块时，导出 DOM 会把标题与视觉块包成同一个 `prism-export-atomic-group`，spacer 插在标题前，避免 `4.3 嵌套 HTML` 这类小节标题和黄色 HTML 卡片在 PDF 中被拆到两页。
+- PDF 导出会在最终 `pdf-lib` 分页产物中重建安全链接注解：导出 DOM 里的 `http` / `https` / `mailto` `<a href>` 会按真实页面坐标写入 `/Link` + `/URI`，覆盖图片被链接包裹的 Markdown 结构，如 `[![点击访问](assets/local-diagram.svg)](https://example.com)`。
 - HTML 导出保留 `break-inside: avoid` / `page-break-inside: avoid`，用于浏览器打印或二次转换；PNG 导出本身是单张长图，不存在页内切割。
-- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 45 tests。
-- `npm test -- --run --maxWorkers=1`：通过，59 files / 362 tests。
+- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 47 tests。
+- `npm test -- --run --maxWorkers=1`：通过，59 files / 364 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在。
 - 真实 `.app` 复测：使用 `npm run tauri:build:app-smoke` 生成的 `Prism.app` 打开 `.codex-smoke/docx-rich-export/docx-rich-export.md`，通过底部导出菜单覆盖生成 `.codex-smoke/docx-rich-export/docx-rich-export.pdf`；PDFKit 读取为 5 页 A4，第 3 页文本同时包含 `4.3 嵌套 HTML`、`警告`、`列表项 A` 和 `列表项 B`，确认该 HTML 小节标题与黄色视觉卡片未再跨页断开。
+- 同一真实 PDF 继续用 `pdf-lib` 检查 `/Annots`：第 4 页和第 5 页均包含 `https://example.com/` 的 `/URI` 链接注解，确认图片外层 Markdown 链接不会在最终分页 PDF 中丢失。
 
 ### 2026-05-15 真实 UI 尝试
 

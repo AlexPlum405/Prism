@@ -54,6 +54,26 @@ function createInput(overrides: Partial<ExportDocumentInput> = {}): ExportDocume
   };
 }
 
+function createTestRect(left: number, top: number, width: number, height: number): DOMRect {
+  return {
+    x: left,
+    y: top,
+    top,
+    left,
+    right: left + width,
+    bottom: top + height,
+    width,
+    height,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
+function createTestRectList(rects: DOMRect[]): DOMRectList {
+  return Object.assign(rects, {
+    item: (index: number) => rects[index] ?? null,
+  }) as unknown as DOMRectList;
+}
+
 const COMPLEX_EXPORT_SMOKE_MARKDOWN = `---
 title: 导出 Smoke 验收文档
 author: Prism QA
@@ -586,9 +606,11 @@ describe('export pipeline image progress', () => {
   let toDataUrlSpy: { mockRestore: () => void } | null = null;
   let originalFonts: unknown;
   let iframeScrollMetrics: { width: number; height: number } | null = null;
+  let iframeLinkRect: { left: number; top: number; width: number; height: number } | null = null;
 
   beforeEach(() => {
     iframeScrollMetrics = null;
+    iframeLinkRect = null;
     fsMock.writeFile.mockClear();
     fsMock.writeTextFile.mockClear();
     mermaidMock.initialize.mockClear();
@@ -640,6 +662,32 @@ describe('export pipeline image progress', () => {
                       return (this as HTMLElement).classList?.contains('prism-export-document')
                         ? iframeScrollMetrics?.width ?? 0
                         : 0;
+                    },
+                  });
+                }
+                if (frameHTMLElement && iframeLinkRect) {
+                  const linkRect = iframeLinkRect;
+                  Object.defineProperty(frameHTMLElement.prototype, 'getBoundingClientRect', {
+                    configurable: true,
+                    value() {
+                      if ((this as HTMLElement).classList?.contains('prism-export-document')) {
+                        return createTestRect(0, 0, iframeScrollMetrics?.width ?? 980, iframeScrollMetrics?.height ?? 1200);
+                      }
+                      if ((this as HTMLElement).tagName === 'A') {
+                        return createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height);
+                      }
+                      return createTestRect(0, 0, 0, 0);
+                    },
+                  });
+                  Object.defineProperty(frameHTMLElement.prototype, 'getClientRects', {
+                    configurable: true,
+                    value() {
+                      if ((this as HTMLElement).tagName === 'A') {
+                        return createTestRectList([
+                          createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height),
+                        ]);
+                      }
+                      return createTestRectList([]);
                     },
                   });
                 }
@@ -859,6 +907,32 @@ describe('export pipeline image progress', () => {
       '正在写入 PDF 文件',
     ]);
     expect(canvasRenderMock.render).toHaveBeenCalled();
+  });
+
+  it('adds URI annotations for linked images in pdf export', async () => {
+    fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
+    iframeScrollMetrics = { width: 980, height: 1200 };
+    iframeLinkRect = { left: 120, top: 160, width: 240, height: 120 };
+
+    try {
+      await exportPdf(createInput({
+        content: '# Linked image\n\n[![点击访问](https://example.com/image.png)](https://example.com)',
+      }), '/tmp/linked-image.pdf');
+    } finally {
+      iframeScrollMetrics = null;
+      iframeLinkRect = null;
+    }
+
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const { PDFDict, PDFDocument, PDFName, PDFString } = await import('pdf-lib');
+    const pdf = await PDFDocument.load(bytes);
+    const annots = pdf.getPage(0).node.Annots();
+    expect(annots?.size()).toBe(1);
+    const annotation = pdf.context.lookup(annots!.get(0), PDFDict);
+    const action = pdf.context.lookup(annotation.get(PDFName.of('A')), PDFDict);
+    expect(annotation.get(PDFName.of('Subtype'))?.toString()).toBe('/Link');
+    expect(action.lookup(PDFName.of('URI'), PDFString).asString()).toBe('https://example.com/');
   });
 
   it('inserts pdf pagination spacers before atomic blocks that would be cut by a page boundary', async () => {
@@ -1431,6 +1505,32 @@ describe('export pipeline docx header and footer', () => {
     expect(documentXml).toContain('<w:drawing>');
     expect(mediaFiles.some((filePath) => /\.svg$/.test(filePath))).toBe(true);
     expect(mediaFiles.some((filePath) => /\.png$/.test(filePath))).toBe(true);
+  });
+
+  it('keeps markdown image links clickable in docx output', async () => {
+    fsMock.writeFile.mockClear();
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><text>Linked SVG</text></svg>';
+    fsMock.readFile.mockImplementationOnce(async (targetPath: string) => {
+      expect(targetPath).toBe('/tmp/prism-doc/assets/logo.svg');
+      return new TextEncoder().encode(svg);
+    });
+
+    await exportDocx(createInput({
+      content: '# Linked image\n\n[![点击访问](assets/logo.svg)](https://example.com)',
+      documentPath: '/tmp/prism-doc/article.md',
+    } as Partial<ExportDocumentInput>), '/tmp/linked-image.docx');
+
+    const { default: JSZip } = await import('jszip');
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const zip = await JSZip.loadAsync(bytes);
+    const documentXml = await zip.file('word/document.xml')?.async('string') ?? '';
+    const relsXml = await zip.file('word/_rels/document.xml.rels')?.async('string') ?? '';
+
+    expect(relsXml).toContain('Target="https://example.com"');
+    expect(relsXml).toContain('relationships/hyperlink');
+    expect(documentXml).toContain('<w:hyperlink');
+    expect(documentXml).toContain('<a:hlinkClick');
+    expect(documentXml).toContain('<w:drawing>');
   });
 
   it('renders Mermaid docx diagrams as png-first images with root-level non-html labels', async () => {

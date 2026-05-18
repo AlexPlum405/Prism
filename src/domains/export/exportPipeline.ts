@@ -52,6 +52,19 @@ interface PdfRenderedPage {
   width: number;
   height: number;
 }
+interface PdfRenderResult {
+  pages: PdfRenderedPage[];
+  linkRects: ExportPdfLinkRect[];
+  pageCssHeight: number;
+  contentCssWidth: number;
+}
+interface ExportPdfLinkRect {
+  url: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
 interface PandocCitationHtmlResult {
   html: string;
   warnings: string;
@@ -83,6 +96,7 @@ interface WebkitPdfCaptureLayout {
   pageHeight: number;
   contentWidth: number;
   contentHeight: number;
+  linkRects: ExportPdfLinkRect[];
   margins: typeof pdfPageMarginsPoints[keyof typeof pdfPageMarginsPoints];
 }
 
@@ -106,6 +120,7 @@ const EXPORT_PAGE_SPLIT_EPSILON = 2;
 const EXPORT_ATOMIC_SPACER_CLASS = 'prism-export-page-spacer';
 const EXPORT_ATOMIC_BLOCK_CLASS = 'prism-export-atomic';
 const EXPORT_ATOMIC_GROUP_CLASS = 'prism-export-atomic-group';
+const EXPORT_LINK_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 const EXPORT_ATOMIC_BLOCK_SELECTOR = [
   'img',
   'svg',
@@ -134,6 +149,48 @@ function getPreviewBackgroundColor() {
 function isElementInsideAtomicBlock(element: Element) {
   const parent = element.parentElement?.closest(`.${EXPORT_ATOMIC_BLOCK_CLASS}, ${EXPORT_ATOMIC_BLOCK_SELECTOR}`);
   return Boolean(parent);
+}
+
+function normalizeExportExternalLink(rawUrl: string, baseUri: string) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed || trimmed.startsWith('#')) return null;
+  if (isUnsafeExportUrl(trimmed, EXPORT_LINK_PROTOCOLS)) return null;
+
+  try {
+    const url = trimmed.startsWith('//')
+      ? new URL(`https:${trimmed}`)
+      : new URL(trimmed, baseUri || window.location.href);
+    return EXPORT_LINK_PROTOCOLS.has(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function getElementRects(element: Element) {
+  const rects = Array.from(element.getClientRects?.() ?? []);
+  if (rects.length > 0) return rects;
+  return [element.getBoundingClientRect()];
+}
+
+function collectExportPdfLinkRects(root: HTMLElement): ExportPdfLinkRect[] {
+  const rootRect = root.getBoundingClientRect();
+  const links: ExportPdfLinkRect[] = [];
+  root.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((anchor) => {
+    const url = normalizeExportExternalLink(anchor.getAttribute('href') ?? '', anchor.ownerDocument.baseURI);
+    if (!url) return;
+
+    getElementRects(anchor).forEach((rect) => {
+      if (rect.width < 2 || rect.height < 2) return;
+      links.push({
+        url,
+        left: Math.max(0, rect.left - rootRect.left),
+        top: Math.max(0, rect.top - rootRect.top),
+        width: rect.width,
+        height: rect.height,
+      });
+    });
+  });
+  return links;
 }
 
 function isStyledVisualBlock(element: Element) {
@@ -2060,6 +2117,7 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
     if (pageCount > PDF_EXPORT_MAX_PAGES) {
       throw new Error(`PDF 页数过多（${pageCount} 页，最大 ${PDF_EXPORT_MAX_PAGES} 页），请拆分文档或改用 HTML 导出。`);
     }
+    const linkRects = collectExportPdfLinkRects(target);
 
     return {
       rect: {
@@ -2074,10 +2132,79 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
       pageHeight: paper.height,
       contentWidth,
       contentHeight,
+      linkRects,
       margins,
     };
   } finally {
     node.remove();
+  }
+}
+
+function addPdfUriAnnotation(
+  pdfLib: typeof import('pdf-lib'),
+  pdf: any,
+  page: any,
+  rect: { x: number; y: number; width: number; height: number },
+  url: string,
+) {
+  if (rect.width < 1 || rect.height < 1) return;
+  const context = pdf.context;
+  const annotation = context.obj({
+    Type: 'Annot',
+    Subtype: 'Link',
+    Rect: [
+      Number(rect.x.toFixed(2)),
+      Number(rect.y.toFixed(2)),
+      Number((rect.x + rect.width).toFixed(2)),
+      Number((rect.y + rect.height).toFixed(2)),
+    ],
+    Border: [0, 0, 0],
+    F: 4,
+    H: 'I',
+    A: {
+      S: 'URI',
+      URI: pdfLib.PDFString.of(url),
+    },
+  });
+  page.node.addAnnot(context.register(annotation));
+}
+
+function addExportPdfLinkAnnotations(
+  pdfLib: typeof import('pdf-lib'),
+  pdf: any,
+  page: any,
+  linkRects: ExportPdfLinkRect[],
+  options: {
+    pageIndex: number;
+    pageCssHeight: number;
+    cssPxToPdfPoint: number;
+    pageHeight: number;
+    margins: typeof pdfPageMarginsPoints[keyof typeof pdfPageMarginsPoints];
+  },
+) {
+  if (linkRects.length === 0) return;
+  const pageStart = options.pageIndex * options.pageCssHeight;
+  const pageEnd = pageStart + options.pageCssHeight;
+
+  for (const link of linkRects) {
+    const linkTop = link.top;
+    const linkBottom = link.top + link.height;
+    if (linkBottom <= pageStart + EXPORT_PAGE_SPLIT_EPSILON) continue;
+    if (linkTop >= pageEnd - EXPORT_PAGE_SPLIT_EPSILON) continue;
+
+    const clippedTop = Math.max(linkTop, pageStart);
+    const clippedBottom = Math.min(linkBottom, pageEnd);
+    const height = (clippedBottom - clippedTop) * options.cssPxToPdfPoint;
+    const yTop = options.pageHeight
+      - options.margins.top
+      - ((clippedTop - pageStart) * options.cssPxToPdfPoint);
+
+    addPdfUriAnnotation(pdfLib, pdf, page, {
+      x: options.margins.left + (link.left * options.cssPxToPdfPoint),
+      y: yTop - height,
+      width: link.width * options.cssPxToPdfPoint,
+      height,
+    }, link.url);
   }
 }
 
@@ -2149,9 +2276,11 @@ async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath
   const layout = await prepareWebkitPdfCaptureDocument(input);
   reportProgress(input, exportProgressMessages.printNativePdf);
 
-  const { PDFDocument, rgb } = await import('pdf-lib');
+  const pdfLib = await import('pdf-lib');
+  const { PDFDocument, rgb } = pdfLib;
   const pdf = await PDFDocument.create();
   const marginMask = rgb(1, 1, 1);
+  const cssPxToPdfPoint = layout.contentWidth / layout.rect.width;
   let pageIndex = 0;
   let batchIndex = 0;
   const tempPaths: string[] = [];
@@ -2194,6 +2323,13 @@ async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath
           height: embeddedHeight,
         });
         maskPdfPageMargins(page, layout.pageWidth, layout.pageHeight, layout.margins, marginMask);
+        addExportPdfLinkAnnotations(pdfLib, pdf, page, layout.linkRects, {
+          pageIndex: splitPageIndex,
+          pageCssHeight: layout.pageCssHeight,
+          cssPxToPdfPoint,
+          pageHeight: layout.pageHeight,
+          margins: layout.margins,
+        });
       }
 
       pageIndex = batchEndPage;
@@ -2213,7 +2349,8 @@ async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath
 
 async function exportPdfRaster(input: ExportDocumentInput, targetPath: string) {
   reportCitationPlaceholderWarning(input);
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+  const pdfLib = await import('pdf-lib');
+  const { PDFDocument, StandardFonts, rgb } = pdfLib;
   const paper = pdfPageSizePoints[input.pdfPaper ?? 'a4'];
   const margins = pdfPageMarginsPoints[input.pdfMargin ?? 'standard'];
   const pageWidth = paper.width;
@@ -2231,7 +2368,8 @@ async function exportPdfRaster(input: ExportDocumentInput, targetPath: string) {
     ? await pdf.embedFont(StandardFonts.Helvetica)
     : null;
 
-  const pageCount = renderedPages.length;
+  const pageCount = renderedPages.pages.length;
+  const cssPxToPdfPoint = contentWidth / renderedPages.contentCssWidth;
   const drawChromeText = async (
     page: any,
     text: string,
@@ -2251,7 +2389,7 @@ async function exportPdfRaster(input: ExportDocumentInput, targetPath: string) {
   };
 
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-    const image = renderedPages[pageIndex];
+    const image = renderedPages.pages[pageIndex];
     const embedded = await pdf.embedPng(image.data);
     const scaledHeight = contentWidth * (image.height / image.width);
     const page = pdf.addPage([pageWidth, pageHeight]);
@@ -2260,6 +2398,13 @@ async function exportPdfRaster(input: ExportDocumentInput, targetPath: string) {
       y: pageHeight - margins.top - scaledHeight,
       width: contentWidth,
       height: scaledHeight,
+    });
+    addExportPdfLinkAnnotations(pdfLib, pdf, page, renderedPages.linkRects, {
+      pageIndex,
+      pageCssHeight: renderedPages.pageCssHeight,
+      cssPxToPdfPoint,
+      pageHeight,
+      margins,
     });
 
     if (input.pageHeaderFooter) {
@@ -2325,7 +2470,7 @@ export async function exportPdf(input: ExportDocumentInput, outputPath?: string)
 async function createRenderedPdfPages(
   input: ExportDocumentInput,
   options: { contentWidth: number; contentHeight: number; scale?: number },
-) {
+): Promise<PdfRenderResult> {
   const { default: html2canvas } = await import('html2canvas');
   const iframe = await createStandaloneExportFrame(input);
   try {
@@ -2363,6 +2508,7 @@ async function createRenderedPdfPages(
     if (pageCount > PDF_EXPORT_MAX_PAGES) {
       throw new Error(`PDF 页数过多（${pageCount} 页，最大 ${PDF_EXPORT_MAX_PAGES} 页），请拆分文档或改用 HTML 导出。`);
     }
+    const linkRects = collectExportPdfLinkRects(target);
     const requestedScale = normalizeExportRasterScale(options.scale ?? PDF_EXPORT_RASTER_SCALE);
     const backgroundColor = normalizeCssColorFunctionsForRaster(
       target.ownerDocument.defaultView?.getComputedStyle(target).backgroundColor ?? '',
@@ -2439,7 +2585,12 @@ async function createRenderedPdfPages(
       pageIndex = batchEndPage;
       await nextFrame();
     }
-    return pages;
+    return {
+      pages,
+      linkRects,
+      pageCssHeight,
+      contentCssWidth: width,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : err instanceof Event ? err.type : String(err);
     throw new Error(`PDF 渲染失败: ${message}`);

@@ -27,6 +27,7 @@
   - 覆盖 Mermaid root-level `htmlLabels: false` 与 PNG-first DOCX 输出。
   - 覆盖行内公式、块级公式、HTML 块会生成视觉 drawing。
   - 覆盖 DOCX 表格写入 `tcW` / `gridCol` 宽度。
+  - 覆盖图片被链接包裹时，DOCX 同时写入 `relationships/hyperlink`、`w:hyperlink` 和图片 drawing 上的 `a:hlinkClick`，避免 `[![点击访问](assets/local-diagram.svg)](https://example.com)` 只剩图片。
 
 ## 真实 App Smoke
 
@@ -86,6 +87,7 @@ qlmanage -t -s 1024 -o .codex-smoke/docx-rich-export \
 - 代码块不再竖排。
 - Mermaid 图在第一页可见，节点文字和边标签可见；WPS 反馈暴露 SVG 主图仍可能有文本度量偏差，因此后续已将 Mermaid 改为 PNG-first。
 - KaTeX / HTML fallback 已通过 `word/media/` 和 `drawingCount` 证明进入 DOCX；逐页视觉仍建议用 Word / Pages 人工补查。
+- 2026-05-18 14:17 使用同一真实 `.app` 覆盖导出 `.codex-smoke/docx-rich-export/docx-rich-export.docx` 后，`jszip` 检查 `word/_rels/document.xml.rels` 含 `Target="https://example.com"` 和 `relationships/hyperlink`，`word/document.xml` 同时含 `<w:hyperlink`、`<a:hlinkClick`、`<w:drawing>`；图片被链接包裹时不再只剩静态图片。
 
 ## 2026-05-18 Mermaid PNG-first 修正
 
@@ -115,8 +117,8 @@ npm run tauri:build:app-smoke
 
 结果：
 
-- `src/domains/export/exportPipeline.test.ts`：通过，1 file / 42 tests。
-- `npm test -- --run`：通过，59 files / 359 tests。
+- `src/domains/export/exportPipeline.test.ts`：通过，1 file / 47 tests。
+- `npm test -- --run --maxWorkers=1`：通过，59 files / 364 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在，和既有导出异步 chunk / Mermaid chunk 体积有关。
 - `git diff --check`：通过。
 - `npm run tauri:build:app-smoke`：通过，生成 `src-tauri/target/release/bundle/macos/Prism.app`。
