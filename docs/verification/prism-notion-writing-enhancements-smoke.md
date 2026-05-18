@@ -70,3 +70,32 @@ git diff --check
 跳过项：
 
 - 未跑发布级 app/DMG smoke。本阶段未触及 Tauri 权限、安装器、updater、文件关联或发布配置。
+
+## 2026-05-18 Phase 3：模板系统复核与斜杠菜单整合
+
+现状复核：
+
+- `MARKDOWN_TEMPLATES` 已内置 README、PRD、会议纪要、周报、技术方案、公众号长文、论文草稿、读书笔记、研究摘要、白皮书。
+- 文件菜单和命令面板已暴露模板命令；无打开文档时创建新 Markdown 文档，有打开文档时派发编辑器插入事件。
+- Phase 1 的 `/` 斜杠菜单已把所有 `MARKDOWN_TEMPLATES` 作为 Markdown snippet 接入。
+- 模板内容全部是 Markdown 文本，没有数据库、Properties、云端或 WYSIWYG 依赖。
+
+改动范围：
+
+- 本 checkpoint 不新增业务代码，只记录验证证据。原因：目标功能已经由既有实现和 Phase 1 slash menu 覆盖，重复实现会增加破坏风险。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/editor/extensions/templates.test.ts src/domains/editor/extensions/slashMenu.test.ts src/domains/commands/registry.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+git diff --check
+```
+
+结果：
+
+- 4 files / 46 tests passed。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑全量测试和 build。本 checkpoint 只追加验证文档，业务代码保持上一阶段已验证状态。
