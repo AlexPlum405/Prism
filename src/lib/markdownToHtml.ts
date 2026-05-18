@@ -9,6 +9,7 @@ import rehypeStringify from 'rehype-stringify';
 import rehypeHighlight from 'rehype-highlight';
 import { visit } from 'unist-util-visit';
 import { findPandocCitations } from '../domains/editor/extensions/citations';
+import { applyCalloutMetadataToMdastBlockquote } from '../domains/editor/extensions/callouts';
 
 function remarkMermaid() {
   return (tree: any) => {
@@ -146,6 +147,14 @@ function remarkBlockLines() {
   };
 }
 
+function remarkCallouts() {
+  return (tree: any) => {
+    visit(tree, 'blockquote', (node: any) => {
+      applyCalloutMetadataToMdastBlockquote(node);
+    });
+  };
+}
+
 // ==xxx== → <mark>xxx</mark>（对原型 highlight 语法的支持）
 function remarkMark() {
   return (tree: any) => {
@@ -236,6 +245,7 @@ export function markdownToHtml(content: string, _options: MarkdownToHtmlOptions 
     .use(remarkMark)
     .use(remarkCitations)
     .use(remarkBlockLines)
+    .use(remarkCallouts)
     .use(remarkMermaid)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)

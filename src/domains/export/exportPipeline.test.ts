@@ -1564,6 +1564,39 @@ describe('export pipeline docx header and footer', () => {
     expect(documentXml).toContain('<w:u w:val="dotted"');
   });
 
+  it('exports callout and toggle blocks to docx without leaking source markers', async () => {
+    fsMock.writeFile.mockClear();
+
+    await exportDocx(createInput({
+      content: [
+        '# Blocks',
+        '',
+        '> [!WARNING] 发布前确认',
+        '> 这段内容仍然是标准 Markdown 引用。',
+        '',
+        '<details>',
+        '<summary>更多信息</summary>',
+        '',
+        '这里是折叠内容。',
+        '',
+        '</details>',
+      ].join('\n'),
+    }), '/tmp/callout-toggle.docx');
+
+    const { default: JSZip } = await import('jszip');
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const zip = await JSZip.loadAsync(bytes);
+    const documentXml = await zip.file('word/document.xml')?.async('string') ?? '';
+
+    expect(documentXml).toContain('发布前确认');
+    expect(documentXml).toContain('这段内容仍然是标准 Markdown 引用。');
+    expect(documentXml).toContain('折叠：更多信息');
+    expect(documentXml).toContain('这里是折叠内容。');
+    expect(documentXml).not.toContain('[!WARNING]');
+    expect(documentXml).not.toContain('&lt;details');
+    expect(documentXml).not.toContain('&lt;summary');
+  });
+
   it('renders Mermaid docx diagrams as png-first images with root-level non-html labels', async () => {
     fsMock.writeFile.mockClear();
     canvasRenderMock.render.mockClear();

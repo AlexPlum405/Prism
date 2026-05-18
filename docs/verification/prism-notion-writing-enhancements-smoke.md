@@ -35,3 +35,38 @@ git diff --check
 跳过项：
 
 - 未跑 Tauri app / 发布级 smoke。本阶段只接入前端编辑器 completion，不涉及 Tauri 权限、打包、updater、安装器、文件关联或导出渲染主链路。
+
+## 2026-05-18 Phase 2：Callout / Toggle 预览与导出
+
+改动范围：
+
+- 新增 `src/domains/editor/extensions/callouts.ts`，识别 `> [!NOTE]`、`> [!WARNING]`、`> [!TIP]`。
+- `markdownToHtml` 在 Markdown AST 层把支持的 callout 标记为 `.prism-callout`，保留正文 source line。
+- `global.css` 在 `.preview-compat` 范围内追加 Callout 和 `details/summary` 样式。
+- DOCX 导出在原 blockquote 映射上识别 callout，移除源 marker；对 `details/summary` 采用“折叠标题 + 展开正文”的文档兜底。
+
+非破坏性约束：
+
+- 未改变普通 blockquote 的 Markdown 语义；只有首行匹配 `[!NOTE|WARNING|TIP]` 的引用块才增强。
+- Toggle 仍使用安全 HTML `<details><summary>...</summary>...</details>`，没有引入富文本 block editor。
+- 预览样式只追加到 `.preview-compat`，不改外壳、状态栏、toast、滚动条或主题 token。
+
+验证命令：
+
+```bash
+npm test -- --run src/domains/editor/extensions/callouts.test.ts src/lib/markdownToHtml.test.ts src/domains/export/exportPipeline.test.ts
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- Callout / markdownToHtml / exportPipeline 相关测试：3 files / 72 tests passed。
+- `npm test -- --run`：61 files / 375 tests passed。
+- `npm run build`：通过；保留既有 Vite chunk size warning。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke。本阶段未触及 Tauri 权限、安装器、updater、文件关联或发布配置。

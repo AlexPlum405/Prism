@@ -11,6 +11,7 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import { markdownToHtml } from '../../lib/markdownToHtml';
+import { applyCalloutMetadataToMdastBlockquote } from '../editor/extensions/callouts';
 import { findPandocCitations } from '../editor/extensions/citations';
 import type { ContentTheme } from '../settings/types';
 import type { ExportDocumentInput } from './types';
@@ -3083,6 +3084,63 @@ function codeBlockToDocxTable(docx: DocxModule, value: string, theme: DocxTheme,
   });
 }
 
+function stripHtmlTagsToText(source: string) {
+  return source.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function htmlNodeOpensDetails(node: any) {
+  return node.type === 'html' && /^<\s*details\b/i.test(String(node.value ?? '').trim());
+}
+
+function htmlNodeClosesDetails(node: any) {
+  return node.type === 'html' && /^<\s*\/\s*details\s*>/i.test(String(node.value ?? '').trim());
+}
+
+function extractSummaryTextFromHtmlNode(node: any) {
+  if (node.type !== 'html') return null;
+  const source = String(node.value ?? '');
+  const match = source.match(/<\s*summary\b[^>]*>([\s\S]*?)<\s*\/\s*summary\s*>/i);
+  return match ? stripHtmlTagsToText(match[1]) : null;
+}
+
+function normalizeDetailsNodesForDocx(nodes: any[]): any[] {
+  const normalized: any[] = [];
+
+  for (let index = 0; index < nodes.length; index += 1) {
+    const node = nodes[index];
+    if (!htmlNodeOpensDetails(node)) {
+      normalized.push(node);
+      continue;
+    }
+
+    const children: any[] = [];
+    let summary = extractSummaryTextFromHtmlNode(node) ?? '折叠内容';
+
+    for (index += 1; index < nodes.length; index += 1) {
+      const child = nodes[index];
+      const childSummary = extractSummaryTextFromHtmlNode(child);
+      if (childSummary) {
+        summary = childSummary;
+        continue;
+      }
+      if (htmlNodeClosesDetails(child)) {
+        break;
+      }
+      if (child.type === 'html') continue;
+      children.push(child);
+    }
+
+    normalized.push({
+      type: 'prismDetails',
+      title: summary,
+      children,
+      data: node.data,
+    });
+  }
+
+  return normalized;
+}
+
 function createDocxTocBlocks(docx: DocxModule, items: ExportTocItem[], theme: DocxTheme): DocxBlock[] {
   if (items.length === 0) return [];
   const { BorderStyle, Paragraph, TextRun } = docx;
@@ -3221,7 +3279,7 @@ async function mdastToDocxBlocks(
   } = docx;
   const blocks: DocxBlock[] = [];
 
-  for (const node of nodes) {
+  for (const node of normalizeDetailsNodesForDocx(nodes)) {
     if (node.type === 'heading') {
       const level = Math.min(Math.max(node.depth ?? 1, 1), 6);
       blocks.push(new Paragraph({
@@ -3245,6 +3303,7 @@ async function mdastToDocxBlocks(
     }
 
     if (node.type === 'blockquote') {
+      const callout = applyCalloutMetadataToMdastBlockquote(node);
       const textRuns = (await Promise.all((node.children ?? []).map(async (child: any) => {
         if (child.type === 'paragraph') {
           return inlineChildrenToRuns(docx, child.children ?? [], theme, {}, input, imageScale);
@@ -3252,7 +3311,12 @@ async function mdastToDocxBlocks(
         return inlineToRuns(docx, child, theme, {}, input, imageScale);
       }))).flat();
       blocks.push(new Paragraph({
-        children: textRuns,
+        children: callout
+          ? [
+              new TextRun({ text: `${callout.title}: `, bold: true, color: theme.accent }),
+              ...textRuns,
+            ]
+          : textRuns,
         indent: { left: 360 },
         border: {
           left: { style: BorderStyle.SINGLE, size: 12, color: theme.accent, space: 12 },
@@ -3260,6 +3324,31 @@ async function mdastToDocxBlocks(
         shading: { type: ShadingType.CLEAR, fill: theme.fill },
         spacing: { before: 120, after: 180, line: 330 },
       }));
+      continue;
+    }
+
+    if (node.type === 'prismDetails') {
+      blocks.push(new Paragraph({
+        children: [
+          new TextRun({ text: `折叠：${String(node.title ?? '折叠内容')}`, bold: true, color: theme.accent }),
+        ],
+        indent: { left: 240 },
+        border: {
+          left: { style: BorderStyle.SINGLE, size: 8, color: theme.border, space: 12 },
+        },
+        shading: { type: ShadingType.CLEAR, fill: theme.fill },
+        spacing: { before: 120, after: 100, line: 330 },
+      }));
+      blocks.push(...await mdastToDocxBlocks(
+        docx,
+        node.children ?? [],
+        theme,
+        contentTheme,
+        listDepth,
+        documentPath,
+        imageScale,
+        input,
+      ));
       continue;
     }
 

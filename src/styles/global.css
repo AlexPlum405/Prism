@@ -6048,3 +6048,77 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan kbd {
   font-size: 0.9em;
   color: #262626;
 }
+
+/* Notion-inspired Markdown blocks: additive styles only, scoped to preview/export content. */
+.preview-compat blockquote.prism-callout {
+  position: relative;
+  width: auto;
+  max-width: 100%;
+  padding: 14px 16px 14px 18px;
+  border: 1px solid var(--theme-divider, var(--c-fog, #e8e8e8));
+  border-left-width: 3px;
+  border-radius: var(--r-card, 6px);
+  background: color-mix(in srgb, var(--theme-surface, var(--c-canvas, #fff)) 92%, var(--theme-divider, var(--c-fog, #e8e8e8)));
+  color: var(--theme-text, var(--c-void, #111));
+  font-style: normal;
+  overflow: visible;
+}
+
+.preview-compat blockquote.prism-callout::before {
+  content: attr(data-callout-title);
+  display: block;
+  margin: 0 0 6px;
+  color: var(--theme-text, var(--c-void, #111));
+  font-size: 0.82em;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.preview-compat blockquote.prism-callout > :first-child {
+  margin-top: 0;
+}
+
+.preview-compat blockquote.prism-callout > :last-child {
+  margin-bottom: 0;
+}
+
+.preview-compat blockquote.prism-callout p {
+  color: inherit;
+}
+
+.preview-compat blockquote.prism-callout--note {
+  border-left-color: var(--theme-muted, var(--c-ash, #8f8f8f));
+}
+
+.preview-compat blockquote.prism-callout--warning {
+  border-left-color: #9f6b00;
+}
+
+.preview-compat blockquote.prism-callout--tip {
+  border-left-color: #337a5b;
+}
+
+.preview-compat details {
+  margin: 0.8em 0 1.6em;
+  padding: 12px 14px;
+  border: 1px solid var(--theme-divider, var(--c-fog, #e8e8e8));
+  border-radius: var(--r-card, 6px);
+  background: color-mix(in srgb, var(--theme-surface, var(--c-canvas, #fff)) 94%, var(--theme-divider, var(--c-fog, #e8e8e8)));
+  color: var(--theme-text, var(--c-void, #111));
+}
+
+.preview-compat summary {
+  cursor: pointer;
+  color: var(--theme-text, var(--c-void, #111));
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.preview-compat summary::marker {
+  color: var(--theme-muted, var(--c-ash, #8f8f8f));
+}
+
+.preview-compat details > :last-child {
+  margin-bottom: 0;
+}

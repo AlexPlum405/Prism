@@ -182,6 +182,19 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('<img src="./assets/image.png" alt="ok">');
   });
 
+  it('renders supported callout blockquotes with scoped metadata classes', () => {
+    const html = markdownToHtml([
+      '> [!WARNING] 发布前确认',
+      '> 这段内容仍然是标准 Markdown 引用。',
+    ].join('\n'));
+
+    expect(html).toContain('class="prism-callout prism-callout--warning"');
+    expect(html).toContain('data-callout-kind="warning"');
+    expect(html).toContain('data-callout-title="发布前确认"');
+    expect(html).toContain('这段内容仍然是标准 Markdown 引用。');
+    expect(html).not.toContain('[!WARNING]');
+  });
+
   it('renders the long preview smoke fixture with source anchors inside a bounded time', () => {
     const markdown = buildLongPreviewSmokeMarkdown();
     const startedAt = performance.now();
