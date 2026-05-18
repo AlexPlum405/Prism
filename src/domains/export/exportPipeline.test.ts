@@ -907,6 +907,103 @@ describe('export pipeline image progress', () => {
     }
   });
 
+  it('keeps headings attached to following raw html visual blocks during pdf pagination', async () => {
+    const root = document.createElement('div');
+    const heading = document.createElement('h3');
+    const block = document.createElement('div');
+    heading.textContent = '4.3 嵌套 HTML';
+    block.className = 'prism-export-atomic';
+    block.textContent = '警告';
+    root.append(heading, block);
+    document.body.appendChild(root);
+
+    const getBoundingClientRectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingClientRect(this: HTMLElement) {
+        if (this === root) {
+          return {
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: 980,
+            bottom: 300,
+            width: 980,
+            height: 300,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.classList.contains('prism-export-atomic-group')) {
+          const hasSpacer = Boolean(root.querySelector('.prism-export-page-spacer'));
+          const top = hasSpacer ? 100 : 80;
+          return {
+            x: 0,
+            y: top,
+            top,
+            left: 0,
+            right: 400,
+            bottom: top + 60,
+            width: 400,
+            height: 60,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this === heading) {
+          return {
+            x: 0,
+            y: 80,
+            top: 80,
+            left: 0,
+            right: 400,
+            bottom: 100,
+            width: 400,
+            height: 20,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this === block) {
+          return {
+            x: 0,
+            y: 100,
+            top: 100,
+            left: 0,
+            right: 400,
+            bottom: 140,
+            width: 400,
+            height: 40,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+
+    try {
+      await __exportPipelineTesting.prepareExportAtomicPagination(root, 100);
+
+      const group = root.querySelector<HTMLElement>('.prism-export-atomic-group');
+      const spacer = root.querySelector<HTMLElement>('.prism-export-page-spacer');
+      expect(group).toBeTruthy();
+      expect(group?.contains(heading)).toBe(true);
+      expect(group?.contains(block)).toBe(true);
+      expect(spacer).toBeTruthy();
+      expect(spacer?.style.height).toBe('20px');
+      expect(spacer?.nextSibling).toBe(group);
+      expect(block.previousSibling).not.toBe(spacer);
+    } finally {
+      getBoundingClientRectSpy.mockRestore();
+      root.remove();
+    }
+  });
+
   it('uses the WebKit PDF engine inside the Tauri export worker before raster fallback', async () => {
     (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
     (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;

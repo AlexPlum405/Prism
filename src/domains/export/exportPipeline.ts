@@ -105,6 +105,7 @@ const DOCX_MERMAID_IMAGE_MAX_WIDTH = 650;
 const EXPORT_PAGE_SPLIT_EPSILON = 2;
 const EXPORT_ATOMIC_SPACER_CLASS = 'prism-export-page-spacer';
 const EXPORT_ATOMIC_BLOCK_CLASS = 'prism-export-atomic';
+const EXPORT_ATOMIC_GROUP_CLASS = 'prism-export-atomic-group';
 const EXPORT_ATOMIC_BLOCK_SELECTOR = [
   'img',
   'svg',
@@ -160,6 +161,42 @@ function markExportAtomicBlocks(root: HTMLElement) {
   });
 }
 
+function isTopLevelAtomicBlock(element: HTMLElement) {
+  return !element.parentElement?.closest(`.${EXPORT_ATOMIC_BLOCK_CLASS}`);
+}
+
+function findAtomicBlockHeadingSibling(element: HTMLElement) {
+  const heading = element.previousElementSibling;
+  if (!heading?.matches('h1, h2, h3, h4, h5, h6')) return null;
+  if (heading.closest(`.${EXPORT_ATOMIC_GROUP_CLASS}`)) return null;
+  return heading as HTMLElement;
+}
+
+function groupExportHeadingAtomicBlocks(root: HTMLElement) {
+  const atomicBlocks = Array.from(root.querySelectorAll<HTMLElement>(`.${EXPORT_ATOMIC_BLOCK_CLASS}`))
+    .filter(isTopLevelAtomicBlock);
+
+  atomicBlocks.forEach((element) => {
+    if (element.closest(`.${EXPORT_ATOMIC_GROUP_CLASS}`)) return;
+    const heading = findAtomicBlockHeadingSibling(element);
+    if (!heading) return;
+    if (!heading.parentNode || heading.parentNode !== element.parentNode) return;
+
+    const group = element.ownerDocument.createElement('div');
+    group.className = `${EXPORT_ATOMIC_GROUP_CLASS} ${EXPORT_ATOMIC_BLOCK_CLASS}`;
+    group.dataset.prismExportAtomic = 'true';
+    heading.parentNode.insertBefore(group, heading);
+
+    let node: ChildNode | null = heading;
+    while (node) {
+      const nextNode: ChildNode | null = node.nextSibling;
+      group.appendChild(node);
+      if (node === element) break;
+      node = nextNode;
+    }
+  });
+}
+
 function scaleOversizedAtomicBlock(element: HTMLElement, pageCssHeight: number) {
   if (!isScalableAtomicBlock(element)) return false;
   const rect = element.getBoundingClientRect();
@@ -178,6 +215,7 @@ function scaleOversizedAtomicBlock(element: HTMLElement, pageCssHeight: number) 
 async function prepareExportAtomicPagination(root: HTMLElement, pageCssHeight: number) {
   if (!Number.isFinite(pageCssHeight) || pageCssHeight <= 0) return;
   markExportAtomicBlocks(root);
+  groupExportHeadingAtomicBlocks(root);
   root.querySelectorAll(`.${EXPORT_ATOMIC_SPACER_CLASS}`).forEach((element) => element.remove());
 
   for (let pass = 0; pass < 3; pass += 1) {
@@ -185,7 +223,8 @@ async function prepareExportAtomicPagination(root: HTMLElement, pageCssHeight: n
     await nextFrame();
     const rootRect = root.getBoundingClientRect();
     const atomicBlocks = Array.from(root.querySelectorAll<HTMLElement>(`.${EXPORT_ATOMIC_BLOCK_CLASS}`))
-      .filter((element) => !element.closest(`.${EXPORT_ATOMIC_SPACER_CLASS}`));
+      .filter((element) => !element.closest(`.${EXPORT_ATOMIC_SPACER_CLASS}`))
+      .filter(isTopLevelAtomicBlock);
 
     for (const element of atomicBlocks) {
       if (!element.isConnected) continue;

@@ -281,9 +281,10 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 
 - PDF / HTML 导出 DOM 新增统一 `prism-export-atomic` 标记：图片、SVG、Canvas、表格、代码块、Mermaid、KaTeX、TOC、带边框 / 背景 / 阴影的原始 HTML 视觉块都会被视为不可拆块。
 - WebKit PDF 主链路和 raster PDF fallback 在截图 / 捕获前会按真实 PDF 页高预排版：如果原子块会跨越页面切线，就在块前插入透明 spacer，把整个块推到下一页；如果视觉块本身高于单页，则按页内高度缩放。
+- 标题后紧跟原始 HTML 视觉块时，导出 DOM 会把标题与视觉块包成同一个 `prism-export-atomic-group`，spacer 插在标题前，避免 `4.3 嵌套 HTML` 这类小节标题和黄色 HTML 卡片在 PDF 中被拆到两页。
 - HTML 导出保留 `break-inside: avoid` / `page-break-inside: avoid`，用于浏览器打印或二次转换；PNG 导出本身是单张长图，不存在页内切割。
-- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 44 tests。
-- `npm test -- --run`：通过，59 files / 361 tests。
+- `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 45 tests。
+- `npm test -- --run --maxWorkers=1`：通过，59 files / 362 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在。
 
 ### 2026-05-15 真实 UI 尝试
