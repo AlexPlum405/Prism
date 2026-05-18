@@ -286,6 +286,7 @@ npm test -- --run src/domains/export/exportPipeline.test.ts
 - `npm test -- --run src/domains/export/exportPipeline.test.ts`：通过，1 file / 45 tests。
 - `npm test -- --run --maxWorkers=1`：通过，59 files / 362 tests。
 - `npm run build`：通过；Vite large chunk warning 仍存在。
+- 真实 `.app` 复测：使用 `npm run tauri:build:app-smoke` 生成的 `Prism.app` 打开 `.codex-smoke/docx-rich-export/docx-rich-export.md`，通过底部导出菜单覆盖生成 `.codex-smoke/docx-rich-export/docx-rich-export.pdf`；PDFKit 读取为 5 页 A4，第 3 页文本同时包含 `4.3 嵌套 HTML`、`警告`、`列表项 A` 和 `列表项 B`，确认该 HTML 小节标题与黄色视觉卡片未再跨页断开。
 
 ### 2026-05-15 真实 UI 尝试
 
