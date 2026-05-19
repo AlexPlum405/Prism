@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { useDocumentStore } from '../store';
 import { SplitView } from '../../editor/components/SplitView';
 import { EditorPaneHandle } from '../../editor/components/EditorPane';
+import type { WorkspaceIndex } from '../../workspace/services';
 
 interface DocumentViewProps {
   onCursorChange?: (cursor: { line: number; column: number }) => void;
@@ -11,10 +12,11 @@ interface DocumentViewProps {
   ) => void | Promise<void>;
   onSelectionTextChange?: (text: string) => void;
   onNotice?: (message: string) => void;
+  workspaceIndex?: WorkspaceIndex | null;
 }
 
 export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
-  function DocumentView({ onCursorChange, onOpenDocumentLink, onSelectionTextChange, onNotice }, ref) {
+  function DocumentView({ onCursorChange, onOpenDocumentLink, onSelectionTextChange, onNotice, workspaceIndex }, ref) {
     const currentDocument = useDocumentStore((s) => s.currentDocument);
     const updateContent = useDocumentStore((s) => s.updateContent);
     const updateScrollState = useDocumentStore((s) => s.updateScrollState);
@@ -59,6 +61,7 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
           onSelectionTextChange={onSelectionTextChange}
           onNotice={onNotice}
           onScrollStateChange={updateScrollState}
+          workspaceIndex={workspaceIndex}
         />
       </div>
     );

@@ -397,3 +397,16 @@ export function rankWorkspaceIndexDocuments(
     .sort((a, b) => b.score - a.score || a.document.relativePath.localeCompare(b.document.relativePath))
     .slice(0, limit);
 }
+
+export function getWorkspaceIndexBacklinks(index: WorkspaceIndex, path: string): WorkspaceIndexBacklink[] {
+  return index.backlinksByPath.get(normalizePathForCompare(path)) ?? [];
+}
+
+export function getWorkspaceIndexLinkFiles(index: WorkspaceIndex) {
+  return index.documents.map((document) => ({
+    headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
+    name: document.name,
+    path: document.path,
+    title: document.title,
+  }));
+}

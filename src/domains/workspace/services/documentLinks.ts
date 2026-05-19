@@ -9,8 +9,10 @@ import {
 export type DocumentLinkKind = 'markdown' | 'wiki';
 
 export interface DocumentLinkFile {
+  headings?: Array<{ slug: string; title: string }>;
   name: string;
   path: string;
+  title?: string;
 }
 
 export interface ResolveDocumentLinkInput {
@@ -104,14 +106,18 @@ function markdownCandidates(input: ResolveDocumentLinkInput) {
 
 function wikiAliases(file: DocumentLinkFile, rootPath?: string | null) {
   const relative = getWorkspaceRelativePath(file.path, rootPath);
-  return new Set([
+  const aliases = [
     relative,
     stripMarkdownExtension(relative),
+    file.title ?? '',
     file.name,
     stripMarkdownExtension(file.name),
     basename(file.path),
     stripMarkdownExtension(basename(file.path)),
-  ].map((value) => normalizePathForCompare(normalizePathParts(value))));
+  ];
+  return new Set(aliases
+    .filter(Boolean)
+    .map((value) => normalizePathForCompare(normalizePathParts(value))));
 }
 
 function resolveMarkdownLink(input: ResolveDocumentLinkInput): ResolvedDocumentLink | null {

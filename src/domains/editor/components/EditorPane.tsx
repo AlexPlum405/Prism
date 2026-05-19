@@ -20,7 +20,7 @@ import { useDocumentStore } from '../../document/store';
 import { useSettingsStore } from '../../settings/store';
 import type { ContentTheme } from '../../settings/types';
 import { useWorkspaceStore } from '../../workspace/store';
-import { flattenFiles } from '../../workspace/services';
+import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services';
 import type { SearchAction, SearchParams } from './SearchPanel';
 import { ContextMenu } from '../../../components/shell/ContextMenu';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
@@ -182,6 +182,7 @@ interface EditorPaneProps {
   onScrollRatioChange?: (ratio: number) => void;
   onTopLineChange?: (line: number) => void;
   onScroll?: () => void;
+  workspaceIndex?: WorkspaceIndex | null;
 }
 
 function getCursorPosition(view: EditorView) {
@@ -240,6 +241,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       onScrollRatioChange,
       onTopLineChange,
       onScroll,
+      workspaceIndex,
     },
     ref,
   ) {
@@ -267,11 +269,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     const typewriterMode = useWorkspaceStore((s) => s.typewriterMode);
     const typewriterModeRef = useRef(typewriterMode);
     const workspaceLinkFiles = useMemo(
-      () => flattenFiles(workspaceFileTree, workspaceRootPath).map(({ node }) => ({
-        name: node.name,
-        path: node.path,
-      })),
-      [workspaceFileTree, workspaceRootPath],
+      () => workspaceIndex
+        ? getWorkspaceIndexLinkFiles(workspaceIndex)
+        : flattenFiles(workspaceFileTree, workspaceRootPath).map(({ node }) => ({
+            name: node.name,
+            path: node.path,
+          })),
+      [workspaceFileTree, workspaceIndex, workspaceRootPath],
     );
     
     // 关键标记：用于拦截因同步内容触发的 onChange

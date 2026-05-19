@@ -69,6 +69,40 @@ describe('markdown link completion', () => {
     expect(options.every((option) => typeof option.apply === 'function')).toBe(true);
   });
 
+  it('suggests indexed document titles and headings for wiki-triggered Markdown links', () => {
+    const options = getWikiLinkCompletionOptions({
+      currentDocumentPath: '/repo/docs/current.md',
+      workspaceRootPath: '/repo',
+      workspaceFiles: [
+        {
+          path: '/repo/docs/guide.md',
+          name: 'guide.md',
+          title: '入门指南',
+          headings: [{ title: '安装步骤', slug: '安装步骤' }],
+        },
+      ],
+    });
+
+    expect(options).toEqual([
+      expect.objectContaining({
+        label: 'docs/guide',
+        type: 'file',
+        detail: '入门指南',
+      }),
+      expect.objectContaining({
+        label: '入门指南',
+        type: 'file',
+        detail: 'docs/guide.md',
+      }),
+      expect.objectContaining({
+        label: '安装步骤',
+        type: 'keyword',
+        detail: 'docs/guide.md#安装步骤',
+      }),
+    ]);
+    expect(options.every((option) => typeof option.apply === 'function')).toBe(true);
+  });
+
   it('suggests current document headings as wiki-triggered Markdown links', () => {
     const options = getWikiHeadingCompletionOptions([
       '# API 设计',

@@ -56,6 +56,8 @@ export {
 } from './documentLinks';
 export {
   buildWorkspaceIndex,
+  getWorkspaceIndexBacklinks,
+  getWorkspaceIndexLinkFiles,
   rankWorkspaceIndexDocuments,
   searchWorkspaceIndex,
   type WorkspaceIndex,

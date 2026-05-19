@@ -3,8 +3,10 @@ import type { EditorView } from '@codemirror/view';
 import { getMarkdownHeadingSlug } from './headingSlug';
 
 export interface WorkspaceLinkFile {
+  headings?: Array<{ slug: string; title: string }>;
   name: string;
   path: string;
+  title?: string;
 }
 
 export interface MarkdownLinkCompletionContext {
@@ -114,16 +116,39 @@ export function getWikiLinkCompletionOptions(context: MarkdownLinkCompletionCont
 
   return context.workspaceFiles
     .filter((file) => MARKDOWN_FILE_RE.test(file.name))
-    .map((file) => {
+    .flatMap((file) => {
       const relative = stripRoot(file.path, context.workspaceRootPath);
       const target = baseDir ? relativePath(baseDir, file.path) : relative;
-      const title = stripMarkdownExtension(basename(file.name));
-      return {
-        label: stripMarkdownExtension(relative),
+      const pathLabel = stripMarkdownExtension(relative);
+      const explicitTitle = file.title?.trim();
+      const title = explicitTitle || stripMarkdownExtension(basename(file.name));
+      const options: Completion[] = [{
+        label: pathLabel,
         type: 'file',
-        detail: file.name,
+        detail: explicitTitle || file.name,
         apply: createWikiMarkdownLinkApply(`[${title}](${target})`),
-      } satisfies Completion;
+      }];
+
+      if (explicitTitle && normalizePath(title).toLowerCase() !== normalizePath(pathLabel).toLowerCase()) {
+        options.push({
+          label: title,
+          type: 'file',
+          detail: relative,
+          apply: createWikiMarkdownLinkApply(`[${title}](${target})`),
+        });
+      }
+
+      file.headings?.forEach((heading) => {
+        if (!heading.title || !heading.slug) return;
+        options.push({
+          label: heading.title,
+          type: 'keyword',
+          detail: `${relative}#${heading.slug}`,
+          apply: createWikiMarkdownLinkApply(`[${heading.title}](${target}#${heading.slug})`),
+        });
+      });
+
+      return options;
     });
 }
 

@@ -8,6 +8,7 @@ import { useDocumentStore } from '../../document/store';
 import type { DocumentScrollState } from '../../document/types';
 import { useSettingsStore } from '../../settings/store';
 import { useWorkspaceStore } from '../../workspace/store';
+import type { WorkspaceIndex } from '../../workspace/services';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { getCommandMenuItems, type CommandContext } from '../../commands';
 
@@ -25,6 +26,7 @@ interface SplitViewProps {
     options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
   ) => void | Promise<void>;
   onScrollStateChange?: (scrollState: Partial<DocumentScrollState>) => void;
+  workspaceIndex?: WorkspaceIndex | null;
 }
 
 const DEFAULT_SEARCH_PARAMS: SearchParams = {
@@ -365,6 +367,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     onNotice,
     onOpenDocumentLink,
     onScrollStateChange,
+    workspaceIndex,
   }, ref) {
     const previewContainerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<EditorPaneHandle>(null);
@@ -818,6 +821,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
               onNotice={onNotice}
               onScrollRatioChange={handleEditorScrollRatioChange}
               onTopLineChange={isSplit ? syncPreviewByEditor : undefined}
+              workspaceIndex={workspaceIndex}
             />
           </div>
         </div>

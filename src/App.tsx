@@ -66,12 +66,13 @@ import {
   dirname,
   extractDocumentLinks,
   flattenFiles,
+  getWorkspaceIndexBacklinks,
+  getWorkspaceIndexLinkFiles,
   getRuntimePlatform,
   isSamePath,
   joinPath,
   type DocumentLinkReference,
   resolveDocumentLinkTarget,
-  scanBacklinks,
   type WorkspaceIndex,
   type WorkspaceIndexSourceDocument,
 } from './domains/workspace/services';
@@ -85,8 +86,6 @@ const exportExtensionByFormat: Record<ExportFormat, string> = {
   png: 'png',
 };
 
-const MAX_BACKLINK_SCAN_FILES = 200;
-const MAX_BACKLINK_SCAN_BYTES = 1024 * 1024;
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
 
 function stripMarkdownExtension(filename: string) {
@@ -495,47 +494,13 @@ function App() {
   }, [linkDiagnostics.length]);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!currentDocument?.path || !workspaceIndex) {
+      setBacklinks([]);
+      return;
+    }
 
-    const run = async () => {
-      if (!currentDocument?.path || !workspace.rootPath) {
-        setBacklinks([]);
-        return;
-      }
-
-      const files = flattenFiles(workspace.fileTree, workspace.rootPath)
-        .map(({ node }) => node)
-        .filter((node) => MARKDOWN_FILE_RE.test(node.name))
-        .filter((node) => node.path !== currentDocument.path)
-        .filter((node) => (node.size ?? 0) <= MAX_BACKLINK_SCAN_BYTES)
-        .slice(0, MAX_BACKLINK_SCAN_FILES);
-
-      const documents = (await Promise.all(files.map(async (node) => {
-        try {
-          return {
-            path: node.path,
-            name: node.name,
-            content: await readTextFile(node.path),
-          };
-        } catch {
-          return null;
-        }
-      }))).filter((item): item is { path: string; name: string; content: string } => Boolean(item));
-
-      if (cancelled) return;
-      setBacklinks(scanBacklinks({
-        currentPath: currentDocument.path,
-        workspaceRoot: workspace.rootPath,
-        documents,
-      }));
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentDocument?.path, workspace.fileTree, workspace.rootPath]);
+    setBacklinks(getWorkspaceIndexBacklinks(workspaceIndex, currentDocument.path));
+  }, [currentDocument?.path, workspaceIndex]);
 
   const handleBacklinksClick = useCallback(() => {
     setBacklinksVisible(true);
@@ -698,9 +663,11 @@ function App() {
       return;
     }
 
-    const workspaceFiles = flattenFiles(workspace.fileTree, workspace.rootPath)
-      .map(({ node }) => ({ name: node.name, path: node.path }))
-      .filter((file) => MARKDOWN_FILE_RE.test(file.name));
+    const workspaceFiles = workspaceIndex
+      ? getWorkspaceIndexLinkFiles(workspaceIndex)
+      : flattenFiles(workspace.fileTree, workspace.rootPath)
+          .map(({ node }) => ({ name: node.name, path: node.path }))
+          .filter((file) => MARKDOWN_FILE_RE.test(file.name));
     const resolved = resolveDocumentLinkTarget({
       kind: options.kind,
       target,
@@ -719,6 +686,7 @@ function App() {
     currentDocument?.path,
     handleFileAction,
     showToast,
+    workspaceIndex,
     workspace.fileTree,
     workspace.rootPath,
   ]);
@@ -1097,6 +1065,7 @@ function App() {
           onOpenDocumentLink={handleOpenDocumentLink}
           onSelectionTextChange={setSelectionText}
           onNotice={showToast}
+          workspaceIndex={workspaceIndex}
         />
       </div>
 

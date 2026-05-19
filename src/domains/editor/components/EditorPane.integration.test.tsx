@@ -7,6 +7,7 @@ import { EditorView } from '@codemirror/view';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentStore } from '../../document/store';
 import { useWorkspaceStore } from '../../workspace/store';
+import { buildWorkspaceIndex, type WorkspaceIndex } from '../../workspace/services';
 import { EditorPane } from './EditorPane';
 
 const imagePasteMock = vi.hoisted(() => ({
@@ -98,6 +99,7 @@ function openWorkspaceForLinkCompletion() {
 
 async function renderEditorPane(content: string, options: {
   onNotice?: (message: string) => void;
+  workspaceIndex?: WorkspaceIndex | null;
 } = {}) {
   const changes: string[] = [];
   const onChange = vi.fn((next: string) => {
@@ -110,6 +112,7 @@ async function renderEditorPane(content: string, options: {
         content={content}
         onChange={onChange}
         onNotice={options.onNotice}
+        workspaceIndex={options.workspaceIndex}
       />
     </div>,
   );
@@ -423,6 +426,44 @@ describe('EditorPane command event integration', () => {
       ]));
       expect(labels).not.toContain('photo');
       expect(labels).not.toContain('photo.png');
+    });
+  });
+
+  it('surfaces indexed document titles and headings in wiki link completion', async () => {
+    openSavedDocument();
+    openWorkspaceForLinkCompletion();
+    const workspaceIndex = buildWorkspaceIndex({
+      fileTree: useWorkspaceStore.getState().fileTree,
+      workspaceRoot: '/repo',
+      documents: [
+        {
+          path: '/repo/docs/guide.md',
+          content: '---\ntitle: 入门指南\n---\n# 安装步骤\n正文',
+        },
+      ],
+    });
+    const { changes } = await renderEditorPane('', { workspaceIndex });
+
+    act(() => {
+      const view = getMountedEditorView();
+      view.dispatch({
+        changes: { from: 0, insert: '[[' },
+        selection: { anchor: 2 },
+      });
+    });
+
+    await waitFor(() => {
+      expect(latestChange(changes)).toBe('[[');
+    });
+
+    act(() => {
+      const started = startCompletion(getMountedEditorView());
+      expect(started).toBe(true);
+    });
+
+    await waitFor(() => {
+      const labels = currentCompletions(getMountedEditorView().state).map((completion) => completion.label);
+      expect(labels).toEqual(expect.arrayContaining(['入门指南', '安装步骤']));
     });
   });
 

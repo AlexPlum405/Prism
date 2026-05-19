@@ -193,3 +193,40 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改前端命令、React 弹层和 TypeScript 索引服务，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 7：`[[` 页面链接与反链
+
+改动范围：
+
+- `src/App.tsx`
+- `src/domains/document/components/DocumentView.tsx`
+- `src/domains/editor/components/SplitView.tsx`
+- `src/domains/editor/components/EditorPane.tsx`
+- `src/domains/editor/components/EditorPane.integration.test.tsx`
+- `src/domains/editor/extensions/linkCompletion.ts`
+- `src/domains/editor/extensions/linkCompletion.test.ts`
+- `src/domains/workspace/services/documentLinks.ts`
+- `src/domains/workspace/services/documentLinks.test.ts`
+- `src/domains/workspace/services/workspaceIndex.ts`
+- `src/domains/workspace/services/workspaceIndex.test.ts`
+- `src/domains/workspace/services/index.ts`
+
+实现结果：
+
+- `[[` 补全继续在源码编辑区触发，并复用工作区索引。
+- 补全候选支持工作区相对路径、Front Matter / 索引标题、文档标题节点。
+- 选择 `[[` 候选仍插入普通 Markdown 相对链接，例如 `[入门指南](guide.md)` 或 `[安装步骤](guide.md#安装步骤)`，不引入新的私有链接格式。
+- 预览中已存在的 `[[文档名]]` 继续可点击跳转，并新增按索引标题解析目标文档。
+- 反向链接改为从工作区索引读取，避免状态栏时代的重复文件扫描；反链条目仍可点击打开来源文档并跳到引用行。
+- 现有 `DocumentLinksPanel`、`BacklinksPanel` UI 保持不变，不新增常驻面板。
+
+验证：
+
+- `npm test -- --run src/domains/editor/extensions/linkCompletion.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/workspace/services/documentLinks.test.ts src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/components/BacklinksPanel.test.tsx`：5 个测试文件、37 项测试通过。
+- `npm test -- --run`：71 个测试文件、427 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改前端编辑器补全、React 数据传递和 TypeScript 索引/链接服务，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。

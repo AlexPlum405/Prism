@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { extractDocumentLinks, resolveDocumentLinkTarget } from './documentLinks';
 
 const workspaceFiles = [
-  { path: '/repo/docs/manual-test.md', name: 'manual-test.md' },
+  { path: '/repo/docs/manual-test.md', name: 'manual-test.md', title: '人工测试手册' },
   { path: '/repo/docs/linking-note.md', name: 'linking-note.md' },
   { path: '/repo/README.md', name: 'README.md' },
 ];
@@ -33,6 +33,16 @@ describe('resolveDocumentLinkTarget', () => {
       kind: 'wiki',
       target: 'docs/manual-test',
       sourcePath: '/repo/README.md',
+      workspaceRoot: '/repo',
+      workspaceFiles,
+    })).toEqual({ path: '/repo/docs/manual-test.md' });
+  });
+
+  it('resolves wiki links by indexed document title', () => {
+    expect(resolveDocumentLinkTarget({
+      kind: 'wiki',
+      target: '人工测试手册',
+      sourcePath: '/repo/docs/linking-note.md',
       workspaceRoot: '/repo',
       workspaceFiles,
     })).toEqual({ path: '/repo/docs/manual-test.md' });
