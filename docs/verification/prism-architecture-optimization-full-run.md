@@ -172,3 +172,33 @@ npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/pla
 
 - 本 checkpoint 只移动命令定义代码，不改变 Tauri capabilities、文件系统、导出算法、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 4C：导出命令编排分层
+
+改动范围：
+
+- `src/domains/commands/categories/exportCommands.ts`
+- `src/domains/commands/registry.ts`
+
+实现结果：
+
+- 新增 `createExportCommands()`，把 PDF / DOCX / HTML / PNG 导出命令、上次设置导出、覆盖上次导出从 `registry.ts` 拆出。
+- 导出命令模块承载导出进度事件、导出保存路径请求、导出历史设置、质量档位、成功 toast 打开/显示位置动作、失败诊断与重试动作。
+- `registry.ts` 不再直接依赖导出 pipeline、导出诊断、导出质量工具或导出历史类型。
+- 外部命令 id、菜单类别、快捷键/启用条件、toast 文案、历史记录行为保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/commands/platform.test.ts src/App.recovery.test.tsx
+```
+
+结果：
+
+- 4 个测试文件通过。
+- 39 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只移动导出命令编排代码，不改变导出 pipeline 算法、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
