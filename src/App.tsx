@@ -8,6 +8,7 @@ import { useWorkspaceFocusRefresh } from './domains/workspace/hooks/useWorkspace
 import { useAutoSave } from './domains/document/hooks/useAutoSave';
 import { useExternalFileChangeMonitor } from './domains/document/hooks/useExternalFileChangeMonitor';
 import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
+import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
@@ -25,7 +26,7 @@ import { DocumentLinksPanel } from './domains/workspace/components/DocumentLinks
 import { RelationGraphPanel } from './domains/workspace/components/RelationGraphPanel';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
-import { exists as fsExists, readTextFile } from '@tauri-apps/plugin-fs';
+import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 import { downloadDir, homeDir } from '@tauri-apps/api/path';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
@@ -62,7 +63,6 @@ import {
 } from './domains/commands';
 import {
   basename,
-  buildWorkspaceIndex,
   type BacklinkReference,
   computeWritingStats,
   dirname,
@@ -75,8 +75,6 @@ import {
   joinPath,
   type DocumentLinkReference,
   resolveDocumentLinkTarget,
-  type WorkspaceIndex,
-  type WorkspaceIndexSourceDocument,
 } from './domains/workspace/services';
 import type { ExportDefaultLocation } from './domains/settings/types';
 
@@ -249,58 +247,20 @@ function App() {
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
-  const [workspaceIndexSources, setWorkspaceIndexSources] = useState<WorkspaceIndexSourceDocument[]>([]);
-  const [workspaceIndexing, setWorkspaceIndexing] = useState(false);
-
   useBootstrap(settingsReady);
   useAutoSave(autoSaveInterval, autoSaveEnabled);
   useExternalFileChangeMonitor();
   useWorkspaceFocusRefresh(settingsReady);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      if (!workspace.rootPath) {
-        setWorkspaceIndexSources([]);
-        setWorkspaceIndexing(false);
-        return;
-      }
-
-      const files = flattenFiles(workspace.fileTree, workspace.rootPath)
-        .map(({ node }) => node)
-        .filter((node) => MARKDOWN_FILE_RE.test(node.path));
-
-      if (files.length === 0) {
-        setWorkspaceIndexSources([]);
-        setWorkspaceIndexing(false);
-        return;
-      }
-
-      setWorkspaceIndexing(true);
-      const documents = (await Promise.all(files.map(async (node) => {
-        try {
-          return {
-            path: node.path,
-            content: await readTextFile(node.path),
-          };
-        } catch {
-          return null;
-        }
-      }))).filter((item): item is WorkspaceIndexSourceDocument => Boolean(item));
-
-      if (!cancelled) {
-        setWorkspaceIndexSources(documents);
-        setWorkspaceIndexing(false);
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspace.fileTree, workspace.rootPath]);
+  const {
+    workspaceIndex,
+    workspaceIndexing,
+  } = useWorkspaceIndexModel({
+    currentDocument,
+    fileTree: workspace.fileTree,
+    rootPath: workspace.rootPath,
+    recentFiles,
+  });
 
   useEffect(() => {
     const platform = getRuntimePlatform();
@@ -421,27 +381,6 @@ function App() {
       workspaceRoot: workspace.rootPath,
     });
   }, [currentDocument, workspace.fileTree, workspace.rootPath]);
-
-  const workspaceIndexDocuments = useMemo(() => {
-    if (!currentDocument?.path || !MARKDOWN_FILE_RE.test(currentDocument.path)) {
-      return workspaceIndexSources;
-    }
-
-    return [
-      ...workspaceIndexSources.filter((document) => !isSamePath(document.path, currentDocument.path!)),
-      { path: currentDocument.path, content: currentDocument.content },
-    ];
-  }, [currentDocument?.content, currentDocument?.path, workspaceIndexSources]);
-
-  const workspaceIndex = useMemo<WorkspaceIndex | null>(() => {
-    if (!workspace.rootPath) return null;
-    return buildWorkspaceIndex({
-      fileTree: workspace.fileTree,
-      workspaceRoot: workspace.rootPath,
-      documents: workspaceIndexDocuments,
-      recentFiles,
-    });
-  }, [recentFiles, workspace.fileTree, workspace.rootPath, workspaceIndexDocuments]);
 
   const firstLinkDiagnostic = linkDiagnostics[0] ?? null;
   const documentLinks = useMemo(

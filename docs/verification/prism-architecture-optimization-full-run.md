@@ -236,3 +236,35 @@ npm test -- --run
 
 - 本 checkpoint 只移动 React UI state hook，不改变 Tauri capabilities、文件系统、导出算法、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 1B / 6A：工作区索引 hook 分层
+
+改动范围：
+
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.ts`
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useWorkspaceIndexModel()`，集中管理工作区 Markdown 文件读取、索引源文档状态、索引中状态、当前未保存文档覆盖磁盘内容、`buildWorkspaceIndex()` 调用。
+- `App.tsx` 继续消费 `workspaceIndex` 与 `workspaceIndexing`，不再直接持有 `workspaceIndexSources` 与读取 effect。
+- 工作区索引仍复用现有 `workspaceIndex` 服务，继续服务快速打开、全文搜索、文档链接、反链与关系图谱。
+- 新增 hook 测试覆盖：只读取 Markdown 文件、忽略图片文件、当前未保存文档覆盖磁盘旧内容、无工作区时清空索引状态。
+
+验证：
+
+```bash
+npm test -- --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/App.recovery.test.tsx
+npm test -- --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/workspace/services/workspaceIndex.test.ts src/components/shell/CommandPalette.test.tsx src/domains/workspace/components/BacklinksPanel.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/App.recovery.test.tsx
+```
+
+结果：
+
+- 聚焦 hook + App：2 个测试文件、10 项测试通过。
+- 工作区索引相关组合：6 个测试文件、18 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 React hook 与现有索引服务接线，不改变文件写入、安全策略、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
