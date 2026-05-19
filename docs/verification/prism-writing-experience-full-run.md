@@ -263,3 +263,28 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改 React modal、CSS 和 TypeScript 图谱服务，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 9：Front Matter 属性面板
+
+改动范围：
+
+- `src/domains/editor/components/DocumentPropertiesPanel.test.tsx`
+
+实现结果：
+
+- 审计确认现有 `DocumentPropertiesPanel` 已通过命令面板 `打开文档属性` 进入。
+- 面板支持编辑 `title`、`tags`、`description`、`author`、`date`、`status`、`export`，保存后写回 Markdown 顶部 YAML Front Matter。
+- 写回逻辑保留未知 YAML 字段，不创建数据库、不隐藏 Markdown 源码。
+- 新增组件回归测试，覆盖 description / author / date / status / export 全字段写回、未知字段保留、关闭回调和成功 toast。
+- 现有无效 YAML 防护保持：Front Matter 解析失败时禁用应用按钮并提示先修源码。
+
+验证：
+
+- `npm test -- --run src/domains/editor/components/DocumentPropertiesPanel.test.tsx src/domains/editor/extensions/frontMatterProperties.test.ts src/domains/commands/registry.test.ts src/lib/markdownToHtml.test.ts`：4 个测试文件、57 项测试通过。
+- `npm test -- --run`：73 个测试文件、433 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只补属性面板测试覆盖，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
