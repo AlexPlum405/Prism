@@ -1,3 +1,5 @@
+import { nextExportFrame } from './rendering';
+
 export const EXPORT_PAGE_SPLIT_EPSILON = 2;
 export const EXPORT_ATOMIC_SPACER_CLASS = 'prism-export-page-spacer';
 export const EXPORT_ATOMIC_BLOCK_CLASS = 'prism-export-atomic';
@@ -17,24 +19,6 @@ export const EXPORT_ATOMIC_BLOCK_SELECTOR = [
   '[data-prism-docx-mermaid-target]',
   `[data-prism-export-atomic="true"]`,
 ].join(',');
-
-function nextFrame(timeoutMs = 250) {
-  return new Promise<void>((resolve) => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timeout);
-      resolve();
-    };
-    const timeout = window.setTimeout(finish, timeoutMs);
-    if (typeof window.requestAnimationFrame !== 'function') {
-      finish();
-      return;
-    }
-    window.requestAnimationFrame(() => window.requestAnimationFrame(finish));
-  });
-}
 
 function isElementInsideAtomicBlock(element: Element) {
   const parent = element.parentElement?.closest(`.${EXPORT_ATOMIC_BLOCK_CLASS}, ${EXPORT_ATOMIC_BLOCK_SELECTOR}`);
@@ -125,7 +109,7 @@ export async function prepareExportAtomicPagination(root: HTMLElement, pageCssHe
 
   for (let pass = 0; pass < 3; pass += 1) {
     let changed = false;
-    await nextFrame();
+    await nextExportFrame();
     const rootRect = root.getBoundingClientRect();
     const atomicBlocks = Array.from(root.querySelectorAll<HTMLElement>(`.${EXPORT_ATOMIC_BLOCK_CLASS}`))
       .filter((element) => !element.closest(`.${EXPORT_ATOMIC_SPACER_CLASS}`))

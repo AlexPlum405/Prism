@@ -44,3 +44,36 @@ npm test -- --run src/domains/export/pagination.test.ts src/domains/export/diagn
 
 - 本 checkpoint 只迁移 TypeScript 纯函数边界和新增单元测试，不改变 Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 2B：导出渲染等待与栅格兼容工具分层
+
+改动范围：
+
+- `src/domains/export/rendering.ts`
+- `src/domains/export/rendering.test.ts`
+- `src/domains/export/pagination.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出可复用渲染工具模块 `rendering.ts`。
+- `rendering.ts` 统一承载导出 frame 等待、超时保护、栅格不兼容 CSS color 函数清理、WebKit color() 归一化、DOM computed color 归一化。
+- `pagination.ts` 改为复用同一 frame wait helper，减少导出 pipeline 内部重复等待逻辑。
+- `exportPipeline.ts` 继续使用原函数名别名接入新模块，避免大范围改调用点和导出行为。
+- 新增聚焦测试覆盖 timer fallback、timeout rejection、CSS color 清理和 color() 归一化。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/rendering.test.ts src/domains/export/pagination.test.ts src/domains/export/diagnostics.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/export/isolatedWebviewExport.test.ts src/domains/export/index.test.ts src/domains/commands/registry.test.ts
+```
+
+结果：
+
+- 8 个测试文件通过。
+- 89 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移导出前端渲染辅助函数，不改变 Tauri capabilities、WebKit PDF Rust command、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
