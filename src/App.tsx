@@ -20,6 +20,7 @@ import { StatusBar } from './domains/workspace/components/StatusBar';
 import { Sidebar } from './domains/workspace/components/Sidebar';
 import { BacklinksPanel } from './domains/workspace/components/BacklinksPanel';
 import { DocumentLinksPanel } from './domains/workspace/components/DocumentLinksPanel';
+import { RelationGraphPanel } from './domains/workspace/components/RelationGraphPanel';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists, readTextFile } from '@tauri-apps/plugin-fs';
@@ -248,6 +249,7 @@ function App() {
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
   const [documentLinksVisible, setDocumentLinksVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
+  const [relationGraphVisible, setRelationGraphVisible] = useState(false);
   const [backlinks, setBacklinks] = useState<BacklinkReference[]>([]);
   const [pendingBacklinkJump, setPendingBacklinkJump] = useState<{
     line: number;
@@ -892,8 +894,14 @@ function App() {
       openDocumentProperties: () => setDocumentPropertiesVisible(true),
       openDocumentLinks: () => setDocumentLinksVisible(true),
       openBacklinks: handleBacklinksClick,
-      openRelationGraph: () => showToast('关系图谱将在阶段 8 启用'),
-  }), [handleBacklinksClick, requestExportPath, requestMarkdownSavePath, showToast]);
+      openRelationGraph: () => {
+        if (!workspaceIndex || workspaceIndex.documents.length === 0) {
+          showToast('请先打开一个包含 Markdown 文件的工作区');
+          return;
+        }
+        setRelationGraphVisible(true);
+      },
+  }), [handleBacklinksClick, requestExportPath, requestMarkdownSavePath, showToast, workspaceIndex]);
 
   const commandContext = useMemo(() => createCommandContext(), [
     createCommandContext,
@@ -1154,6 +1162,17 @@ function App() {
         links={documentLinks}
         onClose={() => setDocumentLinksVisible(false)}
         onSelect={handleSelectDocumentLink}
+      />
+
+      <RelationGraphPanel
+        visible={relationGraphVisible}
+        index={workspaceIndex}
+        currentPath={currentDocument?.path}
+        onClose={() => setRelationGraphVisible(false)}
+        onSelect={(path) => {
+          setRelationGraphVisible(false);
+          void handleFileAction({ action: 'openFile', path });
+        }}
       />
 
       <DocumentPropertiesPanel

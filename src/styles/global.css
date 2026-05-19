@@ -2318,6 +2318,185 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   white-space: nowrap;
 }
 
+.prism-relation-graph-modal {
+  width: min(940px, calc(100vw - 32px));
+  max-width: 940px;
+}
+
+.prism-relation-graph-body {
+  padding: 12px;
+}
+
+.prism-relation-graph-toolbar {
+  display: grid;
+  grid-template-columns: auto auto minmax(180px, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.prism-relation-graph-segment {
+  display: inline-flex;
+  gap: 2px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-link);
+  padding: 2px;
+  background: var(--c-paper);
+}
+
+.prism-relation-graph-segment button,
+.prism-relation-graph-list button {
+  border: 0;
+  background: transparent;
+  color: var(--c-graphite);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+.prism-relation-graph-segment button {
+  min-height: 28px;
+  border-radius: 5px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.prism-relation-graph-segment button[data-active='true'] {
+  background: var(--c-canvas);
+  color: var(--c-void);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.prism-relation-graph-toolbar input {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-link);
+  padding: 0 10px;
+  background: var(--c-canvas);
+  color: var(--c-void);
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.prism-relation-graph-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 10px;
+}
+
+.prism-relation-graph-canvas {
+  position: relative;
+  min-height: 420px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-paper));
+  overflow: hidden;
+}
+
+.prism-relation-graph-canvas svg {
+  display: block;
+  width: 100%;
+  height: 420px;
+}
+
+.prism-relation-graph-edge {
+  stroke: var(--c-fog);
+  stroke-width: 1.2;
+}
+
+.prism-relation-graph-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.prism-relation-graph-node circle {
+  fill: var(--c-canvas);
+  stroke: var(--c-ash);
+  stroke-width: 1.4;
+}
+
+.prism-relation-graph-node.is-active circle {
+  fill: var(--c-void);
+  stroke: var(--c-void);
+}
+
+.prism-relation-graph-node text {
+  fill: var(--c-graphite);
+  font-size: 12px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.prism-relation-graph-node.is-active text {
+  fill: var(--c-void);
+  font-weight: 650;
+}
+
+.prism-relation-graph-empty {
+  display: grid;
+  height: 100%;
+  min-height: 420px;
+  place-items: center;
+  color: var(--c-ash);
+  font-size: 13px;
+}
+
+.prism-relation-graph-list {
+  display: flex;
+  max-height: 420px;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+}
+
+.prism-relation-graph-list button {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: var(--r-link);
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.prism-relation-graph-list button:hover,
+.prism-relation-graph-list button.is-active {
+  background: var(--c-chalk);
+  color: var(--c-void);
+}
+
+.prism-relation-graph-list span,
+.prism-relation-graph-list small,
+.prism-relation-graph-list em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prism-relation-graph-list span {
+  color: var(--c-void);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.prism-relation-graph-list small,
+.prism-relation-graph-list em {
+  color: var(--c-ash);
+  font-size: 11px;
+  font-style: normal;
+}
+
+@media (max-width: 760px) {
+  .prism-relation-graph-toolbar,
+  .prism-relation-graph-content {
+    grid-template-columns: 1fr;
+  }
+
+  .prism-relation-graph-list {
+    max-height: 180px;
+  }
+}
+
 .prism-document-properties-modal {
   max-width: 620px;
 }

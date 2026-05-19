@@ -71,3 +71,11 @@ export {
   type WorkspaceIndexSearchResult,
   type WorkspaceIndexSourceDocument,
 } from './workspaceIndex';
+export {
+  buildRelationGraph,
+  type RelationGraph,
+  type RelationGraphDepth,
+  type RelationGraphEdge,
+  type RelationGraphNode,
+  type RelationGraphScope,
+} from './relationGraph';

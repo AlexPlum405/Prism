@@ -230,3 +230,36 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改前端编辑器补全、React 数据传递和 TypeScript 索引/链接服务，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 8：轻量关系图谱
+
+改动范围：
+
+- `src/App.tsx`
+- `src/domains/workspace/services/relationGraph.ts`
+- `src/domains/workspace/services/relationGraph.test.ts`
+- `src/domains/workspace/services/index.ts`
+- `src/domains/workspace/components/RelationGraphPanel.tsx`
+- `src/domains/workspace/components/RelationGraphPanel.test.tsx`
+- `src/styles/global.css`
+
+实现结果：
+
+- `查看关系图谱` 命令从占位 toast 替换为正式轻量关系图谱 modal。
+- 图谱复用工作区索引，不新增文件扫描链路。
+- 支持当前文档范围和工作区范围；当前文档范围支持 1 跳 / 2 跳。
+- 节点是 Markdown 文件，边来自 Markdown/wiki 链接解析结果。
+- 支持节点搜索，搜索字段匹配标题、文件名、相对路径和标题节点。
+- 节点可点击打开目标文档；列表侧边展示入链/出链数量。
+- UI 使用现有 modal / 分段按钮 / 低对比 SVG 视觉，不做 3D、块节点、数据库关系或常驻右栏。
+
+验证：
+
+- `npm test -- --run src/domains/workspace/services/relationGraph.test.ts src/domains/workspace/components/RelationGraphPanel.test.tsx src/domains/commands/registry.test.ts src/domains/workspace/services/workspaceIndex.test.ts`：4 个测试文件、32 项测试通过。
+- `npm test -- --run`：73 个测试文件、432 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改 React modal、CSS 和 TypeScript 图谱服务，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
