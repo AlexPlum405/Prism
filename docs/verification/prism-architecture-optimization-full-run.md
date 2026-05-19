@@ -521,3 +521,54 @@ git diff --check
 
 - 本 checkpoint 只整理文件安全 TypeScript 边界，不改变 Tauri capabilities、文件系统权限、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 10A：真实 App smoke 自动化
+
+改动范围：
+
+- `.gitignore`
+- `package.json`
+- `scripts/run-app-smoke.mjs`
+
+实现结果：
+
+- 新增 `scripts/run-app-smoke.mjs`，把真实 macOS `Prism.app` smoke 固化为可重复命令，而不是只依赖人工目测。
+- `npm run tauri:build:app-smoke` 现在先执行 Tauri app-only build，再自动运行真实 `.app` smoke。
+- smoke fixture 写入 `.codex-smoke/app-smoke/workspace/`，包含：
+  - `app-smoke.md`：带缺失 Markdown 链接，用于验证启动、文件树和 `ERROR` 诊断。
+  - `target.md`：用于验证 `Cmd+P` 快速打开、基础编辑和 `Cmd+S` 保存。
+- smoke 通过 macOS `open -n -a <Prism.app> <file>` 启动真实 bundle，通过 `System Events` 执行键盘/点击动作，通过 `screencapture` + `sharp` 对关键弹层做截图差异断言。
+- smoke 覆盖：
+  - 启动真实 `Prism.app` 并打开 Markdown fixture。
+  - 访达式文件参数打开后，`lastSession.filePath` 和 `folderPath` 指向 fixture 与其父工作区，证明文件树工作区同步链路生效。
+  - 点击底部 `ERROR 1` 后，诊断面板截图差异通过。
+  - `Cmd+P` 打开快速打开，输入 `target` 后打开工作区内 `target.md`，并通过 `lastSession.filePath` 验证。
+  - 在真实编辑器内输入 smoke marker，`Cmd+S` 后 fixture 文件落盘包含该 marker。
+  - `Cmd+,` 打开设置中心，截图差异通过。
+  - 底部导出按钮打开导出菜单并进入导出保存弹窗，截图差异通过。
+- smoke 运行前备份 `~/Library/Application Support/com.prism.editor.v1/config.json`，结束后退出 smoke app 并恢复配置，避免污染用户最近文件和 last session。
+- `.gitignore` 增加 `!scripts/run-app-smoke.mjs`，保留 `.codex-smoke/` 为临时证据目录，不提交 smoke 产物。
+
+验证：
+
+```bash
+node scripts/run-app-smoke.mjs
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `node scripts/run-app-smoke.mjs` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 通过；Vite 仍提示既有大 chunk warning。
+  - Rust `release` 编译通过。
+  - app-only bundle 生成：`src-tauri/target/release/bundle/macos/Prism.app`。
+  - `scripts/run-app-smoke.mjs` 真实 app smoke 全部通过。
+- 最新 smoke 证据：`.codex-smoke/app-smoke/evidence/report.json`。
+- 最新 smoke marker：`prismappsmoke1779214912467`。
+
+跳过项 / 限制：
+
+- 本 checkpoint 只覆盖 macOS app-only bundle 的真实运行链路；不做 DMG、签名、公证、updater、安装器或 Windows 发布验证。
+- smoke 的弹层断言依赖 macOS `System Events`、屏幕截图权限和截图差异阈值；如果机器缺少辅助功能或屏幕录制权限，脚本会失败并把失败日志写入 `.codex-smoke/app-smoke/evidence/failure.log`。
+- `ERROR`、设置中心和导出保存弹窗使用截图差异验证弹层出现，不解析 WebView 内部 DOM 文本；这是当前 Tauri WebView accessibility 暴露有限情况下的真实 app 自动化折中。

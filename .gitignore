@@ -18,4 +18,5 @@ scripts/*
 !scripts/patch-windows-exe-icon.mjs
 !scripts/generate-windows-icon.mjs
 !scripts/package-macos-dmg-skip-finder.sh
+!scripts/run-app-smoke.mjs
 src-tauri/icons_backup/
