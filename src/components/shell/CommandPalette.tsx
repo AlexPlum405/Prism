@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { FileNode } from '../../domains/workspace/types';
 import {
   rankQuickOpenFiles,
@@ -39,6 +39,173 @@ const SearchIcon = () => (
   </svg>
 );
 
+const COMMAND_RECENT_STORAGE_KEY = 'prism-command-palette-recent-v1';
+const MAX_RECENT_COMMANDS = 5;
+const MAX_DEFAULT_COMMANDS = 12;
+
+const CATEGORY_ORDER = ['文件', '编辑', '插入', '格式', '视图', '主题', '窗口', '帮助'];
+
+const DEFAULT_COMMAND_SECTIONS = [
+  {
+    title: '常用',
+    ids: [
+      'quickOpen',
+      'workspaceSearch',
+      'save',
+      'exportWithPrevious',
+      'exportPdf',
+      'insertTable',
+      'formatTable',
+      'splitMode',
+      'previewMode',
+    ],
+    limit: 6,
+  },
+  {
+    title: '当前文档',
+    ids: [
+      'openDocumentProperties',
+      'showDocumentLinks',
+      'showBacklinks',
+      'openCurrentLocation',
+      'focusMode',
+    ],
+    limit: 4,
+  },
+  {
+    title: '写作',
+    ids: [
+      'templatePrd',
+      'templateMeeting',
+      'templateWeekly',
+      'templateTechnicalPlan',
+      'bold',
+      'link',
+      'quote',
+      'taskList',
+    ],
+    limit: 3,
+  },
+  {
+    title: '开始',
+    ids: ['new', 'open', 'openFolder', 'preferences'],
+    limit: 4,
+  },
+] as const;
+
+interface CommandSection {
+  title: string;
+  items: Command[];
+}
+
+function readRecentCommandIds(): string[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage?.getItem(COMMAND_RECENT_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentCommandIds(ids: string[]): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage?.setItem(COMMAND_RECENT_STORAGE_KEY, JSON.stringify(ids));
+  } catch {
+    // Recent commands are a convenience only.
+  }
+}
+
+function pickCommands(
+  commandById: Map<string, Command>,
+  ids: readonly string[],
+  used: Set<string>,
+  limit: number,
+): Command[] {
+  const items: Command[] = [];
+  for (const id of ids) {
+    if (items.length >= limit) break;
+    if (used.has(id)) continue;
+    const command = commandById.get(id);
+    if (!command) continue;
+    items.push(command);
+    used.add(command.id);
+  }
+  return items;
+}
+
+function buildDefaultCommandSections(commands: Command[], recentCommandIds: string[]): CommandSection[] {
+  const commandById = new Map(commands.map((command) => [command.id, command]));
+  const used = new Set<string>();
+  const sections: CommandSection[] = [];
+  let remaining = MAX_DEFAULT_COMMANDS;
+
+  const recent = pickCommands(commandById, recentCommandIds, used, Math.min(3, remaining));
+  if (recent.length > 0) {
+    sections.push({ title: '最近使用', items: recent });
+    remaining -= recent.length;
+  }
+
+  for (const section of DEFAULT_COMMAND_SECTIONS) {
+    if (remaining <= 0) break;
+    const items = pickCommands(commandById, section.ids, used, Math.min(section.limit, remaining));
+    if (items.length === 0) continue;
+    sections.push({ title: section.title, items });
+    remaining -= items.length;
+  }
+
+  if (sections.length === 0 && commands.length > 0) {
+    sections.push({ title: '可用命令', items: commands.slice(0, Math.min(commands.length, MAX_DEFAULT_COMMANDS)) });
+  }
+
+  return sections;
+}
+
+function rankCommand(command: Command, normalizedQuery: string): number {
+  const label = command.label.toLowerCase();
+  const category = command.category.toLowerCase();
+  const keywords = command.keywords?.join(' ').toLowerCase() ?? '';
+
+  if (label === normalizedQuery) return 0;
+  if (label.startsWith(normalizedQuery)) return 1;
+  if (keywords.split(/\s+/).some((keyword) => keyword.startsWith(normalizedQuery))) return 2;
+  if (category.includes(normalizedQuery)) return 3;
+  if (label.includes(normalizedQuery)) return 4;
+  if (keywords.includes(normalizedQuery)) return 5;
+  return 6;
+}
+
+function sortSearchCommands(commands: Command[], normalizedQuery: string): Command[] {
+  return [...commands].sort((a, b) => {
+    const rankDelta = rankCommand(a, normalizedQuery) - rankCommand(b, normalizedQuery);
+    if (rankDelta !== 0) return rankDelta;
+
+    const categoryDelta = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
+    if (categoryDelta !== 0) return categoryDelta;
+
+    return a.label.localeCompare(b.label, 'zh-Hans-CN');
+  });
+}
+
+function groupCommandsByCategory(commands: Command[]): CommandSection[] {
+  const sections = new Map<string, Command[]>();
+  for (const command of commands) {
+    const items = sections.get(command.category) ?? [];
+    items.push(command);
+    sections.set(command.category, items);
+  }
+
+  return [...sections.entries()]
+    .sort(([a], [b]) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b))
+    .map(([title, items]) => ({ title, items }));
+}
+
 export function CommandPalette({
   visible,
   commands,
@@ -53,12 +220,14 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recentCommandIds, setRecentCommandIds] = useState<string[]>(() => readRecentCommandIds());
   const inputRef = useRef<HTMLInputElement>(null);
+  const normalizedQuery = query.trim().toLowerCase();
 
   const filteredCommands = useMemo(() => commands.filter((cmd) => {
     const searchText = `${cmd.label} ${cmd.category} ${cmd.keywords?.join(' ') || ''}`.toLowerCase();
-    return searchText.includes(query.toLowerCase());
-  }), [commands, query]);
+    return searchText.includes(normalizedQuery);
+  }), [commands, normalizedQuery]);
   const quickOpenItems = useMemo(() => {
     if (workspaceIndex) {
       return rankWorkspaceIndexDocuments(workspaceIndex, query, 30).map((result) => ({
@@ -85,16 +254,25 @@ export function CommandPalette({
         }))
       : []
   ), [query, workspaceIndex]);
+  const commandSections = useMemo(() => {
+    if (mode !== 'commands') return [];
+    if (!normalizedQuery) return buildDefaultCommandSections(commands, recentCommandIds);
+    return groupCommandsByCategory(sortSearchCommands(filteredCommands, normalizedQuery));
+  }, [commands, filteredCommands, mode, normalizedQuery, recentCommandIds]);
+  const commandItems = useMemo(
+    () => commandSections.flatMap((section) => section.items),
+    [commandSections],
+  );
   const visibleItems = useMemo(() => {
     if (mode === 'files') return quickOpenItems;
     if (mode === 'search') return workspaceSearchItems;
-    return filteredCommands;
-  }, [filteredCommands, mode, quickOpenItems, workspaceSearchItems]);
+    return commandItems;
+  }, [commandItems, mode, quickOpenItems, workspaceSearchItems]);
   const placeholder = mode === 'files'
     ? '搜索工作区文件…'
     : mode === 'search'
       ? '全文搜索工作区…'
-      : '输入命令或搜索…';
+      : '搜索动作…';
   const emptyText = mode === 'files'
     ? workspaceIndexing ? '正在建立索引…' : '未找到匹配的文件'
     : mode === 'search'
@@ -105,11 +283,22 @@ export function CommandPalette({
     if (visible) {
       setQuery('');
       setSelectedIndex(0);
+      setRecentCommandIds(readRecentCommandIds());
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [visible, mode]);
 
   useEffect(() => { setSelectedIndex(0); }, [query]);
+
+  const executeItem = useCallback((item: Command) => {
+    if (mode === 'commands') {
+      const next = [item.id, ...recentCommandIds.filter((id) => id !== item.id)].slice(0, MAX_RECENT_COMMANDS);
+      setRecentCommandIds(next);
+      writeRecentCommandIds(next);
+    }
+    onExecute(item.id);
+    onClose();
+  }, [mode, onClose, onExecute, recentCommandIds]);
 
   useEffect(() => {
     if (!visible) return;
@@ -124,16 +313,50 @@ export function CommandPalette({
       } else if (e.key === 'Enter') {
         e.preventDefault();
         if (visibleItems[selectedIndex]) {
-          onExecute(visibleItems[selectedIndex].id);
-          onClose();
+          executeItem(visibleItems[selectedIndex]);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [visible, selectedIndex, visibleItems, onClose, onExecute]);
+  }, [executeItem, visible, selectedIndex, visibleItems]);
 
   if (!visible) return null;
+
+  const renderItem = (cmd: Command, index: number) => (
+    <div
+      key={cmd.id}
+      className={`cmdk-item ${index === selectedIndex ? 'selected' : ''}`}
+      onClick={() => executeItem(cmd)}
+      onMouseEnter={() => setSelectedIndex(index)}
+    >
+      <div className="cmdk-item-main">
+        <span className="cmdk-label">{cmd.label}</span>
+        <span className="cmdk-cat">{cmd.category}</span>
+      </div>
+      {cmd.shortcut && (
+        <span className="cmdk-shortcut">
+          {cmd.shortcut.split('+').map((k, j) => (
+            <span key={j} className="kbd">{k}</span>
+          ))}
+        </span>
+      )}
+    </div>
+  );
+
+  const renderCommandSections = () => {
+    let commandIndex = 0;
+    return commandSections.map((section) => (
+      <section className="cmdk-section" key={section.title}>
+        <div className="cmdk-section-title">{section.title}</div>
+        {section.items.map((cmd) => {
+          const index = commandIndex;
+          commandIndex += 1;
+          return renderItem(cmd, index);
+        })}
+      </section>
+    ));
+  };
 
   return (
     <>
@@ -154,27 +377,10 @@ export function CommandPalette({
         <div className="cmdk-list">
           {visibleItems.length === 0 ? (
             <div className="cmdk-empty">{emptyText}</div>
+          ) : mode === 'commands' ? (
+            renderCommandSections()
           ) : (
-            visibleItems.map((cmd, index) => (
-              <div
-                key={cmd.id}
-                className={`cmdk-item ${index === selectedIndex ? 'selected' : ''}`}
-                onClick={() => { onExecute(cmd.id); onClose(); }}
-                onMouseEnter={() => setSelectedIndex(index)}
-              >
-                <div className="cmdk-item-main">
-                  <span className="cmdk-label">{cmd.label}</span>
-                  <span className="cmdk-cat">{cmd.category}</span>
-                </div>
-                {cmd.shortcut && (
-                  <span className="cmdk-shortcut">
-                    {cmd.shortcut.split('+').map((k, j) => (
-                      <span key={j} className="kbd">{k}</span>
-                    ))}
-                  </span>
-                )}
-              </div>
-            ))
+            visibleItems.map(renderItem)
           )}
         </div>
       </div>

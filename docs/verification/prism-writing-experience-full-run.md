@@ -73,6 +73,34 @@
 
 - 未跑发布级 app/DMG smoke；本阶段只改命令面板、React 弹层与 TypeScript 服务，不涉及发布、签名、公证、updater 或安装器。
 
+### 2026-05-19 命令面板默认态降噪
+
+改动范围：
+
+- `src/components/shell/CommandPalette.tsx`
+- `src/components/shell/CommandPalette.test.tsx`
+- `src/styles/global.css`
+
+实现结果：
+
+- 命令面板 `commands` 模式默认不再平铺全部命令，只展示最多 12 个高频 / 当前文档 / 写作相关动作。
+- 搜索框输入后仍搜索全量命令，低频能力如关系图谱、主题、帮助等不被删除。
+- 命令结果按轻量分组展示，保持当前妙言风格的小标题、紧凑行高和低对比 hover。
+- 执行过的命令会进入本地最近使用，下一次打开命令面板时优先展示。
+- `Cmd+P` 快速打开与 `Cmd+Shift+F` 全文搜索继续使用独立模式，不并回命令面板默认列表。
+
+验证：
+
+- `npm test -- --run src/components/shell/CommandPalette.test.tsx`：通过。
+- `npm test -- --run src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts`：2 个测试文件、29 项测试通过。
+- `npm test -- --run`：74 个测试文件、441 项测试通过。
+- `npm run build`：通过，仅有既有 Vite large chunk warning。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 本次只改 React 命令面板呈现、CSS 和组件测试，不涉及命令执行、文件系统、导出、Tauri capabilities 或发布链路，未跑发布级 app/DMG smoke。
+
 ## 阶段 3：斜杠菜单
 
 改动范围：
