@@ -78,6 +78,10 @@ export function CommandPalette({
   const placeholder = mode === 'files'
     ? '搜索工作区文件…'
     : '全文搜索工作区…';
+  const title = mode === 'files' ? '快速打开' : '全文搜索';
+  const hint = mode === 'files'
+    ? '文件、标题、路径'
+    : '当前工作区 Markdown';
   const emptyText = mode === 'files'
     ? workspaceIndexing ? '正在建立索引…' : '未找到匹配的文件'
     : workspaceIndexing ? '正在建立索引…' : '未找到匹配的内容';
@@ -141,6 +145,10 @@ export function CommandPalette({
     <>
       <div className="cmdk-overlay" onClick={onClose} />
       <div className="cmdk" role="dialog" aria-label={mode === 'files' ? '快速打开' : '全文搜索工作区'}>
+        <div className="cmdk-titlebar">
+          <span className="cmdk-title">{title}</span>
+          <span className="cmdk-hint">{hint}</span>
+        </div>
         <div className="cmdk-search">
           <SearchIcon />
           <input

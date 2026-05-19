@@ -1244,6 +1244,24 @@ function App() {
                   <div className="prism-export-quality-note">
                     Prism 会按所选清晰度导出，不会自动降低质量。大文档可能需要数分钟；导出期间可转入后台继续编辑。
                   </div>
+                  <div className="prism-export-preflight" aria-label="导出预检">
+                    <div className="prism-export-preflight-row">
+                      <span>目标</span>
+                      <b>{saveDialog.format ? getExportFormatLabel(saveDialog.format) : '导出'} · {saveDialog.filename}</b>
+                    </div>
+                    <div className="prism-export-preflight-row">
+                      <span>清晰度</span>
+                      <b>
+                        {getExportQualityPreset(
+                          normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale),
+                        ).shortLabel}
+                      </b>
+                    </div>
+                    <div className="prism-export-preflight-row">
+                      <span>风险</span>
+                      <b>{linkDiagnostics.length > 0 ? `有 ${linkDiagnostics.length} 个 ERROR，建议先查看` : '未发现阻断性文档错误'}</b>
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -1286,8 +1304,9 @@ function App() {
             <div role="status" aria-live="polite" className="prism-toast prism-toast--loading prism-export-progress">
               <span className="prism-toast-icon prism-export-spinner" aria-hidden="true" />
               <span className="prism-toast-copy">
-                <span className="prism-toast-title">正在导出</span>
+                <span className="prism-toast-title">正在导出 · 前台任务</span>
                 <span className="prism-toast-message">{exportProgress}</span>
+                <span className="prism-toast-message prism-toast-message--secondary">耗时较长时可转入后台，清晰度不会降低。</span>
               </span>
               <span className="prism-toast-actions">
                 <button
@@ -1314,7 +1333,11 @@ function App() {
             </div>
             <div className="modal-body prism-export-failure-body">
               <div className="prism-export-failure-summary">
-                导出未完成。下面的诊断文本可用于复现和定位问题。
+                导出未完成。先检查输出位置、文件权限、文档 ERROR 和下方失败阶段；诊断文本可用于复现和定位问题。
+              </div>
+              <div className="prism-export-failure-actions">
+                <span>处理建议</span>
+                <b>修正后重新导出，或复制诊断文本继续排查。</b>
               </div>
               <textarea readOnly value={exportFailure.diagnostic} />
             </div>

@@ -208,6 +208,7 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
 
         {node.preview && (
           <div
+            className="file-tree-preview"
             style={{
               fontSize: '11px',
               color: isActive ? 'var(--text-secondary)' : 'var(--text-tertiary)',

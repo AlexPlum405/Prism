@@ -447,3 +447,53 @@
 跳过项：
 
 - 未重复真实 UI 四格式导出点击 smoke；已有 2026-05-15 至 2026-05-18 的真实 `.app` 证据覆盖 HTML / PDF / PNG / DOCX、长文 WebKit PDF、DOCX Mermaid PNG-first、链接图片、行内 HTML 和分页保护。本阶段没有改导出源码，重复人工 smoke 的风险收益不成比例。
+
+## 2026-05-19：UI/UX 审查确认项优化
+
+改动范围：
+
+- `src/components/shell/CommandPalette.tsx`
+- `src/components/shell/SettingsModal.tsx`
+- `src/components/shell/SettingsModal.test.tsx`
+- `src/domains/workspace/components/FileTree.tsx`
+- `src/domains/workspace/components/StatusBar.tsx`
+- `src/domains/workspace/components/StatusBar.test.tsx`
+- `src/domains/editor/components/LinkDiagnosticsPanel.tsx`
+- `src/domains/editor/components/TypographyDiagnosticsPanel.tsx`
+- `src/App.tsx`
+- `src/styles/global.css`
+
+实现结果：
+
+- `Cmd+P` / `Cmd+Shift+F` 仍只承载快速打开文件与工作区全文搜索；快速打开弹层新增轻量标题信息，缩小面板宽度和列表高度，妙言主题下遮罩从强白雾和 8px blur 降为轻遮罩和 1.5px blur。
+- 设置中心从单列长表单改为左侧分类导航 + 右侧当前分类内容，覆盖通用、写作、外观、导出、引用、文件六类；所有既有设置项保留，Pandoc / 参考文献 / CSL 独立到“引用”分类。
+- 左侧文件列表当前文档选中态减重：降低卡片高度、选中背景改为轻灰加左侧细线，预览摘要默认弱化，hover 或当前文档时略增强；左侧边栏、文件树、`+`、文档名和工作区行为未改。
+- `ERROR` 对应的链接诊断面板改为状态栏上方轻量浮层，不再覆盖整屏；每条问题展示类型、位置、原因和处理动作，点击仍跳到源码行。
+- 排版提示面板沿用同一轻量诊断浮层结构，便于后续统一诊断体验；普通排版建议仍不计入状态栏 `ERROR`。
+- 导出保存弹窗新增预检块，显示目标格式 / 文件名、清晰度、当前文档 ERROR 风险；导出前台 toast 明确可转后台且不会降清晰度；后台状态 tooltip 更清楚；失败详情增加处理建议。
+
+明确未做：
+
+- 未把“文档属性”当成问题处理；`DocumentPropertiesPanel` 及其正文/文档属性体验未被本轮重构、收起或合并进 inspector。
+- 未优化、替换或弱化右上角视图图标；`TitleBar` / `ViewModeSwitch` 未改动。
+- 未恢复全功能命令面板；`CommandPalette` 仍只有 `files` / `search` 两种模式。
+- 未重构导出核心算法；本轮只整理导出保存、进度、失败状态的 UI 表达。
+
+验证：
+
+- `npm test -- --run src/components/shell/CommandPalette.test.tsx src/components/shell/SettingsModal.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/domains/editor/components/LinkDiagnosticsPanel.test.tsx src/domains/editor/components/TypographyDiagnosticsPanel.test.tsx src/App.recovery.test.tsx`：6 个测试文件、31 项测试通过。
+- `npm test -- --run`：74 个测试文件、439 项测试通过。
+- `npm run build`：通过，仅保留既有 Vite large chunk warning。
+- `git diff --check`：通过。
+- `npm run tauri:build:app-smoke`：通过，生成 `src-tauri/target/release/bundle/macos/Prism.app`。
+
+人工测试建议：
+
+- `Cmd+P` 打开快速打开：确认背景只轻微弱化，面板更像文件切换器；输入文件名后回车仍能打开文档。
+- 打开设置中心：点击左侧“通用 / 写作 / 外观 / 导出 / 引用 / 文件”，确认右侧只显示当前分类，原有 Pandoc、参考文献、导出清晰度、恢复窗口等设置仍可操作。
+- 在有链接错误的文档中点击底部 `ERROR n`：确认弹层从右下方出现，能看到类型、位置、原因、处理动作，点击条目仍跳到源码行。
+- 从导出菜单进入导出保存弹窗：确认导出清晰度提示和预检块可见；开始导出后 toast 显示后台按钮和“不降清晰度”提示；转后台后状态栏显示 `导出中` 并可恢复前台 toast。
+
+跳过项：
+
+- 未跑发布级 DMG / 签名 / 公证 / updater / file association smoke；本轮未触及 Tauri capabilities、发布打包策略、安装器、签名、公证、更新器或文件关联。

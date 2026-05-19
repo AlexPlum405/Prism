@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prism UI/UX Audit · 2026-05-19</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --paper: #fffdf8;
+      --ink: #20201d;
+      --muted: #7a776f;
+      --line: #ded9cf;
+      --soft: #ece7dc;
+      --accent: #2d6b4f;
+      --warn: #9a5a26;
+      --danger: #9b3c31;
+      --shadow: 0 18px 46px rgba(39, 34, 28, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    main {
+      width: min(1440px, calc(100vw - 64px));
+      margin: 0 auto;
+      padding: 44px 0 72px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 34px;
+      align-items: end;
+      padding-bottom: 30px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1.08;
+      font-weight: 650;
+      letter-spacing: 0.03em;
+    }
+
+    .brief {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .score {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .score div {
+      padding: 14px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 253, 248, 0.62);
+    }
+
+    .score b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 22px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    .score span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    section { margin-top: 42px; }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      letter-spacing: 0.04em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .card ul {
+      margin: 0;
+      padding-left: 1.2em;
+    }
+
+    .tag {
+      display: inline-flex;
+      margin-bottom: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .danger { color: var(--danger); }
+    .warn { color: var(--warn); }
+    .good { color: var(--accent); }
+
+    .shot {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .shot img {
+      display: block;
+      width: 100%;
+    }
+
+    .shot.main img { filter: saturate(0.95); }
+
+    .pin {
+      position: absolute;
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border: 2px solid var(--paper);
+      border-radius: 50%;
+      background: var(--danger);
+      color: white;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+    }
+
+    .pin.good { background: var(--accent); }
+    .pin.warn { background: var(--warn); }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .legend .card {
+      min-height: 116px;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--line);
+    }
+
+    .matrix div {
+      padding: 14px;
+      background: var(--paper);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .matrix .head {
+      color: var(--ink);
+      font-weight: 650;
+      background: #f1ece3;
+    }
+
+    .sequence {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    .step {
+      min-height: 138px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    footer {
+      margin-top: 42px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      header,
+      .grid,
+      .legend,
+      .sequence {
+        grid-template-columns: 1fr;
+      }
+
+      .score,
+      .matrix {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">Prism UI/UX audit · Miaoyan-style checkpoint · 2026-05-19</div>
+        <h1>当前界面已经有写作器气质，但信息架构还没有完全收敛。</h1>
+      </div>
+      <div>
+        <p class="brief">
+          这份审查只针对当前真实 App 截图，不重新定义产品方向。判断标准是：本地优先、单文档单窗口、妙言式轻量桌面感、长文写作效率。
+        </p>
+        <div class="score">
+          <div><b>7.2</b><span>整体成熟度</span></div>
+          <div><b>8.0</b><span>阅读气质</span></div>
+          <div><b>6.5</b><span>入口清晰度</span></div>
+          <div><b>6.2</b><span>浮层克制</span></div>
+          <div><b>6.0</b><span>设置效率</span></div>
+        </div>
+      </div>
+    </header>
+
+    <section>
+      <h2>主要问题定位</h2>
+      <div class="shot main">
+        <img src="../assets/ui-audit/main.png" alt="Prism main UI screenshot" />
+        <div class="pin warn" style="left: 12%; top: 23%;">1</div>
+        <div class="pin" style="left: 61%; top: 13%;">2</div>
+        <div class="pin warn" style="left: 83%; top: 13%;">3</div>
+        <div class="pin good" style="left: 93%; top: 91%;">4</div>
+      </div>
+      <div class="legend">
+        <div class="card">
+          <span class="tag">1 左侧栏</span>
+          <h3>文件卡片太重</h3>
+          <p>当前文件卡背景块很厚，视觉重量接近主编辑区，会抢走正文注意力。更适合改成细线选中态和轻量摘要。</p>
+        </div>
+        <div class="card">
+          <span class="tag">2 文档属性</span>
+          <h3>右侧面板抢主线</h3>
+          <p>属性面板常驻时宽度偏大，和预览一起形成三栏工作台感，偏离单文档写作器。建议改成可收起 inspector。</p>
+        </div>
+        <div class="card">
+          <span class="tag">3 顶部入口</span>
+          <h3>图标语义不够明确</h3>
+          <p>右上角三个图标看起来精致，但新用户不一定知道分别是属性、分栏、预览。需要 hover 名称和一致的选中状态。</p>
+        </div>
+        <div class="card">
+          <span class="tag">4 状态栏</span>
+          <h3>方向基本正确</h3>
+          <p>底部只保留字数、行列、ERROR、导出和专注入口，符合当前策略。下一步是让 ERROR 和导出状态更可理解。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>浮层与设置中心</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="tag danger">快速打开</span>
+          <h3>背景虚化过强</h3>
+          <p>快速打开启动后，整屏大面积白雾和 8px blur 让用户丢失空间定位。作为文件跳转工具，它应该更像 macOS quick switcher，不像大型 modal。</p>
+        </div>
+        <div class="card">
+          <span class="tag warn">设置中心</span>
+          <h3>一屏信息过长</h3>
+          <p>设置项从通用、写作、主题、导出、引用一路堆叠。用户想调导出或字体时，需要滚动扫描，缺少左侧分组导航。</p>
+        </div>
+        <div class="card">
+          <span class="tag warn">控件体系</span>
+          <h3>原生感与自定义感混杂</h3>
+          <p>select、range、toggle、按钮各自还可以，但组合起来像表单。妙言风格需要更少控件噪音和更强分组节奏。</p>
+        </div>
+      </div>
+      <div class="grid" style="margin-top: 16px;">
+        <div class="shot"><img src="../assets/ui-audit/quick-open.png" alt="Quick open screenshot" /></div>
+        <div class="shot" style="grid-column: span 2;"><img src="../assets/ui-audit/settings.png" alt="Settings screenshot" /></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>三种优化方向</h2>
+      <div class="matrix">
+        <div class="head">方向</div>
+        <div class="head">解决什么</div>
+        <div class="head">具体动作</div>
+
+        <div><b>安静写作优先</b></div>
+        <div>减少侧栏、右栏、浮层对正文的干扰。</div>
+        <div>属性面板默认收起；快速打开弱化全屏虚化；文件卡片选中态减重。</div>
+
+        <div><b>结构导航优先</b></div>
+        <div>让大纲、链接、反链、图谱成为有秩序的导航体系。</div>
+        <div>右侧 inspector 统一承载属性、链接、反链；大纲和图谱只在需要时出现。</div>
+
+        <div><b>导出工作台优先</b></div>
+        <div>解决导出设置复杂、失败诊断难理解的问题。</div>
+        <div>设置中心拆出导出页签；导出前预检；导出 toast 改成任务卡片。</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>建议落地顺序</h2>
+      <div class="sequence">
+        <div class="step"><b>01</b><p>快速打开减噪：背景从强 blur 改为轻遮罩，面板宽度更紧凑，结果行更像文件。</p></div>
+        <div class="step"><b>02</b><p>设置中心分栏：左侧分组，右侧只显示当前分组，先解决导出和写作设置扫描成本。</p></div>
+        <div class="step"><b>03</b><p>右侧 inspector：属性、链接、反链合并为同一个可切换侧栏，不要每个功能一个 modal。</p></div>
+        <div class="step"><b>04</b><p>文件树减重：当前文档卡片改成轻量选中态，摘要只在 hover 或列表模式显示。</p></div>
+        <div class="step"><b>05</b><p>诊断面板打磨：ERROR 点击后显示问题类型、位置、修复动作，不只做入口。</p></div>
+      </div>
+    </section>
+
+    <footer>
+      证据来源：当前 Prism 真实 App 截图、CONTEXT.md、ADR-0005。此文件是审查板，不是生产 UI。
+    </footer>
+  </main>
+</body>
+</html>

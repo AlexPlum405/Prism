@@ -25,7 +25,23 @@ describe('SettingsModal', () => {
     });
   });
 
-  it('renders the pandoc detection entry in export settings', () => {
+  function openCitationSettings() {
+    fireEvent.click(screen.getByRole('button', { name: /引用/ }));
+  }
+
+  it('uses grouped navigation without dropping existing settings', () => {
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: /通用/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('默认视图')).toBeInTheDocument();
+    expect(screen.queryByText('Pandoc 路径')).not.toBeInTheDocument();
+
+    openCitationSettings();
+    expect(screen.getByRole('button', { name: /引用/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Pandoc 路径')).toBeInTheDocument();
+  });
+
+  it('renders the pandoc detection entry in citation settings', () => {
     useSettingsStore.setState({
       pandoc: {
         path: '/opt/homebrew/bin/pandoc',
@@ -37,6 +53,7 @@ describe('SettingsModal', () => {
     });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     expect(screen.getByRole('dialog', { name: '设置中心' })).toBeInTheDocument();
     expect(screen.getByText('Pandoc 路径')).toBeInTheDocument();
@@ -53,6 +70,7 @@ describe('SettingsModal', () => {
     });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     expect(screen.getByText('参考文献文件')).toBeInTheDocument();
     expect(screen.getByLabelText('参考文献文件路径')).toHaveValue('/tmp/library.bib');
@@ -74,6 +92,7 @@ describe('SettingsModal', () => {
     });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     expect(screen.getByLabelText('参考文献文件路径')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('建议使用 .bib、.bibtex 或 .json 文件')).toBeInTheDocument();
@@ -98,6 +117,7 @@ describe('SettingsModal', () => {
     });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     expect(screen.getByText('引用导出状态')).toBeInTheDocument();
     expect(screen.getByText('引用导出已就绪；HTML 导出会优先尝试 Pandoc citeproc。')).toBeInTheDocument();
@@ -112,12 +132,14 @@ describe('SettingsModal', () => {
     });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     expect(screen.getByText('已配置 CSL，但还需要参考文献文件才会启用引用导出。')).toBeInTheDocument();
   });
 
   it('updates citation paths from the settings entry', () => {
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     fireEvent.change(screen.getByLabelText('参考文献文件路径'), {
       target: { value: ' /tmp/library.bib ' },
@@ -142,6 +164,7 @@ describe('SettingsModal', () => {
     });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     fireEvent.click(screen.getByRole('button', { name: '清除参考文献文件' }));
     fireEvent.click(screen.getByRole('button', { name: '清除 CSL 样式' }));
@@ -159,6 +182,7 @@ describe('SettingsModal', () => {
     useSettingsStore.setState({ detectPandoc });
 
     render(<SettingsModal visible onClose={vi.fn()} />);
+    openCitationSettings();
 
     fireEvent.click(screen.getByRole('button', { name: '检测' }));
 

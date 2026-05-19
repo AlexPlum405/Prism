@@ -168,7 +168,7 @@ export function StatusBar({
           {exportProgress && exportProgressInBackground && (
             <button
               className={styles.exportStatus}
-              title={`导出中：${exportProgress}`}
+              title={`后台导出：${exportProgress}。点击查看前台进度。`}
               onClick={onShowExportProgress}
             >
               <span className={styles.exportStatusSpinner} aria-hidden="true" />

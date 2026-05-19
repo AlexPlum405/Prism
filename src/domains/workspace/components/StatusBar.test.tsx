@@ -142,7 +142,7 @@ describe('StatusBar', () => {
     );
 
     const status = screen.getByRole('button', { name: '导出中' });
-    expect(status).toHaveAttribute('title', '导出中：正在生成 PDF 页面 2 / 49');
+    expect(status).toHaveAttribute('title', '后台导出：正在生成 PDF 页面 2 / 49。点击查看前台进度。');
 
     fireEvent.click(status);
 

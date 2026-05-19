@@ -31,6 +31,17 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+const SETTINGS_SECTIONS = [
+  { id: 'general', label: '通用', hint: '视图与快捷键' },
+  { id: 'writing', label: '写作', hint: '编辑器与自动保存' },
+  { id: 'appearance', label: '外观', hint: '主题与字体' },
+  { id: 'export', label: '导出', hint: '格式与默认位置' },
+  { id: 'citation', label: '引用', hint: 'Pandoc 与文献' },
+  { id: 'files', label: '文件', hint: '恢复与最近文档' },
+] as const;
+
+type SettingsSectionId = typeof SETTINGS_SECTIONS[number]['id'];
+
 function encodeFontSource(source: FontSource) {
   return `${source.kind}:${source.value}`;
 }
@@ -102,6 +113,7 @@ function getCitationReadinessHint(input: {
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const settings = useSettingsStore();
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>('general');
   const [pandocChecking, setPandocChecking] = useState(false);
 
   useEffect(() => {
@@ -215,7 +227,23 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
           <div className="modal-title">设置中心</div>
           <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
         </div>
-        <div className="modal-body">
+        <div className="modal-body settings-modal-body">
+          <nav className="settings-nav" aria-label="设置分类">
+            {SETTINGS_SECTIONS.map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                className={`settings-nav-item ${activeSection === section.id ? 'is-active' : ''}`}
+                aria-current={activeSection === section.id ? 'page' : undefined}
+                onClick={() => setActiveSection(section.id)}
+              >
+                <span>{section.label}</span>
+                <small>{section.hint}</small>
+              </button>
+            ))}
+          </nav>
+          <div className="settings-content">
+          {activeSection === 'general' && (
           <div className="settings-group">
             <h4>通用</h4>
             <div className="settings-row">
@@ -249,7 +277,9 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               </select>
             </div>
           </div>
+          )}
 
+          {activeSection === 'writing' && (
           <div className="settings-group">
             <h4>写作</h4>
             <div className="settings-row">
@@ -335,9 +365,11 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               />
             </div>
           </div>
+          )}
 
+          {activeSection === 'appearance' && (
           <div className="settings-group">
-            <h4>主题</h4>
+            <h4>外观</h4>
             <div className="settings-row">
               <div>
                 <div className="row-label">内容主题</div>
@@ -400,7 +432,9 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               </div>
             ))}
           </div>
+          )}
 
+          {activeSection === 'export' && (
           <div className="settings-group">
             <h4>导出</h4>
             <div className="settings-row">
@@ -587,6 +621,43 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             )}
             <div className="settings-row">
               <div>
+                <div className="row-label">HTML 包含主题</div>
+                <div className="row-hint">导出时内联当前主题样式</div>
+              </div>
+              <div
+                className={toggleClass(settings.exportDefaults.htmlIncludeTheme)}
+                onClick={() => settings.setExportHtmlIncludeTheme(!settings.exportDefaults.htmlIncludeTheme)}
+                role="switch"
+                aria-checked={settings.exportDefaults.htmlIncludeTheme}
+              />
+            </div>
+            <div className="settings-row">
+              <div>
+                <div className="row-label">导出清晰度</div>
+                <div className="row-hint">
+                  {getExportQualityPreset(normalizeExportQualityScale(settings.exportDefaults.pngScale)).description}
+                </div>
+              </div>
+              <select
+                value={normalizeExportQualityScale(settings.exportDefaults.pngScale)}
+                onChange={(e) => settings.setExportPngScale(normalizeExportQualityScale(Number(e.target.value)))}
+                style={selectStyle}
+              >
+                {EXPORT_QUALITY_PRESETS.map((preset) => (
+                  <option key={preset.scale} value={preset.scale}>
+                    {preset.shortLabel}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          )}
+
+          {activeSection === 'citation' && (
+          <div className="settings-group">
+            <h4>引用</h4>
+            <div className="settings-row">
+              <div>
                 <div className="row-label">Pandoc 路径</div>
                 <div className="row-hint">{getPandocHint(settings.pandoc)}</div>
               </div>
@@ -666,39 +737,10 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 <div className="row-hint" aria-live="polite">{citationReadinessHint}</div>
               </div>
             </div>
-            <div className="settings-row">
-              <div>
-                <div className="row-label">HTML 包含主题</div>
-                <div className="row-hint">导出时内联当前主题样式</div>
-              </div>
-              <div
-                className={toggleClass(settings.exportDefaults.htmlIncludeTheme)}
-                onClick={() => settings.setExportHtmlIncludeTheme(!settings.exportDefaults.htmlIncludeTheme)}
-                role="switch"
-                aria-checked={settings.exportDefaults.htmlIncludeTheme}
-              />
-            </div>
-            <div className="settings-row">
-              <div>
-                <div className="row-label">导出清晰度</div>
-                <div className="row-hint">
-                  {getExportQualityPreset(normalizeExportQualityScale(settings.exportDefaults.pngScale)).description}
-                </div>
-              </div>
-              <select
-                value={normalizeExportQualityScale(settings.exportDefaults.pngScale)}
-                onChange={(e) => settings.setExportPngScale(normalizeExportQualityScale(Number(e.target.value)))}
-                style={selectStyle}
-              >
-                {EXPORT_QUALITY_PRESETS.map((preset) => (
-                  <option key={preset.scale} value={preset.scale}>
-                    {preset.shortLabel}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
+          )}
 
+          {activeSection === 'files' && (
           <div className="settings-group">
             <h4>文件</h4>
             <div className="settings-row">
@@ -735,6 +777,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               </div>
               <button type="button" style={buttonStyle} onClick={() => settings.clearRecentFiles()}>清空</button>
             </div>
+          </div>
+          )}
           </div>
         </div>
       </div>
