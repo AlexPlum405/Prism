@@ -30,7 +30,7 @@ describe('CommandPalette', () => {
     });
   });
 
-  it('keeps command mode compact by default while search still reaches all commands', () => {
+  it('keeps command mode browsable by default while search still ranks matching commands', () => {
     const onExecute = vi.fn();
     const onClose = vi.fn();
     const commands: Command[] = [
@@ -53,17 +53,20 @@ describe('CommandPalette', () => {
     );
 
     expect(screen.getByPlaceholderText('搜索动作…')).toBeInTheDocument();
-    expect(screen.getByText('常用')).toBeInTheDocument();
+    expect(screen.getByText('推荐动作')).toBeInTheDocument();
     expect(screen.getByText('快速打开文件')).toBeInTheDocument();
     expect(screen.getByText('全文搜索工作区')).toBeInTheDocument();
-    expect(screen.queryByText('查看关系图谱')).not.toBeInTheDocument();
-    expect(screen.queryByText('Nocturne Dark')).not.toBeInTheDocument();
+    expect(screen.getByText('查看关系图谱')).toBeInTheDocument();
+    expect(screen.getByText('Nocturne Dark')).toBeInTheDocument();
+    expect(screen.getByText('视图 · 1')).toBeInTheDocument();
+    expect(screen.getByText('主题 · 1')).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('搜索动作…'), {
       target: { value: '图谱' },
     });
 
     expect(screen.getByText('查看关系图谱')).toBeInTheDocument();
+    expect(screen.queryByText('Nocturne Dark')).not.toBeInTheDocument();
   });
 
   it('shows recent commands first after executing from command mode', () => {

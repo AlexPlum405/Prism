@@ -41,56 +41,22 @@ const SearchIcon = () => (
 
 const COMMAND_RECENT_STORAGE_KEY = 'prism-command-palette-recent-v1';
 const MAX_RECENT_COMMANDS = 5;
-const MAX_DEFAULT_COMMANDS = 12;
 
 const CATEGORY_ORDER = ['文件', '编辑', '插入', '格式', '视图', '主题', '窗口', '帮助'];
 
-const DEFAULT_COMMAND_SECTIONS = [
-  {
-    title: '常用',
-    ids: [
-      'quickOpen',
-      'workspaceSearch',
-      'save',
-      'exportWithPrevious',
-      'exportPdf',
-      'insertTable',
-      'formatTable',
-      'splitMode',
-      'previewMode',
-    ],
-    limit: 6,
-  },
-  {
-    title: '当前文档',
-    ids: [
-      'openDocumentProperties',
-      'showDocumentLinks',
-      'showBacklinks',
-      'openCurrentLocation',
-      'focusMode',
-    ],
-    limit: 4,
-  },
-  {
-    title: '写作',
-    ids: [
-      'templatePrd',
-      'templateMeeting',
-      'templateWeekly',
-      'templateTechnicalPlan',
-      'bold',
-      'link',
-      'quote',
-      'taskList',
-    ],
-    limit: 3,
-  },
-  {
-    title: '开始',
-    ids: ['new', 'open', 'openFolder', 'preferences'],
-    limit: 4,
-  },
+const RECOMMENDED_COMMAND_IDS = [
+  'quickOpen',
+  'workspaceSearch',
+  'save',
+  'exportWithPrevious',
+  'exportPdf',
+  'insertTable',
+  'formatTable',
+  'openDocumentProperties',
+  'showBacklinks',
+  'splitMode',
+  'previewMode',
+  'focusMode',
 ] as const;
 
 interface CommandSection {
@@ -140,28 +106,42 @@ function pickCommands(
   return items;
 }
 
+function formatCategoryTitle(category: string, count: number): string {
+  return count > 0 ? `${category} · ${count}` : category;
+}
+
+function categoryRank(category: string): number {
+  const index = CATEGORY_ORDER.indexOf(category);
+  return index === -1 ? CATEGORY_ORDER.length : index;
+}
+
 function buildDefaultCommandSections(commands: Command[], recentCommandIds: string[]): CommandSection[] {
   const commandById = new Map(commands.map((command) => [command.id, command]));
   const used = new Set<string>();
   const sections: CommandSection[] = [];
-  let remaining = MAX_DEFAULT_COMMANDS;
 
-  const recent = pickCommands(commandById, recentCommandIds, used, Math.min(3, remaining));
+  const recent = pickCommands(commandById, recentCommandIds, used, 3);
   if (recent.length > 0) {
     sections.push({ title: '最近使用', items: recent });
-    remaining -= recent.length;
   }
 
-  for (const section of DEFAULT_COMMAND_SECTIONS) {
-    if (remaining <= 0) break;
-    const items = pickCommands(commandById, section.ids, used, Math.min(section.limit, remaining));
-    if (items.length === 0) continue;
-    sections.push({ title: section.title, items });
-    remaining -= items.length;
+  const recommended = pickCommands(commandById, RECOMMENDED_COMMAND_IDS, used, 8);
+  if (recommended.length > 0) {
+    sections.push({ title: '推荐动作', items: recommended });
   }
 
-  if (sections.length === 0 && commands.length > 0) {
-    sections.push({ title: '可用命令', items: commands.slice(0, Math.min(commands.length, MAX_DEFAULT_COMMANDS)) });
+  const remainingByCategory = new Map<string, Command[]>();
+  for (const command of commands) {
+    if (used.has(command.id)) continue;
+    const categoryCommands = remainingByCategory.get(command.category) ?? [];
+    categoryCommands.push(command);
+    remainingByCategory.set(command.category, categoryCommands);
+  }
+
+  const sortedCategories = [...remainingByCategory.entries()]
+    .sort(([a], [b]) => categoryRank(a) - categoryRank(b));
+  for (const [category, items] of sortedCategories) {
+    sections.push({ title: formatCategoryTitle(category, items.length), items });
   }
 
   return sections;
@@ -186,7 +166,7 @@ function sortSearchCommands(commands: Command[], normalizedQuery: string): Comma
     const rankDelta = rankCommand(a, normalizedQuery) - rankCommand(b, normalizedQuery);
     if (rankDelta !== 0) return rankDelta;
 
-    const categoryDelta = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
+    const categoryDelta = categoryRank(a.category) - categoryRank(b.category);
     if (categoryDelta !== 0) return categoryDelta;
 
     return a.label.localeCompare(b.label, 'zh-Hans-CN');
@@ -202,8 +182,8 @@ function groupCommandsByCategory(commands: Command[]): CommandSection[] {
   }
 
   return [...sections.entries()]
-    .sort(([a], [b]) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b))
-    .map(([title, items]) => ({ title, items }));
+    .sort(([a], [b]) => categoryRank(a) - categoryRank(b))
+    .map(([title, items]) => ({ title: formatCategoryTitle(title, items.length), items }));
 }
 
 export function CommandPalette({
