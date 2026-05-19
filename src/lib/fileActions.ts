@@ -202,10 +202,11 @@ async function handleOpenFile(path: string, context: FileActionContext): Promise
   context.documentStore.openDocument(path, basename(path), content, snapshot);
   addRecentFile(path, basename(path));
 
-  if (!context.workspaceStore.rootPath) {
-    const dir = dirname(path);
-    context.workspaceStore.setRootPath(dir);
-    await refreshWorkspace(context, dir);
+  const rootPath = context.workspaceStore.rootPath;
+  if (!rootPath || !isPathInside(path, rootPath)) {
+    const parentDir = dirname(path);
+    context.workspaceStore.setRootPath(parentDir);
+    await refreshWorkspace(context, parentDir);
   }
 }
 

@@ -1,5 +1,72 @@
-import { describe, expect, it, vi } from 'vitest';
-import { deletePathWithTrashFallback } from './fileActions';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readTextFile, stat } from '@tauri-apps/plugin-fs';
+import { useDocumentStore } from '../domains/document/store';
+import { useWorkspaceStore } from '../domains/workspace/store';
+import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
+import { deletePathWithTrashFallback, executeFileAction } from './fileActions';
+
+vi.mock('@tauri-apps/plugin-fs', () => ({
+  copyFile: vi.fn(),
+  exists: vi.fn(),
+  mkdir: vi.fn(),
+  readTextFile: vi.fn(),
+  remove: vi.fn(),
+  rename: vi.fn(),
+  stat: vi.fn(),
+  writeTextFile: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/plugin-dialog', () => ({
+  confirm: vi.fn(),
+  message: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  openPath: vi.fn(),
+  revealItemInDir: vi.fn(),
+}));
+
+vi.mock('../domains/workspace/lib/loadFolderTree', () => ({
+  loadFolderTree: vi.fn(),
+}));
+
+vi.mock('./fileSystemScope', () => ({
+  grantMarkdownFileScope: vi.fn(),
+  grantWorkspaceDirectoryScope: vi.fn(),
+}));
+
+vi.mock('./openWindow', () => ({
+  openPrismWindow: vi.fn(),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  useDocumentStore.setState({ currentDocument: null });
+  useWorkspaceStore.setState({
+    fileTree: [],
+    mode: 'single',
+    rootPath: null,
+    sidebarTab: 'files',
+    sidebarVisible: true,
+  });
+  (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# Opened from Finder');
+  (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 20, mtimeMs: 1000 });
+  (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([
+    { kind: 'file', name: 'opened.md', path: '/new/project/opened.md' },
+  ]);
+});
+
+function fileActionContext() {
+  return {
+    documentStore: useDocumentStore.getState(),
+    workspaceStore: useWorkspaceStore.getState(),
+    showToast: vi.fn(),
+  };
+}
 
 describe('deletePathWithTrashFallback', () => {
   it('does not delete anything when the initial trash confirmation is cancelled', async () => {
@@ -96,5 +163,51 @@ describe('deletePathWithTrashFallback', () => {
       mode: 'permanent',
     });
     expect(permanentDelete).toHaveBeenCalledWith('/notes/Projects', { recursive: true });
+  });
+});
+
+describe('executeFileAction openFile workspace sync', () => {
+  it('switches the left file tree when a Finder-opened file is outside the current workspace', async () => {
+    useWorkspaceStore.setState({
+      fileTree: [{ kind: 'file', name: 'old.md', path: '/old/workspace/old.md' }],
+      mode: 'folder',
+      rootPath: '/old/workspace',
+    });
+
+    await executeFileAction(
+      { action: 'openFile', path: '/new/project/opened.md' },
+      fileActionContext(),
+    );
+
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Opened from Finder',
+      name: 'opened.md',
+      path: '/new/project/opened.md',
+    });
+    expect(useWorkspaceStore.getState().rootPath).toBe('/new/project');
+    expect(loadFolderTree).toHaveBeenCalledWith('/new/project');
+    expect(useWorkspaceStore.getState().fileTree).toEqual([
+      { kind: 'file', name: 'opened.md', path: '/new/project/opened.md' },
+    ]);
+  });
+
+  it('keeps the current workspace when the opened file is already inside it', async () => {
+    useWorkspaceStore.setState({
+      fileTree: [{ kind: 'file', name: 'index.md', path: '/repo/index.md' }],
+      mode: 'folder',
+      rootPath: '/repo',
+    });
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/docs/opened.md' },
+      fileActionContext(),
+    );
+
+    expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/docs/opened.md');
+    expect(useWorkspaceStore.getState().rootPath).toBe('/repo');
+    expect(loadFolderTree).not.toHaveBeenCalled();
+    expect(useWorkspaceStore.getState().fileTree).toEqual([
+      { kind: 'file', name: 'index.md', path: '/repo/index.md' },
+    ]);
   });
 });

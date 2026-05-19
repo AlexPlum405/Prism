@@ -114,6 +114,17 @@ osascript -e tell application "Finder" to delete { POSIX file ".../prism-trash-s
 - `npm test -- --run src/domains/workspace/hooks/useWorkspaceFocusRefresh.test.tsx`：通过，1 file / 4 tests。
 - `npm test -- --run src/App.recovery.test.tsx src/hooks/useBootstrap.test.tsx src/domains/workspace/hooks/useWorkspaceFocusRefresh.test.tsx`：通过，3 files / 14 tests。
 
+2026-05-19 修复 Finder 外部打开文件树不同步：
+
+- 现象：Prism 已有旧工作区时，从 Finder 双击另一个目录里的 Markdown 文件，当前文档会切换，但左侧文件树仍停留在旧工作区。
+- 根因：`src/lib/fileActions.ts` 的 `handleOpenFile()` 只在 `rootPath` 为空时加载文件父目录；运行中 `file-opened` 事件、最近文件和部分文档链接都会复用该路径，因此旧 rootPath 存在时不会刷新文件树。
+- 修复：打开文件不在当前 `rootPath` 内时，自动把工作区切到该文件父目录并重新 `loadFolderTree()`；若文件已经在当前工作区内，则保持现有工作区，避免打断用户正在浏览的文件树。
+- `src/lib/fileActions.test.ts` 新增两条回归：外部文件会切换 rootPath 和 fileTree；当前工作区内文件不会重载文件树。
+- `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`：通过，2 files / 11 tests。
+- `npm test -- --run`：通过，74 files / 439 tests。
+- `npm run build`：通过，仅有既有 Vite large chunk warning。
+- `git diff --check`：通过。
+
 ## 4. 手动 Smoke 步骤
 
 准备工作区：
