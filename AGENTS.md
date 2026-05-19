@@ -11,14 +11,14 @@
 
 ## 项目背景
 
-Prism 是一个 Markdown 桌面编辑器，基于 Tauri 2 + React + TypeScript，采用 **OpenAI 极简设计方向**。
+Prism 是一个 Markdown 桌面编辑器，基于 Tauri 2 + React + TypeScript，当前采用 **妙言风格（Miaoyan-style）** 作为主视觉方向。
 
-视觉与交互的唯一参考标准：`docs/prism-openai-redesign.html`。领域术语与核心决策见 `CONTEXT.md`，架构决策见 `docs/adr/`。
+视觉与交互以当前 app 的妙言式 macOS Markdown 写作器体验为主。`docs/prism-openai-redesign.html` 是历史 OpenAI 极简原型，只作为早期参考保留，不再是唯一标准。领域术语与核心决策见 `CONTEXT.md`，架构决策见 `docs/adr/`。
 
 当前状态：
 - 核心编辑功能已实现（编辑/分栏/预览、自动保存、KaTeX、Mermaid）
 - 产品定位为 Typora 式单文档单窗口
-- 视觉正在从原 Win11 Fluent 方向重构为 OpenAI 极简方向（2026-05-10 起）
+- 视觉主方向已从历史 OpenAI 极简原型调整为当前妙言风格
 
 ## 工作原则
 
@@ -27,8 +27,8 @@ Prism 是一个 Markdown 桌面编辑器，基于 Tauri 2 + React + TypeScript�
    - 不要跳过设计阶段直接写代码
 
 2. **原型对齐优先**
-   - `docs/prism-openai-redesign.html` 是视觉和交互的参考标准
-   - 实现时要对照原型的细节：令牌、间距、颜色、动画、交互反馈
+   - 当前 app 的妙言风格是视觉和交互的主参考
+   - 实现时要对齐现有界面的令牌、间距、颜色、动画、交互反馈
    - 术语、设计哲学与关键决策请先读 `CONTEXT.md` 与 `docs/adr/`
 
 3. **产品决策权在用户**
@@ -41,13 +41,11 @@ Prism 是一个 Markdown 桌面编辑器，基于 Tauri 2 + React + TypeScript�
 
 ## 当前待办
 
-OpenAI 风格视觉重构分 5 批递进推进（2026-05-10 起）：
+历史 OpenAI 风格重构批次仅作为已发生背景，不再作为新功能的唯一视觉路线。后续优化以 `CONTEXT.md` 中确认的妙言风格和增量计划为准：
 
-1. 基座：`global.css` 令牌整体换成 `--c-*` / `--r-*` / `--shadow-*`；Inter + JetBrains Mono 本地打包；删除 `TabBar.tsx + test`
-2. 外壳：`WindowShell / TitleBar / MenuBar / MenuDropdown` 重写
-3. 状态栏：`StatusBar` 按原型 `status-sidebar-zone + status-main` 结构改造
-4. 浮层：`FloatingToolbar / CommandPalette / ShortcutPanel / ContextMenu`；新增 `AboutModal / SettingsModal`；Toast 改 pill；打字机模式实现
-5. 预览排印：`PreviewPane` 排印细节（h1–h6、代码块、表格、引用、列表、mark、kbd、hr）+ 五套内容主题（Newsprint / Night / Github / Pixyll / Whitey）
+1. 不破坏现有妙言风格视觉
+2. 不移动已确认保留的入口
+3. 按状态栏、命令面板、斜杠菜单、工作区索引、链接/反链/图谱、属性、模板、块操作、导出保真的顺序增量推进
 
 ## Agent skills
 

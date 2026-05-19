@@ -15,7 +15,7 @@ Prism 下一阶段不追求 Obsidian / Logseq 式知识库平台，也不做 Typ
 - 1.0.x 不做完整 WYSIWYG、云同步、移动端、图谱、插件市场。
 - 优先级：文件安全与发布可信 > 写作效率 > 预览同步 > 导出工作台 > 专业扩展 > 插件生态。
 - Pandoc 作为可选外部增强，不作为 Prism 启动或基础导出的必需依赖。
-- 视觉继续以 `docs/prism-openai-redesign.html` 为唯一标准，不回退 Win11 Fluent。
+- 视觉以当前 app 的妙言风格为主，`docs/prism-openai-redesign.html` 仅作为历史 OpenAI 原型保留，不回退 Win11 Fluent。
 - Prism 继续坚持单文档单窗口；文件树是导航入口，不引入标签页。
 
 调研参考：
@@ -169,7 +169,7 @@ Prism 下一阶段不追求 Obsidian / Logseq 式知识库平台，也不做 Typ
 实现细节：
 
 - 快速打开：基于当前 workspace 文件树做 fuzzy search，支持文件名、路径片段、最近打开加权；快捷键 `Mod+P`。
-- 大纲增强：支持 heading 搜索、点击跳转、拖拽暂不做；大纲项显示层级但保持 OpenAI 极简视觉。
+- 大纲增强：支持 heading 搜索、点击跳转、拖拽暂不做；大纲项显示层级但保持当前妙言风格。
 - 工作区文件监控：优先使用 Tauri / Rust 侧 watcher；若实现成本过高，第一版用应用聚焦时刷新 + 手动刷新按钮。
 - 文件树操作安全：删除默认移到系统废纸篓；若 Tauri API 不支持废纸篓，则删除前二次确认并显示不可恢复。
 - 内链能力：`[[note]]` 作为可选轻量语法，第一版只解析并补全工作区 markdown 文件，不做图谱。
