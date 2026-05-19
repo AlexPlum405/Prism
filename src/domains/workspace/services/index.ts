@@ -54,3 +54,17 @@ export {
   type DocumentLinkKind,
   type ResolvedDocumentLink,
 } from './documentLinks';
+export {
+  buildWorkspaceIndex,
+  searchWorkspaceIndex,
+  type WorkspaceIndex,
+  type WorkspaceIndexBacklink,
+  type WorkspaceIndexBuildInput,
+  type WorkspaceIndexedDocument,
+  type WorkspaceIndexFrontMatter,
+  type WorkspaceIndexHeading,
+  type WorkspaceIndexLink,
+  type WorkspaceIndexRecentFile,
+  type WorkspaceIndexSearchResult,
+  type WorkspaceIndexSourceDocument,
+} from './workspaceIndex';

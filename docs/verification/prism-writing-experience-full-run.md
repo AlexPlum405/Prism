@@ -130,3 +130,30 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改 Markdown 解析、前端样式和 DOCX 映射，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 5：工作区索引
+
+改动范围：
+
+- `src/domains/workspace/services/workspaceIndex.ts`
+- `src/domains/workspace/services/workspaceIndex.test.ts`
+- `src/domains/workspace/services/index.ts`
+
+实现结果：
+
+- 新增可复用工作区索引服务，输入现有 `fileTree`、已读取 Markdown 内容和 `recentFiles`。
+- 索引覆盖 Markdown 文件、相对路径、标题、Front Matter、正文标题、文档链接、已解析目标、反向链接和最近文档。
+- 索引只收录 Prism 支持的 Markdown / Markdown-like 文件，不把图片等资源混入文档结果。
+- 新增轻量搜索函数，支持空查询返回最近文档，以及按标题、文件名、路径、标题节点、正文内容排序命中。
+- 当前阶段只落服务层与测试，供阶段 6-8 的快速打开、全文搜索、`[[` 链接、反链与关系图谱复用，不新增常驻 UI。
+
+验证：
+
+- `npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/documentLinks.test.ts src/domains/workspace/services/backlinks.test.ts src/domains/workspace/services/fileTree.test.ts`：4 个测试文件、14 项测试通过。
+- `npm test -- --run`：71 个测试文件、422 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只新增纯 TypeScript 工作区索引服务和单元测试，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
