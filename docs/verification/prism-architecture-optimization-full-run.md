@@ -346,3 +346,39 @@ npm run build
 
 - 本 checkpoint 只迁移 TypeScript 纯函数边界和工作区索引接线，不改变文件写入、安全策略、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 4D：文件 / 工作区 / 文档信息命令定义分层
+
+改动范围：
+
+- `src/domains/commands/categories/fileCommands.ts`
+- `src/domains/commands/categories/workspaceCommands.ts`
+- `src/domains/commands/categories/documentInfoCommands.ts`
+- `src/domains/commands/registry.ts`
+
+实现结果：
+
+- 新增 `createFileCommands()`，把新建、打开、保存、另存为、模板、打印、显示当前位置、关闭文稿等文件命令从 `registry.ts` 拆出。
+- 新增 `createWorkspaceCommands()`，把打开文件夹、快速打开和关系图谱入口从 `registry.ts` 拆出，保留工作区路径授权、文件树加载和独立窗口打开行为。
+- 新增 `createDocumentInfoCommands()`，把文档属性、当前文档链接、反向链接入口从 `registry.ts` 拆出。
+- `registry.ts` 继续只负责命令组合、快捷键匹配、统一启用判断、执行包裹和错误 toast。
+- 命令 id、菜单类别、快捷键、enabled 条件、模板插入事件、保存冲突检测、恢复快照、最近文件记录、导出命令和帮助/窗口/视图命令行为保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/commands/platform.test.ts src/App.recovery.test.tsx
+npm test -- --run
+npm run build
+```
+
+结果：
+
+- 命令系统聚焦测试：4 个测试文件、39 项测试通过。
+- 全量前端测试：83 个测试文件、465 项测试通过。
+- `npm run build` 通过；Vite 仍提示既有大 chunk 警告，留给后续“主包性能优化”checkpoint 处理。
+
+跳过项：
+
+- 本 checkpoint 只迁移命令定义和命令 handler 的 module 边界，不改变文件权限、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
