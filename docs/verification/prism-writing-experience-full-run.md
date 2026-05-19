@@ -100,3 +100,33 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改编辑器 completion 源与前端样式，不涉及 Tauri capabilities、发布、签名、公证或安装器。
+
+## 阶段 4：Callout / Toggle 渲染与导出
+
+改动范围：
+
+- `src/domains/editor/extensions/callouts.ts`
+- `src/domains/editor/extensions/callouts.test.ts`
+- `src/lib/markdownToHtml.test.ts`
+- `src/domains/export/exportPipeline.ts`
+- `src/domains/export/exportPipeline.test.ts`
+- `src/styles/global.css`
+
+实现结果：
+
+- Callout 解析补齐 `IMPORTANT`，与 `NOTE` / `TIP` / `WARNING` 保持同一 Markdown 源码语法。
+- 预览 HTML 会输出 `.prism-callout--important`、`data-callout-kind="important"` 和标题元数据，不泄漏 `[!IMPORTANT]` marker。
+- DOCX 导出识别 `IMPORTANT` Callout，输出标题和正文，不泄漏源 marker。
+- Toggle 继续使用 `<details><summary>...</summary>...</details>`，DOCX 维持“折叠：标题 + 展开正文”的兼容兜底。
+- 预览和导出打印样式把 Callout / Toggle 作为尽量不分页拆分的块处理。
+
+验证：
+
+- `npm test -- --run src/domains/editor/extensions/callouts.test.ts src/lib/markdownToHtml.test.ts src/domains/export/exportPipeline.test.ts`：3 个测试文件、77 项测试通过。
+- `npm test -- --run`：70 个测试文件、420 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改 Markdown 解析、前端样式和 DOCX 映射，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。

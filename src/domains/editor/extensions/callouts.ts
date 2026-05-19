@@ -1,4 +1,4 @@
-export type CalloutKind = 'note' | 'warning' | 'tip';
+export type CalloutKind = 'note' | 'warning' | 'tip' | 'important';
 
 export interface MarkdownCalloutMetadata {
   kind: CalloutKind;
@@ -10,10 +10,11 @@ const CALLOUT_LABELS: Record<CalloutKind, string> = {
   note: 'Note',
   warning: 'Warning',
   tip: 'Tip',
+  important: 'Important',
 };
 
-const CALLOUT_MARKER_RE = /^\[!(NOTE|WARNING|TIP)\](?:[ \t]+(.+?))?[ \t]*$/i;
-const CALLOUT_MARKER_PREFIX_RE = /^\[!(NOTE|WARNING|TIP)\](?:[ \t]+([^\n]+?))?[ \t]*(?:\n|$)/i;
+const CALLOUT_MARKER_RE = /^\[!(NOTE|WARNING|TIP|IMPORTANT)\](?:[ \t]+(.+?))?[ \t]*$/i;
+const CALLOUT_MARKER_PREFIX_RE = /^\[!(NOTE|WARNING|TIP|IMPORTANT)\](?:[ \t]+([^\n]+?))?[ \t]*(?:\n|$)/i;
 
 export function parseMarkdownCalloutMarker(value: string): MarkdownCalloutMetadata | null {
   const match = value.trim().match(CALLOUT_MARKER_RE);

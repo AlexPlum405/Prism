@@ -17,11 +17,16 @@ describe('callouts', () => {
       title: '发布前确认',
     });
     expect(parseMarkdownCalloutMarker('[!TIP]')).toMatchObject({ kind: 'tip' });
+    expect(parseMarkdownCalloutMarker('[!IMPORTANT]')).toEqual({
+      kind: 'important',
+      label: 'Important',
+      title: 'Important',
+    });
     expect(parseMarkdownCalloutMarker('[!INFO]')).toBeNull();
   });
 
   it('turns blockquote marker paragraphs into callout metadata without changing body content', () => {
-    const node = {
+    const node: any = {
       type: 'blockquote',
       children: [
         { type: 'paragraph', children: [{ type: 'text', value: '[!NOTE]' }] },
@@ -46,5 +51,28 @@ describe('callouts', () => {
       'data-callout-title': 'Note',
     });
     expect(hProperties.className).toEqual(['prism-callout', 'prism-callout--note']);
+  });
+
+  it('supports IMPORTANT callouts with custom titles', () => {
+    const node: any = {
+      type: 'blockquote',
+      children: [
+        { type: 'paragraph', children: [{ type: 'text', value: '[!IMPORTANT] 关键结论' }] },
+      ],
+    };
+
+    const metadata = applyCalloutMetadataToMdastBlockquote(node);
+
+    expect(metadata).toEqual({
+      kind: 'important',
+      label: 'Important',
+      title: '关键结论',
+    });
+    expect(node.children).toHaveLength(0);
+    expect(node.data.hProperties).toMatchObject({
+      className: ['prism-callout', 'prism-callout--important'],
+      'data-callout-kind': 'important',
+      'data-callout-title': '关键结论',
+    });
   });
 });

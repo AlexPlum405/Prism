@@ -1224,7 +1224,7 @@ async function collectExportCss(
         max-width: none !important;
         padding: 0 !important;
       }
-      pre, blockquote, table, figure, img, svg, canvas, .mermaid-placeholder, .katex-display, .prism-html-block, .prism-export-toc, .${EXPORT_ATOMIC_BLOCK_CLASS} {
+      pre, blockquote, details, table, figure, img, svg, canvas, .mermaid-placeholder, .katex-display, .prism-callout, .prism-html-block, .prism-export-toc, .${EXPORT_ATOMIC_BLOCK_CLASS} {
         break-inside: avoid;
         page-break-inside: avoid;
       }

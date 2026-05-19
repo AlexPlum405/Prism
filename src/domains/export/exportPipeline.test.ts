@@ -1571,7 +1571,7 @@ describe('export pipeline docx header and footer', () => {
       content: [
         '# Blocks',
         '',
-        '> [!WARNING] 发布前确认',
+        '> [!IMPORTANT] 发布前确认',
         '> 这段内容仍然是标准 Markdown 引用。',
         '',
         '<details>',
@@ -1592,7 +1592,7 @@ describe('export pipeline docx header and footer', () => {
     expect(documentXml).toContain('这段内容仍然是标准 Markdown 引用。');
     expect(documentXml).toContain('折叠：更多信息');
     expect(documentXml).toContain('这里是折叠内容。');
-    expect(documentXml).not.toContain('[!WARNING]');
+    expect(documentXml).not.toContain('[!IMPORTANT]');
     expect(documentXml).not.toContain('&lt;details');
     expect(documentXml).not.toContain('&lt;summary');
   });
