@@ -268,3 +268,36 @@ npm test -- --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx sr
 
 - 本 checkpoint 只移动 React hook 与现有索引服务接线，不改变文件写入、安全策略、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 5A：统一诊断模型底座
+
+改动范围：
+
+- `src/domains/diagnostics/types.ts`
+- `src/domains/diagnostics/adapters.ts`
+- `src/domains/diagnostics/adapters.test.ts`
+- `src/App.tsx`
+
+实现结果：
+
+- 新增 `PrismDiagnostic` 统一诊断类型，包含 `kind`、`severity`、`source`、`line`、`column`、`message`、`reason`、`action`。
+- 新增 link diagnostics 与 typography diagnostics 到 `PrismDiagnostic` 的 adapter。
+- 链接问题映射为 `severity: "error"`，普通中文排版建议映射为 `severity: "info"`。
+- App 层开始用 `getActionableErrorDiagnostics()` 计算状态栏 `ERROR n`，保持“普通排版建议不计入 ERROR”的产品边界。
+- 现有链接诊断面板和排版提示面板仍使用原始领域类型，UI 与交互不变；统一模型先作为底层收敛点。
+
+验证：
+
+```bash
+npm test -- --run src/domains/diagnostics/adapters.test.ts src/domains/editor/components/LinkDiagnosticsPanel.test.tsx src/domains/editor/components/TypographyDiagnosticsPanel.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/App.recovery.test.tsx
+```
+
+结果：
+
+- 5 个测试文件通过。
+- 22 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只新增诊断类型与 adapter，并调整 App 中 `ERROR` 计数来源，不改变导出 pipeline、文件系统、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。

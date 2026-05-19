@@ -35,6 +35,11 @@ import { LinkDiagnosticsPanel } from './domains/editor/components/LinkDiagnostic
 import { TypographyDiagnosticsPanel } from './domains/editor/components/TypographyDiagnosticsPanel';
 import { scanMarkdownLinks } from './domains/editor/extensions/linkDiagnostics';
 import { scanChineseTypography } from './domains/editor/extensions/typographyDiagnostics';
+import {
+  linkDiagnosticsToPrismDiagnostics,
+  typographyDiagnosticsToPrismDiagnostics,
+} from './domains/diagnostics/adapters';
+import { getActionableErrorDiagnostics } from './domains/diagnostics/types';
 import type { ExportFormat } from './domains/export';
 import { getExportFormatLabel } from './domains/export';
 import {
@@ -382,7 +387,6 @@ function App() {
     });
   }, [currentDocument, workspace.fileTree, workspace.rootPath]);
 
-  const firstLinkDiagnostic = linkDiagnostics[0] ?? null;
   const documentLinks = useMemo(
     () => currentDocument ? extractDocumentLinks(currentDocument.content) : [],
     [currentDocument?.content],
@@ -446,6 +450,16 @@ function App() {
     () => currentDocument ? scanChineseTypography(currentDocument.content) : [],
     [currentDocument?.content],
   );
+
+  const documentDiagnostics = useMemo(() => [
+    ...linkDiagnosticsToPrismDiagnostics(linkDiagnostics),
+    ...typographyDiagnosticsToPrismDiagnostics(typographyDiagnostics),
+  ], [linkDiagnostics, typographyDiagnostics]);
+  const actionableDiagnostics = useMemo(
+    () => getActionableErrorDiagnostics(documentDiagnostics),
+    [documentDiagnostics],
+  );
+  const firstActionableDiagnostic = actionableDiagnostics[0] ?? null;
 
   const firstTypographyDiagnostic = typographyDiagnostics[0] ?? null;
   const handleTypographyDiagnosticsClick = useCallback(() => {
@@ -940,8 +954,8 @@ function App() {
             onFolderContextMenu={handleFolderContextMenu}
             onNewFile={() => handleFileAction('newFile')}
             onToggleFileTreeMode={() => handleFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
-            linkIssueCount={linkDiagnostics.length}
-            linkIssueTitle={firstLinkDiagnostic?.message}
+            linkIssueCount={actionableDiagnostics.length}
+            linkIssueTitle={firstActionableDiagnostic?.message}
             onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
             backlinkCount={backlinks.length}
             onBacklinksClick={handleBacklinksClick}
