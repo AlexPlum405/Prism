@@ -138,3 +138,37 @@ npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/pla
 
 - 本 checkpoint 只移动命令定义代码，不改变 Tauri capabilities、文件系统、导出算法、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 4B：视图/主题/窗口/帮助命令定义分层
+
+改动范围：
+
+- `src/domains/commands/categories/viewCommands.ts`
+- `src/domains/commands/categories/themeCommands.ts`
+- `src/domains/commands/categories/windowCommands.ts`
+- `src/domains/commands/categories/helpCommands.ts`
+- `src/domains/commands/registry.ts`
+
+实现结果：
+
+- 把视图、主题、窗口、帮助相关命令定义从 `registry.ts` 拆入对应 category module。
+- `registry.ts` 保留统一 registry 对外接口、快捷键查找、启用状态判断、命令执行与错误 toast。
+- `Cmd+P` 仍只做快速打开，`Cmd+Shift+F` 仍只做全文搜索；没有恢复全功能命令面板。
+- 命令 id、菜单类别、快捷键、checked/ enabled 条件和 run 行为保持不变。
+- 文件、保存、恢复、导出等高耦合命令仍留在 `registry.ts`，等待后续按更深的文件安全层和导出命令边界继续拆分。
+
+验证：
+
+```bash
+npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/platform.test.ts src/App.recovery.test.tsx
+```
+
+结果：
+
+- 3 个测试文件通过。
+- 38 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只移动命令定义代码，不改变 Tauri capabilities、文件系统、导出算法、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
