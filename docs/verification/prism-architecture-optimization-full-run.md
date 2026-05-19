@@ -108,3 +108,33 @@ npm test -- --run src/domains/export/assets.test.ts src/domains/export/rendering
 
 - 本 checkpoint 只迁移导出资产转换与路径解析工具，不改变 Tauri capabilities、导出格式、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 4A：编辑器命令定义分层
+
+改动范围：
+
+- `src/domains/commands/categories/editorCommands.ts`
+- `src/domains/commands/registry.ts`
+
+实现结果：
+
+- 新增 `createEditorCommands()`，把编辑、插入、格式三类纯编辑器命令从 `registry.ts` 拆出。
+- `registry.ts` 保留统一 registry 对外接口、快捷键查找、启用状态判断、命令执行与错误 toast。
+- 外部菜单结构、命令 id、快捷键、enabled 条件、事件派发命令名保持不变。
+- 本次只迁移定义层，不恢复全功能命令面板，也不改变 `Cmd+P` 快速打开和 `Cmd+Shift+F` 全文搜索定位。
+
+验证：
+
+```bash
+npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/platform.test.ts src/App.recovery.test.tsx
+```
+
+结果：
+
+- 3 个测试文件通过。
+- 38 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只移动命令定义代码，不改变 Tauri capabilities、文件系统、导出算法、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
