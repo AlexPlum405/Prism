@@ -8,7 +8,10 @@ import {
   saveConflictedDocumentAs,
 } from './conflictResolution';
 import { addRecentFile } from '../../workspace/services/recentFiles';
-import { clearRecoverySnapshotsForDocument } from './recovery';
+import {
+  clearRecoverySnapshotsForDocument,
+  createRecoverySnapshot,
+} from './recovery';
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   readTextFile: vi.fn(),
@@ -21,6 +24,7 @@ vi.mock('../../workspace/services/recentFiles', () => ({
 }));
 
 vi.mock('./recovery', () => ({
+  createRecoverySnapshot: vi.fn(),
   clearRecoverySnapshotsForDocument: vi.fn(),
 }));
 
@@ -28,6 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useDocumentStore.setState({ currentDocument: null });
   (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 8, mtime: new Date(2000) });
+  (createRecoverySnapshot as ReturnType<typeof vi.fn>).mockResolvedValue(null);
   (clearRecoverySnapshotsForDocument as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 });
 

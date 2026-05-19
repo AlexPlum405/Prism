@@ -1,15 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { writeTextFile } from '@tauri-apps/plugin-fs';
 import {
-  getExternalChangeMessage,
-  getFileSnapshot,
-  getFileSnapshotOrNull,
-  hasFileSnapshotChanged,
-} from '../fileSnapshot';
-import {
-  clearRecoverySnapshotsForDocument,
-  createRecoverySnapshot,
-} from '../services/recovery';
+  createKnownFileSnapshot,
+  fileConflictDetector,
+  isFileConflictError,
+  recoverySnapshotStore,
+  writeDocumentFileSession,
+} from '../services/fileSafety';
 import { useDocumentStore } from '../store';
 
 export function useAutoSave(interval = 2000, enabled = true) {
@@ -41,24 +37,27 @@ export function useAutoSave(interval = 2000, enabled = true) {
 
     timerRef.current = setTimeout(async () => {
       try {
-        await createRecoverySnapshot({
+        await recoverySnapshotStore.create({
           documentPath,
           documentName,
           content: documentContent,
           reason: 'autosave',
         }).catch(() => undefined);
         if (enabled) {
-          const diskSnapshot = await getFileSnapshot(documentPath);
-          if (hasFileSnapshotChanged({ mtimeMs: lastKnownMtime, size: lastKnownSize }, diskSnapshot)) {
-            markSaveConflict(getExternalChangeMessage(), documentPath);
-            return;
-          }
+          const knownSnapshot = createKnownFileSnapshot(lastKnownMtime, lastKnownSize);
+          await fileConflictDetector.ensureUnchanged(documentPath, knownSnapshot);
           markSaving(documentPath);
-          await writeTextFile(documentPath, documentContent);
-          markSaved(documentPath, await getFileSnapshotOrNull(documentPath));
-          await clearRecoverySnapshotsForDocument(documentPath).catch(() => undefined);
+          markSaved(documentPath, await writeDocumentFileSession({
+            path: documentPath,
+            content: documentContent,
+          }));
+          await recoverySnapshotStore.clearForDocument(documentPath).catch(() => undefined);
         }
       } catch (err) {
+        if (isFileConflictError(err)) {
+          markSaveConflict(err.message, documentPath);
+          return;
+        }
         markSaveFailed(err, documentPath);
       } finally {
         timerRef.current = null;

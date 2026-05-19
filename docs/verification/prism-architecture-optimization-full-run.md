@@ -474,3 +474,50 @@ git diff --check
 
 - 本 checkpoint 只裁剪前端高亮依赖和 Markdown 高亮插件入口，不改变 Tauri capabilities、文件写入、安全策略、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 9A：文件安全层深化
+
+改动范围：
+
+- `src/domains/document/services/fileSafety.ts`
+- `src/domains/document/services/fileSafety.test.ts`
+- `src/domains/document/hooks/useAutoSave.ts`
+- `src/domains/document/hooks/useExternalFileChangeMonitor.ts`
+- `src/domains/document/services/conflictResolution.ts`
+- `src/domains/document/services/conflictResolution.test.ts`
+- `src/domains/commands/categories/fileCommands.ts`
+
+实现结果：
+
+- 新增 `fileSafety.ts`，集中定义本地写作文件安全边界：
+  - `DocumentFileSession`
+  - `WorkspaceFileSession`
+  - `FileConflictDetector`
+  - `RecoverySnapshotStore`
+  - `FileConflictError`
+- 将保存前磁盘快照比对收敛到 `fileConflictDetector`，自动保存、外部文件变更监控、手动保存共用同一冲突判断语义。
+- 将文档读写收敛到 `readDocumentFileSession()` / `writeDocumentFileSession()`，写入后统一刷新文件快照。
+- 将恢复快照创建/清理收敛到 `recoverySnapshotStore`，保留原有 autosave / manual-save 快照行为。
+- `fileCommands.ts` 不再直接散落保存冲突检测、恢复快照清理和文档写入细节；命令层继续负责菜单动作编排和 toast 错误上抛。
+- `conflictResolution.ts` 复用文件安全层读写与恢复快照 store，重载磁盘版本、另存本地副本、覆盖磁盘版本的用户可见行为保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/document/services/fileSafety.test.ts src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useRecoveryQueue.test.tsx src/domains/document/services/conflictResolution.test.ts src/domains/document/services/recovery.test.ts src/domains/document/store.test.ts src/domains/commands/registry.test.ts
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- 文件安全聚焦测试：8 个测试文件、65 项测试通过。
+- 全量前端测试：85 个测试文件、473 项测试通过。
+- `npm run build` 通过；`main-B0nt0ZUc.js` 1,009.01 kB / gzip 330.65 kB，保持上一 checkpoint 的主包裁剪效果。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只整理文件安全 TypeScript 边界，不改变 Tauri capabilities、文件系统权限、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。

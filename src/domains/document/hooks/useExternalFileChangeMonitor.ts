@@ -1,9 +1,9 @@
 import { useCallback, useEffect } from 'react';
 import {
-  getExternalChangeMessage,
-  getFileSnapshot,
-  hasFileSnapshotChanged,
-} from '../fileSnapshot';
+  createKnownFileSnapshot,
+  fileConflictDetector,
+  getFileSafetyConflictMessage,
+} from '../services/fileSafety';
 import { useDocumentStore } from '../store';
 
 export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
@@ -20,17 +20,14 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
     }
 
     try {
-      const diskSnapshot = await getFileSnapshot(documentPath);
-      const knownSnapshot = {
-        mtimeMs: lastKnownMtime,
-        size: lastKnownSize,
-      };
+      const knownSnapshot = createKnownFileSnapshot(lastKnownMtime, lastKnownSize);
+      const result = await fileConflictDetector.inspect(documentPath, knownSnapshot);
 
-      if (hasFileSnapshotChanged(knownSnapshot, diskSnapshot)) {
-        markSaveConflict(getExternalChangeMessage(), documentPath);
+      if (result.changed) {
+        markSaveConflict(fileConflictDetector.message, documentPath);
       }
     } catch {
-      markSaveConflict(getExternalChangeMessage(), documentPath);
+      markSaveConflict(getFileSafetyConflictMessage(), documentPath);
     }
   }, [
     documentPath,

@@ -1,20 +1,16 @@
 import { ask, open } from '@tauri-apps/plugin-dialog';
-import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
+import { stat } from '@tauri-apps/plugin-fs';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { openPrismWindow } from '../../../lib/openWindow';
 import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
 import {
-  getExternalChangeMessage,
-  getFileSnapshot,
-  getFileSnapshotOrNull,
-  hasFileSnapshotChanged,
-  snapshotFromFileInfo,
-  type FileSnapshot,
-} from '../../document/fileSnapshot';
-import {
-  clearRecoverySnapshotsForDocument,
-  createRecoverySnapshot,
-} from '../../document/services/recovery';
+  createDocumentFileSession,
+  fileConflictDetector,
+  isFileConflictError,
+  readDocumentFileSession,
+  recoverySnapshotStore,
+  writeDocumentFileSession,
+} from '../../document/services/fileSafety';
 import {
   MARKDOWN_TEMPLATES,
   resolveMarkdownTemplateContent,
@@ -38,27 +34,18 @@ function hasSavedDocumentPath(context: CommandContext): boolean {
   return Boolean(context.documentStore.currentDocument?.path);
 }
 
-function isExternalFileChangeError(error: unknown): boolean {
-  return error instanceof Error && error.message === getExternalChangeMessage();
-}
+async function ensureDocumentNotChangedOnDisk(context: CommandContext, path: string) {
+  const session = createDocumentFileSession(context.documentStore.currentDocument);
+  if (!session) return null;
 
-async function ensureDocumentNotChangedOnDisk(context: CommandContext, path: string): Promise<FileSnapshot | null> {
-  const doc = context.documentStore.currentDocument;
-  if (!doc) return null;
-
-  const diskSnapshot = await getFileSnapshot(path);
-  const knownSnapshot = {
-    mtimeMs: doc.lastKnownMtime,
-    size: doc.lastKnownSize,
-  };
-
-  if (hasFileSnapshotChanged(knownSnapshot, diskSnapshot)) {
-    const message = getExternalChangeMessage();
-    context.documentStore.markSaveConflict(message, path);
-    throw new Error(message);
+  try {
+    return await fileConflictDetector.ensureUnchanged(path, session.knownSnapshot);
+  } catch (error) {
+    if (isFileConflictError(error)) {
+      context.documentStore.markSaveConflict(error.message, path);
+    }
+    throw error;
   }
-
-  return diskSnapshot;
 }
 
 function emitEditorCommand(command: string, detail: Record<string, unknown> = {}): void {
@@ -117,11 +104,9 @@ async function handleOpen(context: CommandContext): Promise<void> {
   }
 
   try {
-    const snapshot = snapshotFromFileInfo(await stat(selected));
-    const content = await readTextFile(selected);
-    const name = basename(selected);
-    context.documentStore.openDocument(selected, name, content, snapshot);
-    addRecentFile(selected, name);
+    const session = await readDocumentFileSession(selected);
+    context.documentStore.openDocument(session.path, session.name, session.content, session.knownSnapshot);
+    addRecentFile(session.path, session.name);
 
     try {
       const parentDir = dirname(selected);
@@ -161,7 +146,7 @@ async function handleSave(context: CommandContext): Promise<void> {
 
   try {
     if (doc.path) {
-      await createRecoverySnapshot({
+      await recoverySnapshotStore.create({
         documentPath: doc.path,
         documentName: doc.name,
         content: doc.content,
@@ -169,16 +154,15 @@ async function handleSave(context: CommandContext): Promise<void> {
       }).catch(() => undefined);
     }
     if (doc.path) await ensureDocumentNotChangedOnDisk(context, targetPath);
-    await writeTextFile(targetPath, doc.content);
-    const snapshot = await getFileSnapshotOrNull(targetPath);
+    const snapshot = await writeDocumentFileSession({ path: targetPath, content: doc.content });
     if (!doc.path) {
       context.documentStore.openDocument(targetPath, basename(targetPath), doc.content, snapshot);
     }
     addRecentFile(targetPath, basename(targetPath));
     context.documentStore.markSaved(targetPath, snapshot);
-    await clearRecoverySnapshotsForDocument(targetPath).catch(() => undefined);
+    await recoverySnapshotStore.clearForDocument(targetPath).catch(() => undefined);
   } catch (err) {
-    if (!isExternalFileChangeError(err)) {
+    if (!isFileConflictError(err)) {
       context.documentStore.markSaveFailed(err, doc.path || undefined);
     }
     throw err;
@@ -203,20 +187,19 @@ async function handleSaveAs(context: CommandContext): Promise<void> {
   context.documentStore.markSaving();
   try {
     if (doc.path) {
-      await createRecoverySnapshot({
+      await recoverySnapshotStore.create({
         documentPath: doc.path,
         documentName: doc.name,
         content: doc.content,
         reason: 'manual-save',
       }).catch(() => undefined);
     }
-    await writeTextFile(chosen, doc.content);
-    const snapshot = await getFileSnapshotOrNull(chosen);
+    const snapshot = await writeDocumentFileSession({ path: chosen, content: doc.content });
     context.documentStore.openDocument(chosen, basename(chosen), doc.content, snapshot);
     addRecentFile(chosen, basename(chosen));
     context.documentStore.markSaved(chosen, snapshot);
-    if (doc.path) await clearRecoverySnapshotsForDocument(doc.path).catch(() => undefined);
-    await clearRecoverySnapshotsForDocument(chosen).catch(() => undefined);
+    if (doc.path) await recoverySnapshotStore.clearForDocument(doc.path).catch(() => undefined);
+    await recoverySnapshotStore.clearForDocument(chosen).catch(() => undefined);
   } catch (err) {
     context.documentStore.markSaveFailed(err);
     throw err;
@@ -260,7 +243,7 @@ async function handleCloseDocument(context: CommandContext): Promise<void> {
     context.documentStore.markSaving(doc.path || undefined);
     try {
       if (doc.path) {
-        await createRecoverySnapshot({
+        await recoverySnapshotStore.create({
           documentPath: doc.path,
           documentName: doc.name,
           content: doc.content,
@@ -268,11 +251,11 @@ async function handleCloseDocument(context: CommandContext): Promise<void> {
         }).catch(() => undefined);
       }
       if (doc.path) await ensureDocumentNotChangedOnDisk(context, targetPath);
-      await writeTextFile(targetPath, doc.content);
-      context.documentStore.markSaved(targetPath, await getFileSnapshotOrNull(targetPath));
-      await clearRecoverySnapshotsForDocument(targetPath).catch(() => undefined);
+      const snapshot = await writeDocumentFileSession({ path: targetPath, content: doc.content });
+      context.documentStore.markSaved(targetPath, snapshot);
+      await recoverySnapshotStore.clearForDocument(targetPath).catch(() => undefined);
     } catch (err) {
-      if (!isExternalFileChangeError(err)) {
+      if (!isFileConflictError(err)) {
         context.documentStore.markSaveFailed(err, doc.path || undefined);
       }
       throw err;

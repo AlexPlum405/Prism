@@ -1,10 +1,12 @@
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { basename } from '../../workspace/services/path';
 import { addRecentFile } from '../../workspace/services/recentFiles';
-import { getFileSnapshotOrNull } from '../fileSnapshot';
-import { clearRecoverySnapshotsForDocument } from './recovery';
 import { useDocumentStore } from '../store';
 import type { OpenDocument } from '../types';
+import {
+  readDocumentFileSession,
+  recoverySnapshotStore,
+  writeDocumentFileSession,
+} from './fileSafety';
 
 export interface RequestSavePathInput {
   filename: string;
@@ -41,11 +43,10 @@ export async function reloadConflictedDocument(): Promise<ConflictResolutionResu
   if (!doc) return { resolved: false };
 
   try {
-    const content = await readTextFile(doc.path);
-    const snapshot = await getFileSnapshotOrNull(doc.path);
-    useDocumentStore.getState().openDocument(doc.path, basename(doc.path), content, snapshot);
+    const session = await readDocumentFileSession(doc.path);
+    useDocumentStore.getState().openDocument(session.path, session.name, session.content, session.knownSnapshot);
     addRecentFile(doc.path, basename(doc.path));
-    await clearRecoverySnapshotsForDocument(doc.path).catch(() => undefined);
+    await recoverySnapshotStore.clearForDocument(doc.path).catch(() => undefined);
     return { resolved: true, path: doc.path };
   } catch (error) {
     markConflictFailure(doc, error);
@@ -72,12 +73,11 @@ export async function saveConflictedDocumentAs(
 
   try {
     useDocumentStore.getState().markSaving(doc.path);
-    await writeTextFile(chosen, doc.content);
-    const snapshot = await getFileSnapshotOrNull(chosen);
+    const snapshot = await writeDocumentFileSession({ path: chosen, content: doc.content });
     useDocumentStore.getState().openDocument(chosen, basename(chosen), doc.content, snapshot);
     addRecentFile(chosen, basename(chosen));
-    await clearRecoverySnapshotsForDocument(doc.path).catch(() => undefined);
-    await clearRecoverySnapshotsForDocument(chosen).catch(() => undefined);
+    await recoverySnapshotStore.clearForDocument(doc.path).catch(() => undefined);
+    await recoverySnapshotStore.clearForDocument(chosen).catch(() => undefined);
     return { resolved: true, path: chosen };
   } catch (error) {
     markConflictFailure(doc, error);
@@ -91,11 +91,10 @@ export async function overwriteConflictedDocument(): Promise<ConflictResolutionR
 
   try {
     useDocumentStore.getState().markSaving(doc.path);
-    await writeTextFile(doc.path, doc.content);
-    const snapshot = await getFileSnapshotOrNull(doc.path);
+    const snapshot = await writeDocumentFileSession({ path: doc.path, content: doc.content });
     useDocumentStore.getState().markSaved(doc.path, snapshot);
     addRecentFile(doc.path, basename(doc.path));
-    await clearRecoverySnapshotsForDocument(doc.path).catch(() => undefined);
+    await recoverySnapshotStore.clearForDocument(doc.path).catch(() => undefined);
     return { resolved: true, path: doc.path };
   } catch (error) {
     markConflictFailure(doc, error);
