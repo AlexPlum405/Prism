@@ -41,7 +41,6 @@ import {
 } from './assets';
 import {
   EXPORT_ATOMIC_BLOCK_CLASS,
-  EXPORT_ATOMIC_BLOCK_SELECTOR,
   EXPORT_ATOMIC_SPACER_CLASS,
   EXPORT_PAGE_SPLIT_EPSILON,
   markExportAtomicBlocks,

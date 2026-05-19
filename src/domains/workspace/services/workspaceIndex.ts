@@ -1,7 +1,9 @@
-import { parseDocumentFrontMatter } from '../../editor/extensions/frontMatterProperties';
-import { getMarkdownHeadingSlug } from '../../editor/extensions/headingSlug';
+import {
+  parseMarkdownDocumentModel,
+  type MarkdownDocumentHeading,
+} from '../../markdown/documentModel';
 import type { FileNode } from '../types';
-import { extractDocumentLinks, resolveDocumentLinkTarget, type DocumentLinkKind } from './documentLinks';
+import { resolveDocumentLinkTarget, type DocumentLinkKind } from './documentLinks';
 import { flattenFiles } from './fileTree';
 import { isSupportedMarkdownPath } from './fileAssociation';
 import { basename, normalizePathForCompare } from './path';
@@ -24,12 +26,7 @@ export interface WorkspaceIndexBuildInput {
   workspaceRoot?: string | null;
 }
 
-export interface WorkspaceIndexHeading {
-  level: number;
-  line: number;
-  slug: string;
-  title: string;
-}
+export type WorkspaceIndexHeading = MarkdownDocumentHeading;
 
 export interface WorkspaceIndexFrontMatter {
   author: string;
@@ -111,34 +108,6 @@ function getWorkspaceRelativePath(path: string, rootPath?: string | null) {
     : normalizedPath;
 }
 
-function splitTags(value: string) {
-  return value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}
-
-function getFrontMatterLineOffset(content: string, body: string) {
-  if (body === content) return 0;
-  return content.slice(0, content.length - body.length).split(/\r?\n/).length - 1;
-}
-
-function extractMarkdownHeadings(content: string, lineOffset = 0): WorkspaceIndexHeading[] {
-  return content.split(/\r?\n/).flatMap((line, index) => {
-    const match = line.match(/^(#{1,6})[ \t]+(.+?)[ \t#]*$/);
-    if (!match) return [];
-    const title = match[2].replace(/`([^`]+)`/g, '$1').trim();
-    const slug = getMarkdownHeadingSlug(title);
-    if (!title || !slug) return [];
-    return [{
-      level: match[1].length,
-      line: lineOffset + index + 1,
-      slug,
-      title,
-    }];
-  });
-}
-
 function excerptForLine(content: string, line: number) {
   return content.split(/\r?\n/)[line - 1]?.trim().slice(0, 160) ?? '';
 }
@@ -155,29 +124,6 @@ function buildRecentRankMap(recentFiles: WorkspaceIndexRecentFile[] = []) {
     normalizePathForCompare(file.path),
     { lastOpened: file.lastOpened, rank: index },
   ]));
-}
-
-function normalizeFrontMatter(content: string): {
-  body: string;
-  frontMatter: WorkspaceIndexFrontMatter;
-  lineOffset: number;
-} {
-  const parsed = parseDocumentFrontMatter(content);
-  return {
-    body: parsed.body,
-    frontMatter: {
-      author: parsed.properties.author,
-      date: parsed.properties.date,
-      description: parsed.properties.description,
-      error: parsed.error,
-      exportRaw: parsed.properties.exportRaw,
-      hasFrontMatter: parsed.hasFrontMatter,
-      status: parsed.properties.status,
-      tags: splitTags(parsed.properties.tags),
-      title: parsed.properties.title,
-    },
-    lineOffset: getFrontMatterLineOffset(content, parsed.body),
-  };
 }
 
 function fallbackTitleForDocument(name: string, headings: WorkspaceIndexHeading[]) {
@@ -197,9 +143,8 @@ export function buildWorkspaceIndex(input: WorkspaceIndexBuildInput): WorkspaceI
     const normalizedPath = normalizePathForCompare(file.path);
     const hasContent = contentByPath.has(normalizedPath);
     const content = contentByPath.get(normalizedPath) ?? file.preview ?? '';
-    const { body, frontMatter, lineOffset } = normalizeFrontMatter(content);
-    const headings = extractMarkdownHeadings(body, lineOffset);
-    const links = extractDocumentLinks(content).map((link) => ({
+    const model = parseMarkdownDocumentModel(content);
+    const links = model.links.map((link) => ({
       ...link,
       resolvedPath: resolveDocumentLinkTarget({
         kind: link.kind,
@@ -210,12 +155,12 @@ export function buildWorkspaceIndex(input: WorkspaceIndexBuildInput): WorkspaceI
       })?.path ?? null,
     }));
     const recent = recentByPath.get(normalizedPath);
-    const title = frontMatter.title || fallbackTitleForDocument(file.name, headings);
+    const title = model.frontMatter.title || fallbackTitleForDocument(file.name, model.headings);
 
     return {
       content,
-      frontMatter,
-      headings,
+      frontMatter: model.frontMatter,
+      headings: model.headings,
       hasContent,
       lastOpened: recent?.lastOpened,
       links,

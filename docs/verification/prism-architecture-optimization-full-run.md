@@ -301,3 +301,48 @@ npm test -- --run src/domains/diagnostics/adapters.test.ts src/domains/editor/co
 
 - 本 checkpoint 只新增诊断类型与 adapter，并调整 App 中 `ERROR` 计数来源，不改变导出 pipeline、文件系统、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 3A / 6B：Markdown document model 与工作区索引复用
+
+改动范围：
+
+- `src/domains/markdown/frontMatter.ts`
+- `src/domains/markdown/headingSlug.ts`
+- `src/domains/markdown/documentModel.ts`
+- `src/domains/markdown/index.ts`
+- `src/domains/markdown/documentModel.test.ts`
+- `src/domains/editor/extensions/frontMatterProperties.ts`
+- `src/domains/editor/extensions/headingSlug.ts`
+- `src/domains/workspace/services/documentLinks.ts`
+- `src/domains/workspace/services/workspaceIndex.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 新增 `src/domains/markdown/` 作为低层 Markdown core，集中承载 document front matter 解析、heading slug、heading 提取、Markdown/wiki 链接提取和 `parseMarkdownDocumentModel()`。
+- `frontMatterProperties.ts` 和 `headingSlug.ts` 保留原有 editor 扩展入口，但改为从 Markdown core re-export，避免 UI/编辑器侧成为工作区索引的底层依赖。
+- `documentLinks.ts` 保留 workspace 里的链接解析与路径解析职责，只复用 Markdown core 的链接提取函数和类型。
+- `workspaceIndex.ts` 改为基于 `parseMarkdownDocumentModel()` 构建 title、front matter、headings、links 和 backlinks，减少 front matter / heading / links 的重复扫描逻辑。
+- 清理 `exportPipeline.ts` 中导出分页拆分后遗留的未使用 import，使 `npm run build` 的 TypeScript 阶段恢复通过。
+- 外部 `WorkspaceIndex`、`DocumentLinkReference`、`parseDocumentFrontMatter()`、`getMarkdownHeadingSlug()` 入口保持兼容，快速打开、全文搜索、反链、关系图谱、预览和导出行为不改变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/markdown/documentModel.test.ts src/domains/editor/extensions/frontMatterProperties.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/extensions/linkCompletion.test.ts src/domains/workspace/services/documentLinks.test.ts src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/components/shell/CommandPalette.test.tsx src/domains/workspace/components/BacklinksPanel.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx
+npm test -- --run src/lib/markdownToHtml.test.ts src/domains/export/frontMatter.test.ts src/domains/export/templates.test.ts src/domains/export/exportPipeline.test.ts
+npm test -- --run
+npm run build
+```
+
+结果：
+
+- Markdown / workspace / 链接聚焦测试：10 个测试文件、38 项测试通过。
+- Markdown 渲染与导出 front matter 相关测试：4 个测试文件、90 项测试通过。
+- 全量前端测试：83 个测试文件、465 项测试通过。
+- `npm run build` 通过；Vite 仍提示既有大 chunk 警告，留给后续“主包性能优化”checkpoint 处理。
+
+跳过项：
+
+- 本 checkpoint 只迁移 TypeScript 纯函数边界和工作区索引接线，不改变文件写入、安全策略、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
