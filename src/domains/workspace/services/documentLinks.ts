@@ -25,7 +25,17 @@ export interface ResolvedDocumentLink {
   path: string;
 }
 
+export interface DocumentLinkReference {
+  column: number;
+  kind: DocumentLinkKind;
+  label: string;
+  line: number;
+  target: string;
+}
+
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
+const MARKDOWN_LINK_RE = /!?\[([^\]\n]*)\]\(([^)\n]*)\)/g;
+const WIKI_LINK_RE = /\[\[([^\]\n|#]+)(?:#[^\]\n|]*)?(?:\|([^\]\n]*))?\]\]/g;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 
 function normalizePathParts(path: string) {
@@ -53,6 +63,15 @@ function stripTargetMetadata(target: string) {
 
 function isExternalTarget(target: string) {
   return URL_SCHEME_RE.test(target) || target.startsWith('//');
+}
+
+function lineColumnFromIndex(content: string, index: number) {
+  const prefix = content.slice(0, index);
+  const lines = prefix.split('\n');
+  return {
+    line: lines.length,
+    column: lines[lines.length - 1].length + 1,
+  };
 }
 
 function getWorkspaceRelativePath(path: string, rootPath?: string | null) {
@@ -116,4 +135,37 @@ export function resolveDocumentLinkTarget(input: ResolveDocumentLinkInput): Reso
   return input.kind === 'wiki'
     ? resolveWikiLink(input)
     : resolveMarkdownLink(input);
+}
+
+export function extractDocumentLinks(content: string): DocumentLinkReference[] {
+  const links: DocumentLinkReference[] = [];
+
+  for (const match of content.matchAll(MARKDOWN_LINK_RE)) {
+    if (content[match.index ?? 0] === '!') continue;
+    const target = match[2]?.trim() ?? '';
+    if (!target) continue;
+    const { line, column } = lineColumnFromIndex(content, match.index ?? 0);
+    links.push({
+      kind: 'markdown',
+      target,
+      label: match[1]?.trim() || target,
+      line,
+      column,
+    });
+  }
+
+  for (const match of content.matchAll(WIKI_LINK_RE)) {
+    const target = match[1]?.trim() ?? '';
+    if (!target) continue;
+    const { line, column } = lineColumnFromIndex(content, match.index ?? 0);
+    links.push({
+      kind: 'wiki',
+      target,
+      label: match[2]?.trim() || target,
+      line,
+      column,
+    });
+  }
+
+  return links.sort((a, b) => a.line - b.line || a.column - b.column);
 }

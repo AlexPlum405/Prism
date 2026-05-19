@@ -19,6 +19,7 @@ import {
 import { StatusBar } from './domains/workspace/components/StatusBar';
 import { Sidebar } from './domains/workspace/components/Sidebar';
 import { BacklinksPanel } from './domains/workspace/components/BacklinksPanel';
+import { DocumentLinksPanel } from './domains/workspace/components/DocumentLinksPanel';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists, readTextFile } from '@tauri-apps/plugin-fs';
@@ -62,10 +63,12 @@ import {
   type BacklinkReference,
   computeWritingStats,
   dirname,
+  extractDocumentLinks,
   flattenFiles,
   getRuntimePlatform,
   isSamePath,
   joinPath,
+  type DocumentLinkReference,
   resolveDocumentLinkTarget,
   scanBacklinks,
 } from './domains/workspace/services';
@@ -241,6 +244,7 @@ function App() {
   const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
+  const [documentLinksVisible, setDocumentLinksVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
   const [backlinks, setBacklinks] = useState<BacklinkReference[]>([]);
   const [pendingBacklinkJump, setPendingBacklinkJump] = useState<{
@@ -398,6 +402,11 @@ function App() {
   }, [currentDocument, workspace.fileTree, workspace.rootPath]);
 
   const firstLinkDiagnostic = linkDiagnostics[0] ?? null;
+  const documentLinks = useMemo(
+    () => currentDocument ? extractDocumentLinks(currentDocument.content) : [],
+    [currentDocument?.content],
+  );
+
   const handleLinkDiagnosticsClick = useCallback(() => {
     if (linkDiagnostics.length === 0) return;
     setLinkDiagnosticsVisible(true);
@@ -643,6 +652,14 @@ function App() {
     workspace.rootPath,
   ]);
 
+  const handleSelectDocumentLink = useCallback(async (link: DocumentLinkReference) => {
+    setDocumentLinksVisible(false);
+    await handleOpenDocumentLink(link.target, {
+      kind: link.kind,
+      sourcePath: currentDocument?.path,
+    });
+  }, [currentDocument?.path, handleOpenDocumentLink]);
+
   const handleSelectBacklink = useCallback(async (reference: BacklinkReference) => {
     setBacklinksVisible(false);
     setPendingBacklinkJump({ path: reference.path, line: reference.line });
@@ -829,7 +846,11 @@ function App() {
         setCommandPaletteMode('files');
         setCommandPaletteVisible(true);
       },
-  }), [requestExportPath, requestMarkdownSavePath, showToast]);
+      openDocumentProperties: () => setDocumentPropertiesVisible(true),
+      openDocumentLinks: () => setDocumentLinksVisible(true),
+      openBacklinks: handleBacklinksClick,
+      openRelationGraph: () => showToast('关系图谱将在阶段 8 启用'),
+  }), [handleBacklinksClick, requestExportPath, requestMarkdownSavePath, showToast]);
 
   const commandContext = useMemo(() => createCommandContext(), [
     createCommandContext,
@@ -1082,6 +1103,13 @@ function App() {
         backlinks={backlinks}
         onClose={() => setBacklinksVisible(false)}
         onSelect={handleSelectBacklink}
+      />
+
+      <DocumentLinksPanel
+        visible={documentLinksVisible}
+        links={documentLinks}
+        onClose={() => setDocumentLinksVisible(false)}
+        onSelect={handleSelectDocumentLink}
       />
 
       <DocumentPropertiesPanel

@@ -22,6 +22,10 @@ export type CommandId =
   | 'quickOpen'
   | 'save'
   | 'saveAs'
+  | 'openDocumentProperties'
+  | 'showDocumentLinks'
+  | 'showBacklinks'
+  | 'showRelationGraph'
   | 'templateReadme'
   | 'templatePrd'
   | 'templateMeeting'
@@ -164,6 +168,10 @@ export interface CommandContext {
   openShortcuts?: () => void;
   openCommandPalette?: () => void;
   openQuickOpen?: () => void;
+  openDocumentProperties?: () => void;
+  openDocumentLinks?: () => void;
+  openBacklinks?: () => void;
+  openRelationGraph?: () => void;
 }
 
 export interface CommandDefinition {

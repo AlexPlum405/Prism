@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveDocumentLinkTarget } from './documentLinks';
+import { extractDocumentLinks, resolveDocumentLinkTarget } from './documentLinks';
 
 const workspaceFiles = [
   { path: '/repo/docs/manual-test.md', name: 'manual-test.md' },
@@ -46,5 +46,31 @@ describe('resolveDocumentLinkTarget', () => {
       workspaceRoot: '/repo',
       workspaceFiles,
     })).toBeNull();
+  });
+
+  it('extracts current document markdown and wiki links for the document links panel', () => {
+    const links = extractDocumentLinks([
+      '# Links',
+      '[Manual](docs/manual-test.md)',
+      '![Image](assets/banner.png)',
+      '[[linking-note|Linking Note]]',
+    ].join('\n'));
+
+    expect(links).toEqual([
+      {
+        kind: 'markdown',
+        target: 'docs/manual-test.md',
+        label: 'Manual',
+        line: 2,
+        column: 1,
+      },
+      {
+        kind: 'wiki',
+        target: 'linking-note',
+        label: 'Linking Note',
+        line: 4,
+        column: 1,
+      },
+    ]);
   });
 });

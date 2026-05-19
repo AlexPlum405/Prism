@@ -37,3 +37,38 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改前端状态栏呈现与测试，不涉及 Tauri capabilities、安装器、签名、公证、updater 或 file association。
+
+## 阶段 2：命令面板整理
+
+改动范围：
+
+- `src/domains/commands/types.ts`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/registry.test.ts`
+- `src/App.tsx`
+- `src/domains/workspace/services/documentLinks.ts`
+- `src/domains/workspace/services/documentLinks.test.ts`
+- `src/domains/workspace/services/index.ts`
+- `src/domains/workspace/components/DocumentLinksPanel.tsx`
+- `src/domains/workspace/components/DocumentLinksPanel.test.tsx`
+- `src/styles/global.css`
+
+实现结果：
+
+- 命令面板新增 `打开文档属性`、`查看当前文档链接`、`查看反向链接`、`查看关系图谱`。
+- `打开文档属性` 打开现有 Front Matter 属性面板。
+- `查看反向链接` 打开现有反向链接面板。
+- `查看当前文档链接` 打开新增轻量文档链接面板，列出当前文档 Markdown/wiki 链接并可点击跳转。
+- `查看关系图谱` 先接入命令入口，阶段 8 替换为正式轻量关系图谱。
+- `META` / `LINK` / `BACKLINK` 已从状态栏移除，入口进入命令面板。
+
+验证：
+
+- `npm test -- --run src/domains/commands/registry.test.ts src/domains/workspace/services/documentLinks.test.ts src/domains/workspace/components/DocumentLinksPanel.test.tsx src/components/shell/CommandPalette.test.tsx`：4 个测试文件、32 项测试通过。
+- `npm test -- --run`：70 个测试文件、419 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改命令面板、React 弹层与 TypeScript 服务，不涉及发布、签名、公证、updater 或安装器。

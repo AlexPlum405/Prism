@@ -290,7 +290,7 @@ describe('command registry', () => {
       visibleText.push(item.id, item.label, item.category, ...(item.keywords ?? []));
     });
 
-    expect(visibleText.join('\n')).not.toMatch(/插件市场|插件 API|plugin marketplace|marketplace|prism:\/\/|deep\s*link|deeplink|云同步|移动端|实时协作|图谱|知识图谱|WYSIWYG/i);
+    expect(visibleText.join('\n')).not.toMatch(/插件市场|插件 API|plugin marketplace|marketplace|prism:\/\/|deep\s*link|deeplink|云同步|移动端|实时协作|WYSIWYG/i);
   });
 
   it('opens quick-open from the File menu when a workspace has markdown files', async () => {
@@ -316,6 +316,53 @@ describe('command registry', () => {
     expect(openQuickOpen).toHaveBeenCalledTimes(1);
     expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyP', mod: true }]);
     expect(commandRegistryById.get('print')?.shortcuts).toBeUndefined();
+  });
+
+  it('routes document info commands through the command palette instead of status bar entries', async () => {
+    const openDocumentProperties = vi.fn();
+    const openDocumentLinks = vi.fn();
+    const openBacklinks = vi.fn();
+    const openRelationGraph = vi.fn();
+    const context = createCommandContext({
+      documentStore: {
+        ...createCommandContext().documentStore,
+        currentDocument: {
+          path: '/notes/report.md',
+          name: 'report.md',
+          content: '# Report',
+          isDirty: false,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          lastSavedAt: 0,
+          saveError: null,
+          viewMode: 'split',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+          saveStatus: 'saved',
+        },
+      },
+      openDocumentProperties,
+      openDocumentLinks,
+      openBacklinks,
+      openRelationGraph,
+    });
+    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
+
+    expect(paletteIds).toEqual(expect.arrayContaining([
+      'openDocumentProperties',
+      'showDocumentLinks',
+      'showBacklinks',
+      'showRelationGraph',
+    ]));
+
+    await runCommand('openDocumentProperties', context);
+    await runCommand('showDocumentLinks', context);
+    await runCommand('showBacklinks', context);
+    await runCommand('showRelationGraph', context);
+
+    expect(openDocumentProperties).toHaveBeenCalledTimes(1);
+    expect(openDocumentLinks).toHaveBeenCalledTimes(1);
+    expect(openBacklinks).toHaveBeenCalledTimes(1);
+    expect(openRelationGraph).toHaveBeenCalledTimes(1);
   });
 
   it('places automatic line wrapping in the View menu and toggles the persisted editor setting', async () => {

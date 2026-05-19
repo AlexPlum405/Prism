@@ -2089,13 +2089,19 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   max-width: 680px;
 }
 
+.prism-document-links-modal {
+  max-width: 620px;
+}
+
 .prism-link-diagnostics-body,
-.prism-backlinks-body {
+.prism-backlinks-body,
+.prism-document-links-body {
   padding: 10px;
 }
 
 .prism-link-diagnostics-empty,
-.prism-backlinks-empty {
+.prism-backlinks-empty,
+.prism-document-links-empty {
   padding: 34px 12px;
   text-align: center;
   color: var(--c-ash);
@@ -2103,7 +2109,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostics-list,
-.prism-backlinks-list {
+.prism-backlinks-list,
+.prism-document-links-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -2112,7 +2119,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostic-item,
-.prism-backlink-item {
+.prism-backlink-item,
+.prism-document-link-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -2130,17 +2138,20 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostic-item:hover,
-.prism-backlink-item:hover {
+.prism-backlink-item:hover,
+.prism-document-link-item:hover {
   background: var(--c-chalk);
 }
 
 .prism-link-diagnostic-item:focus-visible,
-.prism-backlink-item:focus-visible {
+.prism-backlink-item:focus-visible,
+.prism-document-link-item:focus-visible {
   outline: 2px solid var(--c-void);
   outline-offset: 2px;
 }
 
-.prism-link-diagnostic-kind {
+.prism-link-diagnostic-kind,
+.prism-document-link-kind {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2158,7 +2169,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostic-main,
-.prism-backlink-title {
+.prism-backlink-title,
+.prism-document-link-main {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -2166,7 +2178,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostic-message,
-.prism-backlink-title {
+.prism-backlink-title,
+.prism-document-link-label {
   min-width: 0;
   color: var(--c-void);
   font-size: 13px;
@@ -2178,7 +2191,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostic-target,
-.prism-backlink-excerpt {
+.prism-backlink-excerpt,
+.prism-document-link-target {
   min-width: 0;
   color: var(--c-ash);
   font-family: var(--font-mono);
@@ -2190,7 +2204,8 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 }
 
 .prism-link-diagnostic-location,
-.prism-backlink-location {
+.prism-backlink-location,
+.prism-document-link-location {
   color: var(--c-graphite);
   font-family: var(--font-mono);
   font-size: 11px;
