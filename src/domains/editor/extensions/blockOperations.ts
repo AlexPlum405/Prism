@@ -1,6 +1,8 @@
 export type SourceBlockOperation =
   | 'moveParagraphUp'
   | 'moveParagraphDown'
+  | 'duplicateParagraph'
+  | 'deleteParagraph'
   | 'moveSectionUp'
   | 'moveSectionDown'
   | 'duplicateSection'
@@ -36,6 +38,8 @@ interface TextRange {
 const SOURCE_BLOCK_OPERATIONS = new Set<SourceBlockOperation>([
   'moveParagraphUp',
   'moveParagraphDown',
+  'duplicateParagraph',
+  'deleteParagraph',
   'moveSectionUp',
   'moveSectionDown',
   'duplicateSection',
@@ -272,6 +276,59 @@ function getMoveParagraphEdit(
   return target ? getMoveEdit(doc, current, target, direction) : null;
 }
 
+function getDuplicateParagraphEdit(doc: string, from: number, to: number): SourceBlockOperationEdit | null {
+  const paragraph = getParagraphAt(doc, from, to);
+  if (!paragraph) return null;
+
+  const paragraphText = doc.slice(paragraph.from, paragraph.to);
+  const separator = '\n\n';
+  const insert = `${separator}${paragraphText}`;
+  const selectionFrom = paragraph.to + separator.length;
+
+  return {
+    from: paragraph.to,
+    to: paragraph.to,
+    insert,
+    selectionFrom,
+    selectionTo: selectionFrom + paragraphText.length,
+  };
+}
+
+function getDeleteParagraphEdit(doc: string, from: number, to: number): SourceBlockOperationEdit | null {
+  const lines = getLines(doc);
+  const paragraph = getParagraphAt(doc, from, to);
+  if (!paragraph) return null;
+
+  const startLine = paragraph.startLine;
+  const endLine = getLineIndexAt(lines, paragraph.to);
+  let deleteFrom = paragraph.from;
+  let deleteTo = paragraph.to;
+
+  let nextLine = endLine + 1;
+  while (nextLine < lines.length && isBlank(lines[nextLine])) {
+    nextLine += 1;
+  }
+
+  if (nextLine < lines.length) {
+    deleteTo = lines[nextLine].from;
+  } else {
+    deleteTo = doc.length;
+    let previousLine = startLine - 1;
+    while (previousLine >= 0 && isBlank(lines[previousLine])) {
+      previousLine -= 1;
+    }
+    deleteFrom = previousLine >= 0 ? lines[previousLine].to : 0;
+  }
+
+  return {
+    from: deleteFrom,
+    to: deleteTo,
+    insert: '',
+    selectionFrom: deleteFrom,
+    selectionTo: deleteFrom,
+  };
+}
+
 function getMoveSectionEdit(
   doc: string,
   from: number,
@@ -311,7 +368,7 @@ function stripBlockPrefix(line: string) {
   let body = line.slice(indent.length);
 
   body = body.replace(/^>\s?/, '');
-  body = body.replace(/^\[!(NOTE|WARNING|TIP)\]\s*/i, '');
+  body = body.replace(/^\[!(NOTE|WARNING|TIP|IMPORTANT)\]\s*/i, '');
   body = body.replace(/^[-*+]\s+\[[ xX]\]\s+/, '');
   body = body.replace(/^[-*+]\s+/, '');
   body = body.replace(/^\d+[.)]\s+/, '');
@@ -387,6 +444,10 @@ export function getSourceBlockOperationEdit(
       return getMoveParagraphEdit(doc, from, to, 'up');
     case 'moveParagraphDown':
       return getMoveParagraphEdit(doc, from, to, 'down');
+    case 'duplicateParagraph':
+      return getDuplicateParagraphEdit(doc, from, to);
+    case 'deleteParagraph':
+      return getDeleteParagraphEdit(doc, from, to);
     case 'moveSectionUp':
       return getMoveSectionEdit(doc, from, 'up');
     case 'moveSectionDown':

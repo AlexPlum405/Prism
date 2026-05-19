@@ -518,6 +518,8 @@ describe('command registry', () => {
       children: expect.arrayContaining([
         expect.objectContaining({ action: 'moveParagraphUp' }),
         expect.objectContaining({ action: 'moveParagraphDown' }),
+        expect.objectContaining({ action: 'duplicateParagraph' }),
+        expect.objectContaining({ action: 'deleteParagraph' }),
         expect.objectContaining({ action: 'moveSectionUp' }),
         expect.objectContaining({ action: 'moveSectionDown' }),
         expect.objectContaining({ action: 'duplicateSection' }),
@@ -528,6 +530,8 @@ describe('command registry', () => {
     });
     expect(paletteIds).toEqual(expect.arrayContaining([
       'moveParagraphUp',
+      'duplicateParagraph',
+      'deleteParagraph',
       'moveSectionDown',
       'duplicateSection',
       'foldCurrentHeading',

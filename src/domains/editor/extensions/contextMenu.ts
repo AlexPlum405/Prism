@@ -9,12 +9,13 @@ import {
 function commandItem(
   id: CommandId,
   shortcutStyle: CommandContext['settingsStore']['shortcutStyle'],
-  options: { label?: string; disabled?: boolean } = {},
+  options: { danger?: boolean; disabled?: boolean; label?: string } = {},
 ): ContextMenuItem {
   return {
     label: options.label ?? getCommandDefinition(id).label,
     action: id,
     shortcut: getPrimaryShortcutLabel(id, shortcutStyle),
+    danger: options.danger,
     disabled: options.disabled,
   };
 }
@@ -33,6 +34,25 @@ export function getEditorContextMenuItems(
     commandItem('italic', shortcutStyle),
     commandItem('underline', shortcutStyle),
     commandItem('strikethrough', shortcutStyle),
+    { type: 'separator' },
+    {
+      label: '块级操作',
+      children: [
+        commandItem('moveParagraphUp', shortcutStyle),
+        commandItem('moveParagraphDown', shortcutStyle),
+        commandItem('duplicateParagraph', shortcutStyle),
+        commandItem('deleteParagraph', shortcutStyle, { danger: true }),
+        { type: 'separator' },
+        commandItem('selectionQuote', shortcutStyle),
+        commandItem('selectionCalloutNote', shortcutStyle),
+        commandItem('selectionCalloutWarning', shortcutStyle),
+        commandItem('selectionCalloutTip', shortcutStyle),
+        commandItem('selectionTaskList', shortcutStyle),
+        { type: 'separator' },
+        commandItem('duplicateSection', shortcutStyle),
+        commandItem('foldCurrentHeading', shortcutStyle),
+      ],
+    },
     { type: 'separator' },
     {
       label: '复制为',

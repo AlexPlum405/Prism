@@ -12,6 +12,8 @@ function applyOperation(doc: string, selectedText: string, operation: SourceBloc
 describe('source block operations', () => {
   it('recognizes supported command ids', () => {
     expect(isSourceBlockOperation('moveParagraphUp')).toBe(true);
+    expect(isSourceBlockOperation('duplicateParagraph')).toBe(true);
+    expect(isSourceBlockOperation('deleteParagraph')).toBe(true);
     expect(isSourceBlockOperation('selectionCalloutWarning')).toBe(true);
     expect(isSourceBlockOperation('unknown')).toBe(false);
   });
@@ -24,6 +26,23 @@ describe('source block operations', () => {
     );
     expect(applyOperation(doc, 'Beta paragraph', 'moveParagraphDown')).toBe(
       'Alpha paragraph\n\nGamma paragraph\n\nBeta paragraph',
+    );
+  });
+
+  it('duplicates and deletes the current paragraph without leaving extra blank lines', () => {
+    const doc = 'Alpha paragraph\n\nBeta paragraph\n\nGamma paragraph';
+
+    expect(applyOperation(doc, 'Beta paragraph', 'duplicateParagraph')).toBe(
+      'Alpha paragraph\n\nBeta paragraph\n\nBeta paragraph\n\nGamma paragraph',
+    );
+    expect(applyOperation(doc, 'Beta paragraph', 'deleteParagraph')).toBe(
+      'Alpha paragraph\n\nGamma paragraph',
+    );
+    expect(applyOperation('Alpha paragraph\n\nBeta paragraph', 'Beta paragraph', 'deleteParagraph')).toBe(
+      'Alpha paragraph',
+    );
+    expect(applyOperation('Alpha paragraph\n\nBeta paragraph', 'Alpha paragraph', 'deleteParagraph')).toBe(
+      'Beta paragraph',
     );
   });
 
@@ -58,10 +77,10 @@ describe('source block operations', () => {
   });
 
   it('normalizes existing list markers before applying another block format', () => {
-    const doc = '- Existing item\n> Quoted item';
+    const doc = '- Existing item\n> [!IMPORTANT]\n> Quoted item';
 
     expect(applyOperation(doc, doc, 'selectionTaskList')).toBe(
-      '- [ ] Existing item\n- [ ] Quoted item',
+      '- [ ] Existing item\n- [ ] \n- [ ] Quoted item',
     );
   });
 });

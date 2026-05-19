@@ -93,6 +93,8 @@ export type CommandId =
   | 'clearFormat'
   | 'moveParagraphUp'
   | 'moveParagraphDown'
+  | 'duplicateParagraph'
+  | 'deleteParagraph'
   | 'moveSectionUp'
   | 'moveSectionDown'
   | 'duplicateSection'

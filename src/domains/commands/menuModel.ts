@@ -166,6 +166,8 @@ const menuModel: MenuModel = {
       children: [
         { command: 'moveParagraphUp' },
         { command: 'moveParagraphDown' },
+        { command: 'duplicateParagraph' },
+        { command: 'deleteParagraph' },
         { command: 'moveSectionUp' },
         { command: 'moveSectionDown' },
         { command: 'duplicateSection' },

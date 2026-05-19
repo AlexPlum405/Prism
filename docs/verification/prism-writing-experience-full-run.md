@@ -319,3 +319,37 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改 TypeScript 模板解析、命令创建文档和编辑器模板插入，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 11：块级操作
+
+改动范围：
+
+- `src/domains/editor/extensions/blockOperations.ts`
+- `src/domains/editor/extensions/blockOperations.test.ts`
+- `src/domains/editor/extensions/contextMenu.ts`
+- `src/domains/editor/extensions/contextMenu.test.ts`
+- `src/domains/editor/components/EditorPane.integration.test.tsx`
+- `src/domains/commands/types.ts`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/registry.test.ts`
+- `src/domains/commands/menuModel.ts`
+
+实现结果：
+
+- 保留现有命令面板和格式菜单中的段落上移/下移、章节上移/下移、复制当前章节、折叠当前标题、选区转引用/Callout/列表/任务列表能力。
+- 新增 `复制当前段落` 和 `删除当前段落` 源码级操作，操作对象是当前光标所在 Markdown 段落，不引入块编辑器或拖拽把手。
+- 删除当前段落会整理相邻空行，避免留下多余空白；复制当前段落会在原段落下方插入副本并选中副本。
+- 右键菜单新增 `块级操作` 子菜单，接入段落移动、复制/删除段落、选区转引用、选区转 Callout、选区转任务列表、复制章节和折叠标题。
+- 命令仍通过现有 `prism-editor-command` 分发到 CodeMirror 源码编辑区，Markdown 源码仍是唯一真实内容。
+- 规范化已有 Callout marker 时补齐 `IMPORTANT`，避免二次转换列表/任务时残留 Callout 标记。
+
+验证：
+
+- `npm test -- --run src/domains/editor/extensions/blockOperations.test.ts src/domains/editor/extensions/contextMenu.test.ts src/domains/commands/registry.test.ts src/domains/editor/components/EditorPane.integration.test.tsx`：4 个测试文件、54 项测试通过。
+- `npm test -- --run`：74 个测试文件、437 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改编辑器源码操作、右键菜单和命令注册，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。

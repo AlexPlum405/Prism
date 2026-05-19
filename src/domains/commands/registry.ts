@@ -1389,6 +1389,22 @@ export const commandRegistry = [
     run: () => emitEditorCommand('moveParagraphDown'),
   }),
   command({
+    id: 'duplicateParagraph',
+    label: '复制当前段落',
+    category: '格式',
+    keywords: ['block', 'paragraph', 'duplicate', 'copy'],
+    enabled: hasDocument,
+    run: () => emitEditorCommand('duplicateParagraph'),
+  }),
+  command({
+    id: 'deleteParagraph',
+    label: '删除当前段落',
+    category: '格式',
+    keywords: ['block', 'paragraph', 'delete', 'remove'],
+    enabled: hasDocument,
+    run: () => emitEditorCommand('deleteParagraph'),
+  }),
+  command({
     id: 'moveSectionUp',
     label: '章节上移',
     category: '格式',

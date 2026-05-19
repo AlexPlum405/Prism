@@ -294,6 +294,34 @@ describe('EditorPane command event integration', () => {
     });
   });
 
+  it('duplicates and deletes the current paragraph through source block commands', async () => {
+    const { changes, onChange } = await renderEditorPane('Alpha\n\nBeta\n\nGamma');
+    const view = getMountedEditorView();
+
+    act(() => {
+      view.dispatch({ selection: { anchor: 'Alpha\n\n'.length } });
+    });
+
+    await dispatchEditorCommand({ command: 'duplicateParagraph' });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('Alpha\n\nBeta\n\nBeta\n\nGamma');
+    });
+
+    act(() => {
+      view.dispatch({
+        selection: { anchor: view.state.doc.toString().indexOf('Gamma') },
+      });
+    });
+
+    await dispatchEditorCommand({ command: 'deleteParagraph' });
+
+    await waitFor(() => {
+      expect(latestChange(changes)).toBe('Alpha\n\nBeta\n\nBeta');
+    });
+  });
+
   it('turns the active selection into a callout through editor commands', async () => {
     const { changes, onChange } = await renderEditorPane('Risk item');
 
