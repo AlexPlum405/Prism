@@ -8,6 +8,8 @@ import { useWorkspaceFocusRefresh } from './domains/workspace/hooks/useWorkspace
 import { useAutoSave } from './domains/document/hooks/useAutoSave';
 import { useExternalFileChangeMonitor } from './domains/document/hooks/useExternalFileChangeMonitor';
 import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
+import { useAppToast } from './hooks/useAppToast';
+import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
 import { RecoveryModal } from './domains/document/components/RecoveryModal';
 import { SaveConflictModal, type SaveConflictAction } from './domains/document/components/SaveConflictModal';
@@ -77,7 +79,6 @@ import {
   type WorkspaceIndexSourceDocument,
 } from './domains/workspace/services';
 import type { ExportDefaultLocation } from './domains/settings/types';
-import { createToastState, type ToastInput, type ToastState } from './lib/toast';
 
 const exportExtensionByFormat: Record<ExportFormat, string> = {
   html: 'html',
@@ -169,11 +170,6 @@ interface SaveDialogState {
   resolve: (result: string | { path: string; qualityScale?: number } | null) => void;
 }
 
-interface ExportFailureState {
-  title: string;
-  diagnostic: string;
-}
-
 interface RecoveryPromptVisibilityInput {
   hasSnapshot: boolean;
   hasSaveDialog: boolean;
@@ -225,7 +221,6 @@ function App() {
   const workspace = useWorkspaceStore();
 
   const editorRef = useRef<EditorPaneHandle>(null);
-  const toastTimerRef = useRef<number | null>(null);
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [selectionText, setSelectionText] = useState('');
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
@@ -235,10 +230,6 @@ function App() {
     items: ContextMenuItem[];
     kind: 'file' | 'menu';
   } | null>(null);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const [exportProgress, setExportProgress] = useState<string | null>(null);
-  const [exportProgressInBackground, setExportProgressInBackground] = useState(false);
-  const [exportFailure, setExportFailure] = useState<ExportFailureState | null>(null);
   const [saveDialog, setSaveDialog] = useState<SaveDialogState | null>(null);
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
   const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
@@ -404,36 +395,16 @@ function App() {
     workspace.sidebarVisible,
   ]);
 
-  const dismissToast = useCallback(() => {
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
-    setToast(null);
-  }, []);
-
-  const showToast = useCallback((input: ToastInput) => {
-    const nextToast = createToastState(input);
-    setToast(nextToast);
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
-    if (nextToast.durationMs !== null && nextToast.durationMs > 0) {
-      toastTimerRef.current = window.setTimeout(() => {
-        setToast(null);
-        toastTimerRef.current = null;
-      }, nextToast.durationMs);
-    }
-  }, []);
-
-  const sendExportProgressToBackground = useCallback(() => {
-    setExportProgressInBackground(true);
-  }, []);
-
-  const showBackgroundExportProgress = useCallback(() => {
-    setExportProgressInBackground(false);
-  }, []);
+  const { toast, showToast, dismissToast } = useAppToast();
+  const {
+    exportProgress,
+    exportProgressInBackground,
+    exportFailure,
+    sendExportProgressToBackground,
+    showBackgroundExportProgress,
+    dismissExportFailure,
+    copyExportFailureDiagnostic,
+  } = useExportTaskUi(showToast);
 
   const {
     activeRecoverySnapshot,
@@ -553,59 +524,6 @@ function App() {
       setTypographyDiagnosticsVisible(false);
     }
   }, [typographyDiagnostics.length]);
-
-  useEffect(() => () => {
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleToast = (event: Event) => {
-      const detail = (event as CustomEvent<ToastInput>).detail;
-      if (detail) showToast(detail);
-    };
-    window.addEventListener('prism-toast', handleToast);
-    return () => window.removeEventListener('prism-toast', handleToast);
-  }, [showToast]);
-
-  useEffect(() => {
-    const handleExportProgress = (event: Event) => {
-      const detail = (event as CustomEvent<{ visible?: boolean; message?: string }>).detail;
-      if (detail?.visible) {
-        setExportFailure(null);
-        setExportProgress(detail.message ?? '正在导出');
-        return;
-      }
-      setExportProgress(null);
-      setExportProgressInBackground(false);
-    };
-    window.addEventListener('prism-export-progress', handleExportProgress);
-    return () => window.removeEventListener('prism-export-progress', handleExportProgress);
-  }, []);
-
-  useEffect(() => {
-    const handleExportFailure = (event: Event) => {
-      const detail = (event as CustomEvent<ExportFailureState>).detail;
-      if (!detail?.diagnostic) return;
-      setExportFailure({
-        title: detail.title || '导出失败',
-        diagnostic: detail.diagnostic,
-      });
-    };
-    window.addEventListener('prism-export-failure', handleExportFailure);
-    return () => window.removeEventListener('prism-export-failure', handleExportFailure);
-  }, []);
-
-  const copyExportFailureDiagnostic = useCallback(async () => {
-    if (!exportFailure) return;
-    try {
-      await navigator.clipboard.writeText(exportFailure.diagnostic);
-      showToast('导出诊断文本已复制');
-    } catch {
-      showToast('复制诊断文本失败');
-    }
-  }, [exportFailure, showToast]);
 
   const handleFileAction = useCallback(async (input: FileActionInput) => {
     await executeFileAction(input, {
@@ -1325,11 +1243,11 @@ function App() {
 
       {exportFailure && (
         <>
-          <div className="modal-overlay" onClick={() => setExportFailure(null)} />
+          <div className="modal-overlay" onClick={dismissExportFailure} />
           <div className="modal prism-export-failure-modal" role="dialog" aria-label={exportFailure.title}>
             <div className="modal-header">
               <div className="modal-title">{exportFailure.title}</div>
-              <button className="modal-close" onClick={() => setExportFailure(null)} aria-label="关闭">×</button>
+              <button className="modal-close" onClick={dismissExportFailure} aria-label="关闭">×</button>
             </div>
             <div className="modal-body prism-export-failure-body">
               <div className="prism-export-failure-summary">
@@ -1342,7 +1260,7 @@ function App() {
               <textarea readOnly value={exportFailure.diagnostic} />
             </div>
             <div className="prism-export-save-footer">
-              <button type="button" onClick={() => setExportFailure(null)}>关闭</button>
+              <button type="button" onClick={dismissExportFailure}>关闭</button>
               <button type="button" className="primary" onClick={copyExportFailureDiagnostic}>
                 复制诊断文本
               </button>

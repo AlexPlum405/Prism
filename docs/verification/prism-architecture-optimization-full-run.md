@@ -202,3 +202,37 @@ npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/exp
 
 - 本 checkpoint 只移动导出命令编排代码，不改变导出 pipeline 算法、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 1A：App toast 与导出任务 UI hook 分层
+
+改动范围：
+
+- `src/hooks/useAppToast.ts`
+- `src/hooks/useAppToast.test.tsx`
+- `src/hooks/useExportTaskUi.ts`
+- `src/hooks/useExportTaskUi.test.tsx`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useAppToast()`，集中管理 toast state、自动消失 timer、全局 `prism-toast` 事件监听和 dismiss 行为。
+- 从 `App.tsx` 抽出 `useExportTaskUi()`，集中管理导出进度事件、后台导出状态、导出失败诊断弹窗状态、复制诊断文本。
+- `App.tsx` 保留组合层使用，不再直接持有 toast timer 和导出事件监听细节。
+- 不改变导出 toast 文案、后台按钮、状态栏后台导出入口、失败诊断弹窗和复制诊断行为。
+
+验证：
+
+```bash
+npm test -- --run src/hooks/useAppToast.test.tsx src/hooks/useExportTaskUi.test.tsx src/App.recovery.test.tsx
+npm test -- --run
+```
+
+结果：
+
+- 聚焦测试：3 个测试文件、12 项测试通过。
+- 全量前端测试：80 个测试文件、457 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 React UI state hook，不改变 Tauri capabilities、文件系统、导出算法、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
