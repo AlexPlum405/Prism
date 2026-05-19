@@ -572,3 +572,54 @@ npm run tauri:build:app-smoke
 - 本 checkpoint 只覆盖 macOS app-only bundle 的真实运行链路；不做 DMG、签名、公证、updater、安装器或 Windows 发布验证。
 - smoke 的弹层断言依赖 macOS `System Events`、屏幕截图权限和截图差异阈值；如果机器缺少辅助功能或屏幕录制权限，脚本会失败并把失败日志写入 `.codex-smoke/app-smoke/evidence/failure.log`。
 - `ERROR`、设置中心和导出保存弹窗使用截图差异验证弹层出现，不解析 WebView 内部 DOM 文本；这是当前 Tauri WebView accessibility 暴露有限情况下的真实 app 自动化折中。
+
+## 最终 completion audit
+
+审计时间：2026-05-20。
+
+目标核对：
+
+| 计划项 | 证据 |
+| --- | --- |
+| 1. App.tsx 瘦身 | `1d86448` 抽出 `useAppToast` / `useExportTaskUi`；`fd51366` 抽出 `useWorkspaceIndexModel`；验证见 Checkpoint 1A、1B / 6A。 |
+| 2. 导出 pipeline 分层 | `3a79836`、`47cff0c`、`b549824` 拆出 pagination / diagnostics / rendering / assets；验证见 Checkpoint 2A、2B、2C。 |
+| 3. 统一 Markdown core | `083a303` 建立 `src/domains/markdown/` 文档模型核心；验证见 Checkpoint 3A / 6B。 |
+| 4. 命令系统瘦身 | `2997de0`、`ce504c7`、`86e4516`、`1a75a68` 按 editor / view / theme / window / help / export / file / workspace / document info 拆分命令；验证见 Checkpoint 4A-4D。 |
+| 5. 统一诊断模型 | `75b6c76` 建立 `PrismDiagnostic` 底座与 adapter；验证见 Checkpoint 5A。 |
+| 6. 工作区索引深化 | `fd51366` 与 `083a303` 让快速打开、全文搜索、反链、关系图谱复用 workspace index / Markdown document model；验证见 Checkpoint 1B / 6A、3A / 6B。 |
+| 7. CSS / 设计系统拆分 | `450ed20` 将 `global.css` 拆为 tokens / shell / editor / preview / floating / export / diagnostics / content themes / miaoyan / windows；验证见 Checkpoint 7A。 |
+| 8. 主包性能优化 | `a4277f2` 将 highlight.js 从全量入口裁剪为 core + 常用语言注册；main chunk 从 1,956.54 kB / gzip 634.38 kB 降到约 1,008-1,009 kB / gzip 330 kB；验证见 Checkpoint 8A。 |
+| 9. 文件安全层深化 | `12eaa7a` 建立 `fileSafety.ts`，收敛 DocumentFileSession / WorkspaceFileSession / FileConflictDetector / RecoverySnapshotStore；验证见 Checkpoint 9A。 |
+| 10. 真实 App smoke 自动化 | `b47dc03` 新增 `scripts/run-app-smoke.mjs` 并接入 `npm run tauri:build:app-smoke`；验证见 Checkpoint 10A。 |
+
+最终验证 gate：
+
+```bash
+npm test -- --run
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run` 通过：85 files / 473 tests。
+- `npm run build` 通过；仍有既有 Vite large chunk warning，以及 KaTeX 同时被动态和静态导入的提示，不影响构建退出码。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - 前端 build 通过。
+  - Rust release 编译通过。
+  - app-only bundle 生成：`src-tauri/target/release/bundle/macos/Prism.app`。
+  - 真实 app smoke 全部通过，最新报告：`.codex-smoke/app-smoke/evidence/report.json`。
+
+提交 / push 状态：
+
+- `b47dc03`：增加真实 App smoke 自动化，已 push 到 `origin/main`。
+- 本最终审计段为文档收口记录，提交后需再次 push。
+
+跳过项 / 剩余风险：
+
+- 按计划范围，本轮不做 DMG、正式签名、公证、updater、安装器、生产发布和 Windows 发布验证。
+- 真实 app smoke 只覆盖 macOS app-only bundle；Windows file association / installer / updater 仍需要 Windows 环境。
+- Vite 仍提示部分大 chunk；本轮已经完成主入口 highlight.js 裁剪，剩余 Mermaid、PDF、DOCX、cytoscape 等功能 chunk 属于后续性能专项。
+- `ERROR`、设置中心和导出保存弹窗的真实 app 自动化依赖截图差异，而非 WebView DOM 文本读取；这是当前 Tauri WebView accessibility 限制下的可复现证据，不等价于完整人工视觉评审。
