@@ -18,14 +18,19 @@ describe('slashMenu', () => {
     const labels = items.map((item) => item.label);
 
     expect(labels).toEqual(expect.arrayContaining([
+      '标题',
       '表格',
       'Mermaid 图表',
       'KaTeX 公式',
       'Callout: Note',
       'Callout: Warning',
       'Callout: Tip',
+      'Callout: Important',
       'Toggle 折叠块',
       '代码块',
+      '分割线',
+      '图片',
+      '链接',
       '导出设置块',
       '模板：会议纪要',
       '模板：PRD',
@@ -35,10 +40,15 @@ describe('slashMenu', () => {
       '模板：论文草稿',
     ]));
 
+    expect(items.find((item) => item.id === 'heading')?.insert).toContain('## 标题');
     expect(items.find((item) => item.id === 'mermaid')?.insert).toContain('```mermaid');
     expect(items.find((item) => item.id === 'katex')?.insert).toContain('$$');
     expect(items.find((item) => item.id === 'callout-note')?.insert).toContain('> [!NOTE]');
+    expect(items.find((item) => item.id === 'callout-important')?.insert).toContain('> [!IMPORTANT]');
     expect(items.find((item) => item.id === 'toggle')?.insert).toContain('<details>');
+    expect(items.find((item) => item.id === 'divider')?.insert).toBe('---\n');
+    expect(items.find((item) => item.id === 'image')?.insert).toContain('![描述]');
+    expect(items.find((item) => item.id === 'link')?.insert).toContain('[链接文本]');
     expect(items.find((item) => item.id === 'export-settings')?.insert).toContain('export:');
   });
 

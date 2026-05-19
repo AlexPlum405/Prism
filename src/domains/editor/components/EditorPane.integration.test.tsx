@@ -449,11 +449,16 @@ describe('EditorPane command event integration', () => {
     await waitFor(() => {
       const labels = currentCompletions(getMountedEditorView().state).map((completion) => completion.label);
       expect(labels).toEqual(expect.arrayContaining([
+        '标题',
         '表格',
         'Mermaid 图表',
         'KaTeX 公式',
         'Callout: Note',
+        'Callout: Important',
         'Toggle 折叠块',
+        '分割线',
+        '图片',
+        '链接',
         '模板：会议纪要',
         '导出设置块',
       ]));

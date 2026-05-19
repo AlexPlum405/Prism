@@ -5830,6 +5830,8 @@ html[data-content-theme='miaoyan'] .modal-overlay {
 html[data-content-theme='miaoyan'] .cmdk,
 html[data-content-theme='miaoyan'] .sp,
 html[data-content-theme='miaoyan'] .modal,
+html[data-content-theme='miaoyan'] .cm-tooltip-autocomplete,
+html[data-content-theme='miaoyan'] .cm-tooltip.cm-completionInfo,
 html[data-content-theme='miaoyan'] .custom-context-menu,
 html[data-content-theme='miaoyan'] .custom-context-submenu {
   background: var(--miaoyan-main-bg);
@@ -5855,8 +5857,21 @@ html[data-content-theme='miaoyan'] .cmdk-input {
 html[data-content-theme='miaoyan'] .cmdk-item.selected,
 html[data-content-theme='miaoyan'] .cmdk-item:hover,
 html[data-content-theme='miaoyan'] .sp-item:hover,
+html[data-content-theme='miaoyan'] .cm-tooltip-autocomplete > ul > li[aria-selected],
 html[data-content-theme='miaoyan'] .custom-context-menu .menu-item:hover {
-  background: var(--miaoyan-selection);
+  background: var(--miaoyan-selection) !important;
+}
+
+html[data-content-theme='miaoyan'] .cm-tooltip-autocomplete .cm-completionLabel,
+html[data-content-theme='miaoyan'] .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  color: var(--miaoyan-text) !important;
+  font-family: var(--miaoyan-font);
+}
+
+html[data-content-theme='miaoyan'] .cm-tooltip-autocomplete .cm-completionDetail,
+html[data-content-theme='miaoyan'] .cm-tooltip.cm-completionInfo {
+  color: var(--miaoyan-secondary-text);
+  font-family: var(--miaoyan-font);
 }
 
 html[data-content-theme='miaoyan'] .modal-body .display {

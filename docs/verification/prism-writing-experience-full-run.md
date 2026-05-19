@@ -72,3 +72,31 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改命令面板、React 弹层与 TypeScript 服务，不涉及发布、签名、公证、updater 或安装器。
+
+## 阶段 3：斜杠菜单
+
+改动范围：
+
+- `src/domains/editor/extensions/slashMenu.ts`
+- `src/domains/editor/extensions/slashMenu.test.ts`
+- `src/domains/editor/components/EditorPane.integration.test.tsx`
+- `src/styles/global.css`
+
+实现结果：
+
+- 斜杠菜单补齐 `标题`、`分割线`、`图片`、`链接`。
+- Callout 补齐 `IMPORTANT` 类型。
+- 保留已有表格、Mermaid、KaTeX、代码块、Toggle、导出设置块、模板插入。
+- 所有插入内容仍是标准 Markdown / HTML 片段。
+- CodeMirror completion 浮层补充妙言主题样式，保持轻量低对比。
+
+验证：
+
+- `npm test -- --run src/domains/editor/extensions/slashMenu.test.ts src/domains/editor/components/EditorPane.integration.test.tsx`：2 个测试文件、22 项测试通过。
+- `npm test -- --run`：70 个测试文件、419 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改编辑器 completion 源与前端样式，不涉及 Tauri capabilities、发布、签名、公证或安装器。

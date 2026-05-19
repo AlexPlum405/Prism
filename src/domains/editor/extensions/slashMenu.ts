@@ -2,14 +2,19 @@ import type { Completion, CompletionContext, CompletionResult } from '@codemirro
 import { MARKDOWN_TEMPLATES, type MarkdownTemplateId } from './templates';
 
 export type SlashMenuItemId =
+  | 'heading'
   | 'table'
   | 'mermaid'
   | 'katex'
   | 'callout-note'
   | 'callout-warning'
   | 'callout-tip'
+  | 'callout-important'
   | 'toggle'
   | 'code-block'
+  | 'divider'
+  | 'image'
+  | 'link'
   | 'export-settings'
   | `template-${MarkdownTemplateId}`;
 
@@ -22,6 +27,13 @@ export interface SlashMenuItem {
 }
 
 const CORE_SLASH_MENU_ITEMS: SlashMenuItem[] = [
+  {
+    id: 'heading',
+    label: '标题',
+    detail: '插入二级标题',
+    keywords: ['heading', 'title', 'biaoti'],
+    insert: '## 标题\n',
+  },
   {
     id: 'table',
     label: '表格',
@@ -65,6 +77,13 @@ const CORE_SLASH_MENU_ITEMS: SlashMenuItem[] = [
     insert: '> [!TIP]\n> 建议或技巧\n',
   },
   {
+    id: 'callout-important',
+    label: 'Callout: Important',
+    detail: '插入 IMPORTANT 重点提示块',
+    keywords: ['callout', 'important'],
+    insert: '> [!IMPORTANT]\n> 重要内容\n',
+  },
+  {
     id: 'toggle',
     label: 'Toggle 折叠块',
     detail: '插入 details/summary 折叠内容',
@@ -77,6 +96,27 @@ const CORE_SLASH_MENU_ITEMS: SlashMenuItem[] = [
     detail: '插入 fenced code block',
     keywords: ['code', 'block'],
     insert: '```text\n\n```\n',
+  },
+  {
+    id: 'divider',
+    label: '分割线',
+    detail: '插入 Markdown 分割线',
+    keywords: ['divider', 'hr', 'horizontal rule'],
+    insert: '---\n',
+  },
+  {
+    id: 'image',
+    label: '图片',
+    detail: '插入 Markdown 图片',
+    keywords: ['image', 'picture', 'asset'],
+    insert: '![描述](path/to/image.png)',
+  },
+  {
+    id: 'link',
+    label: '链接',
+    detail: '插入 Markdown 链接',
+    keywords: ['link', 'url'],
+    insert: '[链接文本](https://example.com)',
   },
   {
     id: 'export-settings',
