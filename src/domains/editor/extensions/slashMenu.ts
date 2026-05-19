@@ -1,5 +1,5 @@
 import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
-import { MARKDOWN_TEMPLATES, type MarkdownTemplateId } from './templates';
+import { MARKDOWN_TEMPLATES, resolveMarkdownTemplateContent, type MarkdownTemplateId } from './templates';
 
 export type SlashMenuItemId =
   | 'heading'
@@ -133,7 +133,7 @@ function getTemplateSlashMenuItems(): SlashMenuItem[] {
     label: `模板：${template.label}`,
     detail: `插入 ${template.label} Markdown 模板`,
     keywords: ['template', template.id, template.label],
-    insert: `${template.content.trimEnd()}\n`,
+    insert: `${resolveMarkdownTemplateContent(template.content).trimEnd()}\n`,
   }));
 }
 

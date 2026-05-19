@@ -3,6 +3,7 @@ import {
   MARKDOWN_TEMPLATES,
   getMarkdownTemplateInsertEdit,
   isMarkdownTemplateId,
+  resolveMarkdownTemplateContent,
 } from './templates';
 
 describe('markdown templates', () => {
@@ -30,13 +31,26 @@ describe('markdown templates', () => {
 
   it('inserts a template at the cursor with blank-line boundaries', () => {
     const doc = 'Intro textOutro text';
-    const edit = getMarkdownTemplateInsertEdit(doc, 'Intro text'.length, 'Intro text'.length, 'weekly');
+    const edit = getMarkdownTemplateInsertEdit(
+      doc,
+      'Intro text'.length,
+      'Intro text'.length,
+      'weekly',
+      { date: '2026-05-19' },
+    );
     const nextDoc = `${doc.slice(0, edit.from)}${edit.insert}${doc.slice(edit.to)}`;
 
-    expect(nextDoc).toContain('Intro text\n\n# 周报');
+    expect(nextDoc).toContain('Intro text\n\n# 周报：2026-05-19');
     expect(nextDoc).toContain('需要协助');
     expect(nextDoc).toContain('\n\nOutro text');
     expect(edit.selectionFrom).toBe(edit.selectionTo);
+  });
+
+  it('resolves only supported template placeholders', () => {
+    expect(resolveMarkdownTemplateContent(
+      '# {{title}}\n{{date}}\n{{author}}\n{{unknown}}',
+      { title: '标题', date: '2026-05-19', author: 'Alex' },
+    )).toBe('# 标题\n2026-05-19\nAlex\n{{unknown}}');
   });
 
   it('replaces the current selection with the chosen template', () => {

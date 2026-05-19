@@ -216,7 +216,7 @@ describe('EditorPane command event integration', () => {
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
-      expect(latestChange(changes)).toContain('# PRD：功能名称');
+      expect(latestChange(changes)).toContain('# PRD：未命名');
       expect(latestChange(changes)).toContain('Intro paragraph.');
     });
   });

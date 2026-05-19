@@ -482,11 +482,11 @@ describe('command registry', () => {
     ]));
 
     await runCommand('templatePrd', context);
-    expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# PRD：功能名称'), 'prd.md');
+    expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# PRD：PRD'), 'prd.md');
     expect(showToast).toHaveBeenCalledWith('已创建 PRD 模板');
 
     await runCommand('templatePaperDraft', context);
-    expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# 论文题目'), 'paper-draft.md');
+    expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# 论文草稿'), 'paper-draft.md');
     expect(showToast).toHaveBeenCalledWith('已创建 论文草稿 模板');
   });
 

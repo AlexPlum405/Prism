@@ -23,6 +23,7 @@ import {
 } from '../document/services/recovery';
 import {
   MARKDOWN_TEMPLATES,
+  resolveMarkdownTemplateContent,
   type MarkdownTemplateId,
 } from '../editor/extensions/templates';
 import {
@@ -140,7 +141,9 @@ async function handleNew(context: CommandContext): Promise<void> {
 function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: CommandContext): void {
   const template = MARKDOWN_TEMPLATES[templateId];
   if (!context.documentStore.currentDocument) {
-    context.documentStore.createNewDocument(template.content, template.filename);
+    context.documentStore.createNewDocument(resolveMarkdownTemplateContent(template.content, {
+      title: template.label,
+    }), template.filename);
     context.showToast?.(`已创建 ${template.label} 模板`);
     return;
   }

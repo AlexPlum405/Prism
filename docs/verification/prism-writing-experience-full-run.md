@@ -288,3 +288,34 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只补属性面板测试覆盖，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 10：模板系统
+
+改动范围：
+
+- `src/domains/editor/extensions/templates.ts`
+- `src/domains/editor/extensions/templates.test.ts`
+- `src/domains/editor/extensions/slashMenu.ts`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/registry.test.ts`
+- `src/domains/editor/components/EditorPane.integration.test.tsx`
+
+实现结果：
+
+- 审计确认现有模板系统已覆盖 `README`、会议纪要、PRD、技术方案、周报、公众号长文、论文草稿、读书笔记、研究摘要、白皮书等 Markdown 模板。
+- 模板入口继续通过 `/template` 斜杠菜单和命令面板 / 文件菜单提供，不新增数据库或常驻模板面板。
+- 模板内容统一保持 Markdown 源码插入，不引入 WYSIWYG 或块级数据库。
+- 新增模板占位符解析，仅支持 `{{date}}`、`{{title}}`、`{{author}}`；未知占位符保持原样，避免误替换用户自定义内容。
+- 通过命令创建新文档时以模板名称填充 `{{title}}`；源码编辑区直接插入模板时使用默认日期和轻量兜底标题。
+- 斜杠菜单插入模板时先解析占位符，避免把内部占位符直接泄漏给普通写作用户。
+
+验证：
+
+- `npm test -- --run src/domains/editor/extensions/templates.test.ts src/domains/editor/extensions/slashMenu.test.ts src/domains/commands/registry.test.ts src/domains/editor/components/EditorPane.integration.test.tsx`：4 个测试文件、54 项测试通过。
+- `npm test -- --run`：73 个测试文件、434 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改 TypeScript 模板解析、命令创建文档和编辑器模板插入，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。

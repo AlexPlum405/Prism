@@ -17,6 +17,12 @@ interface MarkdownTemplate {
   label: string;
 }
 
+export interface MarkdownTemplateVariables {
+  author?: string;
+  date?: string;
+  title?: string;
+}
+
 interface MarkdownTemplateInsertEdit {
   from: number;
   insert: string;
@@ -66,7 +72,7 @@ MIT
     id: 'prd',
     label: 'PRD',
     filename: 'prd.md',
-    content: `# PRD：功能名称
+    content: `# PRD：{{title}}
 
 ## 背景
 
@@ -108,13 +114,13 @@ MIT
     id: 'meeting',
     label: '会议纪要',
     filename: 'meeting-notes.md',
-    content: `# 会议纪要
+    content: `# 会议纪要：{{title}}
 
 ## 基本信息
 
-- 时间：
-- 参与人：
-- 主题：
+- 时间：{{date}}
+- 参与人：{{author}}
+- 主题：{{title}}
 
 ## 结论
 
@@ -139,7 +145,7 @@ MIT
     id: 'weekly',
     label: '周报',
     filename: 'weekly-report.md',
-    content: `# 周报
+    content: `# 周报：{{date}}
 
 ## 本周完成
 
@@ -166,7 +172,7 @@ MIT
     id: 'technicalPlan',
     label: '技术方案',
     filename: 'technical-plan.md',
-    content: `# 技术方案：方案名称
+    content: `# 技术方案：{{title}}
 
 ## 背景与目标
 
@@ -209,7 +215,7 @@ MIT
     id: 'article',
     label: '公众号长文',
     filename: 'article.md',
-    content: `# 标题
+    content: `# {{title}}
 
 ## 开场
 
@@ -242,7 +248,7 @@ MIT
     id: 'paperDraft',
     label: '论文草稿',
     filename: 'paper-draft.md',
-    content: `# 论文题目
+    content: `# {{title}}
 
 ## 摘要
 
@@ -304,13 +310,13 @@ MIT
     id: 'readingNote',
     label: '读书笔记',
     filename: 'reading-note.md',
-    content: `# 读书笔记：书名
+    content: `# 读书笔记：{{title}}
 
 ## 基本信息
 
 - 作者：
 - 出版信息：
-- 阅读日期：
+- 阅读日期：{{date}}
 - 主题标签：
 
 ## 一句话总结
@@ -344,7 +350,7 @@ MIT
     id: 'researchSummary',
     label: '研究摘要',
     filename: 'research-summary.md',
-    content: `# 研究摘要：主题
+    content: `# 研究摘要：{{title}}
 
 ## 研究问题
 
@@ -385,7 +391,7 @@ MIT
     id: 'whitePaper',
     label: '白皮书',
     filename: 'white-paper.md',
-    content: `# 白皮书标题
+    content: `# {{title}}
 
 ## 执行摘要
 
@@ -436,16 +442,35 @@ export function isMarkdownTemplateId(value: unknown): value is MarkdownTemplateI
   return typeof value === 'string' && value in MARKDOWN_TEMPLATES;
 }
 
+function defaultTemplateDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function resolveMarkdownTemplateContent(
+  content: string,
+  variables: MarkdownTemplateVariables = {},
+): string {
+  const values: Required<MarkdownTemplateVariables> = {
+    author: variables.author ?? '',
+    date: variables.date ?? defaultTemplateDate(),
+    title: variables.title ?? '未命名',
+  };
+
+  return content.replace(/\{\{(date|title|author)\}\}/g, (_match, key: keyof MarkdownTemplateVariables) => values[key]);
+}
+
 export function getMarkdownTemplateInsertEdit(
   doc: string,
   selectionFrom: number,
   selectionTo: number,
   templateId: MarkdownTemplateId,
+  variables: MarkdownTemplateVariables = {},
 ): MarkdownTemplateInsertEdit {
   const template = MARKDOWN_TEMPLATES[templateId];
+  const content = resolveMarkdownTemplateContent(template.content, variables);
   const leadingNewline = selectionFrom > 0 && doc[selectionFrom - 1] !== '\n' ? '\n\n' : '';
   const trailingNewline = selectionTo < doc.length && doc[selectionTo] !== '\n' ? '\n\n' : '';
-  const insert = `${leadingNewline}${template.content.trimEnd()}${trailingNewline}`;
+  const insert = `${leadingNewline}${content.trimEnd()}${trailingNewline}`;
   const selection = selectionFrom + insert.length;
 
   return {
