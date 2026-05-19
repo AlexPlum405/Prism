@@ -38,7 +38,7 @@
 
 - 未跑发布级 app/DMG smoke；本阶段只改前端状态栏呈现与测试，不涉及 Tauri capabilities、安装器、签名、公证、updater 或 file association。
 
-## 阶段 2：命令面板整理
+## 阶段 2：命令入口整理
 
 改动范围：
 
@@ -55,12 +55,14 @@
 
 实现结果：
 
-- 命令面板新增 `打开文档属性`、`查看当前文档链接`、`查看反向链接`、`查看关系图谱`。
+- 删除“命令面板”作为全功能入口，不再提供 `Cmd+Shift+P` 或帮助菜单“命令面板”。
+- `Cmd+P` 保留为快速打开工作区文件，只搜索文件、标题和路径，不平铺所有功能。
+- `Cmd+Shift+F` 保留为全文搜索工作区，只搜索当前工作区 Markdown 内容。
 - `打开文档属性` 打开现有 Front Matter 属性面板。
 - `查看反向链接` 打开现有反向链接面板。
-- `查看当前文档链接` 打开新增轻量文档链接面板，列出当前文档 Markdown/wiki 链接并可点击跳转。
-- `查看关系图谱` 先接入命令入口，阶段 8 替换为正式轻量关系图谱。
-- `META` / `LINK` / `BACKLINK` 已从状态栏移除，入口进入命令面板。
+- `查看当前文档链接` 打开轻量文档链接面板，列出当前文档 Markdown/wiki 链接并可点击跳转。
+- `查看关系图谱` 接入正式轻量关系图谱。
+- `META` / `LINK` / `BACKLINK` 已从状态栏移除；文档属性、当前链接、反向链接、关系图谱统一回到 `视图 > 文档信息`。
 
 验证：
 
@@ -71,37 +73,45 @@
 
 跳过项：
 
-- 未跑发布级 app/DMG smoke；本阶段只改命令面板、React 弹层与 TypeScript 服务，不涉及发布、签名、公证、updater 或安装器。
+- 未跑发布级 app/DMG smoke；本阶段只改命令入口、React 弹层与 TypeScript 服务，不涉及发布、签名、公证、updater 或安装器。
 
-### 2026-05-19 命令面板分类浏览
+### 2026-05-19 移除命令面板菜单
 
 改动范围：
 
 - `src/components/shell/CommandPalette.tsx`
 - `src/components/shell/CommandPalette.test.tsx`
+- `src/domains/commands/types.ts`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/index.ts`
+- `src/domains/commands/menuModel.ts`
+- `src/domains/commands/registry.test.ts`
+- `src/App.tsx`
+- `src/App.recovery.test.tsx`
+- `src/components/shell/SettingsModal.tsx`
 - `src/styles/global.css`
 
 实现结果：
 
-- 命令面板 `commands` 模式默认只展示分类入口：最近使用、推荐动作、文件、编辑、插入、格式、视图、主题、窗口、帮助。
-- 点击分类后只显示该分类下的命令，避免打开面板就是长列表平铺；分类页提供返回入口。
-- 搜索框输入后仍搜索全量命令并按匹配度排序，低频能力如关系图谱、主题、帮助等既可通过分类浏览，也可搜索。
-- 分类入口使用轻量卡片、数量徽标和紧凑行高，保持当前妙言风格。
-- 执行过的命令会进入本地最近使用，下一次打开命令面板时优先展示。
-- `Cmd+P` 快速打开与 `Cmd+Shift+F` 全文搜索继续使用独立模式，不并回命令面板默认列表。
+- 移除 `commands` 模式、最近命令、推荐动作、命令分类浏览和全量命令搜索。
+- 删除 `commandPalette` 命令定义、`Cmd+Shift+P` 快捷键和帮助菜单入口。
+- `CommandPalette` 组件保留为搜索弹层，只承载 `files` / `search` 两种模式。
+- `Cmd+P` 只打开快速打开文件；`Cmd+Shift+F` 只打开工作区全文搜索。
+- `workspaceSearch` 移入 `编辑 > 查找与替换`。
+- 文档属性、当前文档链接、反向链接、关系图谱移入 `视图 > 文档信息`。
+- 模板、表格和块级操作继续通过菜单、斜杠菜单或右键菜单承载，不再挤进搜索弹层。
 
 验证：
 
-- `npm test -- --run src/components/shell/CommandPalette.test.tsx`：通过。
-- `npm test -- --run src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts`：2 个测试文件、29 项测试通过。
-- `npm test -- --run`：74 个测试文件、441 项测试通过。
+- `npm test -- --run src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts src/App.recovery.test.tsx`：3 个测试文件、34 项测试通过。
+- `npm test -- --run`：74 个测试文件、438 项测试通过。
 - `npm run build`：通过，仅有既有 Vite large chunk warning。
-- `npm run tauri:build:app-smoke`：通过，已生成并重启本地 `Prism.app`。
+- `npm run tauri:build:app-smoke`：通过，生成 `/Users/Alex/AI/project/Prism/src-tauri/target/release/bundle/macos/Prism.app`。
 - `git diff --check`：通过。
 
 跳过项：
 
-- 本次只改 React 命令面板呈现、CSS 和组件测试，不涉及命令执行、文件系统、导出、Tauri capabilities 或发布链路，未跑发布级 DMG / 签名 / 公证 smoke。
+- 本次只改前端入口、菜单模型、搜索弹层呈现、CSS 和相关测试，不涉及文件系统、导出、Tauri capabilities 或发布链路，未跑发布级 DMG / 签名 / 公证 smoke。
 
 ## 阶段 3：斜杠菜单
 
@@ -206,10 +216,10 @@
 实现结果：
 
 - App 层开始异步读取当前工作区 Markdown 内容并构建工作区索引，当前打开文档的未保存内容会覆盖索引中的磁盘版本。
-- `Cmd+P` 快速打开继续使用命令面板文件模式，但优先走工作区索引，支持按文件名、Front Matter 标题、路径和标题节点匹配。
-- 新增 `Cmd+Shift+F` / `全文搜索工作区` 命令，打开命令面板搜索模式，支持当前工作区 Markdown 的标题、文件名、路径、标题节点和正文内容搜索。
+- `Cmd+P` 快速打开继续使用搜索弹层文件模式，但优先走工作区索引，支持按文件名、Front Matter 标题、路径和标题节点匹配。
+- 新增 `Cmd+Shift+F` / `全文搜索工作区` 命令，打开搜索弹层全文搜索模式，支持当前工作区 Markdown 的标题、文件名、路径、标题节点和正文内容搜索。
 - 空查询保留最近文档优先显示，随后展示工作区内最近修改的 Markdown 文件。
-- 命令面板列表增加长路径 / 正文片段的省略处理，避免破坏当前妙言风格弹层布局。
+- 搜索弹层列表增加长路径 / 正文片段的省略处理，避免破坏当前妙言风格弹层布局。
 - 不引入 IDE 级 search/replace；替换仍保持当前文档内查找/替换能力。
 
 验证：
@@ -302,7 +312,7 @@
 
 实现结果：
 
-- 审计确认现有 `DocumentPropertiesPanel` 已通过命令面板 `打开文档属性` 进入。
+- 审计确认现有 `DocumentPropertiesPanel` 已通过 `视图 > 文档信息 > 打开文档属性` 进入。
 - 面板支持编辑 `title`、`tags`、`description`、`author`、`date`、`status`、`export`，保存后写回 Markdown 顶部 YAML Front Matter。
 - 写回逻辑保留未知 YAML 字段，不创建数据库、不隐藏 Markdown 源码。
 - 新增组件回归测试，覆盖 description / author / date / status / export 全字段写回、未知字段保留、关闭回调和成功 toast。
@@ -333,7 +343,7 @@
 实现结果：
 
 - 审计确认现有模板系统已覆盖 `README`、会议纪要、PRD、技术方案、周报、公众号长文、论文草稿、读书笔记、研究摘要、白皮书等 Markdown 模板。
-- 模板入口继续通过 `/template` 斜杠菜单和命令面板 / 文件菜单提供，不新增数据库或常驻模板面板。
+- 模板入口继续通过 `/template` 斜杠菜单和文件菜单提供，不新增数据库或常驻模板面板。
 - 模板内容统一保持 Markdown 源码插入，不引入 WYSIWYG 或块级数据库。
 - 新增模板占位符解析，仅支持 `{{date}}`、`{{title}}`、`{{author}}`；未知占位符保持原样，避免误替换用户自定义内容。
 - 通过命令创建新文档时以模板名称填充 `{{title}}`；源码编辑区直接插入模板时使用默认日期和轻量兜底标题。
@@ -366,7 +376,7 @@
 
 实现结果：
 
-- 保留现有命令面板和格式菜单中的段落上移/下移、章节上移/下移、复制当前章节、折叠当前标题、选区转引用/Callout/列表/任务列表能力。
+- 保留现有格式菜单中的段落上移/下移、章节上移/下移、复制当前章节、折叠当前标题、选区转引用/Callout/列表/任务列表能力。
 - 新增 `复制当前段落` 和 `删除当前段落` 源码级操作，操作对象是当前光标所在 Markdown 段落，不引入块编辑器或拖拽把手。
 - 删除当前段落会整理相邻空行，避免留下多余空白；复制当前段落会在原段落下方插入副本并选中副本。
 - 右键菜单新增 `块级操作` 子菜单，接入段落移动、复制/删除段落、选区转引用、选区转 Callout、选区转任务列表、复制章节和折叠标题。

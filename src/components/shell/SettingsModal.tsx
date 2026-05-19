@@ -236,7 +236,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             <div className="settings-row">
               <div>
                 <div className="row-label">快捷键显示</div>
-                <div className="row-hint">菜单和命令面板中的快捷键文案</div>
+                <div className="row-hint">菜单和快捷键面板中的快捷键文案</div>
               </div>
               <select
                 value={settings.shortcutStyle}

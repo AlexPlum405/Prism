@@ -38,7 +38,6 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandId,
-  CommandPaletteItem,
 } from './types';
 import {
   getCurrentPlatform,
@@ -832,7 +831,7 @@ export const commandRegistry = [
     keywords: ['quick', 'open', 'file', 'workspace'],
     shortcuts: [{ code: 'KeyP', mod: true }],
     enabled: (context) => Boolean(context.workspaceStore.rootPath && context.workspaceStore.fileTree.length > 0),
-    run: (context) => (context.openQuickOpen ?? context.openCommandPalette)?.(),
+    run: (context) => context.openQuickOpen?.(),
   }),
   command({
     id: 'save',
@@ -1689,14 +1688,6 @@ export const commandRegistry = [
     run: (context) => context.openSettings?.(),
   }),
   command({
-    id: 'commandPalette',
-    label: '命令面板',
-    category: '帮助',
-    keywords: ['command', 'palette'],
-    shortcuts: [{ code: 'KeyP', mod: true, shift: true }],
-    run: (context) => context.openCommandPalette?.(),
-  }),
-  command({
     id: 'mdReference',
     label: 'Markdown 参考',
     category: '帮助',
@@ -1789,19 +1780,4 @@ export function getPrimaryShortcutLabel(
 ): string | undefined {
   const shortcut = getCommandDefinition(id).shortcuts?.[0];
   return getShortcutLabel(shortcut, getShortcutDisplayPlatform(displayStyle));
-}
-
-export function getCommandPaletteItems(context: CommandContext): CommandPaletteItem[] {
-  const displayPlatform = getShortcutDisplayPlatform(context.settingsStore.shortcutStyle);
-
-  return commandRegistry
-    .filter((definition) => definition.palette !== false)
-    .filter((definition) => isCommandEnabled(definition.id, context))
-    .map((definition) => ({
-      id: definition.id,
-      label: definition.label,
-      category: definition.category,
-      shortcut: getShortcutLabel(definition.shortcuts?.[0], displayPlatform),
-      keywords: definition.keywords,
-    }));
 }

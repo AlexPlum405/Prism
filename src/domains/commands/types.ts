@@ -130,7 +130,6 @@ export type CommandId =
   | 'fullscreen'
   | 'alwaysOnTop'
   | 'preferences'
-  | 'commandPalette'
   | 'mdReference'
   | 'showShortcuts'
   | 'checkUpdate'
@@ -169,7 +168,6 @@ export interface CommandContext {
   openAbout?: () => void;
   openSettings?: () => void;
   openShortcuts?: () => void;
-  openCommandPalette?: () => void;
   openQuickOpen?: () => void;
   openWorkspaceSearch?: () => void;
   openDocumentProperties?: () => void;
@@ -188,12 +186,4 @@ export interface CommandDefinition {
   enabled?: (context: CommandContext) => boolean;
   checked?: (context: CommandContext) => boolean;
   run: (context: CommandContext) => void | Promise<void>;
-}
-
-export interface CommandPaletteItem {
-  id: CommandId;
-  label: string;
-  category: CommandCategory;
-  shortcut?: string;
-  keywords?: string[];
 }

@@ -59,7 +59,6 @@ vi.mock('../export', async (importOriginal) => {
 import {
   commandRegistry,
   commandRegistryById,
-  getCommandPaletteItems,
   getMenuSections,
   runCommand,
   type CommandContext,
@@ -218,10 +217,11 @@ describe('command registry', () => {
 
     expect(Object.keys(sections)).not.toContain('Prism');
     expect(fileActions).toContain('preferences');
-    expect(helpActions).toEqual(expect.arrayContaining(['commandPalette', 'showShortcuts', 'checkUpdate', 'about']));
+    expect(helpActions).toEqual(expect.arrayContaining(['showShortcuts', 'checkUpdate', 'about']));
+    expect(helpActions).not.toContain('commandPalette');
   });
 
-  it('does not expose deferred platform features in menus or the command palette', () => {
+  it('does not expose deferred platform features in menus', () => {
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
@@ -286,10 +286,6 @@ describe('command registry', () => {
     };
 
     Object.values(getMenuSections(context)).forEach(collectMenuText);
-    getCommandPaletteItems(context).forEach((item) => {
-      visibleText.push(item.id, item.label, item.category, ...(item.keywords ?? []));
-    });
-
     expect(visibleText.join('\n')).not.toMatch(/插件市场|插件 API|plugin marketplace|marketplace|prism:\/\/|deep\s*link|deeplink|云同步|移动端|实时协作|WYSIWYG/i);
   });
 
@@ -306,10 +302,8 @@ describe('command registry', () => {
       },
     });
     const fileActions = getMenuSections(context)['文件'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
 
     expect(fileActions).toContain('quickOpen');
-    expect(paletteIds).toContain('quickOpen');
 
     await runCommand('quickOpen', context);
 
@@ -330,9 +324,15 @@ describe('command registry', () => {
         ],
       },
     });
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
+    const editMenu = getMenuSections(context)['编辑'];
+    const searchMenu = editMenu.find((item) => item.type !== 'separator' && item.label === '查找与替换');
 
-    expect(paletteIds).toContain('workspaceSearch');
+    expect(searchMenu).toMatchObject({
+      submenu: true,
+      children: expect.arrayContaining([
+        expect.objectContaining({ action: 'workspaceSearch' }),
+      ]),
+    });
 
     await runCommand('workspaceSearch', context);
 
@@ -340,7 +340,7 @@ describe('command registry', () => {
     expect(commandRegistryById.get('workspaceSearch')?.shortcuts).toEqual([{ code: 'KeyF', mod: true, shift: true }]);
   });
 
-  it('routes document info commands through the command palette instead of status bar entries', async () => {
+  it('routes document info commands through the View menu instead of status bar entries', async () => {
     const openDocumentProperties = vi.fn();
     const openDocumentLinks = vi.fn();
     const openBacklinks = vi.fn();
@@ -367,14 +367,18 @@ describe('command registry', () => {
       openBacklinks,
       openRelationGraph,
     });
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
+    const viewMenu = getMenuSections(context)['视图'];
+    const documentInfoMenu = viewMenu.find((item) => item.type !== 'separator' && item.label === '文档信息');
 
-    expect(paletteIds).toEqual(expect.arrayContaining([
-      'openDocumentProperties',
-      'showDocumentLinks',
-      'showBacklinks',
-      'showRelationGraph',
-    ]));
+    expect(documentInfoMenu).toMatchObject({
+      submenu: true,
+      children: expect.arrayContaining([
+        expect.objectContaining({ action: 'openDocumentProperties' }),
+        expect.objectContaining({ action: 'showDocumentLinks' }),
+        expect.objectContaining({ action: 'showBacklinks' }),
+        expect.objectContaining({ action: 'showRelationGraph' }),
+      ]),
+    });
 
     await runCommand('openDocumentProperties', context);
     await runCommand('showDocumentLinks', context);
@@ -405,7 +409,7 @@ describe('command registry', () => {
     expect(setWordWrap).toHaveBeenCalledWith(false);
   });
 
-  it('exposes source-only table helpers from the Insert menu and command palette', () => {
+  it('exposes source-only table helpers from the Insert menu', () => {
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
@@ -426,7 +430,6 @@ describe('command registry', () => {
     });
     const insertMenu = getMenuSections(context)['插入'];
     const tableMenu = insertMenu.find((item) => item.type !== 'separator' && item.label === '表格');
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
 
     expect(tableMenu).toMatchObject({
       submenu: true,
@@ -439,10 +442,9 @@ describe('command registry', () => {
         expect.objectContaining({ action: 'deleteTableColumn' }),
       ]),
     });
-    expect(paletteIds).toEqual(expect.arrayContaining(['insertTable', 'formatTable']));
   });
 
-  it('exposes markdown templates from the File menu and command palette', async () => {
+  it('exposes markdown templates from the File menu', async () => {
     const createNewDocument = vi.fn();
     const showToast = vi.fn();
     const context = createCommandContext({
@@ -454,7 +456,6 @@ describe('command registry', () => {
     });
     const fileMenu = getMenuSections(context)['文件'];
     const templateMenu = fileMenu.find((item) => item.type !== 'separator' && item.label === '模板');
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
 
     expect(templateMenu).toMatchObject({
       submenu: true,
@@ -471,15 +472,6 @@ describe('command registry', () => {
         expect.objectContaining({ action: 'templateWhitePaper' }),
       ]),
     });
-    expect(paletteIds).toEqual(expect.arrayContaining([
-      'templateReadme',
-      'templatePrd',
-      'templateWeekly',
-      'templatePaperDraft',
-      'templateReadingNote',
-      'templateResearchSummary',
-      'templateWhitePaper',
-    ]));
 
     await runCommand('templatePrd', context);
     expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# PRD：PRD'), 'prd.md');
@@ -490,7 +482,7 @@ describe('command registry', () => {
     expect(showToast).toHaveBeenCalledWith('已创建 论文草稿 模板');
   });
 
-  it('exposes source block operations from the Format menu and command palette', () => {
+  it('exposes source block operations from the Format menu', () => {
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
@@ -511,7 +503,6 @@ describe('command registry', () => {
     });
     const formatMenu = getMenuSections(context)['格式'];
     const blockMenu = formatMenu.find((item) => item.type !== 'separator' && item.label === '块级源码操作');
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
 
     expect(blockMenu).toMatchObject({
       submenu: true,
@@ -528,17 +519,6 @@ describe('command registry', () => {
         expect.objectContaining({ action: 'selectionTaskList' }),
       ]),
     });
-    expect(paletteIds).toEqual(expect.arrayContaining([
-      'moveParagraphUp',
-      'duplicateParagraph',
-      'deleteParagraph',
-      'moveSectionDown',
-      'duplicateSection',
-      'foldCurrentHeading',
-      'selectionCalloutWarning',
-      'selectionOrderedList',
-      'selectionTaskList',
-    ]));
   });
 
   it('dispatches template insertion to the active editor when a document is open', async () => {
@@ -596,15 +576,6 @@ describe('command registry', () => {
     });
   });
 
-  it('does not expose document-only commands in the command palette without a document', () => {
-    const items = getCommandPaletteItems(createCommandContext());
-    const ids = items.map((item) => item.id);
-
-    expect(ids).toContain('new');
-    expect(ids).not.toContain('save');
-    expect(ids).not.toContain('exportPdf');
-  });
-
   it('exposes previous export commands only when the current document has export history', () => {
     const baseContext = createCommandContext();
     const context = createCommandContext({
@@ -653,11 +624,9 @@ describe('command registry', () => {
       },
     });
 
-    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
     const exportMenu = getMenuSections(context)['文件']
       .find((item) => item.type !== 'separator' && item.label === '导出');
 
-    expect(paletteIds).toEqual(expect.arrayContaining(['exportWithPrevious', 'exportOverwritePrevious']));
     expect(exportMenu).toMatchObject({
       submenu: true,
       children: expect.arrayContaining([
@@ -666,11 +635,16 @@ describe('command registry', () => {
       ]),
     });
 
-    const noHistoryIds = getCommandPaletteItems(createCommandContext({
+    const noHistoryExportMenu = getMenuSections(createCommandContext({
       documentStore: context.documentStore,
-    })).map((item) => item.id);
-    expect(noHistoryIds).not.toContain('exportWithPrevious');
-    expect(noHistoryIds).not.toContain('exportOverwritePrevious');
+    }))['文件'].find((item) => item.type !== 'separator' && item.label === '导出');
+    expect(noHistoryExportMenu).toMatchObject({
+      submenu: true,
+      children: expect.arrayContaining([
+        expect.objectContaining({ action: 'exportWithPrevious', disabled: true }),
+        expect.objectContaining({ action: 'exportOverwritePrevious', disabled: true }),
+      ]),
+    });
   });
 
   it('reuses the previous export settings and lets the user choose a new path', async () => {

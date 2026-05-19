@@ -121,7 +121,6 @@ vi.mock('./domains/editor/components/TypographyDiagnosticsPanel', () => ({
 vi.mock('./domains/commands', () => ({
   findCommandByKeyboardEvent: vi.fn(() => null),
   getCommandMenuItems: vi.fn(() => []),
-  getCommandPaletteItems: vi.fn(() => []),
   getMenuSections: vi.fn(() => []),
   isCommandId: vi.fn(() => false),
   runCommand: vi.fn(),

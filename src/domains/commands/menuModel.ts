@@ -95,6 +95,7 @@ const menuModel: MenuModel = {
       children: [
         { command: 'showSearch' },
         { command: 'showReplace' },
+        { command: 'workspaceSearch' },
       ],
     },
     {
@@ -190,6 +191,16 @@ const menuModel: MenuModel = {
     { command: 'splitMode' },
     { command: 'previewMode' },
     { type: 'separator' },
+    {
+      label: '文档信息',
+      children: [
+        { command: 'openDocumentProperties' },
+        { command: 'showDocumentLinks' },
+        { command: 'showBacklinks' },
+        { command: 'showRelationGraph' },
+      ],
+    },
+    { type: 'separator' },
     { command: 'toggleSidebar' },
     {
       label: '侧边栏',
@@ -225,7 +236,6 @@ const menuModel: MenuModel = {
     { command: 'newWindow' },
   ],
   '帮助': [
-    { command: 'commandPalette' },
     { command: 'showShortcuts' },
     { command: 'checkUpdate' },
     { type: 'separator' },

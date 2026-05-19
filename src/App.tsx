@@ -53,7 +53,6 @@ import { Toast } from './components/shell/Toast';
 import {
   findCommandByKeyboardEvent,
   getCommandMenuItems,
-  getCommandPaletteItems,
   getMenuSections,
   isCommandId,
   runCommand,
@@ -243,7 +242,7 @@ function App() {
   const [saveDialog, setSaveDialog] = useState<SaveDialogState | null>(null);
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
   const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
-  const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('commands');
+  const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('files');
   const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
@@ -879,10 +878,6 @@ function App() {
       openAbout: () => setAboutVisible(true),
       openSettings: () => setSettingsVisible(true),
       openShortcuts: () => setShortcutPanelVisible(true),
-      openCommandPalette: () => {
-        setCommandPaletteMode('commands');
-        setCommandPaletteVisible(true);
-      },
       openQuickOpen: () => {
         setCommandPaletteMode('files');
         setCommandPaletteVisible(true);
@@ -926,11 +921,6 @@ function App() {
 
   const menuSections = useMemo(
     () => getMenuSections(commandContext),
-    [commandContext],
-  );
-
-  const commandPaletteItems = useMemo(
-    () => getCommandPaletteItems(commandContext),
     [commandContext],
   );
 
@@ -1345,7 +1335,6 @@ function App() {
 
       <CommandPalette
         visible={commandPaletteVisible}
-        commands={commandPaletteItems}
         files={workspace.fileTree}
         workspaceRoot={workspace.rootPath}
         recentFiles={recentFiles}
