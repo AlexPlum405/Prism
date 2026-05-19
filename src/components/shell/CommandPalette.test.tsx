@@ -30,7 +30,7 @@ describe('CommandPalette', () => {
     });
   });
 
-  it('keeps command mode browsable by default while search still ranks matching commands', () => {
+  it('shows command categories first and opens one category at a time', () => {
     const onExecute = vi.fn();
     const onClose = vi.fn();
     const commands: Command[] = [
@@ -53,13 +53,22 @@ describe('CommandPalette', () => {
     );
 
     expect(screen.getByPlaceholderText('搜索动作…')).toBeInTheDocument();
-    expect(screen.getByText('推荐动作')).toBeInTheDocument();
-    expect(screen.getByText('快速打开文件')).toBeInTheDocument();
-    expect(screen.getByText('全文搜索工作区')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^推荐动作，/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^文件，/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^视图，/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^主题，/ })).toBeInTheDocument();
+    expect(screen.queryByText('查看关系图谱')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nocturne Dark')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^视图，/ }));
+
     expect(screen.getByText('查看关系图谱')).toBeInTheDocument();
-    expect(screen.getByText('Nocturne Dark')).toBeInTheDocument();
-    expect(screen.getByText('视图 · 1')).toBeInTheDocument();
-    expect(screen.getByText('主题 · 1')).toBeInTheDocument();
+    expect(screen.queryByText('Nocturne Dark')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '分类' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '分类' }));
+
+    expect(screen.getByRole('button', { name: /^主题，/ })).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('搜索动作…'), {
       target: { value: '图谱' },
@@ -112,9 +121,10 @@ describe('CommandPalette', () => {
       />,
     );
 
-    const labels = screen.getAllByText(/快速打开文件|导出为 PDF|格式化当前表格/);
-    expect(labels[0]).toHaveTextContent('格式化当前表格');
-    expect(screen.getByText('最近使用')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^最近使用，/ }));
+
+    expect(screen.getByText('格式化当前表格')).toBeInTheDocument();
+    expect(screen.getByText('1 个命令')).toBeInTheDocument();
   });
 
   it('searches workspace files in quick-open mode and executes the selected file action', () => {
