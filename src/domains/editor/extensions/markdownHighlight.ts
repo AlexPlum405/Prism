@@ -1,8 +1,12 @@
 import { syntaxTree } from '@codemirror/language';
 import { Facet, RangeSetBuilder } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, type ViewUpdate } from '@codemirror/view';
-import hljs from 'highlight.js';
 import type { ContentTheme } from '../../settings/types';
+import {
+  highlightPrismCode,
+  highlightPrismCodeAuto,
+  isPrismCodeHighlightLanguage,
+} from '../../markdown/codeHighlight';
 
 export const contentThemeFacet = Facet.define<ContentTheme, ContentTheme>({
   combine: (values) => values[values.length - 1] ?? 'miaoyan',
@@ -56,7 +60,7 @@ export function getMiaoyanCodeLanguage(code: string) {
     .slice(3, firstLineEnd)
     .trim();
 
-  if (!language || language === 'go' || !hljs.getLanguage(language)) {
+  if (!language || language === 'go' || !isPrismCodeHighlightLanguage(language)) {
     return undefined;
   }
 
@@ -140,8 +144,8 @@ export function getMiaoyanCodeHighlightRanges(code: string) {
 
   try {
     const highlighted = target.language
-      ? hljs.highlight(target.code, { language: target.language, ignoreIllegals: true })
-      : hljs.highlightAuto(target.code);
+      ? highlightPrismCode(target.code, target.language)
+      : highlightPrismCodeAuto(target.code);
     const ranges = collectHighlightTokenRanges(highlighted.value, target.code.length)
       .map((range) => ({
         ...range,

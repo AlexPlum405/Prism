@@ -429,3 +429,48 @@ npm test -- --run
 
 - 本 checkpoint 是机械 CSS 分层，没有改变视觉 token、选择器、组件结构、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 真实 App 主界面、设置、快速打开、ERROR、导出弹窗视觉抽检留到最终 `npm run tauri:build:app-smoke` 和本地 `Prism.app` 重启 gate 统一覆盖。
+
+## Checkpoint 8A：主包高亮依赖裁剪
+
+改动范围：
+
+- `src/domains/markdown/codeHighlight.ts`
+- `src/domains/markdown/codeHighlight.test.ts`
+- `src/domains/editor/extensions/markdownHighlight.ts`
+- `src/lib/markdownToHtml.ts`
+
+实现结果：
+
+- 新增 `codeHighlight.ts`，集中注册 Prism 编辑器和 Markdown 渲染共用的 highlight.js 语言集合与别名。
+- 将编辑器源码高亮从 `highlight.js` 根入口改为 `highlight.js/lib/core` + 按需语言注册，避免全语言包污染 main chunk。
+- 将 `markdownToHtml.ts` 从 `rehype-highlight` 默认 common 入口改为 `lowlight.createLowlight()` + 同一裁剪语言集合，保留 `hljs` token、显式语言、未知语言忽略和无语言代码块自动检测行为。
+- 保留既有 MiaoYan 兼容行为：`swift`、`js`、`ts`、`html`、`yml` 等常用语言继续高亮；`go` 仍按现有规则不进入编辑器源码高亮路径。
+- 没有修改预览样式、导出格式、命令入口或用户可见主题。
+
+构建体积结果：
+
+- 优化前基线：`main-CSyTkvr8.js` 1,956.54 kB / gzip 634.38 kB；`export-pipeline-CuIBo6Hs.js` 913.95 kB / gzip 278.08 kB。
+- 优化后结果：`main-D2GPO6QN.js` 1,008.06 kB / gzip 330.38 kB；`export-pipeline-I4Y_pRJP.js` 850.64 kB / gzip 262.14 kB。
+- main chunk 减少约 948.48 kB，gzip 减少约 304.00 kB。
+- Vite 仍提示大 chunk，主要剩余项是 Markdown/KaTeX/预览主路径和独立导出、Mermaid、cytoscape 功能 chunk；本 checkpoint 不继续做更高风险的预览懒加载。
+
+验证：
+
+```bash
+npm test -- --run src/domains/markdown/codeHighlight.test.ts src/domains/editor/components/EditorPane.test.ts src/lib/markdownToHtml.test.ts src/domains/export/exportPipeline.test.ts
+npm test -- --run
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试：4 个测试文件、92 项测试通过。
+- 全量前端测试：84 个测试文件、468 项测试通过。
+- `npm run build` 通过，记录到上述 chunk 对比。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只裁剪前端高亮依赖和 Markdown 高亮插件入口，不改变 Tauri capabilities、文件写入、安全策略、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。

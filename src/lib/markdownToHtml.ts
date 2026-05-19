@@ -6,10 +6,13 @@ import remarkRehype from 'remark-rehype';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
-import rehypeHighlight from 'rehype-highlight';
 import { visit } from 'unist-util-visit';
 import { findPandocCitations } from '../domains/editor/extensions/citations';
 import { applyCalloutMetadataToMdastBlockquote } from '../domains/editor/extensions/callouts';
+import {
+  highlightPrismCode,
+  highlightPrismCodeAuto,
+} from '../domains/markdown/codeHighlight';
 import {
   parseDocumentFrontMatter,
   type DocumentFrontMatterProperties,
@@ -115,6 +118,135 @@ function rehypePreviewUrlSafety() {
           delete node.properties[key];
         }
       });
+    });
+  };
+}
+
+function getHastText(node: any): string {
+  if (!node) return '';
+  if (node.type === 'text') return typeof node.value === 'string' ? node.value : '';
+  if (!Array.isArray(node.children)) return '';
+  return node.children.map(getHastText).join('');
+}
+
+function getCodeLanguage(node: any) {
+  const className = node.properties?.className;
+  if (!Array.isArray(className)) return undefined;
+
+  for (const value of className) {
+    const name = String(value);
+    if (name === 'no-highlight' || name === 'nohighlight') return false;
+    if (name.startsWith('lang-')) return name.slice(5);
+    if (name.startsWith('language-')) return name.slice(9);
+  }
+
+  return undefined;
+}
+
+function decodeHighlightHtmlText(value: string) {
+  return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (entity, body: string) => {
+    const normalized = body.toLowerCase();
+    if (normalized === 'amp') return '&';
+    if (normalized === 'lt') return '<';
+    if (normalized === 'gt') return '>';
+    if (normalized === 'quot') return '"';
+    if (normalized === 'apos') return "'";
+    if (normalized.startsWith('#x')) {
+      return String.fromCodePoint(Number.parseInt(normalized.slice(2), 16));
+    }
+    if (normalized.startsWith('#')) {
+      return String.fromCodePoint(Number.parseInt(normalized.slice(1), 10));
+    }
+    return entity;
+  });
+}
+
+function highlightHtmlToHastChildren(html: string) {
+  const root: { children: any[] } = { children: [] };
+  const stack: Array<{ children: any[] }> = [root];
+  const spanPattern = /<\/span>|<span class="([^"]+)">/g;
+  let lastIndex = 0;
+
+  const appendText = (value: string) => {
+    if (!value) return;
+    stack[stack.length - 1].children.push({
+      type: 'text',
+      value: decodeHighlightHtmlText(value),
+    });
+  };
+
+  for (const match of html.matchAll(spanPattern)) {
+    appendText(html.slice(lastIndex, match.index));
+    const token = match[0];
+    if (token === '</span>') {
+      if (stack.length > 1) {
+        stack.pop();
+      }
+    } else {
+      const node = {
+        type: 'element',
+        tagName: 'span',
+        properties: {
+          className: (match[1] ?? '').split(/\s+/).filter(Boolean),
+        },
+        children: [],
+      };
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+    }
+    lastIndex = match.index + token.length;
+  }
+
+  appendText(html.slice(lastIndex));
+  return root.children;
+}
+
+function rehypePrismCodeHighlight() {
+  return (tree: any) => {
+    visit(tree, 'element', (node: any, _index, parent: any) => {
+      if (
+        node.tagName !== 'code'
+        || !parent
+        || parent.type !== 'element'
+        || parent.tagName !== 'pre'
+      ) {
+        return;
+      }
+
+      const language = getCodeLanguage(node);
+      if (language === false) return;
+
+      node.properties = node.properties || {};
+      const className = Array.isArray(node.properties.className) ? node.properties.className : [];
+      if (!className.includes('hljs')) {
+        className.unshift('hljs');
+      }
+      node.properties.className = className;
+
+      const code = getHastText(node);
+
+      try {
+        const result = language
+          ? highlightPrismCode(code, language)
+          : highlightPrismCodeAuto(code);
+
+        if (!language && result.language) {
+          const detectedLanguageClass = `language-${result.language}`;
+          if (!className.includes(detectedLanguageClass)) {
+            className.push(detectedLanguageClass);
+          }
+        }
+
+        const children = highlightHtmlToHastChildren(result.value);
+        if (children.length > 0) {
+          node.children = children;
+        }
+      } catch (error) {
+        if (language && error instanceof Error && /Unknown language/.test(error.message)) {
+          return;
+        }
+        throw error;
+      }
     });
   };
 }
@@ -422,7 +554,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     // MiaoYan hands unlabeled fenced blocks to Highlightr for auto detection.
-    .use(rehypeHighlight as any, { ignoreMissing: true, detect: true });
+    .use(rehypePrismCodeHighlight);
 
   const result = processor
     .use(rehypeKatex)
