@@ -24,19 +24,17 @@ describe('StatusBar', () => {
     render(
       <StatusBar
         writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
+        cursor={{ line: 12, column: 8 }}
         sidebarVisible={true}
         isSidebarHovered={false}
       />
     );
 
-    expect(screen.getByTitle('中文字数 42，英文词数 18，字符数 96，预计阅读 2 分钟')).toBeInTheDocument();
-    expect(screen.getByText('中')).toBeInTheDocument();
-    expect(screen.getByText('EN')).toBeInTheDocument();
-    expect(screen.getByText('字符')).toBeInTheDocument();
-    expect(screen.getByText('分钟')).toBeInTheDocument();
-    expect(screen.getByText('LN')).toBeInTheDocument();
-    expect(screen.getByText('COL')).toBeInTheDocument();
+    expect(screen.getByTitle('字数 60，行 12，列 8')).toBeInTheDocument();
+    expect(screen.getByText('60 字 · 12:8')).toBeInTheDocument();
+    expect(screen.queryByText('已保存')).not.toBeInTheDocument();
+    expect(screen.queryByText('LN')).not.toBeInTheDocument();
+    expect(screen.queryByText('COL')).not.toBeInTheDocument();
     expect(screen.getByTitle('新建文件')).toBeInTheDocument();
     expect(screen.getByTitle('切换到文档列表')).toBeInTheDocument();
   });
@@ -52,11 +50,12 @@ describe('StatusBar', () => {
       />,
     );
 
-    expect(screen.getByTitle('选区：中文字数 4，英文词数 2，字符数 14，预计阅读 1 分钟')).toBeInTheDocument();
-    expect(screen.getByText('选区')).toBeInTheDocument();
+    expect(screen.getByTitle('选区：字数 6，行 1，列 1')).toBeInTheDocument();
+    expect(screen.getByText('选区 6 字 · 1:1')).toBeInTheDocument();
   });
 
-  it('renders link diagnostic count when markdown links have issues', () => {
+  it('aggregates actionable diagnostics as ERROR count', () => {
+    const onDiagnosticsClick = vi.fn();
     render(
       <StatusBar
         writingStats={writingStats}
@@ -65,16 +64,21 @@ describe('StatusBar', () => {
         isSidebarHovered={false}
         linkIssueCount={2}
         linkIssueTitle="未找到链接文件 missing.md"
+        onLinkDiagnosticsClick={onDiagnosticsClick}
       />
     );
 
-    expect(screen.getByRole('button', { name: 'LINK 2' })).toHaveAttribute(
+    const button = screen.getByRole('button', { name: 'ERROR 2' });
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute(
       'title',
       '未找到链接文件 missing.md',
     );
+    expect(onDiagnosticsClick).toHaveBeenCalledTimes(1);
   });
 
-  it('renders typography diagnostic count when writing style has issues', () => {
+  it('does not render typography suggestions as status bar errors', () => {
     render(
       <StatusBar
         writingStats={writingStats}
@@ -86,13 +90,11 @@ describe('StatusBar', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'TYPO 3' })).toHaveAttribute(
-      'title',
-      '中英文之间缺少空格',
-    );
+    expect(screen.queryByRole('button', { name: 'TYPO 3' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ERROR 3' })).not.toBeInTheDocument();
   });
 
-  it('renders backlink count as a lightweight navigation entry', () => {
+  it('does not render backlink count in the status bar', () => {
     const onBacklinksClick = vi.fn();
     render(
       <StatusBar
@@ -105,14 +107,11 @@ describe('StatusBar', () => {
       />
     );
 
-    const button = screen.getByRole('button', { name: 'BACKLINK 4' });
-    fireEvent.click(button);
-
-    expect(button).toHaveAttribute('title', '查看引用当前文档的 Markdown 文件');
-    expect(onBacklinksClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'BACKLINK 4' })).not.toBeInTheDocument();
+    expect(onBacklinksClick).not.toHaveBeenCalled();
   });
 
-  it('renders document metadata entry only when a handler is provided', () => {
+  it('does not render document metadata in the status bar', () => {
     const onDocumentPropertiesClick = vi.fn();
     render(
       <StatusBar
@@ -124,11 +123,8 @@ describe('StatusBar', () => {
       />
     );
 
-    const button = screen.getByRole('button', { name: 'META' });
-    fireEvent.click(button);
-
-    expect(button).toHaveAttribute('title', '编辑 YAML Front Matter 文档属性');
-    expect(onDocumentPropertiesClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'META' })).not.toBeInTheDocument();
+    expect(onDocumentPropertiesClick).not.toHaveBeenCalled();
   });
 
   it('shows a recoverable background export status', () => {

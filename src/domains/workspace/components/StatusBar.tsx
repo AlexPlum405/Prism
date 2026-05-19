@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import styles from './StatusBar.module.css';
 import { useWorkspaceStore } from '../../workspace/store';
-import { useDocumentStore } from '../../document/store';
-import type { DocumentSaveStatus } from '../../document/types';
 import type { WritingStats } from '../services';
 
 const IconFocus = () => (
@@ -47,14 +45,6 @@ const IconList = () => (
   </svg>
 );
 
-const saveStatusLabels: Record<DocumentSaveStatus, string> = {
-  saved: '已保存',
-  dirty: '未保存',
-  saving: '保存中...',
-  failed: '保存失败',
-  conflict: '文件冲突',
-};
-
 interface StatusBarProps {
   writingStats: WritingStats;
   selectionStats?: WritingStats | null;
@@ -83,6 +73,10 @@ interface StatusBarProps {
   onShowExportProgress?: () => void;
 }
 
+function formatStatusNumber(value: number) {
+  return value.toLocaleString('en-US');
+}
+
 export function StatusBar({
   writingStats,
   selectionStats,
@@ -100,12 +94,6 @@ export function StatusBar({
   linkIssueCount = 0,
   linkIssueTitle,
   onLinkDiagnosticsClick,
-  backlinkCount = 0,
-  onBacklinksClick,
-  onDocumentPropertiesClick,
-  typographyIssueCount = 0,
-  typographyIssueTitle,
-  onTypographyDiagnosticsClick,
   exportProgress = null,
   exportProgressInBackground = false,
   onShowExportProgress,
@@ -113,11 +101,10 @@ export function StatusBar({
   const rootPath = useWorkspaceStore((s) => s.rootPath);
   const fileTreeMode = useWorkspaceStore((s) => s.fileTreeMode);
   const focusMode = useWorkspaceStore((s) => s.focusMode);
-  const currentDocument = useDocumentStore((s) => s.currentDocument);
-  const saveStatus = currentDocument?.saveStatus ?? 'saved';
   const activeStats = selectionStats && selectionStats.characters > 0 ? selectionStats : writingStats;
   const isSelectionStats = activeStats === selectionStats;
-  const statsTitle = `${isSelectionStats ? '选区：' : ''}中文字数 ${activeStats.chineseChars}，英文词数 ${activeStats.englishWords}，字符数 ${activeStats.characters}，预计阅读 ${activeStats.readingMinutes} 分钟`;
+  const statsTitle = `${isSelectionStats ? '选区：' : ''}字数 ${activeStats.wordCount}，行 ${cursor.line}，列 ${cursor.column}`;
+  const statusText = `${isSelectionStats ? '选区 ' : ''}${formatStatusNumber(activeStats.wordCount)} 字 · ${cursor.line}:${cursor.column}`;
 
   const rootName = useMemo(() => {
     if (!rootPath) return 'Documents';
@@ -165,96 +152,19 @@ export function StatusBar({
         </div>
 
         <div className={styles.center} title={statsTitle}>
-          <span
-            className={`${styles.saveStatus} ${styles[saveStatus]}`}
-            title={currentDocument?.saveError ?? undefined}
-          >
-            {saveStatusLabels[saveStatus]}
-          </span>
-          {isSelectionStats && (
-            <span className={styles.statBadge}>选区</span>
-          )}
-          <span className={styles.statChunk}>
-            <span className={styles.sep} />
-            <span className={styles.statLbl}>中</span>
-            <span className={styles.statVal}>{activeStats.chineseChars}</span>
-          </span>
-          <span className={styles.statChunk}>
-            <span className={styles.sep} />
-            <span className={styles.statLbl}>EN</span>
-            <span className={styles.statVal}>{activeStats.englishWords}</span>
-          </span>
-          <span className={`${styles.statChunk} ${styles.optionalStat}`}>
-            <span className={styles.sep} />
-            <span className={styles.statLbl}>字符</span>
-            <span className={styles.statVal}>{activeStats.characters}</span>
-          </span>
-          <span className={`${styles.statChunk} ${styles.optionalStat}`}>
-            <span className={styles.sep} />
-            <span className={styles.statVal}>{activeStats.readingMinutes}</span>
-            <span className={styles.statLbl}>分钟</span>
-          </span>
-          <span className={styles.statChunk}>
-            <span className={styles.sep} />
-            <span className={styles.statLbl}>LN</span>
-            <span className={styles.statVal}>{cursor.line}</span>
-          </span>
-          <span className={styles.statChunk}>
-            <span className={styles.sep} />
-            <span className={styles.statLbl}>COL</span>
-            <span className={styles.statVal}>{cursor.column}</span>
-          </span>
-          {onDocumentPropertiesClick && (
-            <>
-              <span className={styles.sep} />
-              <button
-                className={styles.diagnostic}
-                title="编辑 YAML Front Matter 文档属性"
-                onClick={onDocumentPropertiesClick}
-              >
-                META
-              </button>
-            </>
-          )}
-          {linkIssueCount > 0 && (
-            <>
-              <span className={styles.sep} />
-              <button
-                className={styles.diagnostic}
-                title={linkIssueTitle ?? '链接诊断'}
-                onClick={onLinkDiagnosticsClick}
-              >
-                LINK {linkIssueCount}
-              </button>
-            </>
-          )}
-          {backlinkCount > 0 && (
-            <>
-              <span className={styles.sep} />
-              <button
-                className={styles.diagnostic}
-                title="查看引用当前文档的 Markdown 文件"
-                onClick={onBacklinksClick}
-              >
-                BACKLINK {backlinkCount}
-              </button>
-            </>
-          )}
-          {typographyIssueCount > 0 && (
-            <>
-              <span className={styles.sep} />
-              <button
-                className={styles.diagnostic}
-                title={typographyIssueTitle ?? '排版提示'}
-                onClick={onTypographyDiagnosticsClick}
-              >
-                TYPO {typographyIssueCount}
-              </button>
-            </>
-          )}
+          <span className={styles.statText}>{statusText}</span>
         </div>
 
         <div className={styles.right}>
+          {linkIssueCount > 0 && (
+            <button
+              className={styles.diagnostic}
+              title={linkIssueTitle ?? '文档诊断'}
+              onClick={onLinkDiagnosticsClick}
+            >
+              ERROR {linkIssueCount}
+            </button>
+          )}
           {exportProgress && exportProgressInBackground && (
             <button
               className={styles.exportStatus}

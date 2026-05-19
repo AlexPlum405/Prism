@@ -253,6 +253,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.statText {
+  display: inline-flex;
+  align-items: center;
+  color: var(--c-graphite);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
 .statChunk {
   display: inline-flex;
   align-items: center;
@@ -286,12 +296,14 @@
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
-  padding: 0 4px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
   pointer-events: auto;
 }
 
 .diagnostic:hover {
-  text-decoration: underline;
+  background: var(--c-chalk);
 }
 
 @media (max-width: 900px) {
@@ -446,6 +458,14 @@
   letter-spacing: 0;
 }
 
+:global(html[data-content-theme='miaoyan']) .statText {
+  color: var(--miaoyan-secondary-text);
+  font-family: var(--miaoyan-code-font);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 :global(html[data-content-theme='miaoyan']) .statBadge {
   background: var(--miaoyan-panel-secondary);
   color: var(--miaoyan-toolbar-icon);
@@ -461,6 +481,20 @@
   font-weight: 400;
   letter-spacing: 0.6px;
   text-transform: none;
+}
+
+:global(html[data-content-theme='miaoyan']) .diagnostic {
+  height: 19px;
+  border-radius: 6px;
+  color: var(--miaoyan-accent);
+  font-family: var(--miaoyan-code-font);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+:global(html[data-content-theme='miaoyan']) .diagnostic:hover {
+  background: var(--miaoyan-panel-secondary);
 }
 
 :global(html[data-content-theme='inkstone']) .statusbar,
@@ -671,6 +705,17 @@
   letter-spacing: 0;
 }
 
+:global(html[data-content-theme='inkstone']) .statText,
+:global(html[data-content-theme='slate']) .statText,
+:global(html[data-content-theme='mono']) .statText,
+:global(html[data-content-theme='nocturne']) .statText {
+  color: var(--theme-secondary-text);
+  font-family: var(--theme-code-font);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 :global(html[data-content-theme='inkstone']) .statBadge,
 :global(html[data-content-theme='slate']) .statBadge,
 :global(html[data-content-theme='mono']) .statBadge,
@@ -692,4 +737,24 @@
   font-weight: 400;
   letter-spacing: 0.6px;
   text-transform: none;
+}
+
+:global(html[data-content-theme='inkstone']) .diagnostic,
+:global(html[data-content-theme='slate']) .diagnostic,
+:global(html[data-content-theme='mono']) .diagnostic,
+:global(html[data-content-theme='nocturne']) .diagnostic {
+  height: 19px;
+  border-radius: 6px;
+  color: var(--theme-accent);
+  font-family: var(--theme-code-font);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+:global(html[data-content-theme='inkstone']) .diagnostic:hover,
+:global(html[data-content-theme='slate']) .diagnostic:hover,
+:global(html[data-content-theme='mono']) .diagnostic:hover,
+:global(html[data-content-theme='nocturne']) .diagnostic:hover {
+  background: var(--theme-panel-secondary);
 }
