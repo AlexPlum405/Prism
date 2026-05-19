@@ -1,11 +1,11 @@
-# Prism 架构优化 `/goal` 入口
+# Prism 架构优化续跑 `/goal` 入口
 
 > 更新日期：2026-05-20
-> 用途：把长任务细节留在本文件和计划/验证文档里，`/goal` 只保留极短入口。
+> 用途：把长任务细节留在本文件，`/goal` 只保留极短入口。
 
 ## 直接复制的短 goal
 
-如已有旧 goal，先执行：
+如果当前已有旧 goal，先执行：
 
 ```text
 /goal clear
@@ -14,12 +14,12 @@
 再执行：
 
 ```text
-/goal 在 /Users/Alex/AI/project/Prism 中，按 docs/prism-goal-prompt.md 的「架构优化续跑合约」继续执行，继承已验证进度，不重跑已完成 checkpoint；把剩余架构优化项一次性做到验证、记录、commit、push 和最终 app smoke 全闭环，只有遇到该文档定义的暂停条件才停。
+/goal 在 /Users/Alex/AI/project/Prism 中，按 docs/prism-goal-prompt.md 续跑 Prism 架构优化；继承已验证进度，不重跑已完成 checkpoint，只完成剩余真实 App smoke 自动化与最终审计，验证通过后更新证据、commit、push，并重启 Prism.app。
 ```
 
 ## 架构优化续跑合约
 
-### 开始前必须读取
+### 开始前读取
 
 - `AGENTS.md`
 - `CONTEXT.md`
@@ -28,9 +28,9 @@
 - `docs/verification/prism-architecture-optimization-full-run.md`
 - 当前 `git status --short`
 - 当前 `git diff`
-- 最近提交：`git log --oneline -14`
+- 最近提交：`git log --oneline -20`
 
-### 当前已完成进度
+### 已完成进度
 
 以下 checkpoint 已有验证记录并已推送到 `origin/main`，不要从头重做：
 
@@ -48,15 +48,14 @@
 - `083a303`：建立 Markdown 文档模型核心
 - `1a75a68`：拆分文件和工作区命令
 - `450ed20`：拆分全局样式层
+- `2ce2a6d`：精简架构优化 goal 入口
+- `a4277f2`：裁剪主包高亮依赖
+- `12eaa7a`：深化文件安全层边界
 
 ### 剩余必须完成项
 
-按风险从小到大继续，不要跳过最终收口：
-
-1. 主包性能优化：先处理 `highlight.js` 或其他污染 main chunk 的静态依赖，记录优化前后 `npm run build` chunk 结果。
-2. 文件安全层深化：整理保存、另存、外部变更、恢复、冲突、访达双击打开、工作区刷新相关边界，不改变用户可见文件行为。
-3. 真实 App smoke 自动化：完善 `Prism.app` smoke harness，覆盖启动、`Cmd+P`、设置、`ERROR`、导出保存弹窗、文件树同步、基础编辑/保存。
-4. 最终 completion audit：逐条核对 10 个优化项、验证证据、commit/push、剩余风险。
+1. 真实 App smoke 自动化：完善 `Prism.app` smoke harness，覆盖启动、`Cmd+P`、设置中心、`ERROR`、导出保存弹窗、文件树同步、基础编辑/保存路径。
+2. 最终 completion audit：逐条核对 10 个架构优化项、验证证据、commit/push、跳过项原因和剩余风险。
 
 ### 执行规则
 
@@ -71,20 +70,13 @@
 
 ### 验证规则
 
-- 文档改动：`git diff --check`。
-- 纯 TypeScript / React 小改：相关聚焦测试 + `npm test -- --run`。
-- 架构、导出、文件安全、命令系统、工作区索引改动：相关聚焦测试 + `npm test -- --run` + `npm run build` + `git diff --check`。
-- Tauri / Rust / capabilities / 真实 app 链路改动：补 `cargo check/test` 或对应 Tauri smoke。
-- 最终收口必须跑：
-  - `npm test -- --run`
-  - `npm run build`
-  - `git diff --check`
-  - `npm run tauri:build:app-smoke`
-  - 重启本地 `Prism.app`
+- smoke harness 改动：相关脚本/聚焦验证 + `npm run tauri:build:app-smoke` + `git diff --check`。
+- 最终收口必须跑：`npm test -- --run`、`npm run build`、`git diff --check`、`npm run tauri:build:app-smoke`。
+- 最终还必须重启本地 `Prism.app`，不能用浏览器替代真实 app。
 
 ### 完成条件
 
-全部剩余 checkpoint 已实现，验证通过，`docs/verification/prism-architecture-optimization-full-run.md` 已补齐，所有可提交改动已 commit 并 push 到 `origin/main`，最终汇报 commit hash、push 状态、验证证据、跳过项原因、剩余风险。
+剩余 smoke 自动化和最终审计都已完成，`docs/verification/prism-architecture-optimization-full-run.md` 已补齐，最终 gate 全部通过，所有可提交改动已 commit 并 push 到 `origin/main`，本地 `Prism.app` 已重启。最终汇报 commit hash、push 状态、验证证据、跳过项原因和剩余风险。
 
 ### 暂停条件
 
