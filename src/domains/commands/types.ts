@@ -53,6 +53,7 @@ export type CommandId =
   | 'pastePlain'
   | 'selectAll'
   | 'showSearch'
+  | 'workspaceSearch'
   | 'showReplace'
   | 'copyPlain'
   | 'copyMd'
@@ -168,6 +169,7 @@ export interface CommandContext {
   openShortcuts?: () => void;
   openCommandPalette?: () => void;
   openQuickOpen?: () => void;
+  openWorkspaceSearch?: () => void;
   openDocumentProperties?: () => void;
   openDocumentLinks?: () => void;
   openBacklinks?: () => void;

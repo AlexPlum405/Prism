@@ -60,6 +60,7 @@ import {
 } from './domains/commands';
 import {
   basename,
+  buildWorkspaceIndex,
   type BacklinkReference,
   computeWritingStats,
   dirname,
@@ -71,6 +72,8 @@ import {
   type DocumentLinkReference,
   resolveDocumentLinkTarget,
   scanBacklinks,
+  type WorkspaceIndex,
+  type WorkspaceIndexSourceDocument,
 } from './domains/workspace/services';
 import type { ExportDefaultLocation } from './domains/settings/types';
 import { createToastState, type ToastInput, type ToastState } from './lib/toast';
@@ -255,11 +258,58 @@ function App() {
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
+  const [workspaceIndexSources, setWorkspaceIndexSources] = useState<WorkspaceIndexSourceDocument[]>([]);
+  const [workspaceIndexing, setWorkspaceIndexing] = useState(false);
 
   useBootstrap(settingsReady);
   useAutoSave(autoSaveInterval, autoSaveEnabled);
   useExternalFileChangeMonitor();
   useWorkspaceFocusRefresh(settingsReady);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!workspace.rootPath) {
+        setWorkspaceIndexSources([]);
+        setWorkspaceIndexing(false);
+        return;
+      }
+
+      const files = flattenFiles(workspace.fileTree, workspace.rootPath)
+        .map(({ node }) => node)
+        .filter((node) => MARKDOWN_FILE_RE.test(node.path));
+
+      if (files.length === 0) {
+        setWorkspaceIndexSources([]);
+        setWorkspaceIndexing(false);
+        return;
+      }
+
+      setWorkspaceIndexing(true);
+      const documents = (await Promise.all(files.map(async (node) => {
+        try {
+          return {
+            path: node.path,
+            content: await readTextFile(node.path),
+          };
+        } catch {
+          return null;
+        }
+      }))).filter((item): item is WorkspaceIndexSourceDocument => Boolean(item));
+
+      if (!cancelled) {
+        setWorkspaceIndexSources(documents);
+        setWorkspaceIndexing(false);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace.fileTree, workspace.rootPath]);
 
   useEffect(() => {
     const platform = getRuntimePlatform();
@@ -400,6 +450,27 @@ function App() {
       workspaceRoot: workspace.rootPath,
     });
   }, [currentDocument, workspace.fileTree, workspace.rootPath]);
+
+  const workspaceIndexDocuments = useMemo(() => {
+    if (!currentDocument?.path || !MARKDOWN_FILE_RE.test(currentDocument.path)) {
+      return workspaceIndexSources;
+    }
+
+    return [
+      ...workspaceIndexSources.filter((document) => !isSamePath(document.path, currentDocument.path!)),
+      { path: currentDocument.path, content: currentDocument.content },
+    ];
+  }, [currentDocument?.content, currentDocument?.path, workspaceIndexSources]);
+
+  const workspaceIndex = useMemo<WorkspaceIndex | null>(() => {
+    if (!workspace.rootPath) return null;
+    return buildWorkspaceIndex({
+      fileTree: workspace.fileTree,
+      workspaceRoot: workspace.rootPath,
+      documents: workspaceIndexDocuments,
+      recentFiles,
+    });
+  }, [recentFiles, workspace.fileTree, workspace.rootPath, workspaceIndexDocuments]);
 
   const firstLinkDiagnostic = linkDiagnostics[0] ?? null;
   const documentLinks = useMemo(
@@ -846,6 +917,10 @@ function App() {
         setCommandPaletteMode('files');
         setCommandPaletteVisible(true);
       },
+      openWorkspaceSearch: () => {
+        setCommandPaletteMode('search');
+        setCommandPaletteVisible(true);
+      },
       openDocumentProperties: () => setDocumentPropertiesVisible(true),
       openDocumentLinks: () => setDocumentLinksVisible(true),
       openBacklinks: handleBacklinksClick,
@@ -1286,6 +1361,8 @@ function App() {
         files={workspace.fileTree}
         workspaceRoot={workspace.rootPath}
         recentFiles={recentFiles}
+        workspaceIndex={workspaceIndex}
+        workspaceIndexing={workspaceIndexing}
         mode={commandPaletteMode}
         onClose={() => setCommandPaletteVisible(false)}
         onExecute={(commandId) => handleCommandAction(commandId)}

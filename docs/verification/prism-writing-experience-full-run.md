@@ -157,3 +157,39 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只新增纯 TypeScript 工作区索引服务和单元测试，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 6：快速打开 / 全文搜索 / 最近文档
+
+改动范围：
+
+- `src/App.tsx`
+- `src/components/shell/CommandPalette.tsx`
+- `src/components/shell/CommandPalette.test.tsx`
+- `src/domains/commands/types.ts`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/registry.test.ts`
+- `src/domains/workspace/services/workspaceIndex.ts`
+- `src/domains/workspace/services/workspaceIndex.test.ts`
+- `src/domains/workspace/services/index.ts`
+- `src/styles/global.css`
+
+实现结果：
+
+- App 层开始异步读取当前工作区 Markdown 内容并构建工作区索引，当前打开文档的未保存内容会覆盖索引中的磁盘版本。
+- `Cmd+P` 快速打开继续使用命令面板文件模式，但优先走工作区索引，支持按文件名、Front Matter 标题、路径和标题节点匹配。
+- 新增 `Cmd+Shift+F` / `全文搜索工作区` 命令，打开命令面板搜索模式，支持当前工作区 Markdown 的标题、文件名、路径、标题节点和正文内容搜索。
+- 空查询保留最近文档优先显示，随后展示工作区内最近修改的 Markdown 文件。
+- 命令面板列表增加长路径 / 正文片段的省略处理，避免破坏当前妙言风格弹层布局。
+- 不引入 IDE 级 search/replace；替换仍保持当前文档内查找/替换能力。
+
+验证：
+
+- `npm test -- --run src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/fileTree.test.ts`：4 个测试文件、34 项测试通过。
+- `npm test -- --run src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts src/domains/workspace/services/workspaceIndex.test.ts`：3 个测试文件、29 项测试通过。
+- `npm test -- --run`：71 个测试文件、424 项测试通过。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+跳过项：
+
+- 未跑发布级 app/DMG smoke；本阶段只改前端命令、React 弹层和 TypeScript 索引服务，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。

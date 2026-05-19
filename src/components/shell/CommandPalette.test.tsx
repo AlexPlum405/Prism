@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { FileNode } from '../../domains/workspace/types';
+import { buildWorkspaceIndex } from '../../domains/workspace/services';
 import { CommandPalette } from './CommandPalette';
 
 const files: FileNode[] = [
@@ -47,5 +48,59 @@ describe('CommandPalette', () => {
 
     expect(onExecute).toHaveBeenCalledWith(`openWorkspaceFile:${encodeURIComponent('/notes/b/z.md')}`);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the workspace index for title-aware quick open and full-text search', () => {
+    const onExecute = vi.fn();
+    const onClose = vi.fn();
+    const workspaceIndex = buildWorkspaceIndex({
+      fileTree: files,
+      workspaceRoot: '/notes',
+      documents: [
+        { path: '/notes/b/z.md', content: '---\ntitle: Zeta 方案\n---\n# 背景\n包含全文命中。' },
+        { path: '/notes/b/a.md', content: '# Alpha 文档\n普通内容。' },
+        { path: '/notes/root.md', content: '# Root file\n根文档。' },
+      ],
+      recentFiles: [{ path: '/notes/root.md', lastOpened: 100 }],
+    });
+
+    const { rerender } = render(
+      <CommandPalette
+        visible
+        commands={[]}
+        files={files}
+        workspaceRoot="/notes"
+        workspaceIndex={workspaceIndex}
+        mode="files"
+        onClose={onClose}
+        onExecute={onExecute}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('搜索工作区文件…'), {
+      target: { value: 'Zeta 方案' },
+    });
+    expect(screen.getByText('Zeta 方案')).toBeInTheDocument();
+    expect(screen.getByText('b/z.md')).toBeInTheDocument();
+
+    rerender(
+      <CommandPalette
+        visible
+        commands={[]}
+        files={files}
+        workspaceRoot="/notes"
+        workspaceIndex={workspaceIndex}
+        mode="search"
+        onClose={onClose}
+        onExecute={onExecute}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('全文搜索工作区…'), {
+      target: { value: '全文命中' },
+    });
+    expect(screen.getByText('Zeta 方案')).toBeInTheDocument();
+    expect(screen.getByText('正文')).toBeInTheDocument();
+    expect(screen.getByText(/全文命中/)).toBeInTheDocument();
   });
 });

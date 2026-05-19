@@ -318,6 +318,28 @@ describe('command registry', () => {
     expect(commandRegistryById.get('print')?.shortcuts).toBeUndefined();
   });
 
+  it('opens workspace full-text search with Cmd+Shift+F when a workspace is available', async () => {
+    const openWorkspaceSearch = vi.fn();
+    const context = createCommandContext({
+      openWorkspaceSearch,
+      workspaceStore: {
+        ...createCommandContext().workspaceStore,
+        rootPath: '/notes',
+        fileTree: [
+          { path: '/notes/a.md', name: 'a.md', kind: 'file', modifiedAt: 1 },
+        ],
+      },
+    });
+    const paletteIds = getCommandPaletteItems(context).map((item) => item.id);
+
+    expect(paletteIds).toContain('workspaceSearch');
+
+    await runCommand('workspaceSearch', context);
+
+    expect(openWorkspaceSearch).toHaveBeenCalledTimes(1);
+    expect(commandRegistryById.get('workspaceSearch')?.shortcuts).toEqual([{ code: 'KeyF', mod: true, shift: true }]);
+  });
+
   it('routes document info commands through the command palette instead of status bar entries', async () => {
     const openDocumentProperties = vi.fn();
     const openDocumentLinks = vi.fn();

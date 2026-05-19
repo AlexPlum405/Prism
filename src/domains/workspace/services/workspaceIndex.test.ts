@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FileNode } from '../types';
-import { buildWorkspaceIndex, searchWorkspaceIndex } from './workspaceIndex';
+import { buildWorkspaceIndex, rankWorkspaceIndexDocuments, searchWorkspaceIndex } from './workspaceIndex';
 
 const fileTree: FileNode[] = [
   {
@@ -145,6 +145,15 @@ describe('workspace index', () => {
     });
     expect(searchWorkspaceIndex(index, 'docs/guide')[0]).toMatchObject({
       match: 'path',
+      document: expect.objectContaining({ relativePath: 'docs/guide.md' }),
+    });
+    expect(rankWorkspaceIndexDocuments(index, '').map((result) => result.document.relativePath)).toEqual([
+      'index.md',
+      'docs/api.md',
+      'docs/guide.md',
+    ]);
+    expect(rankWorkspaceIndexDocuments(index, '入门')[0]).toMatchObject({
+      match: 'title',
       document: expect.objectContaining({ relativePath: 'docs/guide.md' }),
     });
   });

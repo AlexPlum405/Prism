@@ -1098,6 +1098,15 @@ export const commandRegistry = [
     },
   }),
   command({
+    id: 'workspaceSearch',
+    label: '全文搜索工作区',
+    category: '编辑',
+    keywords: ['search', 'workspace', 'full text', '全文', '工作区'],
+    shortcuts: [{ code: 'KeyF', mod: true, shift: true }],
+    enabled: (context) => Boolean(context.workspaceStore.rootPath && context.workspaceStore.fileTree.length > 0),
+    run: (context) => context.openWorkspaceSearch?.(),
+  }),
+  command({
     id: 'showReplace',
     label: '替换',
     category: '编辑',

@@ -302,7 +302,7 @@ export function searchWorkspaceIndex(
   }
 
   return index.documents
-    .map((document) => {
+    .map((document): WorkspaceIndexSearchResult | null => {
       const name = document.name.toLowerCase();
       const title = document.title.toLowerCase();
       const relativePath = document.relativePath.toLowerCase();
@@ -335,6 +335,61 @@ export function searchWorkspaceIndex(
           score: 25 + recentBoost,
           snippet: contentSnippet(document.content, query),
         };
+      }
+      return null;
+    })
+    .filter((result): result is WorkspaceIndexSearchResult => Boolean(result))
+    .sort((a, b) => b.score - a.score || a.document.relativePath.localeCompare(b.document.relativePath))
+    .slice(0, limit);
+}
+
+export function rankWorkspaceIndexDocuments(
+  index: WorkspaceIndex,
+  query: string,
+  limit = 30,
+): WorkspaceIndexSearchResult[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    const recentPaths = new Set(index.recentDocuments.map((document) => normalizePathForCompare(document.path)));
+    const rest = index.documents
+      .filter((document) => !recentPaths.has(normalizePathForCompare(document.path)))
+      .sort((a, b) => (
+        (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0) ||
+        a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true, sensitivity: 'base' })
+      ));
+    return [...index.recentDocuments, ...rest].slice(0, limit).map((document) => ({
+      document,
+      match: 'name',
+      score: document.recentRank === undefined ? 1 : 20 - document.recentRank,
+      snippet: document.relativePath,
+    }));
+  }
+
+  return index.documents
+    .map((document): WorkspaceIndexSearchResult | null => {
+      const name = document.name.toLowerCase();
+      const title = document.title.toLowerCase();
+      const relativePath = document.relativePath.toLowerCase();
+      const heading = document.headings.find((item) => item.title.toLowerCase().includes(normalizedQuery));
+      const recentBoost = document.recentRank === undefined ? 0 : Math.max(1, 12 - document.recentRank);
+
+      if (title === normalizedQuery) {
+        return { document, match: 'title' as const, score: 120 + recentBoost, snippet: document.relativePath };
+      }
+      if (name === normalizedQuery) {
+        return { document, match: 'name' as const, score: 110 + recentBoost, snippet: document.relativePath };
+      }
+      if (title.includes(normalizedQuery)) {
+        return { document, match: 'title' as const, score: 90 + recentBoost, snippet: document.relativePath };
+      }
+      if (name.includes(normalizedQuery)) {
+        return { document, match: 'name' as const, score: 80 + recentBoost, snippet: document.relativePath };
+      }
+      if (relativePath.includes(normalizedQuery)) {
+        return { document, match: 'path' as const, score: 55 + recentBoost, snippet: document.relativePath };
+      }
+      if (heading) {
+        return { document, match: 'heading' as const, score: 45 + recentBoost, snippet: heading.title };
       }
       return null;
     })
