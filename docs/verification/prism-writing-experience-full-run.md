@@ -353,3 +353,57 @@
 跳过项：
 
 - 未跑发布级 app/DMG smoke；本阶段只改编辑器源码操作、右键菜单和命令注册，不涉及 Tauri capabilities、发布、签名、公证、updater 或安装器。
+
+## 阶段 12：导出保真与稳定专项
+
+改动范围：
+
+- `src/domains/export/exportPipeline.ts`
+- `src/domains/export/exportPipeline.test.ts`
+- `src/domains/commands/exportCommand.integration.test.ts`
+- `src/domains/export/isolatedWebviewExport.test.ts`
+- `src/domains/export/index.test.ts`
+- `src/domains/commands/registry.test.ts`
+- `src-tauri/src/lib.rs`
+- `docs/verification/prism-complex-export-smoke.md`
+- `docs/verification/prism-docx-rich-export-smoke.md`
+- `docs/verification/prism-pdf-export-performance.md`
+
+实现结果：
+
+- 审计确认导出专项已在前序增量中闭环，本阶段不再重写导出链路，只做当前 full-run 复核和证据归档。
+- HTML / PDF / PNG / DOCX 均继续走独立导出 WebView / 动态导出 chunk，避免把重导出链路拖入主编辑窗口。
+- PDF 在 macOS 上优先使用 WebKit `WKWebView.createPDF` 矢量主链路，保留文字、字体和 SVG / Mermaid / KaTeX 渲染结果；失败时才 warning fallback 到 raster，不自动降到低清 scale。
+- PNG 使用用户选择的清晰度 scale；超出安全 canvas 限制时按批次处理或抛出明确错误，不再静默降清晰度。
+- DOCX 保持混合策略：正文、标题、表格、代码、列表、链接尽量使用原生 DOCX；Mermaid、KaTeX 和复杂 HTML 视觉块以高分辨率 PNG fallback 保真；普通本地 SVG 保留 SVG + PNG fallback。
+- 链接图片在 PDF 中重建 `/Link` + `/URI` 注解，在 DOCX 中保留外层 hyperlink 和 drawing hyperlink，避免导出后只剩不可点击图片。
+- 导出 DOM 标记图片、SVG、Mermaid、KaTeX、表格、代码块、Callout、Toggle、TOC 和带视觉样式的 HTML 块为 atomic block，并在 WebKit PDF / raster fallback 捕获前插入 spacer，降低视觉块跨页截断风险。
+- 失败诊断会记录导出阶段、格式、路径、主题、模板、front matter、Pandoc / CSL 状态、warning 和错误堆栈，便于用户复制反馈。
+
+本轮联网复核：
+
+- Apple `WKWebView.createPDF` 是异步从 WebView 内容生成 PDF data 的官方能力，匹配当前 macOS PDF 主链路。
+- Microsoft WebView2 `PrintToPdfAsync` 是 Windows 对应方向，但当前 Prism 1.0.x 先保持 macOS WebKit 主链路，非 macOS 仍保留 fallback。
+- html2canvas 官方 `scale` 选项用于控制 canvas 渲染比例，当前 PNG / raster fallback 使用显式 scale，而不是自动低清降级。
+- MDN `break-inside` / `page-break-inside` 说明了打印分页避免断裂的 CSS 语义；Prism 在 CSS 避免断裂之外额外做 DOM spacer，是为了覆盖 WebKit 固定页切线下的视觉块保真。
+- docx.js 图片文档说明 `ImageRun` 可作为段落 / hyperlink 子项，并支持 `png` 等 raster 图片；当前 DOCX 对 Mermaid 采用 PNG-first，和 Word / WPS 兼容性目标一致。
+
+本轮产物复核：
+
+- `.codex-smoke/complex-export/out/complex-export.html`：重新生成；检查到标题、Mermaid / KaTeX 相关内容。
+- `.codex-smoke/complex-export/out/complex-export.pdf`：重新生成；`pdf-lib` 读取为 1 页，首页尺寸约 `595.28 x 841.89`，符合 A4。
+- `.codex-smoke/complex-export/out/complex-export.png`：重新生成；测试环境 PNG 为 html2canvas 替身产物，已确认 PNG signature，真实视觉 PNG 仍以既有真实 app smoke 证据为准。
+- `.codex-smoke/complex-export/out/complex-export.docx`：重新生成；`jszip` 读取 `word/document.xml`，确认标题、表格文本存在，Mermaid 源码 `graph TD` 未泄漏，`word/media/` 有 2 个媒体文件。
+- `.codex-smoke/complex-export/out/command-export.html|pdf|png|docx`：通过命令入口集成测试重新生成，确认四格式命令都能走真实导出 pipeline。
+- 真实 app 四格式 UI smoke、PDF WebKit 长文 smoke、DOCX 富内容 smoke 已分别记录在 `docs/verification/prism-complex-export-smoke.md`、`docs/verification/prism-pdf-export-performance.md`、`docs/verification/prism-docx-rich-export-smoke.md`；本轮未改导出源码，因此不重复手动点击导出。
+
+验证：
+
+- `npm test -- --run src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/export/isolatedWebviewExport.test.ts src/domains/export/index.test.ts src/domains/commands/registry.test.ts`：5 个测试文件、81 项测试通过。
+- 产物读取检查：HTML 标题 / Mermaid / KaTeX 命中；PDF A4 页面可读；PNG signature 正确；DOCX 标题 / 表格文本存在、Mermaid 源码未泄漏、media 数量为 2。
+- `cd src-tauri && cargo fmt --check && cargo check`：通过。
+- `npm run tauri:build:app-smoke`：通过，生成 `src-tauri/target/release/bundle/macos/Prism.app`。
+
+跳过项：
+
+- 未重复真实 UI 四格式导出点击 smoke；已有 2026-05-15 至 2026-05-18 的真实 `.app` 证据覆盖 HTML / PDF / PNG / DOCX、长文 WebKit PDF、DOCX Mermaid PNG-first、链接图片、行内 HTML 和分页保护。本阶段没有改导出源码，重复人工 smoke 的风险收益不成比例。
