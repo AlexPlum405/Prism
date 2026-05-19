@@ -77,3 +77,34 @@ npm test -- --run src/domains/export/rendering.test.ts src/domains/export/pagina
 
 - 本 checkpoint 只迁移导出前端渲染辅助函数，不改变 Tauri capabilities、WebKit PDF Rust command、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 2C：导出 assets 工具分层
+
+改动范围：
+
+- `src/domains/export/assets.ts`
+- `src/domains/export/assets.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出资产处理工具模块 `assets.ts`。
+- `assets.ts` 集中承载 data URL / bytes 转换、canvas PNG bytes 兜底、本地媒体路径解析、MIME 推断、DOCX raster 类型判断、图片尺寸读取、SVG 尺寸归一化、DOCX SVG foreignObject 文本降级。
+- `exportPipeline.ts` 保留导出主流程和具体格式编排，继续调用同一转换函数，不改变 HTML/PDF/PNG/DOCX 导出算法。
+- 新增聚焦测试覆盖 data URL 二进制转换、本地相对路径解析、媒体读取元数据、MIME/type 判断、SVG DOCX 兼容处理。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/assets.test.ts src/domains/export/rendering.test.ts src/domains/export/pagination.test.ts src/domains/export/diagnostics.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/export/isolatedWebviewExport.test.ts src/domains/export/index.test.ts src/domains/commands/registry.test.ts
+```
+
+结果：
+
+- 9 个测试文件通过。
+- 94 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移导出资产转换与路径解析工具，不改变 Tauri capabilities、导出格式、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
