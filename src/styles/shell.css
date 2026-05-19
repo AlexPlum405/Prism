@@ -1,0 +1,204 @@
+/* App shell base, focus/typewriter helpers, and global scrollbar behavior. */
+
+/* ---- 全局排印 ---- */
+body {
+  font-family: var(--font-sans);
+  background: var(--c-canvas);
+  color: var(--c-void);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'calt', 'liga';
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  zoom: var(--app-zoom);
+}
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+button {
+  font-family: inherit;
+  color: inherit;
+  font-weight: 500;
+  font-size: 12px;
+  outline: none;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--c-void);
+  outline-offset: 2px;
+}
+
+/* ---- 专注模式：软退让（ADR-0004） ---- */
+body.focus-mode .app-titlebar,
+body.focus-mode .app-menubar,
+body.focus-mode .app-sidebar,
+body.focus-mode .app-statusbar {
+  opacity: 0.25;
+  transition: opacity 240ms var(--ease-out);
+}
+
+body.focus-mode .app-titlebar:hover,
+body.focus-mode .app-menubar:hover,
+body.focus-mode .app-sidebar:hover,
+body.focus-mode .app-statusbar:hover {
+  opacity: 1;
+}
+
+/* 打字机模式辅助 ——（Batch 4 接 CodeMirror scrollIntoView 时配合使用） */
+body.typewriter-mode .cm-editor {
+  padding-top: 40vh;
+  padding-bottom: 40vh;
+}
+
+/* ---- 滚动条（纤细，默认不可见，hover 时浮现） ---- */
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+*:hover { scrollbar-color: var(--c-fog) transparent; }
+
+*::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+}
+*:hover::-webkit-scrollbar-thumb { background-color: var(--c-fog); }
+*::-webkit-scrollbar-thumb:hover { background-color: var(--c-ash); }
+
+.cm-editor::-webkit-scrollbar:horizontal,
+.cm-editor .cm-scroller::-webkit-scrollbar:horizontal,
+.preview-compat::-webkit-scrollbar:horizontal {
+  display: none;
+  height: 0 !important;
+}
+
+.cm-editor::-webkit-scrollbar-track:horizontal,
+.cm-editor::-webkit-scrollbar-thumb:horizontal,
+.cm-editor .cm-scroller::-webkit-scrollbar-track:horizontal,
+.cm-editor .cm-scroller::-webkit-scrollbar-thumb:horizontal,
+.preview-compat::-webkit-scrollbar-track:horizontal,
+.preview-compat::-webkit-scrollbar-thumb:horizontal {
+  display: none;
+  background-color: transparent !important;
+}
+
+.preview-compat pre::-webkit-scrollbar:horizontal,
+.preview-compat .mermaid-placeholder::-webkit-scrollbar:horizontal {
+  display: block;
+  height: 6px;
+}
+
+.preview-compat pre::-webkit-scrollbar-track:horizontal,
+.preview-compat .mermaid-placeholder::-webkit-scrollbar-track:horizontal {
+  display: block;
+  margin-inline: 24px;
+}
+
+.preview-compat pre::-webkit-scrollbar-thumb:horizontal,
+.preview-compat .mermaid-placeholder::-webkit-scrollbar-thumb:horizontal {
+  display: block;
+  min-width: 56px;
+  border-block: 2px solid transparent;
+  border-inline: 0;
+  border-radius: 999px;
+  background-color: transparent;
+  background-image: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 160px 100%;
+  background-clip: padding-box;
+}
+
+.preview-compat pre:hover::-webkit-scrollbar-thumb:horizontal,
+.preview-compat .mermaid-placeholder:hover::-webkit-scrollbar-thumb:horizontal {
+  background-color: transparent;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--c-fog) 72%, transparent),
+    color-mix(in srgb, var(--c-fog) 72%, transparent)
+  );
+}
+
+.preview-compat pre::-webkit-scrollbar-thumb:horizontal:hover,
+.preview-compat .mermaid-placeholder::-webkit-scrollbar-thumb:horizontal:hover {
+  background-color: transparent;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--c-ash) 76%, transparent),
+    color-mix(in srgb, var(--c-ash) 76%, transparent)
+  );
+}
+
+.prism-scrollbar-host {
+  --prism-horizontal-scrollbar-inset: 0px;
+}
+
+.prism-horizontal-scrollbar {
+  position: absolute;
+  right: var(--prism-horizontal-scrollbar-inset);
+  bottom: 7px;
+  left: var(--prism-horizontal-scrollbar-inset);
+  z-index: 8;
+  height: 16px;
+  pointer-events: none;
+}
+
+.prism-horizontal-scrollbar[data-scrollable='true'] {
+  pointer-events: auto;
+}
+
+.prism-horizontal-scrollbar[data-scrollable='false'] {
+  pointer-events: none;
+}
+
+.prism-horizontal-scrollbar__thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 16px;
+  cursor: default;
+  will-change: transform, width;
+}
+
+.prism-horizontal-scrollbar__thumb-visual {
+  position: absolute;
+  top: 5px;
+  right: 0;
+  left: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-fog);
+  opacity: 0;
+  transform: translateY(1px);
+  transform-origin: center;
+  transition:
+    opacity 420ms cubic-bezier(0.16, 1, 0.3, 1) 120ms,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1) 120ms,
+    background-color 140ms var(--ease-out);
+}
+
+.prism-horizontal-scrollbar[data-scrollable='true']:hover .prism-horizontal-scrollbar__thumb-visual,
+.prism-horizontal-scrollbar[data-dragging='true'] .prism-horizontal-scrollbar__thumb-visual {
+  opacity: 0.72;
+  transform: translateY(0);
+}
+
+.prism-horizontal-scrollbar__thumb:hover .prism-horizontal-scrollbar__thumb-visual,
+.prism-horizontal-scrollbar[data-dragging='true'] .prism-horizontal-scrollbar__thumb-visual {
+  opacity: 0.88;
+  background: var(--c-ash);
+  transition-delay: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism-horizontal-scrollbar__thumb-visual {
+    transition-duration: 120ms;
+    transition-delay: 0ms;
+  }
+}

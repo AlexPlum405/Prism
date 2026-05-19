@@ -5,8 +5,19 @@ import { describe, expect, it } from 'vitest';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+function readCssWithImports(filename: string, seen = new Set<string>()): string {
+  const filePath = resolve(__dirname, filename);
+  if (seen.has(filePath)) return '';
+  seen.add(filePath);
+
+  const css = readFileSync(filePath, 'utf8');
+  return css.replace(/^@import\s+['"]\.\/([^'"]+)['"];\s*$/gm, (_match, importPath: string) => (
+    readCssWithImports(importPath, seen)
+  ));
+}
+
 describe('global Windows visual compensation', () => {
-  const css = readFileSync(resolve(__dirname, 'global.css'), 'utf8');
+  const css = readCssWithImports('global.css');
 
   it('keeps Windows floating-layer compensation after content-theme overrides', () => {
     const miaoyanFloatingLayerOverride = css.lastIndexOf("html[data-content-theme='miaoyan'] .cmdk");

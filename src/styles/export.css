@@ -1,0 +1,237 @@
+/* Export save dialog, preflight, overwrite, and export failure diagnostics UI. */
+
+.prism-export-save-modal {
+  max-width: 460px;
+}
+
+.prism-export-save-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prism-export-save-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--c-ash);
+}
+
+.prism-export-save-field input,
+.prism-export-save-field select {
+  height: 36px;
+  border: 1px solid var(--c-fog);
+  border-radius: 8px;
+  padding: 0 11px;
+  background: var(--c-canvas);
+  color: var(--c-void);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  outline: none;
+}
+
+.prism-export-save-field select {
+  cursor: pointer;
+}
+
+.prism-export-save-field small {
+  color: var(--c-graphite);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.prism-export-save-field input:focus,
+.prism-export-save-field select:focus {
+  border-color: var(--c-graphite);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-graphite) 12%, transparent);
+}
+
+.prism-export-save-location {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.prism-export-save-location > div {
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--c-fog);
+  border-radius: 8px;
+  padding: 0 11px;
+  color: var(--c-graphite);
+  background: var(--c-chalk);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prism-export-save-location button,
+.prism-export-save-footer button {
+  height: 36px;
+  border: 1px solid var(--c-fog);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--c-canvas);
+  color: var(--c-void);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.prism-export-save-location button:hover,
+.prism-export-save-footer button:hover {
+  background: var(--c-chalk);
+}
+
+.prism-export-save-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--c-fog);
+}
+
+.prism-export-save-footer .primary {
+  border-color: var(--c-void);
+  background: var(--c-void);
+  color: var(--c-canvas);
+}
+
+.prism-export-save-footer .primary:hover {
+  background: var(--c-graphite);
+}
+
+.prism-export-save-footer .danger {
+  border-color: rgba(210, 61, 48, 0.28);
+  background: rgba(210, 61, 48, 0.12);
+  color: #b42318;
+}
+
+.prism-export-save-footer .danger:hover {
+  background: rgba(210, 61, 48, 0.18);
+}
+
+.prism-export-save-error,
+.prism-export-overwrite {
+  border-radius: 8px;
+  padding: 10px 11px;
+  font-size: 13px;
+}
+
+.prism-export-save-error {
+  color: #b42318;
+  background: rgba(210, 61, 48, 0.09);
+}
+
+.prism-export-quality-note {
+  border: 1px solid color-mix(in srgb, var(--c-void) 8%, var(--c-fog));
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: color-mix(in srgb, var(--c-chalk) 72%, var(--c-canvas));
+  color: var(--c-graphite);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.prism-export-preflight {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--c-fog);
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: var(--c-canvas);
+}
+
+.prism-export-preflight-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  color: var(--c-ash);
+  font-size: 12px;
+}
+
+.prism-export-preflight-row b {
+  min-width: 0;
+  color: var(--c-void);
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prism-export-overwrite {
+  color: var(--c-void);
+  background: color-mix(in srgb, #f7c948 16%, var(--c-canvas));
+  border: 1px solid color-mix(in srgb, #f7c948 36%, var(--c-fog));
+}
+
+.prism-export-overwrite-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.prism-export-overwrite-text {
+  color: var(--c-graphite);
+}
+
+.prism-export-failure-modal {
+  max-width: min(680px, calc(100vw - 36px));
+}
+
+.prism-export-failure-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prism-export-failure-summary {
+  color: var(--c-graphite);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.prism-export-failure-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--c-fog);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: var(--c-chalk);
+  color: var(--c-ash);
+  font-size: 12px;
+}
+
+.prism-export-failure-actions b {
+  color: var(--c-void);
+  font-weight: 500;
+  text-align: right;
+}
+
+.prism-export-failure-body textarea {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  border: 1px solid var(--c-fog);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--c-chalk);
+  color: var(--c-void);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  outline: none;
+}
+
+.prism-export-failure-body textarea:focus {
+  border-color: var(--c-graphite);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-graphite) 12%, transparent);
+}

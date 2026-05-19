@@ -1,0 +1,47 @@
+/* Windows WebView2 rendering compensation. */
+
+/* Windows WebView2 can keep transformed fixed layers in a composited surface,
+   which makes modal text look soft. Keep this platform-scoped and after theme overrides. */
+html[data-platform='windows'] .modal {
+  inset: 0;
+  height: fit-content;
+  margin: auto;
+  transform: none;
+  will-change: auto;
+  animation: prism-windows-modal-in 140ms var(--ease-out) both;
+  -webkit-font-smoothing: auto;
+  font-synthesis-weight: none;
+}
+
+html[data-platform='windows'][data-content-theme='miaoyan'] .modal-overlay {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+@keyframes prism-windows-modal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Windows WebView2 uses a different CJK text pipeline than macOS.
+   This block only tightens font fallbacks; platform layout fixes live in the scoped block above.
+   This must stay after content-theme overrides so themes cannot undo the Windows readability fix. */
+html[data-platform='windows'] .cmdk,
+html[data-platform='windows'] .sp,
+html[data-platform='windows'] .modal,
+html[data-platform='windows'] .custom-context-menu,
+html[data-platform='windows'] .custom-context-submenu {
+  font-family: 'Inter', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+html[data-platform='windows'] .prism-document-property-field input,
+html[data-platform='windows'] .prism-document-property-field textarea,
+html[data-platform='windows'] .cmdk-input {
+  font-family: 'Inter', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+}
+
+html[data-platform='windows'] .prism-document-property-field textarea {
+  font-family: 'JetBrains Mono', Consolas, 'Microsoft YaHei UI', monospace;
+}

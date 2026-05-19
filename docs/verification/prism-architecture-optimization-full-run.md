@@ -382,3 +382,50 @@ npm run build
 
 - 本 checkpoint 只迁移命令定义和命令 handler 的 module 边界，不改变文件权限、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
 - 因此未跑发布级 DMG / 完整真实 app smoke；最终全阶段收口时仍需跑 `npm run tauri:build:app-smoke` 并重启本地 `Prism.app`。
+
+## Checkpoint 7A：CSS / 设计系统分层
+
+改动范围：
+
+- `src/styles/global.css`
+- `src/styles/tokens.css`
+- `src/styles/shell.css`
+- `src/styles/editor.css`
+- `src/styles/preview.css`
+- `src/styles/floating.css`
+- `src/styles/export.css`
+- `src/styles/diagnostics.css`
+- `src/styles/content-themes.css`
+- `src/styles/miaoyan.css`
+- `src/styles/windows.css`
+- `src/styles/global.test.ts`
+- `src/assets/fonts/README.md`
+
+实现结果：
+
+- 将 7271 行 `global.css` 拆为按原始级联顺序导入的设计系统层，`global.css` 只保留 import 入口。
+- `tokens.css` 承载字体、基础令牌、深色变量、旧变量别名和基础 reset；`shell.css` 承载 app 基座、focus/typewriter、滚动条和横向滚动条。
+- `editor.css` 承载 CodeMirror 编辑器、源码染色、搜索和补全；`preview.css` 承载共享预览 affordance、citation、wiki link 和 front matter 预览。
+- `floating.css` / `export.css` / `diagnostics.css` 分别承载浮层、导出弹窗/失败诊断、诊断/反链/关系图/恢复/toast/context/render-error 等 UI。
+- `content-themes.css` 承载非妙言内容主题预览兼容；`miaoyan.css` 承载当前主风格的 AppKit / DownView / Heti 兼容与妙言预览排印；`windows.css` 承载 WebView2 文本补偿。
+- 更新 CSS 测试为读取 `global.css` import 图，保持 Windows 补偿和 modal pill 断言仍覆盖实际级联内容。
+- 未修改任何选择器和声明内容，主要风险控制点是 import 顺序；拆分顺序按原始行号保持。
+
+验证：
+
+```bash
+npm test -- --run src/styles/global.test.ts src/domains/document/components/ViewModeSwitch.module.test.ts
+npm run build
+npm test -- --run
+```
+
+结果：
+
+- CSS 聚焦测试：2 个测试文件、5 项测试通过。
+- `npm run build` 通过，打包后 `main-kRUF3VD-.css` 仍为 40.44 kB / gzip 5.22 kB。
+- 全量前端测试：83 个测试文件、465 项测试通过。
+
+跳过项：
+
+- 本 checkpoint 是机械 CSS 分层，没有改变视觉 token、选择器、组件结构、Tauri capabilities、真实 app 启动、发布、签名、公证、updater、安装器或 file association。
+- 真实 App 主界面、设置、快速打开、ERROR、导出弹窗视觉抽检留到最终 `npm run tauri:build:app-smoke` 和本地 `Prism.app` 重启 gate 统一覆盖。

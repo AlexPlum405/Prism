@@ -27,7 +27,7 @@
 
 ## 挂载方式
 
-`src/styles/global.css` 顶部用 `@font-face` 以相对路径引用 `../assets/fonts/*.woff2`，Vite 构建时自动作为静态资源处理（带 hash 指纹输出到 `dist/assets/`）。
+`src/styles/tokens.css` 用 `@font-face` 以相对路径引用 `../assets/fonts/*.woff2`，并由 `src/styles/global.css` 按层导入；Vite 构建时自动作为静态资源处理（带 hash 指纹输出到 `dist/assets/`）。
 
 变量字体使用 `format('woff2-variations')` + `font-weight: <min> <max>` 声明字重区间，CSS 中通过 `font-weight` 数值无极调用。
 
