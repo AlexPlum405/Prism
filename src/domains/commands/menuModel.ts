@@ -6,6 +6,7 @@ import {
   isCommandEnabled,
 } from './registry';
 import type { ShortcutDisplayStyle } from './platform';
+import { getAvailableThemeEntries } from '../themes';
 
 type MenuModelItem =
   | { type: 'separator' }
@@ -222,11 +223,13 @@ const menuModel: MenuModel = {
     { command: 'devTools' },
   ],
   '主题': [
-    { command: 'themeMiaoyan' },
-    { command: 'themeInkstone' },
-    { command: 'themeSlate' },
-    { command: 'themeMono' },
-    { command: 'themeNocturne' },
+    {
+      dynamic: (context) => getAvailableThemeEntries().map((theme) => ({
+        label: theme.source === 'user' ? `${theme.label}` : theme.label,
+        action: `setTheme:${encodeURIComponent(theme.id)}`,
+        checked: context.settingsStore.contentTheme === theme.id,
+      })),
+    },
   ],
   '窗口': [
     { command: 'minimize' },
@@ -308,7 +311,11 @@ export function getMenuSections(context: CommandContext): MenuSection {
       section,
       normalizeItems(
         items
-          .map((item) => toMenuItem(item, context, displayStyle))
+          .flatMap((item) => {
+            if ('dynamic' in item) return item.dynamic(context);
+            const menuItem = toMenuItem(item, context, displayStyle);
+            return menuItem ? [menuItem] : [];
+          })
           .filter((item): item is MenuItem => Boolean(item)),
       ),
     ]),

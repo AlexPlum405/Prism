@@ -64,6 +64,8 @@ import {
   type CommandContext,
 } from './index';
 import { DEFAULT_SETTINGS } from '../settings/types';
+import { builtInThemeContracts } from '../themes';
+import { __themeRegistryTesting } from '../themes/themeRegistry';
 
 function createCommandContext(overrides: Partial<CommandContext> = {}): CommandContext {
   return {
@@ -84,8 +86,11 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
     },
     settingsStore: {
       ...DEFAULT_SETTINGS,
+      themeRegistryVersion: 0,
+      themeRegistry: [],
       setTheme: vi.fn(),
       setContentTheme: vi.fn(),
+      reloadThemeRegistry: vi.fn(),
       setFontSize: vi.fn(),
       setEditorFontFamily: vi.fn(),
       setEditorLineHeight: vi.fn(),
@@ -185,6 +190,7 @@ describe('command registry', () => {
     openerMock.openUrl.mockResolvedValue(undefined);
     openerMock.revealItemInDir.mockReset();
     openerMock.revealItemInDir.mockResolvedValue(undefined);
+    __themeRegistryTesting.setRuntimeEntries([], []);
   });
 
   it('defines each command id once', () => {
@@ -207,7 +213,44 @@ describe('command registry', () => {
     Object.values(sections).forEach(collect);
 
     expect(actions.length).toBeGreaterThan(0);
-    expect(actions.every((action) => commandRegistryById.has(action as never))).toBe(true);
+    expect(actions.every((action) => commandRegistryById.has(action as never) || action.startsWith('setTheme:'))).toBe(true);
+  });
+
+  it('builds the theme menu from the runtime theme registry', () => {
+    __themeRegistryTesting.setRuntimeEntries([{
+      id: 'warm-paper',
+      name: '暖纸',
+      author: '',
+      version: '',
+      description: '',
+      isDark: false,
+      directory: '/tmp/warm-paper',
+      css: "html[data-content-theme='warm-paper'] { --theme-main-bg: #fff; }",
+      contract: {
+        ...builtInThemeContracts.miaoyan,
+        id: 'warm-paper',
+        label: '暖纸',
+      },
+      fonts: [],
+    }], [{
+      id: 'broken-theme',
+      name: 'Broken',
+      directory: '/tmp/broken-theme',
+      error: 'theme.css 缺失',
+    }]);
+
+    const sections = getMenuSections(createCommandContext({
+      settingsStore: {
+        ...createCommandContext().settingsStore,
+        contentTheme: 'warm-paper',
+      },
+    }));
+    expect(sections['主题'].some((item) => item.type !== 'separator' && item.action === 'setTheme:warm-paper')).toBe(true);
+    expect(sections['主题'].some((item) => item.type !== 'separator' && item.action === 'setTheme:broken-theme')).toBe(false);
+    expect(sections['主题'].find((item) => item.type !== 'separator' && item.action === 'setTheme:warm-paper')).toMatchObject({
+      label: '暖纸',
+      checked: true,
+    });
   });
 
   it('places settings in File and product help in Help', () => {

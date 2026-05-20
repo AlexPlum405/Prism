@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { open } from '@tauri-apps/plugin-dialog';
+import { ask, message, open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../domains/settings/store';
 import type {
   AutoSaveStrategy,
@@ -13,6 +13,14 @@ import type {
   PdfPaper,
   ShortcutStyle,
 } from '../../domains/settings/types';
+import {
+  ThemeError,
+  deleteInstalledUserTheme,
+  getThemeErrorMessage,
+  getThemeRegistrySnapshot,
+  installThemeFromPath,
+  openThemesDirectory,
+} from '../../domains/themes';
 import {
   BUILTIN_FONT_OPTIONS,
   SYSTEM_FONT_OPTIONS,
@@ -115,6 +123,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const settings = useSettingsStore();
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('general');
   const [pandocChecking, setPandocChecking] = useState(false);
+  const [themeBusy, setThemeBusy] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -177,6 +186,107 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     if (result) settings.addCustomFont(result.font);
   };
 
+  const chooseThemePath = async () => {
+    const chooseFolder = await ask('要导入主题文件夹吗？选择“否”可导入 .zip / .prism-theme 文件。', {
+      title: '导入主题',
+      kind: 'info',
+    });
+    const selected = await open({
+      multiple: false,
+      directory: chooseFolder,
+      recursive: false,
+      filters: chooseFolder
+        ? undefined
+        : [{ name: 'Prism Themes', extensions: ['zip', 'prism-theme'] }],
+    });
+    return selected && !Array.isArray(selected) ? selected : null;
+  };
+
+  const importTheme = async (applyAfterImport: boolean) => {
+    if (themeBusy) return;
+    const selected = await chooseThemePath();
+    if (!selected) return;
+
+    setThemeBusy(true);
+    try {
+      let result;
+      try {
+        result = await installThemeFromPath(selected);
+      } catch (error) {
+        if (error instanceof ThemeError && error.code === 'theme_exists' && error.themeId) {
+          const shouldReplace = await ask(`已存在同 id 用户主题 ${error.themeId}，是否替换？`, {
+            title: '替换主题',
+            kind: 'warning',
+          });
+          if (!shouldReplace) return;
+          result = await installThemeFromPath(selected, { replace: true });
+        } else {
+          throw error;
+        }
+      }
+
+      await settings.reloadThemeRegistry();
+      if (applyAfterImport) {
+        await settings.setContentTheme(result.id);
+      }
+      await message(
+        applyAfterImport ? `已导入并应用主题：${result.name}` : `已导入主题：${result.name}`,
+        { title: '主题导入', kind: 'info' },
+      );
+    } catch (error) {
+      await message(`主题导入失败：${getThemeErrorMessage(error)}`, {
+        title: '主题导入',
+        kind: 'error',
+      });
+    } finally {
+      setThemeBusy(false);
+    }
+  };
+
+  const reloadThemes = async () => {
+    if (themeBusy) return;
+    setThemeBusy(true);
+    try {
+      await settings.reloadThemeRegistry();
+      await settings.setContentTheme(settings.contentTheme);
+      await message('用户主题已重新加载', { title: '主题', kind: 'info' });
+    } catch (error) {
+      await message(`重新加载主题失败：${getThemeErrorMessage(error)}`, {
+        title: '主题',
+        kind: 'error',
+      });
+    } finally {
+      setThemeBusy(false);
+    }
+  };
+
+  const deleteCurrentTheme = async () => {
+    if (themeBusy) return;
+    const current = getThemeRegistrySnapshot().find((theme) => theme.id === settings.contentTheme)
+      ?? settings.themeRegistry.find((theme) => theme.id === settings.contentTheme);
+    if (!current || current.source !== 'user') return;
+    const confirmed = await ask(`确定删除用户主题“${current.label}”吗？Prism 会先切回 Miaoyan。`, {
+      title: '删除主题',
+      kind: 'warning',
+    });
+    if (!confirmed) return;
+
+    setThemeBusy(true);
+    try {
+      await settings.setContentTheme('miaoyan');
+      await deleteInstalledUserTheme(current.id);
+      await settings.reloadThemeRegistry();
+      await message('主题已删除，并已切回 Miaoyan', { title: '主题', kind: 'info' });
+    } catch (error) {
+      await message(`删除主题失败：${getThemeErrorMessage(error)}`, {
+        title: '主题',
+        kind: 'error',
+      });
+    } finally {
+      setThemeBusy(false);
+    }
+  };
+
   const chooseCustomExportDirectory = async () => {
     const selected = await open({
       directory: true,
@@ -218,6 +328,12 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
       ))}
     </>
   );
+  const themeRegistry = settings.themeRegistry.length > 0
+    ? settings.themeRegistry
+    : getThemeRegistrySnapshot();
+  const availableThemes = themeRegistry.filter((theme) => theme.source !== 'invalid');
+  const invalidThemes = themeRegistry.filter((theme) => theme.source === 'invalid');
+  const currentTheme = themeRegistry.find((theme) => theme.id === settings.contentTheme);
 
   return (
     <>
@@ -377,15 +493,79 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               </div>
               <select
                 value={settings.contentTheme}
-                onChange={(e) => settings.setContentTheme(e.target.value as ContentTheme)}
+                onChange={(e) => { void settings.setContentTheme(e.target.value as ContentTheme); }}
                 style={selectStyle}
               >
-                <option value="miaoyan">Miaoyan</option>
-                <option value="inkstone">Inkstone Light</option>
-                <option value="slate">Slate Manual</option>
-                <option value="mono">Mono Lab</option>
-                <option value="nocturne">Nocturne Dark</option>
+                {availableThemes.map((theme) => (
+                  <option key={theme.id} value={theme.id}>
+                    {theme.source === 'user' ? `${theme.label} · 用户主题` : theme.label}
+                  </option>
+                ))}
+                {invalidThemes.length > 0 && (
+                  <optgroup label="异常主题">
+                    {invalidThemes.map((theme) => (
+                      <option key={theme.id} value={theme.id} disabled>
+                        {theme.label} · {theme.error}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
+            </div>
+            <div className="settings-row">
+              <div>
+                <div className="row-label">主题管理</div>
+                <div className="row-hint">
+                  {currentTheme?.source === 'user'
+                    ? `${currentTheme.version || '本地主题'} · ${currentTheme.directory || ''}`
+                    : '导入本地主题包，不会自动覆盖内置主题'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  style={themeBusy ? { ...buttonStyle, opacity: 0.55, cursor: 'default' } : buttonStyle}
+                  onClick={() => void importTheme(false)}
+                  disabled={themeBusy}
+                >
+                  导入主题
+                </button>
+                <button
+                  type="button"
+                  style={themeBusy ? { ...buttonStyle, opacity: 0.55, cursor: 'default' } : buttonStyle}
+                  onClick={() => void importTheme(true)}
+                  disabled={themeBusy}
+                >
+                  导入并应用主题
+                </button>
+                <button
+                  type="button"
+                  style={buttonStyle}
+                  onClick={() => void openThemesDirectory()}
+                >
+                  打开主题目录
+                </button>
+                <button
+                  type="button"
+                  style={themeBusy ? { ...buttonStyle, opacity: 0.55, cursor: 'default' } : buttonStyle}
+                  onClick={() => void reloadThemes()}
+                  disabled={themeBusy}
+                >
+                  重新加载用户主题
+                </button>
+                <button
+                  type="button"
+                  style={
+                    currentTheme?.source === 'user' && !themeBusy
+                      ? buttonStyle
+                      : { ...buttonStyle, opacity: 0.5, cursor: 'default' }
+                  }
+                  onClick={() => void deleteCurrentTheme()}
+                  disabled={currentTheme?.source !== 'user' || themeBusy}
+                >
+                  删除当前用户主题
+                </button>
+              </div>
             </div>
             <div className="settings-row">
               <div>

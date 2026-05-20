@@ -72,7 +72,7 @@ describe('normalizeSettings', () => {
     const settings = normalizeSettings({
       theme: 'sepia',
       settingsVersion: 999,
-      contentTheme: 'unknown',
+      contentTheme: 'unknown theme!',
       fontSize: Number.NaN,
       editorLineHeight: 99,
       previewFontSize: 'large',
@@ -103,6 +103,39 @@ describe('normalizeSettings', () => {
       pngScale: 3,
       htmlIncludeTheme: false,
     });
+  });
+
+  it('preserves syntactically valid user theme ids for registry validation at runtime', () => {
+    const settings = normalizeSettings({
+      contentTheme: 'warm-paper',
+      exportHistory: [{
+        documentPath: '/tmp/report.md',
+        documentName: 'report.md',
+        format: 'pdf',
+        outputPath: '/tmp/report.pdf',
+        settings: {
+          contentTheme: 'warm-paper',
+          htmlIncludeTheme: true,
+          pngScale: 2,
+          pdfPaper: 'a4',
+          pdfMargin: 'standard',
+          pdfPageNumbers: false,
+          pageHeaderFooter: false,
+          pageHeaderText: '{title}',
+          pageFooterText: '{filename}',
+          templateId: 'theme',
+          frontMatterOverrides: false,
+          toc: false,
+          defaultLocation: 'document',
+          docxFontPolicy: 'theme',
+          docxCustomFontId: '',
+        },
+        exportedAt: 1,
+      }],
+    });
+
+    expect(settings.contentTheme).toBe('warm-paper');
+    expect(settings.exportHistory[0].settings.contentTheme).toBe('warm-paper');
   });
 
   it('normalizes 1.0.3 export, autosave, font and session fields', () => {

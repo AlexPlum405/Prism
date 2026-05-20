@@ -30,6 +30,13 @@ import {
 } from './normalize';
 import { registerCustomFonts } from './fontService';
 import {
+  applyThemeRuntime,
+  initializeThemeRegistry,
+  isRegisteredContentTheme,
+  reloadThemeRegistry,
+  type ThemeRegistryEntry,
+} from '../themes';
+import {
   readTextFile,
   writeTextFile,
   mkdir,
@@ -62,7 +69,9 @@ async function loadLegacySettingsConfig(): Promise<Partial<SettingsState> | null
 function applyAppearanceTheme(theme: AppearanceMode) {
   let actualTheme: 'light' | 'dark' = 'light';
   if (theme === 'auto') {
-    actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    actualTheme = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   } else {
     actualTheme = theme;
   }
@@ -81,8 +90,8 @@ function migrateLegacyRecentFiles(limit: number): RecentFileEntry[] {
   }
 }
 
-function applyContentTheme(contentTheme: ContentTheme) {
-  document.documentElement.setAttribute('data-content-theme', contentTheme);
+async function applyContentTheme(contentTheme: ContentTheme) {
+  return applyThemeRuntime(contentTheme);
 }
 
 function resolveFontFamily(source: FontSource, customFonts: CustomFont[], fallback: string): string {
@@ -100,8 +109,11 @@ function getErrorMessage(error: unknown): string {
 }
 
 interface SettingsStore extends SettingsState {
+  themeRegistryVersion: number;
+  themeRegistry: ThemeRegistryEntry[];
   setTheme: (theme: AppearanceMode) => void;
-  setContentTheme: (theme: ContentTheme) => void;
+  setContentTheme: (theme: ContentTheme) => Promise<void>;
+  reloadThemeRegistry: () => Promise<ThemeRegistryEntry[]>;
   setFontSize: (size: number) => void;
   setEditorFontFamily: (family: string) => void;
   setEditorLineHeight: (lineHeight: number) => void;
@@ -152,6 +164,8 @@ interface SettingsStore extends SettingsState {
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   ...DEFAULT_SETTINGS,
+  themeRegistryVersion: 0,
+  themeRegistry: [],
 
   setTheme: (theme) => {
     set({ theme });
@@ -159,10 +173,19 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     get().saveSettings();
   },
 
-  setContentTheme: (contentTheme) => {
-    applyContentTheme(contentTheme);
-    set({ contentTheme });
-    get().saveSettings();
+  setContentTheme: async (contentTheme) => {
+    const result = await applyContentTheme(contentTheme);
+    set({ contentTheme: result.themeId });
+    await get().saveSettings();
+  },
+
+  reloadThemeRegistry: async () => {
+    const themeRegistry = await reloadThemeRegistry();
+    set((state) => ({
+      themeRegistry,
+      themeRegistryVersion: state.themeRegistryVersion + 1,
+    }));
+    return themeRegistry;
   },
 
   setFontSize: (fontSize) => {
@@ -504,22 +527,37 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   loadSettings: async () => {
-    const applyLoadedSettings = (settings: SettingsState) => {
-      set(settings);
+    const applyLoadedSettings = async (settings: SettingsState) => {
+      const themeRegistry = await initializeThemeRegistry();
+      let contentTheme = settings.contentTheme;
+      if (!isRegisteredContentTheme(contentTheme)) {
+        contentTheme = DEFAULT_SETTINGS.contentTheme;
+      }
+
+      set((state) => ({
+        ...settings,
+        contentTheme,
+        themeRegistry,
+        themeRegistryVersion: state.themeRegistryVersion + 1,
+      }));
 
       applyAppearanceTheme(settings.theme);
-      applyContentTheme(settings.contentTheme);
+      await applyContentTheme(contentTheme);
       void registerCustomFonts(settings.customFonts);
 
       // 监听系统主题变化
       if (settings.theme === 'auto') {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = (e: MediaQueryListEvent) => {
-          const newTheme = e.matches ? 'dark' : 'light';
-          const classes = Array.from(document.body.classList).filter(c => c !== 'light' && c !== 'dark');
-          document.body.className = [...classes, newTheme].join(' ');
-        };
-        mediaQuery.addEventListener('change', handleChange);
+        const mediaQuery = typeof window.matchMedia === 'function'
+          ? window.matchMedia('(prefers-color-scheme: dark)')
+          : null;
+        if (mediaQuery) {
+          const handleChange = (e: MediaQueryListEvent) => {
+            const newTheme = e.matches ? 'dark' : 'light';
+            const classes = Array.from(document.body.classList).filter(c => c !== 'light' && c !== 'dark');
+            document.body.className = [...classes, newTheme].join(' ');
+          };
+          mediaQuery.addEventListener('change', handleChange);
+        }
       }
     };
 
@@ -532,7 +570,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         settings.recentFiles = migrateLegacyRecentFiles(settings.recentFilesLimit);
       }
 
-      applyLoadedSettings(settings);
+      await applyLoadedSettings(settings);
+      if (settings.contentTheme !== get().contentTheme) {
+        await get().saveSettings();
+      }
     } catch {
       try {
         const legacySaved = await loadLegacySettingsConfig();
@@ -541,7 +582,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           if (!legacySaved.recentFiles) {
             settings.recentFiles = migrateLegacyRecentFiles(settings.recentFilesLimit);
           }
-          applyLoadedSettings(settings);
+          await applyLoadedSettings(settings);
           await get().saveSettings();
           return;
         }
@@ -550,16 +591,25 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       }
 
       applyAppearanceTheme(DEFAULT_SETTINGS.theme);
-      applyContentTheme(DEFAULT_SETTINGS.contentTheme);
+      const themeRegistry = await initializeThemeRegistry().catch(() => []);
+      set((state) => ({
+        themeRegistry,
+        themeRegistryVersion: state.themeRegistryVersion + 1,
+      }));
+      await applyContentTheme(DEFAULT_SETTINGS.contentTheme);
 
       // 监听系统主题变化
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = (e: MediaQueryListEvent) => {
-        const newTheme = e.matches ? 'dark' : 'light';
-        const classes = Array.from(document.body.classList).filter(c => c !== 'light' && c !== 'dark');
-        document.body.className = [...classes, newTheme].join(' ');
-      };
-      mediaQuery.addEventListener('change', handleChange);
+      const mediaQuery = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null;
+      if (mediaQuery) {
+        const handleChange = (e: MediaQueryListEvent) => {
+          const newTheme = e.matches ? 'dark' : 'light';
+          const classes = Array.from(document.body.classList).filter(c => c !== 'light' && c !== 'dark');
+          document.body.className = [...classes, newTheme].join(' ');
+        };
+        mediaQuery.addEventListener('change', handleChange);
+      }
     }
   },
 

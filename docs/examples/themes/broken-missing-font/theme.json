@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "broken-missing-font",
+  "name": "缺失字体示例",
+  "version": "1.0.0",
+  "description": "用于验证用户手动破坏主题目录后的异常状态。",
+  "isDark": false,
+  "fonts": [
+    {
+      "family": "Broken Missing Font",
+      "file": "fonts/MissingFont.woff2"
+    }
+  ]
+}

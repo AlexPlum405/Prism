@@ -1,4 +1,4 @@
-import { CONTENT_THEMES, type ContentTheme } from '../settings/types';
+import { CONTENT_THEMES, type BuiltInContentTheme, type ContentTheme } from '../settings/types';
 
 export interface MermaidThemeContract {
   theme: 'base' | 'neutral';
@@ -74,7 +74,7 @@ export interface ThemeContract {
   };
 }
 
-export const themeContracts = {
+export const builtInThemeContracts = {
   miaoyan: {
     id: 'miaoyan',
     label: 'MiaoYan',
@@ -531,16 +531,18 @@ export const themeContracts = {
       currentMatchText: '#171a18',
     },
   },
-} satisfies Record<ContentTheme, ThemeContract>;
+} satisfies Record<BuiltInContentTheme, ThemeContract>;
+
+export const themeContracts = builtInThemeContracts;
 
 export function getThemeContract(theme: ContentTheme): ThemeContract {
-  return themeContracts[theme];
+  return builtInThemeContracts[theme as BuiltInContentTheme] ?? builtInThemeContracts.miaoyan;
 }
 
-export function mapThemeContracts<T>(selector: (contract: ThemeContract) => T): Record<ContentTheme, T> {
+export function mapThemeContracts<T>(selector: (contract: ThemeContract) => T): Record<BuiltInContentTheme, T> {
   return Object.fromEntries(
-    CONTENT_THEMES.map((theme) => [theme, selector(themeContracts[theme])]),
-  ) as Record<ContentTheme, T>;
+    CONTENT_THEMES.map((theme) => [theme, selector(builtInThemeContracts[theme])]),
+  ) as Record<BuiltInContentTheme, T>;
 }
 
 export function getMermaidThemeConfig(theme: ContentTheme) {

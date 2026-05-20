@@ -13,10 +13,19 @@ export type FontSourceKind = 'theme' | 'builtin' | 'system' | 'custom';
 export const CONTENT_THEMES = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne'] as const;
 export const CURRENT_SETTINGS_VERSION = 1;
 
-export type ContentTheme = (typeof CONTENT_THEMES)[number];
+export type BuiltInContentTheme = (typeof CONTENT_THEMES)[number];
+export type ContentTheme = string;
+
+export function isBuiltInContentTheme(theme: unknown): theme is BuiltInContentTheme {
+  return typeof theme === 'string' && CONTENT_THEMES.includes(theme as BuiltInContentTheme);
+}
+
+export function isThemeId(theme: unknown): theme is ContentTheme {
+  return typeof theme === 'string' && /^[a-z0-9][a-z0-9_-]{0,63}$/.test(theme);
+}
 
 export function isContentTheme(theme: unknown): theme is ContentTheme {
-  return typeof theme === 'string' && CONTENT_THEMES.includes(theme as ContentTheme);
+  return isThemeId(theme);
 }
 
 export interface FontSource {

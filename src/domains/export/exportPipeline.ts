@@ -16,8 +16,8 @@ import { findPandocCitations } from '../editor/extensions/citations';
 import type { ContentTheme } from '../settings/types';
 import type { ExportDocumentInput } from './types';
 import {
-  docxThemeByContentTheme,
-  writeClassByTheme,
+  getDocxThemeByContentTheme,
+  getWriteClassByTheme,
   type DocxTheme,
 } from './exportSettings';
 import { getMermaidThemeConfig } from '../themes';
@@ -1007,7 +1007,7 @@ async function renderMermaidSvgToDocxPngImage(svgText: string, contentTheme: Con
     background,
   });
   root.innerHTML = [
-    `<div id="write" class="${writeClassByTheme[contentTheme]}">`,
+    `<div id="write" class="${getWriteClassByTheme(contentTheme)}">`,
     '<div data-prism-docx-mermaid-target="true" class="mermaid-placeholder"></div>',
     '</div>',
   ].join('');
@@ -1211,7 +1211,7 @@ async function renderDocxVisualHtmlFragment(
     background: getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff',
   });
   root.innerHTML = [
-    `<div id="write" class="${writeClassByTheme[input.contentTheme]}">`,
+    `<div id="write" class="${getWriteClassByTheme(input.contentTheme)}">`,
     `<div data-prism-docx-visual-target="true">${html}</div>`,
     '</div>',
   ].join('');
@@ -1406,7 +1406,7 @@ async function createRenderedExportNode(input: ExportDocumentInput, options: { h
   root.style.width = '980px';
   root.style.pointerEvents = 'none';
   root.style.opacity = '0';
-  root.innerHTML = `<div id="write" class="${writeClassByTheme[input.contentTheme]}">${html}</div>`;
+  root.innerHTML = `<div id="write" class="${getWriteClassByTheme(input.contentTheme)}">${html}</div>`;
   applyExportToc(root, input);
   document.body.appendChild(root);
 
@@ -1442,7 +1442,7 @@ async function buildStandaloneHtml(
   const body = (() => {
     if (!renderedRoot) {
       return `<div class="prism-export-document prism-export-template--${input.templateId ?? 'theme'} preview-compat preview-compat--${input.contentTheme}">
-        <div id="write" class="${writeClassByTheme[input.contentTheme]}">${markdownToHtml(input.content)}</div>
+        <div id="write" class="${getWriteClassByTheme(input.contentTheme)}">${markdownToHtml(input.content)}</div>
       </div>`;
     }
 
@@ -3080,7 +3080,7 @@ export async function exportDocx(input: ExportDocumentInput, outputPath?: string
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
   const tree = processor.runSync(processor.parse(input.content)) as any;
   reportProgress(input, exportProgressMessages.applyTheme);
-  const baseTheme = docxThemeByContentTheme[input.contentTheme];
+  const baseTheme = getDocxThemeByContentTheme(input.contentTheme);
   const theme: DocxTheme = {
     ...baseTheme,
     font: input.docxFontFamily || baseTheme.font,

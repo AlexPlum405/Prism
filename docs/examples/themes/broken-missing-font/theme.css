@@ -1,0 +1,7 @@
+html[data-content-theme='broken-missing-font'] {
+  --theme-main-bg: #ffffff;
+}
+
+html[data-content-theme='broken-missing-font'] .cm-editor {
+  font-family: "Broken Missing Font", serif;
+}

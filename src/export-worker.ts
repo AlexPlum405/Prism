@@ -3,6 +3,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import 'katex/dist/katex.min.css';
 import './styles/global.css';
 import { exportDocumentLocal } from './domains/export/localExport';
+import { applyThemeRuntime, initializeThemeRegistry } from './domains/themes';
 import {
   EXPORT_WORKER_PROGRESS_EVENT,
   EXPORT_WORKER_READY_EVENT,
@@ -33,6 +34,8 @@ async function main() {
   await listen<ExportWorkerRunPayload>(EXPORT_WORKER_RUN_EVENT, async (event) => {
     const { taskId, replyTarget, input, format, outputPath } = event.payload;
     try {
+      await initializeThemeRegistry();
+      await applyThemeRuntime(input.contentTheme);
       const exported = await exportDocumentLocal({
         ...input,
         onProgress: (message) => {

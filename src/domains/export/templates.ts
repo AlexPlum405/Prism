@@ -5,7 +5,7 @@ import type {
   PdfMargin,
   SettingsState,
 } from '../settings/types';
-import { docxThemeByContentTheme } from './exportSettings';
+import { getDocxThemeByContentTheme } from './exportSettings';
 import { parseExportFrontMatter } from './frontMatter';
 import type { ExportDocumentInput } from './types';
 
@@ -65,7 +65,7 @@ export interface ResolvedExportOptions extends ExportDocumentInput {
 }
 
 function resolveDocxFont(settings: SettingsState, policy: DocxFontPolicy = settings.exportDefaults.docxFontPolicy) {
-  const themeFont = docxThemeByContentTheme[settings.contentTheme].font;
+  const themeFont = getDocxThemeByContentTheme(settings.contentTheme).font;
   let customFont: CustomFont | undefined;
 
   if (policy === 'preview') {

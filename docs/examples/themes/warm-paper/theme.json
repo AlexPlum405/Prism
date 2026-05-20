@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "warm-paper",
+  "name": "暖纸",
+  "author": "Prism",
+  "version": "1.0.0",
+  "description": "适合中文长文和公众号预览的暖色纸张主题。",
+  "isDark": false,
+  "contract": {
+    "editor": {
+      "background": "#fbfaf6",
+      "text": "#25211c",
+      "secondaryText": "#7d7468",
+      "fontFamily": "\"Songti SC\", \"PingFang SC\", serif",
+      "codeFontFamily": "\"JetBrains Mono\", Menlo, monospace",
+      "lineHeight": 1.76
+    },
+    "preview": {
+      "background": "#fbfaf6",
+      "text": "#25211c",
+      "fontFamily": "\"Songti SC\", \"PingFang SC\", serif",
+      "fontSize": 16,
+      "lineHeight": 1.78,
+      "maxWidth": 960,
+      "writeClass": "markdown-body heti warm-paper-write"
+    },
+    "search": {
+      "background": "#f0ece3",
+      "text": "#25211c",
+      "secondaryText": "#7d7468",
+      "fieldBackground": "#fbfaf6",
+      "fieldBorder": "#d8d0c2",
+      "focus": "#6b5a3e",
+      "shadow": "0 10px 24px rgba(44, 35, 24, 0.14)",
+      "fontFamily": "\"Songti SC\", \"PingFang SC\", serif"
+    },
+    "export": {
+      "writeClass": "markdown-body heti warm-paper-write",
+      "docx": {
+        "font": "Songti SC",
+        "codeFont": "Menlo",
+        "text": "25211C",
+        "muted": "756D62",
+        "accent": "6B5A3E",
+        "fill": "F3EFE6",
+        "border": "D8D0C2"
+      }
+    },
+    "code": {
+      "background": "#f3efe6",
+      "inlineBackground": "#eee7db",
+      "text": "#25211c",
+      "comment": "#8c8274",
+      "keyword": "#7a4f34",
+      "string": "#506f48",
+      "meta": "#7b6150",
+      "attribute": "#516c72",
+      "symbol": "#6b5a3e"
+    },
+    "mermaid": {
+      "theme": "base",
+      "fontSize": 15,
+      "fontFamily": "\"Songti SC\", \"PingFang SC\", serif",
+      "fontLoadFamily": "\"Songti SC\"",
+      "themeVariables": {
+        "background": "#fbfaf6",
+        "primaryColor": "#fffdf8",
+        "primaryTextColor": "#25211c",
+        "primaryBorderColor": "#6b5a3e",
+        "lineColor": "#6b5a3e",
+        "textColor": "#25211c"
+      }
+    },
+    "selection": {
+      "background": "#ded6c7",
+      "text": "#25211c",
+      "matchBackground": "rgba(107, 90, 62, 0.15)",
+      "currentMatchBackground": "#6b5a3e",
+      "currentMatchText": "#fbfaf6"
+    }
+  }
+}

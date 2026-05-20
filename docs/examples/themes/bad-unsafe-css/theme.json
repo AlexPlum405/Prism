@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "bad-unsafe-css",
+  "name": "不安全 CSS 示例",
+  "version": "1.0.0",
+  "description": "用于验证导入时拒绝远程资源和未 scoped CSS。",
+  "isDark": false
+}

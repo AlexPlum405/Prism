@@ -221,6 +221,7 @@ function App() {
   const wordWrap = useSettingsStore((s) => s.wordWrap);
   const exportDefaults = useSettingsStore((s) => s.exportDefaults);
   const recentFiles = useSettingsStore((s) => s.recentFiles);
+  const themeRegistryVersion = useSettingsStore((s) => s.themeRegistryVersion);
   const workspace = useWorkspaceStore();
 
   const editorRef = useRef<EditorPaneHandle>(null);
@@ -784,6 +785,7 @@ function App() {
     workspace.isFullscreen,
     workspace.isAlwaysOnTop,
     contentTheme,
+    themeRegistryVersion,
     shortcutStyle,
     wordWrap,
     exportDefaults,
@@ -796,6 +798,11 @@ function App() {
   );
 
   const handleCommandAction = useCallback(async (action: string) => {
+    if (action.startsWith('setTheme:')) {
+      await useSettingsStore.getState().setContentTheme(decodeURIComponent(action.slice('setTheme:'.length)));
+      return;
+    }
+
     if (action.startsWith('openRecentFile:')) {
       await handleFileAction({
         action: 'openFile',

@@ -1,0 +1,47 @@
+html[data-content-theme='warm-paper'] {
+  --theme-main-bg: #fbfaf6;
+  --theme-pane-bg: #f6f1e8;
+  --theme-text: #25211c;
+  --theme-secondary-text: #7d7468;
+  --theme-divider: #d8d0c2;
+  --theme-accent: #6b5a3e;
+}
+
+html[data-content-theme='warm-paper'] .app-sidebar {
+  background: var(--theme-pane-bg);
+  border-color: var(--theme-divider);
+}
+
+html[data-content-theme='warm-paper'] .statusbar {
+  background: var(--theme-pane-bg);
+  color: var(--theme-secondary-text);
+}
+
+html[data-content-theme='warm-paper'] .cm-editor {
+  background: var(--theme-main-bg);
+  color: var(--theme-text);
+}
+
+html[data-content-theme='warm-paper'] .preview-compat--warm-paper {
+  background: var(--theme-main-bg);
+  color: var(--theme-text);
+}
+
+html[data-content-theme='warm-paper'] .preview-compat--warm-paper #write {
+  max-width: 960px;
+}
+
+html[data-content-theme='warm-paper'] .modal,
+html[data-content-theme='warm-paper'] .cmdk,
+html[data-content-theme='warm-paper'] .custom-context-menu,
+html[data-content-theme='warm-paper'] .prism-export-dialog {
+  background: #fffdf8;
+  border-color: var(--theme-divider);
+  color: var(--theme-text);
+}
+
+html[data-content-theme='warm-paper'] .preview-compat--warm-paper blockquote,
+html[data-content-theme='warm-paper'] .preview-compat--warm-paper .prism-callout {
+  border-left-color: var(--theme-accent);
+  background: #f3efe6;
+}

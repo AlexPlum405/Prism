@@ -1,4 +1,5 @@
 import type { SettingsState } from '../settings/types';
+import { getThemeEntry } from '../themes';
 import { getExportFormatLabel, type ExportFormat } from './types';
 
 function formatExportDiagnosticError(error: unknown): string {
@@ -41,6 +42,8 @@ export function buildExportFailureDiagnostic(input: {
     ? input.error.stack
     : '';
   const pandoc = input.settings.pandoc;
+  const themeEntry = getThemeEntry(input.settings.contentTheme);
+  const themeSource = themeEntry?.source ?? 'fallback';
   const pandocStatus = pandoc.lastCheckedAt === null
     ? '未检测'
     : pandoc.detected
@@ -58,6 +61,10 @@ export function buildExportFailureDiagnostic(input: {
     `文档路径: ${input.documentPath || '(未保存)'}`,
     `输出路径: ${input.outputPath || '(未选择)'}`,
     `内容主题: ${input.settings.contentTheme}`,
+    `主题名称: ${themeEntry?.label ?? 'Miaoyan fallback'}`,
+    `主题来源: ${themeSource}`,
+    `用户主题 CSS: ${themeEntry?.source === 'user' ? '启用' : '未启用'}`,
+    themeEntry?.error ? `主题异常: ${themeEntry.error}` : '',
     `导出模板: ${input.settings.exportDefaults.templateId}`,
     `Front matter 覆盖: ${input.settings.exportDefaults.frontMatterOverrides ? '开启' : '关闭'}`,
     `目录: ${input.settings.exportDefaults.toc ? '开启' : '关闭'}`,

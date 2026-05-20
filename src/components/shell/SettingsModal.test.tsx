@@ -5,6 +5,8 @@ import { useSettingsStore } from '../../domains/settings/store';
 import { SettingsModal } from './SettingsModal';
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
+  ask: vi.fn(),
+  message: vi.fn(),
   open: vi.fn(),
 }));
 
@@ -20,6 +22,8 @@ describe('SettingsModal', () => {
     vi.clearAllMocks();
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
+      themeRegistry: [],
+      themeRegistryVersion: 0,
       detectPandoc: vi.fn(async () => DEFAULT_SETTINGS.pandoc),
       saveSettings: vi.fn(),
     });
@@ -59,6 +63,39 @@ describe('SettingsModal', () => {
     expect(screen.getByText('Pandoc 路径')).toBeInTheDocument();
     expect(screen.getByDisplayValue('/opt/homebrew/bin/pandoc')).toBeInTheDocument();
     expect(screen.getByText('已检测 pandoc 3.2.1')).toBeInTheDocument();
+  });
+
+  it('keeps theme management inside appearance settings', () => {
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+
+    expect(screen.getByText('内容主题')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '导入主题' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '导入并应用主题' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '打开主题目录' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重新加载用户主题' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '删除当前用户主题' })).toBeDisabled();
+  });
+
+  it('shows invalid user themes as disabled options', () => {
+    useSettingsStore.setState({
+      themeRegistry: [{
+        id: 'broken-theme',
+        name: 'Broken',
+        label: 'Broken（异常）',
+        source: 'invalid',
+        isDark: false,
+        contract: {} as any,
+        directory: '/tmp/broken-theme',
+        error: 'theme.css 缺失',
+      }],
+    });
+
+    render(<SettingsModal visible onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+
+    expect(screen.getByRole('option', { name: /Broken（异常）/ })).toBeDisabled();
   });
 
   it('renders stored citation paths in export settings', () => {
