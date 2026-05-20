@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Prism · 图谱视觉流派实验室 (Prism Graph Aesthetics Lab)</title>
+    <!-- 引入 Google Fonts 营造高端学院排印感 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* -------------------------------------------------- */
+        /* 画书设计系统 Tokens (Logic over Aesthetics) */
+        /* -------------------------------------------------- */
+        :root {
+            /* 妙言画书色彩系统 */
+            --c-void: #151517;
+            --c-canvas: #f8f8fa;
+            --c-fog: #f0f0f3;
+            --c-chalk: #e6e6eb;
+            --c-graphite: #2a2a2e;
+            --c-ash: #8e8e93;
+            --c-hair: rgba(0, 0, 0, 0.08);
+            --c-hover: rgba(0, 0, 0, 0.04);
+
+            /* 点缀色 */
+            --c-accent-vermilion: #d94242; /* 精致朱砂红 */
+            --c-accent-blue: #0076e0;      /* 经典晴空蓝 */
+
+            /* 字体栈 */
+            --font-display: 'Outfit', 'Inter', -apple-system, sans-serif;
+            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-serif: 'EB Garamond', Georgia, serif;
+
+            /* macOS 极致阻尼曲线 */
+            --ease-out-extreme: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #ededf2;
+            font-family: var(--font-body);
+            color: var(--c-graphite);
+            padding: 48px 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* 顶部标题区 */
+        .lab-header {
+            text-align: center;
+            margin-bottom: 40px;
+            max-width: 900px;
+        }
+
+        .lab-header h1 {
+            font-family: var(--font-display);
+            font-weight: 400;
+            font-size: 32px;
+            letter-spacing: -0.02em;
+            color: var(--c-void);
+            margin-bottom: 12px;
+        }
+
+        .lab-header p {
+            font-size: 14.5px;
+            color: var(--c-ash);
+            line-height: 1.6;
+            text-wrap: pretty;
+        }
+
+        .lab-header p strong {
+            color: var(--c-graphite);
+            font-weight: 500;
+        }
+
+        /* 自动演练控制台 */
+        .controls-panel {
+            margin-bottom: 32px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn-cruise {
+            background-color: var(--c-void);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-out-extreme);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-cruise:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            background-color: #000000;
+        }
+
+        .btn-cruise.active {
+            background-color: var(--c-accent-vermilion);
+            box-shadow: 0 4px 12px rgba(217,66,66,0.25);
+        }
+
+        .cruise-status {
+            font-size: 12px;
+            color: var(--c-ash);
+            min-width: 120px;
+        }
+
+        /* 左右并列实验室布局 */
+        .lab-container {
+            display: flex;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* 实验室卡片 */
+        .lab-card {
+            flex: 1;
+            background-color: var(--c-canvas);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.08),
+                        0 0 1px rgba(0, 0, 0, 0.15);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s var(--ease-out-extreme);
+        }
+
+        .lab-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            border-bottom: 1px solid var(--c-hair);
+            padding-bottom: 14px;
+        }
+
+        .card-header h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--c-void);
+            margin-bottom: 4px;
+        }
+
+        .card-header p {
+            font-size: 12px;
+            color: var(--c-ash);
+            line-height: 1.4;
+        }
+
+        /* 画布渲染区域 */
+        .canvas-viewport {
+            height: 320px;
+            background-color: #ffffff;
+            border: 1px solid var(--c-hair);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lab-svg {
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+
+        /* -------------------------------------------------- */
+        /* CSS 极致过渡与联动动效核心 */
+        /* -------------------------------------------------- */
+
+        /* 1. 连线基类 */
+        .graph-link {
+            stroke: var(--c-ash);
+            stroke-width: 0.8;
+            stroke-dasharray: 2, 2;
+            transition: stroke 0.3s var(--ease-out-extreme),
+                        stroke-width 0.3s var(--ease-out-extreme),
+                        opacity 0.3s var(--ease-out-extreme);
+            opacity: 0.25;
+        }
+
+        /* 2. 文本基类 */
+        .graph-node-txt {
+            font-size: 11px;
+            fill: var(--c-ash);
+            cursor: pointer;
+            font-weight: bold;
+            transition: fill 0.3s var(--ease-out-extreme),
+                        opacity 0.3s var(--ease-out-extreme),
+                        font-size 0.3s var(--ease-out-extreme);
+        }
+
+        /* 3. 圆球基类 */
+        .graph-circle {
+            transition: r 0.35s var(--ease-out-extreme),
+                        fill 0.35s var(--ease-out-extreme),
+                        opacity 0.35s var(--ease-out-extreme),
+                        filter 0.35s var(--ease-out-extreme);
+        }
+
+        /* ==================== Pentagram 印刷派效果 ==================== */
+        .pentagram .graph-node-txt {
+            font-family: var(--font-serif);
+            font-size: 12px;
+        }
+
+        /* 聚焦时的淡出隐退机制 */
+        .pentagram .lab-svg.has-focus .graph-node-txt {
+            opacity: 0.15;
+        }
+        .pentagram .lab-svg.has-focus .graph-node-txt.focused {
+            fill: var(--c-void);
+            opacity: 1;
+            font-size: 13.5px;
+        }
+        .pentagram .lab-svg.has-focus .graph-node-txt.connected {
+            fill: var(--c-graphite);
+            opacity: 0.8;
+        }
+
+        .pentagram .lab-svg.has-focus .graph-link {
+            opacity: 0.04;
+        }
+        .pentagram .lab-svg.has-focus .graph-link.active {
+            stroke: var(--c-graphite);
+            stroke-width: 1.2;
+            stroke-dasharray: none;
+            opacity: 0.85;
+        }
+
+        /* ==================== 传统彩色球派效果 ==================== */
+        .classic .graph-node-txt {
+            font-family: var(--font-body);
+            font-weight: 500;
+        }
+
+        /* 粒子球在聚焦时的水润暗化淡出 */
+        .classic .lab-svg.has-focus .graph-node-txt {
+            opacity: 0.15;
+        }
+        .classic .lab-svg.has-focus .graph-node-txt.focused {
+            fill: var(--c-void);
+            opacity: 1;
+        }
+        .classic .lab-svg.has-focus .graph-node-txt.connected {
+            fill: var(--c-graphite);
+            opacity: 0.8;
+        }
+
+        .classic .graph-circle {
+            opacity: 0.6;
+        }
+        .classic .lab-svg.has-focus .graph-circle {
+            opacity: 0.12;
+        }
+        .classic .lab-svg.has-focus .graph-circle.focused {
+            fill: var(--c-accent-vermilion);
+            opacity: 1;
+            filter: drop-shadow(0 3px 8px rgba(217, 66, 66, 0.45));
+        }
+        .classic .lab-svg.has-focus .graph-circle.connected {
+            fill: var(--c-graphite);
+            opacity: 0.85;
+        }
+
+        .classic .lab-svg.has-focus .graph-link {
+            opacity: 0.05;
+        }
+        .classic .lab-svg.has-focus .graph-link.active {
+            stroke: var(--c-accent-vermilion);
+            stroke-width: 1.5;
+            stroke-dasharray: none;
+            opacity: 0.85;
+        }
+
+        /* 极简评审说明 */
+        .lab-footer {
+            margin-top: 40px;
+            max-width: 1200px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--c-hair);
+            padding: 16px;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: var(--c-ash);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶栏介绍 -->
+    <div class="lab-header">
+        <h1>Prism · 图谱视觉流派对比实验室</h1>
+        <p>
+            本实验室将 <strong>Pentagram 极简印刷派</strong> 与 <strong>传统经典彩色球派</strong> 左右同屏并列呈现。<br/>
+            画布自带<strong>“物理浮游微摆动 (Float Animation)”</strong> 以体现灵动的真实网络感。
+            你可以随意 Hover 任意节点体验联动微动效，也可以开启 <strong>“自动巡航模式”</strong> 静静欣赏两者的极致对比。
+        </p>
+    </div>
+
+    <!-- 巡航控制台 -->
+    <div class="controls-panel">
+        <button class="btn-cruise" id="btnCruise">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="playIcon">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span id="btnText">启动自动巡航巡演</span>
+        </button>
+        <span class="cruise-status" id="cruiseStatus">状态: 鼠标自由交互中</span>
+    </div>
+
+    <!-- 实验室容器 -->
+    <div class="lab-container">
+
+        <!-- 左侧：Pentagram 印刷美学派 -->
+        <div class="lab-card pentagram">
+            <div class="card-header">
+                <h2>1. Pentagram 印刷美学派</h2>
+                <p>去除冗余背景球，直接以骨架文字本身作为交互触点，虚实线条展现制图美感</p>
+            </div>
+            <div class="canvas-viewport">
+                <svg class="lab-svg" id="svgPentagram" viewBox="0 0 200 200">
+                    <!-- JS 动态填充 -->
+                </svg>
+            </div>
+        </div>
+
+        <!-- 右侧：传统经典彩色球派 -->
+        <div class="lab-card classic">
+            <div class="card-header">
+                <h2>2. 传统经典彩色球派</h2>
+                <p>保留经典圆点粒子支撑，通过弹性放大、外发光朱红和星图连线实现水润触觉</p>
+            </div>
+            <div class="canvas-viewport">
+                <svg class="lab-svg" id="svgClassic" viewBox="0 0 200 200">
+                    <!-- JS 动态填充 -->
+                </svg>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="lab-footer">
+        💡 <strong>画书实验室设计提示</strong>：双画布已实现“物理坐标实时摆动算法（力导向呼吸）”，即使节点在浮动，底纸连线和文字也会顺滑地跟随运动。请观察在 Hover 触发时，非高亮区域的优雅隐退（不透明度淡化）与高亮路径的明暗交织，这是妙言与反 AI Slop 哲学的精髓所在。
+    </div>
+
+    <!-- 逻辑控制 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svgP = document.getElementById('svgPentagram');
+            const svgC = document.getElementById('svgClassic');
+            const btnCruise = document.getElementById('btnCruise');
+            const btnText = document.getElementById('btnText');
+            const cruiseStatus = document.getElementById('cruiseStatus');
+            const playIcon = document.getElementById('playIcon');
+
+            // 1. 核心图谱拓扑数据 (居中完美排布于 200x200 坐标系中)
+            const baseNodes = [
+                { id: "Prism.md", x: 100, y: 100, type: "center", phase: 0 },
+                { id: "Brand_Showcase.md", x: 45, y: 50, type: "link", phase: 1.2 },
+                { id: "CONTEXT.md", x: 155, y: 50, type: "link", phase: 2.5 },
+                { id: "adr-0002.md", x: 45, y: 150, type: "link", phase: 3.8 },
+                { id: "templates.md", x: 155, y: 150, type: "link", phase: 5.0 }
+            ];
+
+            const links = [
+                { source: "Prism.md", target: "Brand_Showcase.md" },
+                { source: "Prism.md", target: "CONTEXT.md" },
+                { source: "Prism.md", target: "adr-0002.md" },
+                { source: "Prism.md", target: "templates.md" },
+                { source: "CONTEXT.md", target: "templates.md" }
+            ];
+
+            // 复制出左右各自独立的渲染坐标状态，以便执行物理抖动
+            const nodesP = JSON.parse(JSON.stringify(baseNodes));
+            const nodesC = JSON.parse(JSON.stringify(baseNodes));
+
+            // 保存 DOM 强引用缓存，保证无损的高效 class 联动
+            const pElements = { links: [], nodes: [] };
+            const cElements = { links: [], nodes: [] };
+
+            // 2. 初始化图谱渲染 DOM (执行一次)
+            const initCanvas = (svg, elements, isClassic) => {
+                svg.innerHTML = "";
+                elements.links = [];
+                elements.nodes = [];
+
+                // 绘制底层连线
+                links.forEach(link => {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("class", "graph-link");
+                    line.setAttribute("data-source", link.source);
+                    line.setAttribute("data-target", link.target);
+                    if (isClassic) {
+                        line.style.strokeDasharray = "none";
+                    }
+                    svg.appendChild(line);
+                    elements.links.push(line);
+                });
+
+                // 绘制顶层节点
+                const targetNodes = isClassic ? nodesC : nodesP;
+                targetNodes.forEach(node => {
+                    const isCenter = node.type === 'center';
+                    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.setAttribute("cursor", "pointer");
+                    group.setAttribute("data-node-id", node.id);
+
+                    let circle = null;
+                    if (isClassic) {
+                        circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        circle.setAttribute("class", "graph-circle");
+                        circle.setAttribute("r", isCenter ? "6" : "4");
+                        circle.setAttribute("fill", isCenter ? "var(--c-accent-blue)" : "var(--c-ash)");
+                        group.appendChild(circle);
+                    }
+
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("class", "graph-node-txt");
+                    text.setAttribute("text-anchor", "middle");
+                    text.textContent = node.id.replace('.md', '');
+                    group.appendChild(text);
+
+                    // 鼠标 Hover 双向交互绑定
+                    group.addEventListener('mouseenter', () => {
+                        if (cruiseInterval) stopCruise(); // 鼠标介入时停止自动巡航
+                        triggerHighlight(node.id);
+                    });
+                    group.addEventListener('mouseleave', () => {
+                        clearHighlight();
+                    });
+
+                    svg.appendChild(group);
+                    elements.nodes.push({ id: node.id, group, text, circle, isCenter });
+                });
+            };
+
+            initCanvas(svgP, pElements, false);
+            initCanvas(svgC, cElements, true);
+
+            // 3. 动态物理浮游微摆动渲染 (用 requestAnimationFrame 驱动位置微调)
+            let animationFrameId = null;
+            const updatePhysics = (timestamp) => {
+                const time = timestamp * 0.0012; // 缓动速度
+
+                // 更新左边 Pentagram 的坐标
+                nodesP.forEach(node => {
+                    // 浮动半径 2.5 像素，带有各自的相位差以制造自然参差感
+                    node.currentX = node.x + Math.sin(time + node.phase) * 2.5;
+                    node.currentY = node.y + Math.cos(time * 0.8 + node.phase) * 2.5;
+                });
+
+                // 更新右边 Classic 的坐标 (相位稍微错开)
+                nodesC.forEach(node => {
+                    node.currentX = node.x + Math.cos(time * 0.9 + node.phase) * 2.5;
+                    node.currentY = node.y + Math.sin(time + node.phase) * 2.5;
+                });
+
+                // 更新 DOM 位置
+                const syncPositions = (elements, nodes, isClassic) => {
+                    // 1. 同步线条
+                    elements.links.forEach(line => {
+                        const sId = line.getAttribute("data-source");
+                        const tId = line.getAttribute("data-target");
+                        const sNode = nodes.find(n => n.id === sId);
+                        const tNode = nodes.find(n => n.id === tId);
+                        line.setAttribute("x1", sNode.currentX);
+                        line.setAttribute("y1", sNode.currentY);
+                        line.setAttribute("x2", tNode.currentX);
+                        line.setAttribute("y2", tNode.currentY);
+                    });
+
+                    // 2. 同步节点和文本
+                    elements.nodes.forEach(item => {
+                        const node = nodes.find(n => n.id === item.id);
+                        if (item.circle) {
+                            item.circle.setAttribute("cx", node.currentX);
+                            item.circle.setAttribute("cy", node.currentY);
+                        }
+                        item.text.setAttribute("x", node.currentX);
+                        // 经典大球字在上，印刷派字在正中
+                        item.text.setAttribute("y", isClassic ? node.currentY - 8 : node.currentY + 4);
+                    });
+                };
+
+                syncPositions(pElements, nodesP, false);
+                syncPositions(cElements, nodesC, true);
+
+                animationFrameId = requestAnimationFrame(updatePhysics);
+            };
+
+            animationFrameId = requestAnimationFrame(updatePhysics);
+
+            // 4. 双画布联动高亮与隐退函数
+            const triggerHighlight = (nodeId) => {
+                // 分别为左右两边挂载 has-focus 类
+                svgP.classList.add('has-focus');
+                svgC.classList.add('has-focus');
+
+                const applyHighlight = (elements) => {
+                    // 1. 线条高亮
+                    elements.links.forEach(line => {
+                        const source = line.getAttribute("data-source");
+                        const target = line.getAttribute("data-target");
+                        if (source === nodeId || target === nodeId) {
+                            line.classList.add('active');
+                        } else {
+                            line.classList.remove('active');
+                        }
+                    });
+
+                    // 2. 节点高亮与淡出
+                    elements.nodes.forEach(item => {
+                        const isFocused = item.id === nodeId;
+                        const isConnected = links.some(link =>
+                            (link.source === nodeId && link.target === item.id) ||
+                            (link.source === item.id && link.target === nodeId)
+                        );
+
+                        item.text.classList.remove('focused', 'connected');
+                        if (item.circle) item.circle.classList.remove('focused', 'connected');
+
+                        if (isFocused) {
+                            item.text.classList.add('focused');
+                            if (item.circle) {
+                                item.circle.classList.add('focused');
+                                item.circle.setAttribute("r", item.isCenter ? "8" : "6");
+                            }
+                        } else if (isConnected) {
+                            item.text.classList.add('connected');
+                            if (item.circle) {
+                                item.circle.classList.add('connected');
+                                item.circle.setAttribute("r", item.isCenter ? "6" : "4");
+                            }
+                        } else {
+                            if (item.circle) {
+                                item.circle.setAttribute("r", item.isCenter ? "6" : "4");
+                            }
+                        }
+                    });
+                };
+
+                applyHighlight(pElements);
+                applyHighlight(cElements);
+            };
+
+            const clearHighlight = () => {
+                svgP.classList.remove('has-focus');
+                svgC.classList.remove('has-focus');
+
+                const resetHighlight = (elements) => {
+                    elements.links.forEach(line => line.classList.remove('active'));
+                    elements.nodes.forEach(item => {
+                        item.text.classList.remove('focused', 'connected');
+                        if (item.circle) {
+                            item.circle.classList.remove('focused', 'connected');
+                            item.circle.setAttribute("r", item.isCenter ? "6" : "4");
+                        }
+                    });
+                };
+
+                resetHighlight(pElements);
+                resetHighlight(resetHighlight(cElements));
+            };
+
+            // 5. 一键自动巡航演练逻辑
+            let cruiseInterval = null;
+            let cruiseIndex = 0;
+
+            const startCruise = () => {
+                if (cruiseInterval) return;
+
+                btnCruise.classList.add('active');
+                btnText.textContent = "停止巡航";
+                playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`;
+
+                cruiseInterval = setInterval(() => {
+                    const node = baseNodes[cruiseIndex];
+                    cruiseStatus.textContent = `巡演中: 联动高亮 [${node.id.replace('.md', '')}]`;
+                    triggerHighlight(node.id);
+
+                    cruiseIndex = (cruiseIndex + 1) % baseNodes.length;
+                }, 1500); // 每 1.5 秒自动跳转高亮
+            };
+
+            const stopCruise = () => {
+                if (!cruiseInterval) return;
+
+                clearInterval(cruiseInterval);
+                cruiseInterval = null;
+                btnCruise.classList.remove('active');
+                btnText.textContent = "启动自动巡航巡演";
+                playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"/>`;
+                cruiseStatus.textContent = "状态: 鼠标自由交互中";
+                clearHighlight();
+            };
+
+            btnCruise.addEventListener('click', () => {
+                if (cruiseInterval) {
+                    stopCruise();
+                } else {
+                    startCruise();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

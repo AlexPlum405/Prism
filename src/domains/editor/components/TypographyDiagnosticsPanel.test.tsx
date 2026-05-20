@@ -13,7 +13,9 @@ describe('TypographyDiagnosticsPanel', () => {
       />,
     );
 
-    expect(screen.queryByRole('dialog', { name: '排版提示' })).not.toBeInTheDocument();
+    const dialog = screen.queryByRole('dialog', { name: '排版提示' });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).not.toHaveClass('is-active');
   });
 
   it('lists diagnostics and jumps to the selected source line', () => {

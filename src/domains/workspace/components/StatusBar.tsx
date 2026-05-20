@@ -9,6 +9,19 @@ const IconFocus = () => (
   </svg>
 );
 
+const IconGraph = () => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    {/* 精致扁平拓扑：中心聚焦节点与放射状直连节点 */}
+    <path d="M10 10L6.5 6.5" />
+    <path d="M10 10h5" />
+    <path d="M10 10l1 5" />
+    <circle cx="10" cy="10" r="2" fill="currentColor" stroke="none" />
+    <circle cx="6.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="10" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="11" cy="15" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const IconExport = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M10 2.7c.2 0 .37.07.5.2l3.15 3.15a.7.7 0 0 1-.99.99l-1.96-1.96v7.07a.7.7 0 1 1-1.4 0V5.08L7.34 7.04a.7.7 0 0 1-.99-.99L9.5 2.9c.13-.13.3-.2.5-.2ZM4.1 11.1c.39 0 .7.31.7.7v2.25c0 .58.47 1.05 1.05 1.05h8.3c.58 0 1.05-.47 1.05-1.05V11.8a.7.7 0 1 1 1.4 0v2.25a2.45 2.45 0 0 1-2.45 2.45h-8.3a2.45 2.45 0 0 1-2.45-2.45V11.8c0-.39.31-.7.7-.7Z" />
@@ -68,10 +81,13 @@ interface StatusBarProps {
   typographyIssueCount?: number;
   typographyIssueTitle?: string;
   onTypographyDiagnosticsClick?: () => void;
+  onRelationGraphClick?: () => void;
+  hasSavedPath?: boolean;
   exportProgress?: string | null;
   exportProgressInBackground?: boolean;
   onShowExportProgress?: () => void;
 }
+
 
 function formatStatusNumber(value: number) {
   return value.toLocaleString('en-US');
@@ -94,10 +110,13 @@ export function StatusBar({
   linkIssueCount = 0,
   linkIssueTitle,
   onLinkDiagnosticsClick,
+  onRelationGraphClick,
+  hasSavedPath = false,
   exportProgress = null,
   exportProgressInBackground = false,
   onShowExportProgress,
 }: StatusBarProps) {
+
   const rootPath = useWorkspaceStore((s) => s.rootPath);
   const fileTreeMode = useWorkspaceStore((s) => s.fileTreeMode);
   const focusMode = useWorkspaceStore((s) => s.focusMode);
@@ -175,6 +194,15 @@ export function StatusBar({
               <span className={styles.exportStatusText}>导出中</span>
             </button>
           )}
+          {hasSavedPath && onRelationGraphClick && (
+            <button
+              className={`${styles.btn} ${styles.iconBtn}`}
+              onClick={onRelationGraphClick}
+              title="查看关系图谱 (⌥⌘G)"
+            >
+              <IconGraph />
+            </button>
+          )}
           <button
             className={`${styles.btn} ${styles.iconBtn} ${focusMode ? styles.active : ''}`}
             onClick={onToggleFocusMode}
@@ -182,6 +210,7 @@ export function StatusBar({
           >
             <IconFocus />
           </button>
+
           <button
             className={`${styles.btn} ${styles.iconBtn}`}
             onClick={onExportMenu}

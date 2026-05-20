@@ -898,3 +898,21 @@ html[data-content-theme='nocturne'] .cm-editor {
   font-style: normal;
   line-height: 1.45;
 }
+
+/* ============================================================
+   编辑器行跳转闪烁动效 (cm-flash)
+   ============================================================ */
+@keyframes cm-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--accent, #7a3dad) 30%, transparent);
+    box-shadow: inset 3px 0 0 var(--accent, #7a3dad);
+  }
+  15% {
+    background-color: color-mix(in srgb, var(--accent, #7a3dad) 30%, transparent);
+    box-shadow: inset 3px 0 0 var(--accent, #7a3dad);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}

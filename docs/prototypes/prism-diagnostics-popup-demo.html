@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Prism · 弹性毛玻璃诊断面板与双向对焦交互演示 (Diagnostics Focus Demo)</title>
+    <!-- 引入 Google Fonts 营造高品位排版 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* -------------------------------------------------- */
+        /* 设计系统 Token - 画书设计 (Logic over Aesthetics) */
+        /* -------------------------------------------------- */
+        :root {
+            --c-void: #151517;
+            --c-canvas: #f8f8fa;
+            --c-fog: #f0f0f3;
+            --c-chalk: #e6e6eb;
+            --c-graphite: #2a2a2e;
+            --c-ash: #8e8e93;
+            --c-hair: rgba(0, 0, 0, 0.08);
+            --c-hover: rgba(0, 0, 0, 0.04);
+            --c-selection: rgba(217, 66, 66, 0.08);
+
+            /* 状态色 */
+            --c-error: #d94242;          /* 精致朱红 */
+            --c-error-bg: rgba(217, 66, 66, 0.05);
+            --c-success: #2da44e;
+
+            --font-display: 'Outfit', 'Inter', -apple-system, sans-serif;
+            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-serif: 'EB Garamond', Georgia, serif;
+
+            /* 物理缓动曲线 */
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);    /* macOS 经典弹性回弹 */
+            --ease-out-extreme: cubic-bezier(0.16, 1, 0.3, 1); /* 原生阻尼 */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #ededf2;
+            font-family: var(--font-body);
+            color: var(--c-graphite);
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 顶部看板标题 */
+        .demo-header {
+            text-align: center;
+            margin-bottom: 32px;
+            max-width: 800px;
+        }
+
+        .demo-header h1 {
+            font-family: var(--font-display);
+            font-weight: 400;
+            font-size: 28px;
+            letter-spacing: -0.02em;
+            color: var(--c-void);
+            margin-bottom: 8px;
+        }
+
+        .demo-header p {
+            font-size: 14px;
+            color: var(--c-ash);
+            line-height: 1.6;
+        }
+
+        /* 自动演示控制区 */
+        .tour-console {
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn-tour {
+            background-color: var(--c-void);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-out-extreme);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-tour:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+
+        .tour-status {
+            font-size: 12px;
+            color: var(--c-accent-vermilion);
+            font-weight: 500;
+            min-width: 200px;
+        }
+
+        /* 演示主舞台 (模拟 macOS 窗口) */
+        .stage-window {
+            width: 840px;
+            height: 520px;
+            background-color: var(--c-canvas);
+            border-radius: 12px;
+            box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.12),
+                        0 0 1px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 1. Title Bar (标题栏) */
+        .title-bar {
+            height: 48px;
+            background-color: var(--c-fog);
+            border-bottom: 1px solid var(--c-hair);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            user-select: none;
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot.red { background-color: #ff5f56; }
+        .dot.yellow { background-color: #ffbd2e; }
+        .dot.green { background-color: #27c93f; }
+
+        .window-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--c-ash);
+        }
+
+        /* 2. Workspace Content (工作区) */
+        .workspace-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 64px;
+            background-color: var(--c-canvas);
+            position: relative;
+            scroll-behavior: smooth; /* 启动平滑定位滚动 */
+        }
+
+        /* 模拟的 Markdown 内容 */
+        .md-content {
+            max-width: 680px;
+            margin: 0 auto;
+            color: var(--c-graphite);
+            line-height: 1.8;
+        }
+
+        .md-h1 {
+            font-family: var(--font-serif);
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--c-void);
+            border-bottom: 1px solid var(--c-hair);
+            padding-bottom: 8px;
+        }
+
+        .md-p {
+            font-size: 14.5px;
+            margin-bottom: 20px;
+        }
+
+        /* 红色波浪线与错误交互链接 (优化点4) */
+        .error-link {
+            position: relative;
+            color: var(--c-error);
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background-color 0.25s var(--ease-out-extreme);
+
+            /* 模拟 macOS/Word 经典的拼写纠错红色波浪线下划线 */
+            background-image: radial-gradient(circle at 50% 100%, var(--c-error) 10%, transparent 15%);
+            background-position: 0 100%;
+            background-size: 6px 4px;
+            background-repeat: repeat-x;
+            padding-bottom: 3px;
+        }
+
+        .error-link:hover {
+            background-color: var(--c-error-bg);
+        }
+
+        /* 双向对焦时的背景淡红呼吸闪烁 */
+        .error-link.focused-blink {
+            animation: blink-breath 2s infinite ease-in-out;
+            border: 1px dashed rgba(217, 66, 66, 0.3);
+            border-radius: 6px;
+        }
+
+        @keyframes blink-breath {
+            0%, 100% { background-color: rgba(217, 66, 66, 0.05); box-shadow: 0 0 0 0 rgba(217, 66, 66, 0); }
+            50% { background-color: rgba(217, 66, 66, 0.18); box-shadow: 0 0 0 4px rgba(217, 66, 66, 0.06); }
+        }
+
+        .spacer {
+            height: 120px;
+        }
+
+        /* 3. Status Bar (底栏状态区) */
+        .status-bar {
+            height: 32px;
+            background-color: var(--c-fog);
+            border-top: 1px solid var(--c-hair);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--c-ash);
+            padding: 0 16px;
+            user-select: none;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 诊断错误指示器 (带小黄/红背景呼吸闪烁以示警告) */
+        .status-diag-trigger {
+            color: var(--c-error);
+            font-weight: 600;
+            background-color: var(--c-error-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.25s var(--ease-out-extreme);
+            border: 1px solid rgba(217, 66, 66, 0.15);
+        }
+
+        .status-diag-trigger:hover {
+            background-color: rgba(217, 66, 66, 0.12);
+            transform: scale(1.02);
+            border-color: rgba(217, 66, 66, 0.3);
+        }
+
+        /* -------------------------------------------------- */
+        /* 4. Frosted Glass Diagnostics Panel (极致毛玻璃面板) */
+        /* -------------------------------------------------- */
+        .diagnostics-panel {
+            position: absolute;
+            bottom: 40px;
+            right: 16px;
+            width: 380px;
+            background-color: rgba(248, 248, 250, 0.85); /* 85%不透明度 */
+            backdrop-filter: blur(24px); /* 超强毛玻璃 */
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--c-hair);
+            border-radius: 10px;
+            box-shadow: 0 16px 48px -10px rgba(0, 0, 0, 0.12),
+                        0 0 1px rgba(0, 0, 0, 0.15);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+            z-index: 20;
+
+            /* macOS 经典弹性阻尼曲线动画 */
+            transform-origin: bottom right;
+            transform: translateY(16px) scale(0.95);
+            opacity: 0;
+            filter: blur(4px);
+            visibility: hidden;
+            transition: transform 0.4s var(--ease-out-back),
+                        opacity 0.35s var(--ease-out-extreme),
+                        filter 0.35s var(--ease-out-extreme),
+                        visibility 0.4s;
+        }
+
+        .diagnostics-panel.is-active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            filter: blur(0);
+            visibility: visible;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--c-hair);
+            padding-bottom: 10px;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--c-void);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .panel-close {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--c-ash);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        .panel-close:hover {
+            color: var(--c-void);
+        }
+
+        .diag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        /* 诊断项 */
+        .diag-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            background-color: rgba(0, 0, 0, 0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-out-extreme);
+        }
+
+        .diag-item:hover {
+            background-color: var(--c-chalk);
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* 被双向对焦激活的高亮诊断项 */
+        .diag-item.focused-active {
+            background-color: #ffffff;
+            border-color: rgba(217, 66, 66, 0.3);
+            box-shadow: 0 4px 12px rgba(217, 66, 66, 0.08);
+            transform: scale(1.01);
+        }
+
+        .diag-item-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 10px;
+            color: var(--c-ash);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .diag-item-desc {
+            font-size: 12.5px;
+            color: var(--c-graphite);
+            line-height: 1.45;
+        }
+
+        .diag-item-desc code {
+            background-color: rgba(0,0,0,0.04);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 11.5px;
+            font-family: monospace;
+            color: var(--c-error);
+        }
+
+        /* 说明指南底卡 */
+        .demo-footer {
+            margin-top: 32px;
+            max-width: 840px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--c-hair);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--c-ash);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶栏介绍 -->
+    <div class="demo-header">
+        <h1>Prism · 弹性毛玻璃诊断面板与双向对焦演示</h1>
+        <p>
+            本演示专门呈现第 4 项优化方案：<strong>“Frosted Glass 诊断浮层与双向对焦（Bi-directional Focus）”</strong>。<br/>
+            它解决了复杂文档中排版诊断错误难以及时定位、以及提示框生硬遮挡心流的痛点。
+        </p>
+    </div>
+
+    <!-- 演练控制器 -->
+    <div class="tour-console">
+        <button class="btn-tour" id="btnTour">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            启动双向对焦自动演练导览
+        </button>
+        <span class="tour-status" id="tourStatus">状态: 等待您体验交互</span>
+    </div>
+
+    <!-- 演示窗口舞台 -->
+    <div class="stage-window" id="stageWindow">
+
+        <!-- 1. 模拟 TitleBar -->
+        <div class="title-bar">
+            <div class="window-dots">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="window-title">Prism_Brand_Audit.md</div>
+        </div>
+
+        <!-- 2. 模拟 Markdown 预览区 -->
+        <div class="workspace-body" id="workspaceBody">
+            <div class="md-content">
+                <h1 class="md-h1">「Prism 高品位写作规范审计」</h1>
+                <p class="md-p">
+                    为了保障作者的专注力，Prism 在排版层面引入了多重静默纠错引擎。这包括了检测断开的文件超链接、失效的静态图片路径、以及损坏的数学公式解析器。
+                </p>
+
+                <p class="md-p">
+                    这是一个断开的文档链接示例：我们可以看到由于目标文件不存在，系统会在该文本下方标红显示波浪线下划线进行低扰暗示：<br/>
+                    👉 <span class="error-link" id="errLinkWorkflow" data-error-id="err1">
+                        [断开的工作流链接](broken_workflow.md)
+                    </span>
+                </p>
+
+                <div class="spacer"></div>
+
+                <p class="md-p">
+                    当创作者在长文本中上下滑动时，诊断面板的作用是作为一个可临时唤醒的抽屉。以下是由于拼写错误或者资源路径错误导致的另一个诊断警报：<br/>
+                    👉 <span class="error-link" id="errLinkImage" data-error-id="err2">
+                        ![无法解析的本地图片](invalid_path/logo.png)
+                    </span>
+                </p>
+
+                <div class="spacer"></div>
+
+                <p class="md-p">
+                    当段落较深时，如果没有双向对焦，您将很难迅速将眼前的错误条目映射到文档对应的具体行。这是最后一个损坏的公式诊断警报：<br/>
+                    👉 <span class="error-link" id="errLinkFormula" data-error-id="err3">
+                        [KaTeX 未闭合数学公式]($ \alpha + \beta = )
+                    </span>
+                </p>
+
+                <div class="spacer"></div>
+            </div>
+        </div>
+
+        <!-- 3. 底栏状态栏 & 诊断面板 -->
+        <div class="status-bar">
+            <div>
+                <span>Prism-workspace</span>
+            </div>
+
+            <div style="font-weight: 500;">
+                284 字 · 16 行
+            </div>
+
+            <!-- 诊断触发器 -->
+            <div>
+                <div class="status-diag-trigger" id="diagTrigger">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    3 个诊断错误
+                </div>
+            </div>
+
+            <!-- 4. 弹性毛玻璃诊断面板 (Frosted Glass Panel) -->
+            <div class="diagnostics-panel" id="diagPanel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        3 个排版问题诊断
+                    </span>
+                    <button class="panel-close" id="panelClose" title="收起面板">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="diag-list">
+
+                    <!-- 诊断项 1 -->
+                    <div class="diag-item" id="diagItem1" data-error-id="err1">
+                        <div class="diag-item-meta">
+                            <span>链接错误</span>
+                            <span>第 4 行</span>
+                        </div>
+                        <div class="diag-item-desc">
+                            无效的目标文档：超链接引用的 <code>broken_workflow.md</code> 在工作区中不存在。
+                        </div>
+                    </div>
+
+                    <!-- 诊断项 2 -->
+                    <div class="diag-item" id="diagItem2" data-error-id="err2">
+                        <div class="diag-item-meta">
+                            <span>资源缺失</span>
+                            <span>第 12 行</span>
+                        </div>
+                        <div class="diag-item-desc">
+                            图片路径未找到：无法解析 <code>invalid_path/logo.png</code>，请检查路径。
+                        </div>
+                    </div>
+
+                    <!-- 诊断项 3 -->
+                    <div class="diag-item" id="diagItem3" data-error-id="err3">
+                        <div class="diag-item-meta">
+                            <span>排版警告</span>
+                            <span>第 20 行</span>
+                        </div>
+                        <div class="diag-item-desc">
+                            数学公式损坏：未闭合的 <code>$</code> KaTeX 科学计数公式标识符。
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- 设计指南说明底卡 -->
+    <div class="demo-footer">
+        💡 <strong>双向交互体验秘籍</strong>：<br/>
+        1. <strong>诊断到文档（一键直达）</strong>：点击右下角诊断面板中的任意卡片。主视窗会自动平滑滚动至错误锚点，同时错误文本会触发精致的<strong>“背景淡红呼吸闪烁”</strong>，并在 2.5 秒后自动消失。<br/>
+        2. <strong>文档到诊断（反向激活）</strong>：当您在主文档中浏览时，直接点击任意一个<strong>“带红色波浪线”</strong>的超链接。右下角的诊断面板会以 <strong>macOS 极致阻尼弹性自动弹出</strong>，同时列表里对应的条目会被加上高亮发光边框，方便创作者随时查看细节。
+    </div>
+
+    <!-- 逻辑控制 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const diagTrigger = document.getElementById('diagTrigger');
+            const diagPanel = document.getElementById('diagPanel');
+            const panelClose = document.getElementById('panelClose');
+            const workspaceBody = document.getElementById('workspaceBody');
+
+            const btnTour = document.getElementById('btnTour');
+            const tourStatus = document.getElementById('tourStatus');
+
+            // 错误 DOM 元素
+            const errElements = {
+                err1: document.getElementById('errLinkWorkflow'),
+                err2: document.getElementById('errLinkImage'),
+                err3: document.getElementById('errLinkFormula')
+            };
+
+            // 诊断卡片 DOM 元素
+            const diagItems = {
+                err1: document.getElementById('diagItem1'),
+                err2: document.getElementById('diagItem2'),
+                err3: document.getElementById('diagItem3')
+            };
+
+            // 1. 弹出/收起诊断面板函数
+            const togglePanel = (show) => {
+                if (show) {
+                    diagPanel.classList.add('is-active');
+                } else {
+                    diagPanel.classList.remove('is-active');
+                    clearHighlights();
+                }
+            };
+
+            diagTrigger.addEventListener('click', () => {
+                if (isTouring) stopTour();
+                togglePanel(!diagPanel.classList.contains('is-active'));
+            });
+            panelClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePanel(false);
+            });
+
+            // 2. 清除所有临时高亮状态
+            const clearHighlights = () => {
+                Object.values(errElements).forEach(el => el.classList.remove('focused-blink'));
+                Object.values(diagItems).forEach(el => el.classList.remove('focused-active'));
+            };
+
+            // 3. 【正向联动】点击诊断条目 ➔ 文档自动平滑定位并闪烁
+            const focusOnDocument = (errorId) => {
+                clearHighlights();
+
+                const mdEl = errElements[errorId];
+                const diagEl = diagItems[errorId];
+
+                // 诊断卡片挂载高亮
+                diagEl.classList.add('focused-active');
+
+                if (mdEl) {
+                    // 主工作区平滑定位滚动
+                    const offsetTop = mdEl.offsetTop - 80; // 留出顶部余量
+                    workspaceBody.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+
+                    // 链接挂载红色背景呼吸闪烁
+                    mdEl.classList.add('focused-blink');
+
+                    // 2.5 秒后闪烁淡出，保证不打扰后面的阅读
+                    setTimeout(() => {
+                        mdEl.classList.remove('focused-blink');
+                    }, 2500);
+                }
+            };
+
+            Object.keys(diagItems).forEach(errorId => {
+                diagItems[errorId].addEventListener('click', () => {
+                    if (isTouring) stopTour();
+                    focusOnDocument(errorId);
+                });
+            });
+
+            // 4. 【反向联动】点击文档中的波浪线错误 ➔ 弹性呼出诊断面板并高亮对应条目
+            const focusOnDiagnostics = (errorId) => {
+                clearHighlights();
+
+                // 弹性呼出面板
+                togglePanel(true);
+
+                // 高亮诊断卡片
+                const diagEl = diagItems[errorId];
+                if (diagEl) {
+                    diagEl.classList.add('focused-active');
+                    // 自动让诊断卡片滚入视野
+                    diagEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            };
+
+            Object.keys(errElements).forEach(errorId => {
+                errElements[errorId].addEventListener('click', () => {
+                    if (isTouring) stopTour();
+                    focusOnDiagnostics(errorId);
+                });
+            });
+
+
+            // --------------------------------------------------
+            // 5. 一键自动巡航演练导览系统 (Auto Tour)
+            // --------------------------------------------------
+            let tourSteps = [];
+            let tourTimeout = null;
+            let isTouring = false;
+
+            const startTour = () => {
+                isTouring = true;
+                btnTour.style.backgroundColor = 'var(--c-error)';
+                btnTour.innerHTML = `
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="4" y="4" width="16" height="16"/>
+                    </svg>
+                    停止演练
+                `;
+
+                // 演练动作链定义
+                tourSteps = [
+                    // Step 1: 呼出诊断面板
+                    () => {
+                        tourStatus.textContent = "第一步: 模拟点击底栏错误诊断指针...";
+                        togglePanel(true);
+                    },
+                    // Step 2: 诊断条目1对焦定位
+                    () => {
+                        tourStatus.textContent = "第二步: 激活诊断 ➔ [工作流断链] 对焦定位...";
+                        focusOnDocument('err1');
+                    },
+                    // Step 3: 诊断条目2对焦定位
+                    () => {
+                        tourStatus.textContent = "第三步: 平滑滚动 ➔ [图片路径缺失] 对焦定位...";
+                        focusOnDocument('err2');
+                    },
+                    // Step 4: 诊断条目3对焦定位
+                    () => {
+                        tourStatus.textContent = "第四步: 平滑滚动 ➔ [KaTeX公式损坏] 对焦定位...";
+                        focusOnDocument('err3');
+                    },
+                    // Step 5: 反向定位演示1
+                    () => {
+                        tourStatus.textContent = "第五步: 模拟在文档中直接点击红波浪线...";
+                        focusOnDiagnostics('err1');
+                    },
+                    // 演示完成
+                    () => {
+                        tourStatus.textContent = "双向联动演练结束，等待您亲自操作体验！";
+                        stopTour();
+                    }
+                ];
+
+                runNextTourStep(0);
+            };
+
+            const runNextTourStep = (index) => {
+                if (!isTouring || index >= tourSteps.length) return;
+
+                tourSteps[index]();
+
+                tourTimeout = setTimeout(() => {
+                    runNextTourStep(index + 1);
+                }, 3000); // 每 3 秒自动演示下一步
+            };
+
+            const stopTour = () => {
+                isTouring = false;
+                if (tourTimeout) clearTimeout(tourTimeout);
+
+                btnTour.style.backgroundColor = 'var(--c-void)';
+                btnTour.innerHTML = `
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    启动双向对焦自动演练导览
+                `;
+                if (tourStatus.textContent.startsWith("第一步") || tourStatus.textContent.startsWith("第")) {
+                    tourStatus.textContent = "状态: 等待您体验交互";
+                }
+            };
+
+            btnTour.addEventListener('click', () => {
+                if (isTouring) {
+                    stopTour();
+                    togglePanel(false);
+                    clearHighlights();
+                } else {
+                    startTour();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

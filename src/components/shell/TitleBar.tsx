@@ -49,11 +49,11 @@ export function TitleBar({ docName, isDirty = false }: TitleBarProps) {
         <div className={styles.logo}>P</div>
         <div className={styles.titleGroup}>
           <div className={styles.title}>
-            <span className={styles.docName}>{docName}</span>
+            <span className={styles.docName}>{docName.replace(/\.md$/, '')}</span>
+            {isDirty && <span className={styles.dirtyRing} title="已修改未保存" aria-label="已修改未保存" />}
             <span className={styles.sep}>—</span>
             <span className={styles.app}>Prism</span>
           </div>
-          {isDirty && <span className={styles.editedLabel}>已编辑</span>}
         </div>
       </div>
       <ViewModeSwitch />

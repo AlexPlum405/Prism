@@ -59,11 +59,31 @@
   line-height: 1.2;
 }
 
-.editedLabel {
-  font-size: 10px;
-  color: var(--c-ash);
-  line-height: 1;
-  margin-top: 1px;
+.dirtyRing {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-ash);
+  opacity: 0.85;
+  margin-left: 6px;
+  margin-right: 6px;
+  display: inline-block;
+  vertical-align: middle;
+  animation: ring-breath 4s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes ring-breath {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+    box-shadow: 0 0 0 0 rgba(142, 142, 147, 0.15);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.9;
+    box-shadow: 0 0 0 4px rgba(142, 142, 147, 0.08);
+  }
 }
 
 .docName { color: var(--c-void); }
@@ -149,10 +169,8 @@
   font-weight: 400;
 }
 
-:global(html[data-content-theme='miaoyan']) .editedLabel {
-  font-size: 9px;
-  color: var(--miaoyan-accent);
-  margin-top: 1px;
+:global(html[data-content-theme='miaoyan']) .dirtyRing {
+  border-color: var(--miaoyan-accent);
 }
 
 :global(html[data-content-theme='miaoyan']) .controls {
@@ -236,13 +254,11 @@
   font-weight: 400;
 }
 
-:global(html[data-content-theme='inkstone']) .editedLabel,
-:global(html[data-content-theme='slate']) .editedLabel,
-:global(html[data-content-theme='mono']) .editedLabel,
-:global(html[data-content-theme='nocturne']) .editedLabel {
-  font-size: 9px;
-  color: var(--theme-accent);
-  margin-top: 1px;
+:global(html[data-content-theme='inkstone']) .dirtyRing,
+:global(html[data-content-theme='slate']) .dirtyRing,
+:global(html[data-content-theme='mono']) .dirtyRing,
+:global(html[data-content-theme='nocturne']) .dirtyRing {
+  border-color: var(--theme-accent);
 }
 
 :global(html[data-content-theme='inkstone']) .controls,

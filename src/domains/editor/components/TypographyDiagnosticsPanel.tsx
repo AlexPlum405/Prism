@@ -40,10 +40,8 @@ export function TypographyDiagnosticsPanel({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, visible]);
 
-  if (!visible) return null;
-
   return (
-    <div className="modal prism-link-diagnostics-modal prism-diagnostics-popover" role="dialog" aria-label="排版提示">
+    <div className={`modal prism-link-diagnostics-modal prism-diagnostics-popover ${visible ? 'is-active' : ''}`} role="dialog" aria-label="排版提示">
         <div className="modal-header">
           <div>
             <div className="modal-title">{diagnostics.length || 0} 个排版提示</div>

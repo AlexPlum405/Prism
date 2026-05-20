@@ -12,14 +12,41 @@
   width: min(420px, calc(100vw - 32px));
   max-width: none;
   max-height: min(560px, calc(100vh - 72px));
-  transform: none;
-  border-radius: 8px;
-  animation: prism-diagnostics-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  border-radius: 10px;
+
+  /* 极致毛玻璃面板 */
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--c-hair) !important;
+  box-shadow: 0 16px 48px -10px rgba(0, 0, 0, 0.12),
+              0 0 1px rgba(0, 0, 0, 0.15) !important;
+
+  /* 初始隐藏状态 */
+  opacity: 0;
+  transform: translateY(16px) scale(0.95);
+  visibility: hidden;
+  pointer-events: none;
+
+  /* macOS 经典弹性阻尼曲线动画 */
+  transform-origin: bottom right;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.4s;
+  z-index: 100;
 }
 
-@keyframes prism-diagnostics-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* 深色模式适配 */
+:global(body.dark) .prism-diagnostics-popover {
+  background-color: rgba(24, 24, 26, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.prism-diagnostics-popover.is-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .prism-diagnostics-subtitle {
@@ -277,114 +304,336 @@
 .prism-relation-graph-modal {
   width: min(940px, calc(100vw - 32px));
   max-width: 940px;
+  background: var(--c-canvas);
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-card, 12px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+/* 极致毛玻璃设计（妙言主题专属） */
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-modal {
+  background: rgba(250, 249, 246, 0.88) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.01) !important;
+}
+
+/* 极致毛玻璃设计（黑夜主题专属） */
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-modal {
+  background: rgba(24, 23, 22, 0.88) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
 }
 
 .prism-relation-graph-body {
-  padding: 12px;
+  padding: 16px 20px 20px 20px;
 }
 
 .prism-relation-graph-toolbar {
   display: grid;
   grid-template-columns: auto auto minmax(180px, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 14px;
+  align-items: center;
 }
 
+/* TAB 胶囊滑块重塑 */
 .prism-relation-graph-segment {
   display: inline-flex;
-  gap: 2px;
+  gap: 3px;
   border: 1px solid var(--c-fog);
-  border-radius: var(--r-link);
-  padding: 2px;
-  background: var(--c-paper);
+  border-radius: 20px;
+  padding: 3px;
+  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-paper));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-.prism-relation-graph-segment button,
-.prism-relation-graph-list button {
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-segment {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 18px;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-segment {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+}
+
+.prism-relation-graph-segment button {
+  min-height: 26px;
   border: 0;
   background: transparent;
   color: var(--c-graphite);
   font-family: var(--font-sans);
   cursor: pointer;
-}
-
-.prism-relation-graph-segment button {
-  min-height: 28px;
-  border-radius: 5px;
-  padding: 0 10px;
+  border-radius: 14px;
+  padding: 0 14px;
   font-size: 12px;
+  font-weight: 500;
+  transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .prism-relation-graph-segment button[data-active='true'] {
-  background: var(--c-canvas);
-  color: var(--c-void);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--c-canvas) !important;
+  color: var(--c-void) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+  font-weight: 600;
 }
 
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-segment button[data-active='true'] {
+  background: #fff !important;
+  color: var(--miaoyan-accent, #2a2826) !important;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-segment button[data-active='true'] {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+/* 高颜值圆润搜索框 */
 .prism-relation-graph-toolbar input {
   min-width: 0;
-  min-height: 34px;
+  min-height: 32px;
   border: 1px solid var(--c-fog);
-  border-radius: var(--r-link);
-  padding: 0 10px;
+  border-radius: 16px;
+  padding: 0 14px;
   background: var(--c-canvas);
   color: var(--c-void);
   font-family: var(--font-sans);
+  font-size: 12px;
   outline: none;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.prism-relation-graph-toolbar input:focus {
+  border-color: var(--c-graphite);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-toolbar input {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-toolbar input:focus {
+  border-color: #2a2826;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(42, 40, 38, 0.08);
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-toolbar input {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-toolbar input:focus {
+  border-color: #dcdad7;
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(220, 218, 215, 0.15);
 }
 
 .prism-relation-graph-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 14px;
 }
 
 .prism-relation-graph-canvas {
   position: relative;
   min-height: 420px;
   border: 1px solid var(--c-fog);
-  border-radius: var(--r-card);
-  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-paper));
+  border-radius: var(--r-card, 10px);
+  background: #faf9f6;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.02);
   overflow: hidden;
+}
+
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-canvas {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #faf9f6; /* 宣纸米白 */
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-canvas {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #181716; /* 静谧焦墨黑 */
 }
 
 .prism-relation-graph-canvas svg {
   display: block;
   width: 100%;
   height: 420px;
+  transition: opacity 0.3s ease;
 }
 
+/* ==================== 东方禅意留白图谱样式 ==================== */
+
 .prism-relation-graph-edge {
-  stroke: var(--c-fog);
-  stroke-width: 1.2;
+  stroke: #2a2826; /* 焦墨灰 */
+  stroke-width: 1.3px;
+  opacity: 0.18;
+  transition: stroke 0.3s var(--ease-out),
+              stroke-width 0.3s var(--ease-out),
+              opacity 0.3s var(--ease-out);
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-edge {
+  stroke: #dcdad7; /* 宣纸白 */
+}
+
+svg.has-focus .prism-relation-graph-edge {
+  opacity: 0.05;
+}
+
+svg.has-focus .prism-relation-graph-edge.is-connected-hover {
+  stroke: #2a2826;
+  stroke-width: 1.6px;
+  opacity: 0.65;
+}
+
+:global(html[data-content-theme='nocturne']) svg.has-focus .prism-relation-graph-edge.is-connected-hover {
+  stroke: #dcdad7;
 }
 
 .prism-relation-graph-node {
   cursor: pointer;
   outline: none;
+  transition: opacity 0.35s var(--ease-out);
 }
 
 .prism-relation-graph-node circle {
-  fill: var(--c-canvas);
-  stroke: var(--c-ash);
-  stroke-width: 1.4;
+  fill: #2a2826; /* 焦墨灰 */
+  stroke: none !important; /* 彻底去除边框 */
+  opacity: 0.85;
+  transition: r 0.35s var(--ease-out),
+              fill 0.35s var(--ease-out),
+              opacity 0.35s var(--ease-out);
 }
 
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-node circle {
+  fill: #dcdad7; /* 宣纸白 */
+}
+
+/* 激活的文档节点：深焦墨圆点 */
 .prism-relation-graph-node.is-active circle {
-  fill: var(--c-void);
-  stroke: var(--c-void);
+  fill: #11100f !important;
+  opacity: 1.0;
 }
 
-.prism-relation-graph-node text {
-  fill: var(--c-graphite);
-  font-size: 12px;
-  text-anchor: middle;
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-active circle {
+  fill: #ffffff !important;
+}
+
+/* Hover 时的焦点节点：深焦墨圆点 */
+.prism-relation-graph-node.is-hovered circle {
+  fill: #11100f !important;
+  opacity: 1.0 !important;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-hovered circle {
+  fill: #ffffff !important;
+}
+
+/* 联动的相邻节点 */
+.prism-relation-graph-node.is-adjacent circle {
+  fill: #2a2826;
+  opacity: 0.95;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-adjacent circle {
+  fill: #dcdad7;
+}
+
+/* 水晕呼吸动画定义 */
+@keyframes pulseHalo {
+  0% {
+    r: 10px;
+    opacity: 0.28;
+  }
+  50% {
+    r: 22px;
+    opacity: 0.08;
+  }
+  100% {
+    r: 10px;
+    opacity: 0.28;
+  }
+}
+
+.pulse-halo {
+  animation: pulseHalo 4s ease-in-out infinite;
+  fill: #2a2826;
   pointer-events: none;
 }
 
+:global(html[data-content-theme='nocturne']) .pulse-halo {
+  fill: #ffffff;
+}
+
+/* 大师级地图文字标签描边设计 */
+.prism-relation-graph-node text {
+  fill: #2a2826;
+  font-size: 11px;
+  font-weight: 500;
+  text-anchor: middle;
+  pointer-events: none;
+  paint-order: stroke fill;
+  stroke: #faf9f6; /* 匹配宣纸背景 */
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+  transition: all 0.25s var(--ease-out);
+}
+
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-node text {
+  fill: #2a2826;
+  font-family: var(--miaoyan-font, sans-serif);
+  stroke: #faf9f6;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-node text {
+  fill: #dcdad7;
+  stroke: #181716; /* 匹配黑夜背景 */
+}
+
 .prism-relation-graph-node.is-active text {
-  fill: var(--c-void);
-  font-weight: 650;
+  fill: #11100f;
+  font-weight: 600;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-active text {
+  fill: #ffffff;
+}
+
+svg.has-focus .prism-relation-graph-node {
+  opacity: 0.15;
+}
+
+svg.has-focus .prism-relation-graph-node.is-hovered,
+svg.has-focus .prism-relation-graph-node.is-adjacent {
+  opacity: 1;
+}
+
+svg.has-focus .prism-relation-graph-node.is-hovered text {
+  fill: #11100f !important;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+:global(html[data-content-theme='nocturne']) svg.has-focus .prism-relation-graph-node.is-hovered text {
+  fill: #ffffff !important;
+}
+
+svg.has-focus .prism-relation-graph-node.is-adjacent text {
+  fill: #2a2826;
+  opacity: 0.85;
+}
+
+:global(html[data-content-theme='nocturne']) svg.has-focus .prism-relation-graph-node.is-adjacent text {
+  fill: #dcdad7;
 }
 
 .prism-relation-graph-empty {
@@ -396,11 +645,12 @@
   font-size: 13px;
 }
 
+/* 右侧列表卡片化悬浮设计 */
 .prism-relation-graph-list {
   display: flex;
   max-height: 420px;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
   overflow-y: auto;
 }
 
@@ -409,15 +659,39 @@
   min-width: 0;
   flex-direction: column;
   gap: 3px;
-  border-radius: var(--r-link);
-  padding: 9px 10px;
+  border: 1px solid transparent;
+  background: rgba(0, 0, 0, 0.01);
+  border-radius: 8px;
+  padding: 10px 12px;
   text-align: left;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.prism-relation-graph-list button:hover,
+.prism-relation-graph-list button:hover {
+  background: var(--c-chalk) !important;
+  border-color: var(--c-fog) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+}
+
 .prism-relation-graph-list button.is-active {
-  background: var(--c-chalk);
-  color: var(--c-void);
+  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-paper)) !important;
+  border-color: var(--miaoyan-accent, #1c5d33) !important;
+  border-left: 3.5px solid var(--miaoyan-accent, #1c5d33) !important;
+}
+
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-list button.is-active {
+  background: rgba(28, 93, 51, 0.04) !important;
+  border-color: rgba(28, 93, 51, 0.15) !important;
+  border-left: 3.5px solid var(--miaoyan-accent, #1c5d33) !important;
+}
+
+:global(html[data-content-theme='nocturne']) .prism-relation-graph-list button.is-active {
+  background: rgba(59, 122, 87, 0.08) !important;
+  border-color: rgba(59, 122, 87, 0.25) !important;
+  border-left: 3.5px solid #3b7a57 !important;
 }
 
 .prism-relation-graph-list span,
@@ -433,6 +707,11 @@
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
+}
+
+:global(html[data-content-theme='miaoyan']) .prism-relation-graph-list span {
+  color: var(--miaoyan-text);
+  font-family: var(--miaoyan-font);
 }
 
 .prism-relation-graph-list small,

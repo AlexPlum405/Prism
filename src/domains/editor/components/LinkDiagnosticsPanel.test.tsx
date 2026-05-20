@@ -13,7 +13,9 @@ describe('LinkDiagnosticsPanel', () => {
       />,
     );
 
-    expect(screen.queryByRole('dialog', { name: '链接问题' })).not.toBeInTheDocument();
+    const dialog = screen.queryByRole('dialog', { name: '链接问题' });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).not.toHaveClass('is-active');
   });
 
   it('lists diagnostics and jumps to the selected source line', () => {

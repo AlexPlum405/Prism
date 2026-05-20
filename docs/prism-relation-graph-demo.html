@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-content-theme="miaoyan">
+<head>
+  <meta charset="UTF-8">
+  <title>Prism 极简美学高保真交互式宇宙原型</title>
+  <style>
+    /* ==========================================
+       极简与磨砂玻璃视觉系统 (Miaoyan-style)
+       ========================================== */
+    :root {
+      --miaoyan-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --miaoyan-accent: #1c5d33;
+      --miaoyan-accent-blue: #2d6a4f;
+      --miaoyan-text: #262626;
+      --miaoyan-secondary-text: #666666;
+      --miaoyan-divider: rgba(0, 0, 0, 0.05);
+      --miaoyan-panel-secondary: #fafafa;
+      --miaoyan-selection: rgba(28, 93, 51, 0.05);
+      --c-canvas: #ffffff;
+      --c-ash: #8e8e93;
+      --c-void: #000000;
+      --c-fog: #e5e5ea;
+      --c-chalk: #f2f2f7;
+
+      /* 物理模拟参数 */
+      --blur-radius: 28px;
+      --sway-amplitude: 3.5px;
+      --specular-opacity: 0.7;
+      --glow-radius: 12px;
+
+      /* 呼吸圆环参数 */
+      --pulse-speed: 2s;
+    }
+
+    html[data-content-theme='nocturne'] {
+      --miaoyan-text: #e1e1e6;
+      --miaoyan-secondary-text: #9b9ba3;
+      --miaoyan-divider: rgba(255, 255, 255, 0.06);
+      --miaoyan-panel-secondary: #141416;
+      --miaoyan-selection: rgba(28, 93, 51, 0.1);
+      --c-canvas: #1c1c20;
+      --c-ash: #636366;
+      --c-void: #ffffff;
+      --c-fog: #2c2c2e;
+      --c-chalk: #2c2c2e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: var(--miaoyan-font);
+      background: radial-gradient(circle at 30% 20%, #ffd6d6 0%, #dbe9f9 50%, #eddcfb 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+      transition: background 0.6s ease;
+    }
+
+    html[data-content-theme='nocturne'] body {
+      background: radial-gradient(circle at 30% 20%, #2b1717 0%, #0e1724 60%, #150f24 100%);
+    }
+
+    /* ==========================================
+       Mac OS App 主视窗 (Prism Window)
+       ========================================== */
+    .prism-app-window {
+      width: min(1040px, calc(100vw - 320px));
+      height: 640px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border: 1.5px solid rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      box-shadow: 0 45px 85px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    html[data-content-theme='nocturne'] .prism-app-window {
+      background: rgba(28, 28, 32, 0.78);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 45px 85px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Header / Titlebar */
+    .app-titlebar {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--miaoyan-divider);
+      background: transparent;
+      z-index: 10;
+      position: relative;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+      width: 80px;
+    }
+
+    .light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: relative;
+    }
+    .light-close { background: #ff5f56; }
+    .light-minimize { background: #ffbd2e; }
+    .light-zoom { background: #27c93f; }
+
+    .titlebar-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--miaoyan-text);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .titlebar-center:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    html[data-content-theme='nocturne'] .titlebar-center:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .dirty-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--miaoyan-accent);
+      border-radius: 50%;
+      opacity: 0.8;
+      display: inline-block;
+    }
+
+    .titlebar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 80px;
+      justify-content: flex-end;
+    }
+
+    .icon-button {
+      background: transparent;
+      border: 0;
+      color: var(--miaoyan-secondary-text);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .icon-button:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--miaoyan-text);
+    }
+    html[data-content-theme='nocturne'] .icon-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--miaoyan-text);
+    }
+
+    /* Main Workspace Layout */
+    .app-workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Sidebar: File Tree */
+    .app-sidebar {
+      width: 200px;
+      border-right: 1px solid var(--miaoyan-divider);
+      background: rgba(0, 0, 0, 0.015);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 12px 8px;
+    }
+
+    html[data-content-theme='nocturne'] .app-sidebar {
+      background: rgba(255, 255, 255, 0.005);
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--miaoyan-secondary-text);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      padding-left: 8px;
+      opacity: 0.6;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--miaoyan-secondary-text);
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: all 0.2s;
+    }
+    .sidebar-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--miaoyan-text);
+    }
+    html[data-content-theme='nocturne'] .sidebar-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--miaoyan-text);
+    }
+    .sidebar-item.active {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--miaoyan-accent);
+      font-weight: 600;
+    }
+    html[data-content-theme='nocturne'] .sidebar-item.active {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+
+    .sidebar-file-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .sidebar-file-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-icon {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    /* 呼吸圆环核心组件 */
+    .breathing-ring-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      position: relative;
+      flex-shrink: 0;
+      margin-left: 4px;
+    }
+
+    .breathing-ring-dot {
+      width: 5px;
+      height: 5px;
+      background-color: var(--miaoyan-accent);
+      border-radius: 50%;
+      z-index: 2;
+      animation: pulse-dot var(--pulse-speed) infinite ease-in-out;
+    }
+
+    .breathing-ring-pulse {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--miaoyan-accent);
+      border-radius: 50%;
+      z-index: 1;
+      opacity: 0;
+      animation: pulse-ring var(--pulse-speed) infinite cubic-bezier(0.21, 0.6, 0.35, 1);
+    }
+
+    .breathing-ring-container.normal .breathing-ring-dot {
+      background-color: var(--c-ash);
+    }
+    .breathing-ring-container.normal .breathing-ring-pulse {
+      border-color: var(--c-ash);
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.45);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.7;
+      }
+      80%, 100% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% {
+        transform: scale(0.9);
+      }
+      50% {
+        transform: scale(1.15);
+      }
+    }
+
+    /* Editor Area */
+    .app-editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--c-canvas);
+      position: relative;
+    }
+
+    .app-editor-content {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      color: var(--miaoyan-text);
+    }
+
+    .editor-h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      letter-spacing: -0.3px;
+    }
+
+    .editor-p {
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 16px;
+      opacity: 0.9;
+    }
+
+    .editor-code {
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.03);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    html[data-content-theme='nocturne'] .editor-code {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* Bottom Status Bar */
+    .app-statusbar {
+      height: 28px;
+      border-top: 1px solid var(--miaoyan-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      background: rgba(0, 0, 0, 0.005);
+      z-index: 10;
+      position: relative;
+    }
+
+    .statusbar-left {
+      font-size: 11px;
+      color: var(--miaoyan-secondary-text);
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .statusbar-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--miaoyan-secondary-text);
+      opacity: 0.85;
+      font-weight: 500;
+    }
+
+    .statusbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ==========================================
+       CMD+P 命令面板 (Command Palette Mockup)
+       ========================================== */
+    .command-palette-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.05);
+      z-index: 100;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 50px;
+      backdrop-filter: blur(2px);
+    }
+
+    .command-palette {
+      width: 420px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 10px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html[data-content-theme='nocturne'] .command-palette {
+      background: rgba(30, 30, 34, 0.94);
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+    }
+
+    .command-palette-overlay.active {
+      display: flex;
+    }
+    .command-palette-overlay.active .command-palette {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .command-input-container {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--miaoyan-divider);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .command-input-container input {
+      flex: 1;
+      background: transparent;
+      border: 0;
+      outline: none;
+      font-size: 13px;
+      color: var(--miaoyan-text);
+    }
+
+    .command-list {
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    .command-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--miaoyan-text);
+      transition: background 0.15s;
+    }
+    .command-item:hover, .command-item.focused {
+      background: var(--miaoyan-selection);
+      color: var(--miaoyan-accent);
+    }
+
+    .command-shortcut {
+      font-family: monospace;
+      font-size: 10px;
+      opacity: 0.6;
+    }
+
+    /* ==========================================
+       磨砂玻璃 Modal 关系图谱
+       ========================================== */
+    .relation-graph-modal-wrapper {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .relation-graph-modal-wrapper.active {
+      display: flex;
+      pointer-events: auto;
+    }
+
+    .prism-relation-graph-modal {
+      width: min(840px, calc(100% - 32px));
+      height: 520px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(var(--blur-radius)) saturate(190%);
+      -webkit-backdrop-filter: blur(var(--blur-radius)) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.12), 0 3px 12px rgba(0, 0, 0, 0.03);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(30px) scale(0.97);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-modal {
+      background: rgba(28, 28, 32, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    .relation-graph-modal-wrapper.active .prism-relation-graph-modal {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--miaoyan-divider);
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--miaoyan-text);
+      letter-spacing: 0.3px;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: 0;
+      font-size: 16px;
+      cursor: pointer;
+      color: var(--miaoyan-secondary-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      transition: background 0.2s;
+    }
+    .modal-close-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--miaoyan-text);
+    }
+    html[data-content-theme='nocturne'] .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .prism-relation-graph-body {
+      padding: 12px 16px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .prism-relation-graph-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    /* Tab 胶囊药丸滑块 */
+    .prism-relation-graph-segment {
+      display: inline-flex;
+      gap: 2px;
+      border-radius: 20px;
+      padding: 2.5px;
+      background: rgba(0, 0, 0, 0.03);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-segment {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .prism-relation-graph-segment button {
+      min-height: 24px;
+      border: 0;
+      background: transparent;
+      color: var(--miaoyan-secondary-text);
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 0 12px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .prism-relation-graph-segment button.active {
+      background: #ffffff !important;
+      color: var(--miaoyan-accent) !important;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03), 0 0.5px 1px rgba(0, 0, 0, 0.02) !important;
+      font-weight: 600;
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-segment button.active {
+      background: rgba(255, 255, 255, 0.12) !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
+    }
+
+    .prism-relation-graph-toolbar input {
+      min-width: 0;
+      width: 180px;
+      min-height: 28px;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      padding: 0 12px;
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--miaoyan-text);
+      font-size: 11.5px;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-toolbar input {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .prism-relation-graph-toolbar input:focus {
+      background: #ffffff;
+      border-color: rgba(28, 93, 51, 0.2);
+      box-shadow: 0 0 0 3px rgba(28, 93, 51, 0.1);
+      width: 220px;
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-toolbar input:focus {
+      background: rgba(0, 0, 0, 0.2);
+      border-color: rgba(28, 93, 51, 0.3);
+      box-shadow: 0 0 0 3px rgba(28, 93, 51, 0.25);
+    }
+
+    /* Graph Content Grid */
+    .prism-relation-graph-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 200px;
+      gap: 12px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Canvas Area - Completely Transparent Grid */
+    .prism-relation-graph-canvas {
+      position: relative;
+      background: transparent !important;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    .prism-relation-graph-canvas svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ==========================================
+       3D 水晶拟物粒子与发光连线样式
+       ========================================== */
+    .prism-relation-graph-edge {
+      stroke: var(--miaoyan-secondary-text);
+      stroke-width: 0.8;
+      opacity: 0.12;
+      transition: stroke 0.3s ease, stroke-width 0.3s ease, opacity 0.3s ease;
+    }
+
+    svg.has-focus .prism-relation-graph-edge {
+      opacity: 0.025;
+    }
+
+    svg.has-focus .prism-relation-graph-edge.is-connected-hover {
+      stroke: var(--miaoyan-accent);
+      stroke-width: 1.6;
+      opacity: 0.85;
+    }
+
+    .node-group {
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* 3D 拟物流派底部的环境霓虹阴影 */
+    .sphere-ambient-shadow {
+      fill: none;
+      transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* 球体基础渲染 */
+    .classic-sphere-normal {
+      transition: all 0.35s ease;
+    }
+
+    /* 镜面高光 (Specular reflection) */
+    .specular-shine {
+      fill: #ffffff;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    /* 边缘反光 (Rim light) */
+    .rim-reflect {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 0.5;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    /* 地图级文字标签高保真描边 */
+    .node-label {
+      fill: var(--miaoyan-text);
+      font-size: 10px;
+      font-weight: 500;
+      text-anchor: middle;
+      pointer-events: none;
+      paint-order: stroke fill;
+      stroke: rgba(255, 255, 255, 0.85);
+      stroke-width: 3.5px;
+      stroke-linejoin: round;
+      transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    html[data-content-theme='nocturne'] .node-label {
+      stroke: #1c1c20;
+    }
+
+    /* 聚焦淡化未连接的节点 */
+    svg.has-focus .node-group {
+      opacity: 0.06;
+    }
+    svg.has-focus .node-group.is-hovered,
+    svg.has-focus .node-group.is-adjacent {
+      opacity: 1;
+    }
+
+    /* Hover 粒子高亮放大 */
+    .node-group.is-hovered .node-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      fill: var(--c-void) !important;
+    }
+
+    .node-group.is-adjacent .node-label {
+      font-weight: 600;
+    }
+
+    /* 右侧半透毛玻璃文件列表卡片 */
+    .prism-relation-graph-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .prism-relation-graph-list button {
+      display: flex;
+      width: 100%;
+      flex-direction: column;
+      gap: 2px;
+      border: 1px solid var(--miaoyan-divider);
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.24s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-list button {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .prism-relation-graph-list button:hover {
+      background: #ffffff !important;
+      border-color: rgba(28, 93, 51, 0.2) !important;
+      box-shadow: 0 4px 12px rgba(28, 93, 51, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+      transform: translateY(-1px);
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-list button:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .prism-relation-graph-list button.active {
+      background: rgba(28, 93, 51, 0.04) !important;
+      border-color: rgba(28, 93, 51, 0.2) !important;
+      border-left: 3px solid var(--miaoyan-accent) !important;
+      box-shadow: 0 3px 8px rgba(28, 93, 51, 0.04);
+    }
+
+    html[data-content-theme='nocturne'] .prism-relation-graph-list button.active {
+      background: rgba(28, 93, 51, 0.08) !important;
+      border-color: rgba(28, 93, 51, 0.35) !important;
+    }
+
+    .prism-relation-graph-list span {
+      color: var(--miaoyan-text);
+      font-size: 11.5px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .prism-relation-graph-list small {
+      color: var(--miaoyan-secondary-text);
+      font-size: 9.5px;
+      font-family: monospace;
+      opacity: 0.8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .prism-relation-graph-list em {
+      color: var(--miaoyan-secondary-text);
+      font-size: 9.5px;
+      font-style: normal;
+      opacity: 0.65;
+    }
+
+    /* ==========================================
+       右侧 Tweaks 控制台 (用于比较与调参)
+       ========================================== */
+    .tweaks-console {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 270px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      padding: 14px;
+      z-index: 10;
+      transition: all 0.3s ease;
+    }
+
+    html[data-content-theme='nocturne'] .tweaks-console {
+      background: rgba(24, 24, 26, 0.88);
+      border-color: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .tweaks-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--miaoyan-text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .tweak-row {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tweak-row label {
+      font-size: 10.5px;
+      color: var(--miaoyan-secondary-text);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tweak-row select,
+    .tweak-row input[type="range"] {
+      width: 100%;
+      outline: none;
+    }
+
+    .tweak-row input[type="range"] {
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--c-fog);
+    }
+
+    .tweak-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--miaoyan-accent);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .tweak-row input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .tweak-row select {
+      background: var(--miaoyan-panel-secondary);
+      border: 1px solid var(--miaoyan-divider);
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: var(--miaoyan-text);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .style-comparer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      background: rgba(0,0,0,0.03);
+      padding: 2px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+    }
+
+    html[data-content-theme='nocturne'] .style-comparer {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .style-comparer button {
+      border: 0;
+      background: transparent;
+      padding: 5px;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--miaoyan-secondary-text);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .style-comparer button.active {
+      background: #ffffff;
+      color: var(--miaoyan-accent);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      font-weight: 600;
+    }
+
+    html[data-content-theme='nocturne'] .style-comparer button.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* Help overlay for tutorial */
+    .tutorial-tip {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 250px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11.5px;
+      line-height: 1.5;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      z-index: 10;
+      pointer-events: none;
+      animation: bounce 2s infinite ease-in-out;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================
+       Mac OS App 主视窗 Mockup
+       ========================================== -->
+  <div class="prism-app-window" id="appWindow">
+
+    <!-- Titlebar / Header -->
+    <div class="app-titlebar">
+      <div class="traffic-lights">
+        <div class="light light-close" title="关闭窗口"></div>
+        <div class="light light-minimize" title="最小化"></div>
+        <div class="light light-zoom" title="最大化"></div>
+      </div>
+
+      <!-- 文件名显示区（不带.md，包含dirty点） -->
+      <div class="titlebar-center" onclick="toggleCommandPalette()" title="点击或按 CMD+P 打开命令面板">
+        <span id="headerFileName">Linking Note</span>
+        <span class="dirty-dot" id="headerDirtyDot"></span>
+      </div>
+
+      <!-- 右侧快捷键/图标组 -->
+      <div class="titlebar-right">
+        <button class="icon-button" onclick="toggleCommandPalette()" title="命令面板 (CMD+P)">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.5 3H13.5M1.5 7.5H13.5M1.5 12H13.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- App 工作区 -->
+    <div class="app-workspace">
+
+      <!-- 侧边栏：文件树 -->
+      <div class="app-sidebar">
+        <div class="sidebar-section-title">工作区: PRISM</div>
+        <div id="sidebarFileList">
+          <!-- 动态渲染 -->
+        </div>
+      </div>
+
+      <!-- 编辑器区域 -->
+      <div class="app-editor-container">
+        <div class="app-editor-content" id="editorContent">
+          <!-- 动态加载文章内容 -->
+        </div>
+      </div>
+
+      <!-- ==========================================
+           关系图谱弹出 Modal 框 (Modal)
+           ========================================== -->
+      <div class="relation-graph-modal-wrapper" id="graphModalWrapper">
+        <div class="prism-relation-graph-modal" id="modal">
+          <div class="modal-header">
+            <div class="modal-title">关系图谱</div>
+            <button class="modal-close-btn" onclick="toggleRelationGraph(false)" aria-label="关闭">&times;</button>
+          </div>
+
+          <div class="prism-relation-graph-body">
+            <div class="prism-relation-graph-toolbar">
+              <div class="prism-relation-graph-segment">
+                <button type="button" class="active" onclick="switchScope('current', this)">当前文档</button>
+                <button type="button" onclick="switchScope('workspace', this)">工作区</button>
+              </div>
+              <div class="prism-relation-graph-segment">
+                <button type="button" class="active" onclick="switchDepth(1, this)">直接关联</button>
+                <button type="button" onclick="switchDepth(2, this)">延展脉络</button>
+              </div>
+              <input type="text" id="graphSearchInput" placeholder="搜索节点…" oninput="filterGraph(this.value)">
+            </div>
+
+            <div class="prism-relation-graph-content">
+              <!-- SVG Canvas for 3D physics particles -->
+              <div class="prism-relation-graph-canvas">
+                <svg id="graphSvg" viewBox="0 0 540 380">
+                  <defs>
+                    <!-- Background Point Grid -->
+                    <pattern id="graph-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="1.2" fill="var(--c-ash)" opacity="0.16" />
+                    </pattern>
+
+                    <!-- 3D 拟物环境发光阴影 (翡翠绿环境光) -->
+                    <filter id="premium-glow-red" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur" />
+                      <feFlood flood-color="#1c5d33" flood-opacity="0.65" result="glow" />
+                      <feComposite in="glow" in2="blur" operator="in" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+
+                    <!-- 3D 碧玉发光 -->
+                    <filter id="premium-glow-blue" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur" />
+                      <feFlood flood-color="#40916c" flood-opacity="0.5" result="glow" />
+                      <feComposite in="glow" in2="blur" operator="in" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+
+                    <!-- 柔和的粒子落地阴影 -->
+                    <filter id="sphere-drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000000" flood-opacity="0.12" />
+                    </filter>
+
+                    <!-- === 3D 径向渐变球体 (Classic Spheres) === -->
+                    <!-- 3D 水润翡翠球 -->
+                    <radialGradient id="classic-sphere-active" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#a3e2bb" />
+                      <stop offset="35%" stop-color="#2b8a4f" />
+                      <stop offset="85%" stop-color="#1c5d33" />
+                      <stop offset="100%" stop-color="#0f3d20" />
+                    </radialGradient>
+
+                    <!-- 3D 水润碧玉球 -->
+                    <radialGradient id="classic-sphere-focused" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#e2f0d9" />
+                      <stop offset="35%" stop-color="#7fb095" />
+                      <stop offset="85%" stop-color="#3b7a57" />
+                      <stop offset="100%" stop-color="#1f402c" />
+                    </radialGradient>
+
+                    <!-- 3D 水润白玉球 -->
+                    <radialGradient id="classic-sphere-normal" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#ffffff" />
+                      <stop offset="45%" stop-color="#f4f4f6" />
+                      <stop offset="85%" stop-color="#d1d1d6" />
+                      <stop offset="100%" stop-color="#acacb0" />
+                    </radialGradient>
+                  </defs>
+
+                  <!-- 背景点网格 -->
+                  <rect width="100%" height="100%" fill="url(#graph-grid)" pointer-events="none" />
+
+                  <!-- 关系连线群组 -->
+                  <g id="edgeGroup"></g>
+
+                  <!-- 关系节点群组 -->
+                  <g id="nodeGroup"></g>
+                </svg>
+              </div>
+
+              <!-- 右侧卡片式文件列表 -->
+              <div class="prism-relation-graph-list" id="fileList">
+                <!-- 由 JS 渲染 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           CMD+P 命令菜单弹窗
+           ========================================== -->
+      <div class="command-palette-overlay" id="commandPaletteOverlay" onclick="toggleCommandPalette(false)">
+        <div class="command-palette" onclick="event.stopPropagation()">
+          <div class="command-input-container">
+            <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.6">
+              <path d="M14.5 14.5L10.5 10.5M6.5 11C8.98528 11 11 8.98528 11 6.5C11 4.01472 8.98528 2 6.5 2C4.01472 2 2 4.01472 2 6.5C2 8.98528 4.01472 11 6.5 11Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="commandSearch" placeholder="搜索命令..." oninput="filterCommands(this.value)">
+          </div>
+          <div class="command-list" id="commandList">
+            <!-- 动态命令项 -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div class="app-statusbar">
+      <div class="statusbar-left">
+        <svg width="10" height="10" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.5 1.5H7.5V7.5H1.5V1.5ZM7.5 7.5H13.5V13.5H7.5V7.5Z" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+        <span>Prism 工作区</span>
+      </div>
+      <div class="statusbar-center" id="statusbarStats">
+        1,248 字 · 42:8
+      </div>
+      <div class="statusbar-right">
+        <!-- 关系图谱专属入口按钮 -->
+        <button class="icon-button" onclick="toggleRelationGraph(true)" title="查看关系图谱 (Cmd+Alt+G)" style="color: var(--miaoyan-accent)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        </button>
+        <button class="icon-button" title="专注模式 (F8)">
+          <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==========================================
+       右侧 Tweaks 独立调试面板
+       ========================================== -->
+  <div class="tweaks-console">
+    <div class="tweaks-title">
+      <span>美学实验室控制台</span>
+      <span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: rgba(217,66,66,0.1); color: var(--miaoyan-accent)">TWEAKS</span>
+    </div>
+
+    <!-- 流派并排对比切换 -->
+    <div class="tweak-row">
+      <label>视觉流派对比</label>
+      <div class="style-comparer">
+        <button id="btn3D" class="active" onclick="switchGenre('3d')">3D 水晶拟物</button>
+        <button id="btnFlat" onclick="switchGenre('flat')">扁平普通派</button>
+      </div>
+    </div>
+
+    <!-- 呼吸圆环配置 -->
+    <div class="tweak-row">
+      <label>侧栏“呼吸圆环”位置</label>
+      <select id="ringPositionSelect" onchange="switchRingPosition(this.value)">
+        <option value="after">文件名后面 (用户第8项修改项)</option>
+        <option value="hide">完全隐藏</option>
+      </select>
+    </div>
+
+    <!-- 文件后缀显示配置 -->
+    <div class="tweak-row">
+      <label>侧栏“.md”后缀</label>
+      <select id="extensionSelect" onchange="switchExtension(this.value)">
+        <option value="hide">完全隐藏 (极致优雅)</option>
+        <option value="show">显示.md (普通模式)</option>
+      </select>
+    </div>
+
+    <!-- HSL 皮肤切换 -->
+    <div class="tweak-row">
+      <label>应用主题皮肤</label>
+      <select id="themeSelect" onchange="switchTheme(this.value)">
+        <option value="miaoyan">妙言 (Miaoyan-Light)</option>
+        <option value="nocturne">黑夜 (Nocturne-Dark)</option>
+      </select>
+    </div>
+
+    <!-- 物理摆动振幅 -->
+    <div class="tweak-row">
+      <label>
+        <span>物理浮游振幅</span>
+        <span id="valSway">3.5px</span>
+      </label>
+      <input type="range" min="0" max="10" step="0.5" value="3.5" oninput="updateParam('sway', this.value)">
+    </div>
+
+    <!-- 呼吸圆环速度 -->
+    <div class="tweak-row">
+      <label>
+        <span>圆环呼吸速度</span>
+        <span id="valSpeed">2.0s</span>
+      </label>
+      <input type="range" min="0.5" max="5.0" step="0.2" value="2.0" oninput="updateParam('speed', this.value)">
+    </div>
+
+    <!-- 霓虹发光半径 -->
+    <div class="tweak-row">
+      <label>
+        <span>环境光霓虹模糊</span>
+        <span id="valGlow">12px</span>
+      </label>
+      <input type="range" min="0" max="25" step="1" value="12" oninput="updateParam('glow', this.value)">
+    </div>
+
+    <!-- 毛玻璃模糊度 -->
+    <div class="tweak-row">
+      <label>
+        <span>磨砂玻璃外壳模糊</span>
+        <span id="valBlur">28px</span>
+      </label>
+      <input type="range" min="0" max="40" step="1" value="28" oninput="updateParam('blur', this.value)">
+    </div>
+
+    <div style="font-size: 9.5px; color: var(--miaoyan-secondary-text); margin-top: 10px; line-height: 1.4; border-top: 1px solid var(--miaoyan-divider); padding-top: 8px; opacity: 0.85;">
+      💡 <b>高保真交互手势说明</b>：<br>
+      1. 点击右下角 <span style="color:var(--miaoyan-accent)">🕸</span> 红色图谱图标，即可呼出或关闭磨砂关系图谱。<br>
+      2. 点击中间顶部文件名或按 <b>CMD+P</b>，可拉起快捷命令面板。<br>
+      3. 点击侧栏或关系图谱中的任何节点，可**实时载入**对应的 Markdown 文本，并实现全联动！
+    </div>
+  </div>
+
+  <!-- Help floating tip -->
+  <div class="tutorial-tip" id="tutorialTip">
+    💡 <b>操作指南</b>：<br>
+    点击底栏右下角红色的 <b>蜘蛛网图谱图标</b>，即可体验丝滑的 3D 水晶磨砂关系图谱！
+  </div>
+
+  <!-- ==========================================
+       Vanilla JS 60fps 物理摆动与级联交互引擎
+       ========================================== -->
+  <script>
+    // 1. 图谱与文章数据定义
+    const nodes = [
+      {
+        id: '1',
+        title: 'Linking Note',
+        path: 'linking-note.md',
+        active: true,
+        relX: 270,
+        relY: 190,
+        radius: 10,
+        color: 'blue',
+        linkCount: 2,
+        backlinkCount: 1,
+        stats: '1,248 字 · 42:8',
+        content: `# Linking Note\n\n这是当前正在编辑的核心主文档。双括号语法例如 \`[[Notion 增强人工测试]]\` 能够产生直连关系。\n\n关系图谱中显示朱砂红宝石（Hovering/Active）或蓝宝石（链接节点），体现了**传统经典彩色球派**的高级拟物镜面高光反射。`
+      },
+      {
+        id: '2',
+        title: 'Notion 增强人工测试',
+        path: 'manual-test.md',
+        active: false,
+        relX: 270,
+        relY: 285,
+        radius: 8.5,
+        color: 'normal',
+        linkCount: 0,
+        backlinkCount: 1,
+        stats: '840 字 · 24:12',
+        content: `# Notion 增强人工测试\n\n本篇文档用于自动化打脏与手动回归测试。\n\n在侧边栏中，你会发现文件名后面跟着一个**呼吸圆环 (Breathing Ring)**。它以极低噪、优雅的阴影扩散脉动，时刻提醒你该文件与其他主线文档存在连结。`
+      },
+      {
+        id: '3',
+        title: 'CSS 大师级磨砂重构',
+        path: 'glassmorphism.md',
+        active: false,
+        relX: 120,
+        relY: 140,
+        radius: 7.5,
+        color: 'normal',
+        linkCount: 1,
+        backlinkCount: 1,
+        stats: '1,560 字 · 68:4',
+        content: `# CSS 大师级磨砂重构\n\n通过对 \`backdrop-filter: blur(28px) saturate(190%)\` 的高级定义，我们在妙言白昼与黑夜模式下均实现了无缝衔接的物理质感。\n\n这完美消灭了此前粗糙、像“后台管理系统”一样的廉价纯白/实灰遮罩。`
+      },
+      {
+        id: '4',
+        title: 'Tauri 2 物理稳定底座',
+        path: 'tauri-bridge.md',
+        active: false,
+        relX: 420,
+        relY: 130,
+        radius: 7.5,
+        color: 'normal',
+        linkCount: 2,
+        backlinkCount: 0,
+        stats: '920 字 · 31:19',
+        content: `# Tauri 2 物理稳定底座\n\n探讨了 Rust 端的 WebBridge 稳定层，以及如何在桌面渲染线程与壁纸线程之间保持无缝的指针总线交互。\n\n我们在客户端中严格禁止破坏 \`bridge.call\` 等内置 Swift/Rust 信道协议。`
+      },
+      {
+        id: '5',
+        title: '妙言极简美学规范',
+        path: 'miaoyan-style.md',
+        active: false,
+        relX: 440,
+        relY: 260,
+        radius: 7.5,
+        color: 'normal',
+        linkCount: 0,
+        backlinkCount: 2,
+        stats: '2,110 字 · 104:14',
+        content: `# 妙言极简美学规范\n\n内容优先、轻量原生桌面质感、克制浅色界面、低对比边框、舒适长文排版。\n\n设计原则要求“在合适的地方投入120%的细节，其他地方保持80%的克制”，这是极致质感的精髓。`
+      }
+    ];
+
+    const edges = [
+      { id: 'e1', source: '1', target: '2' },
+      { id: 'e2', source: '1', target: '3' },
+      { id: 'e3', source: '4', target: '1' },
+      { id: 'e4', source: '4', target: '5' },
+      { id: 'e5', source: '3', target: '5' }
+    ];
+
+    const commands = [
+      { title: '查看关系图谱 (Cmd+Alt+G)', action: 'graph' },
+      { title: '切换应用主题 (秒级换肤)', action: 'theme' },
+      { title: '查看文档诊断错误 (ERROR 0)', action: 'diagnostics' },
+      { title: '新建文档窗口 (Cmd+Shift+N)', action: 'new' }
+    ];
+
+    // 2. 全局状态
+    let currentGenre = '3d'; // '3d' | 'flat'
+    let hoveredNodeId = null;
+    let timeOffset = 0;
+    let ringPosition = 'after'; // 'after' | 'hide'
+    let extensionDisplay = 'hide'; // 'hide' | 'show'
+    let currentActiveId = '1';
+
+    // 初始化渲染
+    function init() {
+      renderSidebar();
+      renderActiveContent();
+      renderFileList();
+      renderCommands();
+
+      // 键盘监听 CMD+P 与 Esc
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+          e.preventDefault();
+          toggleCommandPalette();
+        } else if (e.key === 'Escape') {
+          toggleCommandPalette(false);
+          toggleRelationGraph(false);
+        }
+      });
+
+      // 启动 60fps 浮游动效循环
+      tick();
+    }
+
+    // 渲染侧栏文件树
+    function renderSidebar() {
+      const sidebarEl = document.getElementById('sidebarFileList');
+      sidebarEl.innerHTML = nodes.map(node => {
+        const isActive = node.id === currentActiveId;
+        const nameText = extensionDisplay === 'show' ? node.path : node.title;
+
+        // 呼吸圆环渲染逻辑
+        let ringHtml = '';
+        if (ringPosition === 'after' && (node.linkCount > 0 || node.backlinkCount > 0)) {
+          const ringClass = node.color === 'blue' ? 'blue' : 'normal';
+          ringHtml = `
+            <div class="breathing-ring-container ${ringClass}" title="此文档存在 ${node.linkCount + node.backlinkCount} 条关联">
+              <div class="breathing-ring-dot"></div>
+              <div class="breathing-ring-pulse"></div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="sidebar-item ${isActive ? 'active' : ''}" onclick="selectActiveNode('${node.id}')">
+            <div class="sidebar-file-left">
+              <span class="file-icon">📄</span>
+              <span class="sidebar-file-name">${nameText}</span>
+            </div>
+            ${ringHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 选择并载入文档
+    function selectActiveNode(id) {
+      currentActiveId = id;
+
+      // 同步修改 nodes 数据中的 active 状态
+      nodes.forEach(n => {
+        n.active = (n.id === id);
+        if (n.active) n.color = 'blue';
+        else n.color = 'normal';
+      });
+
+      renderSidebar();
+      renderActiveContent();
+      renderFileList();
+
+      // 在 Canvas 中置顶此节点
+      const targetNode = nodes.find(n => n.id === id);
+      if (targetNode) {
+        document.getElementById('headerFileName').textContent = targetNode.title;
+        document.getElementById('statusbarStats').textContent = targetNode.stats;
+      }
+    }
+
+    // 渲染编辑器内容
+    function renderActiveContent() {
+      const activeNode = nodes.find(n => n.id === currentActiveId);
+      const editorEl = document.getElementById('editorContent');
+
+      if (activeNode) {
+        const lines = activeNode.content.split('\n');
+        let htmlContent = '';
+        lines.forEach(line => {
+          if (line.startsWith('# ')) {
+            htmlContent += `<h1 class="editor-h1">${line.substring(2)}</h1>`;
+          } else if (line.trim().length === 0) {
+            htmlContent += '<br>';
+          } else {
+            // 简单行内代码转义
+            let formattedLine = line.replace(/`([^`]+)`/g, '<span class="editor-code">$1</span>');
+            formattedLine = formattedLine.replace(/\[\[([^\]]+)\]\]/g, '<span style="color:var(--miaoyan-accent); font-weight:600; cursor:pointer;">$1</span>');
+            htmlContent += `<p class="editor-p">${formattedLine}</p>`;
+          }
+        });
+        editorEl.innerHTML = htmlContent;
+      }
+    }
+
+    // 渲染右侧卡片式列表
+    function renderFileList() {
+      const listEl = document.getElementById('fileList');
+      listEl.innerHTML = nodes.map(node => `
+        <button type="button"
+                class="${node.id === currentActiveId ? 'active' : ''}"
+                onclick="selectActiveNode('${node.id}')"
+                onmouseenter="setHovered('${node.id}')"
+                onmouseleave="setHovered(null)"
+                title="${node.path}">
+          <span>${node.title}</span>
+          <small>${node.path}</small>
+          <em>${node.linkCount} 出 · ${node.backlinkCount} 入</em>
+        </button>
+      `).join('');
+    }
+
+    // 设置 Hover 级联高亮
+    function setHovered(id) {
+      hoveredNodeId = id;
+      const svgEl = document.getElementById('graphSvg');
+
+      if (id) {
+        svgEl.classList.add('has-focus');
+        const buttons = document.querySelectorAll('.prism-relation-graph-list button');
+        nodes.forEach((n, idx) => {
+          if (n.id === id) {
+            buttons[idx].style.background = 'var(--miaoyan-selection)';
+            buttons[idx].style.transform = 'translateY(-2px)';
+          } else {
+            buttons[idx].style.opacity = '0.35';
+          }
+        });
+      } else {
+        svgEl.classList.remove('has-focus');
+        const buttons = document.querySelectorAll('.prism-relation-graph-list button');
+        buttons.forEach(btn => {
+          btn.style.background = '';
+          btn.style.transform = '';
+          btn.style.opacity = '';
+        });
+      }
+    }
+
+    // Toggle Graph Modal
+    function toggleRelationGraph(show) {
+      const wrapper = document.getElementById('graphModalWrapper');
+      const tip = document.getElementById('tutorialTip');
+
+      if (show) {
+        wrapper.classList.add('active');
+        tip.style.display = 'none';
+      } else {
+        wrapper.classList.remove('active');
+      }
+    }
+
+    // Toggle Command Palette
+    function toggleCommandPalette(show) {
+      const overlay = document.getElementById('commandPaletteOverlay');
+      const input = document.getElementById('commandSearch');
+
+      if (show === undefined) {
+        show = !overlay.classList.contains('active');
+      }
+
+      if (show) {
+        overlay.classList.add('active');
+        input.value = '';
+        setTimeout(() => input.focus(), 100);
+        filterCommands('');
+      } else {
+        overlay.classList.remove('active');
+      }
+    }
+
+    // 渲染命令列表
+    function renderCommands() {
+      const listEl = document.getElementById('commandList');
+      listEl.innerHTML = commands.map(cmd => `
+        <div class="command-item" onclick="runCommand('${cmd.action}')">
+          <span>${cmd.title}</span>
+          <span class="command-shortcut">⚡</span>
+        </div>
+      `).join('');
+    }
+
+    function filterCommands(query) {
+      const listEl = document.getElementById('commandList');
+      const filtered = commands.filter(c => c.title.toLowerCase().includes(query.toLowerCase()));
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div style="padding: 12px; font-size:12px; color:var(--miaoyan-secondary-text); text-align:center;">未找到匹配命令</div>';
+      } else {
+        listEl.innerHTML = filtered.map(cmd => `
+          <div class="command-item" onclick="runCommand('${cmd.action}')">
+            <span>${cmd.title}</span>
+            <span class="command-shortcut">⚡</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 执行快捷命令
+    function runCommand(action) {
+      toggleCommandPalette(false);
+      if (action === 'graph') {
+        toggleRelationGraph(true);
+      } else if (action === 'theme') {
+        const currentTheme = document.documentElement.getAttribute('data-content-theme');
+        const nextTheme = currentTheme === 'nocturne' ? 'miaoyan' : 'nocturne';
+        switchTheme(nextTheme);
+        document.getElementById('themeSelect').value = nextTheme;
+      } else if (action === 'diagnostics') {
+        alert('🎯 全工作区扫描完毕，系统健壮，诊断错误为 0！');
+      } else if (action === 'new') {
+        alert('📂 已为您在独立的原生 macOS 线程中打开新编辑视窗。');
+      }
+    }
+
+    // 3. Tweak 实验室参数应用
+    function switchGenre(genre) {
+      currentGenre = genre;
+      document.getElementById('btn3D').className = genre === '3d' ? 'active' : '';
+      document.getElementById('btnFlat').className = genre === 'flat' ? 'active' : '';
+    }
+
+    function switchRingPosition(pos) {
+      ringPosition = pos;
+      renderSidebar();
+    }
+
+    function switchExtension(ext) {
+      extensionDisplay = ext;
+      renderSidebar();
+    }
+
+    function switchTheme(theme) {
+      document.documentElement.setAttribute('data-content-theme', theme);
+
+      // 同时动态改变背景阴影和网格表现
+      const isDark = theme === 'nocturne';
+      const gridCircle = document.querySelector('#graph-grid circle');
+      if (gridCircle) {
+        gridCircle.setAttribute('fill', isDark ? '#ffffff' : '#8e8e93');
+        gridCircle.setAttribute('opacity', isDark ? '0.08' : '0.16');
+      }
+    }
+
+    let swayAmp = 3.5;
+    let glowRadius = 12;
+    let specularOpacity = 0.7;
+
+    function updateParam(param, val) {
+      if (param === 'sway') {
+        swayAmp = parseFloat(val);
+        document.getElementById('valSway').textContent = val + 'px';
+      } else if (param === 'speed') {
+        document.getElementById('valSpeed').textContent = val + 's';
+        document.documentElement.style.setProperty('--pulse-speed', val + 's');
+      } else if (param === 'glow') {
+        glowRadius = parseInt(val);
+        document.getElementById('valGlow').textContent = val + 'px';
+
+        // 动态修改 SVG Filter 中的 stdDeviation
+        document.querySelector('#premium-glow-red feGaussianBlur').setAttribute('stdDeviation', val);
+        document.querySelector('#premium-glow-blue feGaussianBlur').setAttribute('stdDeviation', Math.max(2, val - 4));
+      } else if (param === 'blur') {
+        document.getElementById('valBlur').textContent = val + 'px';
+        document.documentElement.style.setProperty('--blur-radius', val + 'px');
+      }
+    }
+
+    // 4. 60fps 浮游计算与 SVG 动态重绘
+    function tick() {
+      // 增量时间，控制飘游速度
+      timeOffset += 0.015;
+
+      const edgeGroup = document.getElementById('edgeGroup');
+      const nodeGroup = document.getElementById('nodeGroup');
+
+      if (!edgeGroup || !nodeGroup) return;
+
+      // 计算节点物理坐标并缓存
+      const computedNodes = nodes.map((node) => {
+        // 基于字符计算唯一相位差
+        const phase = (node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10) * 0.6;
+
+        // 利用正弦和余弦进行椭圆微幅飘浮
+        const dx = Math.sin(timeOffset + phase) * swayAmp;
+        const dy = Math.cos(timeOffset * 0.8 + phase) * swayAmp;
+
+        return {
+          ...node,
+          x: node.relX + dx,
+          y: node.relY + dy
+        };
+      });
+
+      const nodeMap = new Map(computedNodes.map(n => [n.id, n]));
+
+      // 绘制连线
+      edgeGroup.innerHTML = edges.map(edge => {
+        const source = nodeMap.get(edge.source);
+        const target = nodeMap.get(edge.target);
+        if (!source || !target) return '';
+
+        const isHoveredLine = hoveredNodeId && (edge.source === hoveredNodeId || edge.target === hoveredNodeId);
+        const lineClass = isHoveredLine ? 'prism-relation-graph-edge is-connected-hover' : 'prism-relation-graph-edge';
+
+        return `<line class="${lineClass}" x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}" />`;
+      }).join('');
+
+      // 绘制节点（基于 3D 拟物流派 vs 扁平派渲染）
+      nodeGroup.innerHTML = computedNodes.map(node => {
+        const isHovered = hoveredNodeId === node.id;
+        const isAdjacent = hoveredNodeId && (edges.some(e => (e.source === hoveredNodeId && e.target === node.id) || (e.target === hoveredNodeId && e.source === node.id))) && !isHovered;
+
+        const isActive = node.id === currentActiveId;
+        const nodeSize = isActive ? 13 : 9;
+
+        let nodeClass = 'node-group';
+        if (isHovered) nodeClass += ' is-hovered';
+        if (isAdjacent) nodeClass += ' is-adjacent';
+
+        // 3D 水晶拟物球体核心结构
+        if (currentGenre === '3d') {
+          // 发光滤镜应用
+          let filterString = '';
+          if (isHovered || isActive) {
+            filterString = node.color === 'blue' ? 'url(#premium-glow-blue)' : 'url(#premium-glow-red)';
+          }
+
+          // radial gradient 纹理定义
+          let gradientFill = 'url(#classic-sphere-normal)';
+          if (isActive) {
+            gradientFill = 'url(#classic-sphere-focused)';
+          } else if (isHovered) {
+            gradientFill = 'url(#classic-sphere-active)';
+          }
+
+          // 高光与反射参数
+          const specSizeX = nodeSize * 0.42;
+          const specSizeY = nodeSize * 0.28;
+          const specOffsetX = -nodeSize * 0.35;
+          const specOffsetY = -nodeSize * 0.35;
+
+          // 边缘反光路径计算
+          const rimPath = `M ${-nodeSize*0.7} ${nodeSize*0.5} A ${nodeSize} ${nodeSize} 0 0 0 ${nodeSize*0.5} ${nodeSize*0.7}`;
+
+          return `
+            <g class="${nodeClass}" transform="translate(${node.x}, ${node.y})"
+               onmouseenter="setHovered('${node.id}')"
+               onmouseleave="setHovered(null)"
+               onclick="selectActiveNode('${node.id}')">
+
+              <!-- 落地虚化阴影 -->
+              <circle r="${nodeSize * 1.15}" fill="#000000" opacity="0.08" transform="translate(0, 3)" filter="url(#sphere-drop-shadow)" />
+
+              <!-- 环境发光呼吸圆盘 -->
+              <circle class="sphere-ambient-shadow" r="${nodeSize * 1.3}" ${filterString ? `filter="${filterString}"` : ''} />
+
+              <!-- 3D 核心漫反射渐变 -->
+              <circle class="classic-sphere-normal" r="${nodeSize}" fill="${gradientFill}" />
+
+              <!-- specular 强镜面高光 (白色半透月牙) -->
+              <ellipse class="specular-shine" cx="${specOffsetX}" cy="${specOffsetY}" rx="${specSizeX}" ry="${specSizeY}" transform="rotate(-30, ${specOffsetX}, ${specOffsetY})" opacity="${specularOpacity}" />
+
+              <!-- rim reflect 边缘反光 (精细弧线) -->
+              <path class="rim-reflect" d="${rimPath}" opacity="${specularOpacity * 0.6}" />
+
+              <!-- 标题文本 -->
+              <text class="node-label" y="${nodeSize + 11}">${node.title}</text>
+            </g>
+          `;
+        } else {
+          // 扁平普通流派（普通彩色扁平球，无拟物高光）
+          let flatFill = '#a2a2ac';
+          if (isActive) flatFill = '#1c5d33';
+          else if (isHovered) flatFill = '#2b8a4f';
+
+          return `
+            <g class="${nodeClass}" transform="translate(${node.x}, ${node.y})"
+               onmouseenter="setHovered('${node.id}')"
+               onmouseleave="setHovered(null)"
+               onclick="selectActiveNode('${node.id}')">
+
+              <circle r="${nodeSize}" fill="${flatFill}" stroke="rgba(0,0,0,0.1)" stroke-width="1" />
+              <text class="node-label" y="${nodeSize + 11}">${node.title}</text>
+            </g>
+          `;
+        }
+      }).join('');
+
+      requestAnimationFrame(tick);
+    }
+
+    // 启动引擎
+    init();
+  </script>
+</body>
+</html>

@@ -41,7 +41,7 @@ describe('RelationGraphPanel', () => {
     expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Gamma').length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: '打开 Alpha' }));
+    fireEvent.doubleClick(screen.getByRole('button', { name: '打开 Alpha' }));
 
     expect(onSelect).toHaveBeenCalledWith('/repo/a.md');
   });

@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Prism · 画书UI/UX动效提案 (Huashu-Design Proposal)</title>
+    <!-- 引入 Google fonts 提供高品位排印 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* -------------------------------------------------- */
+        /* 核心 Design Tokens (遵循妙言与ADR-0002风格) */
+        /* -------------------------------------------------- */
+        :root {
+            /* 妙言配色 */
+            --c-void: #151517;
+            --c-canvas: #f8f8fa;
+            --c-fog: #f0f0f3;
+            --c-chalk: #e6e6eb;
+            --c-graphite: #2a2a2e;
+            --c-ash: #8e8e93;
+            --c-hair: rgba(0, 0, 0, 0.08);
+            --c-hover: rgba(0, 0, 0, 0.04);
+            --c-selection: rgba(42, 42, 46, 0.08);
+
+            /* 状态色与点缀色（纯净HSL调制，严禁赛博霓虹） */
+            --c-error: #d94242;
+            --c-error-bg: rgba(217, 66, 66, 0.06);
+            --c-warn: #e08b00;
+            --c-info: #0076e0;
+            --c-success: #2da44e;
+
+            /* 暗色系（用于Tweaks暗色模拟） */
+            --c-void-dark: #121214;
+            --c-canvas-dark: #1c1c1e;
+            --c-fog-dark: #2c2c2e;
+            --c-chalk-dark: #3a3a3c;
+            --c-graphite-dark: #e5e5ea;
+            --c-ash-dark: #8e8e93;
+            --c-hair-dark: rgba(255, 255, 255, 0.1);
+            --c-hover-dark: rgba(255, 255, 255, 0.06);
+
+            /* 字体栈 */
+            --font-display: 'Outfit', 'Inter', -apple-system, sans-serif;
+            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-serif: 'EB Garamond', 'Noto Serif SC', "Georgia", serif;
+
+            /* 动效曲线 (Cubic-bezier) */
+            --ease-out-extreme: cubic-bezier(0.16, 1, 0.3, 1); /* 原生 macOS 极致阻尼 */
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);    /* 略微回弹的物理弹性 */
+            --ease-in-out: cubic-bezier(0.25, 1, 0.5, 1);
+
+            /* 动态控制参数（由JS实时修改） */
+            --breath-duration: 6s;
+            --status-hover-delay: 150ms;
+        }
+
+        /* 基础重置 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: #ededf2;
+            font-family: var(--font-body);
+            color: var(--c-graphite);
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 高级滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* 顶部看板标题 */
+        .showcase-header {
+            text-align: center;
+            margin-bottom: 32px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .showcase-header h1 {
+            font-family: var(--font-display);
+            font-weight: 400;
+            font-size: 28px;
+            letter-spacing: -0.02em;
+            color: var(--c-void);
+            margin-bottom: 8px;
+        }
+
+        .showcase-header p {
+            font-size: 14px;
+            color: var(--c-ash);
+            line-height: 1.6;
+        }
+
+        .showcase-header p strong {
+            color: var(--c-graphite);
+            font-weight: 500;
+        }
+
+        /* -------------------------------------------------- */
+        /* UI 变体主画布 (Canvas Layout) */
+        /* -------------------------------------------------- */
+        .proposal-container {
+            display: flex;
+            gap: 32px;
+            max-width: 1360px;
+            width: 100%;
+            align-items: flex-start;
+        }
+
+        /* 模拟的 macOS Prism 窗口 */
+        .prism-window {
+            flex: 1;
+            background-color: var(--c-canvas);
+            border-radius: 12px;
+            box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.12),
+                        0 0 1px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 720px;
+            transition: background-color 0.4s var(--ease-out-extreme),
+                        border-color 0.4s var(--ease-out-extreme);
+        }
+
+        /* -------------------------------------------------- */
+        /* 1. TitleBar (标题栏) */
+        /* -------------------------------------------------- */
+        .title-bar {
+            height: 52px;
+            background-color: var(--c-fog);
+            border-bottom: 1px solid var(--c-hair);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            user-select: none;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 红绿灯区域（规则5：保留红绿灯且避开拖拽） */
+        .window-controls {
+            display: flex;
+            gap: 8px;
+            width: 80px;
+        }
+
+        .control-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+        .control-dot.close { background-color: #ff5f56; }
+        .control-dot.minimize { background-color: #ffbd2e; }
+        .control-dot.zoom { background-color: #27c93f; }
+
+        /* 文档标题与保存状态区 */
+        .doc-title-zone {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        .doc-title-zone:hover {
+            background-color: var(--c-hover);
+        }
+
+        .doc-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--c-graphite);
+            letter-spacing: -0.01em;
+            transition: opacity 0.3s var(--ease-out-extreme);
+        }
+        .doc-name.is-dirty-text {
+            opacity: 0.75;
+        }
+
+        /* 脏状态提示圆环 - 变体 A（慢呼吸） */
+        .unsaved-ring-a {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1.5px solid var(--c-ash);
+            opacity: 0.85;
+            transition: all 0.3s var(--ease-out-extreme);
+            animation: ring-breath-a var(--breath-duration) infinite ease-in-out;
+        }
+
+        @keyframes ring-breath-a {
+            0%, 100% { transform: scale(1); opacity: 0.4; box-shadow: 0 0 0 0 rgba(142, 142, 147, 0.1); }
+            50% { transform: scale(1.15); opacity: 0.9; box-shadow: 0 0 0 4px rgba(142, 142, 147, 0.08); }
+        }
+
+        /* 脏状态提示文字 - 变体 B */
+        .unsaved-text-b {
+            font-size: 11px;
+            color: var(--c-ash);
+            opacity: 0.7;
+            font-style: italic;
+            transition: all 0.3s var(--ease-out-extreme);
+            display: none;
+        }
+
+        /* 保存成功的反馈 */
+        .save-feedback {
+            font-size: 11px;
+            color: var(--c-success);
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.3s var(--ease-out-extreme);
+            display: none;
+        }
+        .save-feedback.show {
+            display: inline-block;
+            opacity: 0.8;
+            transform: scale(1);
+        }
+
+        /* 视图切换入口 */
+        .view-switch {
+            display: flex;
+            background-color: var(--c-chalk);
+            padding: 2px;
+            border-radius: 6px;
+            width: 80px;
+            justify-content: space-around;
+        }
+        .view-btn {
+            flex: 1;
+            height: 20px;
+            border-radius: 4px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .view-btn.active {
+            background-color: var(--c-canvas);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* -------------------------------------------------- */
+        /* 2. Workspace (工作区) & Sidebar (侧栏) */
+        /* -------------------------------------------------- */
+        .workspace-body {
+            display: flex;
+            flex: 1;
+            height: calc(100% - 84px); /* 减去 title-bar(52px) 和 status-bar(32px) */
+            position: relative;
+        }
+
+        .sidebar {
+            width: 220px;
+            background-color: var(--c-fog);
+            border-right: 1px solid var(--c-hair);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            user-select: none;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--c-ash);
+            margin-bottom: 4px;
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .file-item {
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: var(--c-graphite);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.15s;
+        }
+        .file-item:hover {
+            background-color: var(--c-hover);
+        }
+        .file-item.active {
+            background-color: var(--c-chalk);
+            font-weight: 500;
+        }
+
+        /* -------------------------------------------------- */
+        /* 3. Editor & Preview Split Area (分栏区) */
+        /* -------------------------------------------------- */
+        .editor-split {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            background-color: var(--c-canvas);
+        }
+
+        .pane {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pane-editor {
+            border-right: 1px solid var(--c-hair);
+            font-family: Menlo, Monaco, Consolas, "Fira Code", monospace;
+            font-size: 13px;
+            color: var(--c-graphite);
+            line-height: 1.7;
+            white-space: pre-wrap;
+            outline: none;
+            border-top: none;
+            border-bottom: none;
+            border-left: none;
+            resize: none;
+            background-color: transparent;
+        }
+
+        .pane-preview {
+            line-height: 1.8;
+            color: var(--c-graphite);
+        }
+
+        /* Markdown 样式 */
+        .preview-h1 {
+            font-family: var(--font-serif);
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+            border-bottom: 1px solid var(--c-hair);
+            padding-bottom: 6px;
+        }
+
+        .preview-p {
+            font-size: 14.5px;
+            margin-bottom: 16px;
+            text-wrap: pretty; /* 排版优化 */
+        }
+
+        /* Callout 提示块 */
+        .preview-callout {
+            border-left: 3px solid var(--c-ash);
+            background-color: var(--c-fog);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .preview-callout-title {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--c-ash);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Toggle 折叠块（优化点3 - CSS Grid丝滑过渡） */
+        .preview-details {
+            border: 1px solid var(--c-hair);
+            border-radius: 8px;
+            background-color: var(--c-canvas);
+            margin-bottom: 16px;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: auto 0fr;
+            transition: grid-template-rows 0.3s var(--ease-out-extreme);
+        }
+
+        .preview-details.is-open {
+            grid-template-rows: auto 1fr;
+        }
+
+        .preview-summary {
+            padding: 12px 16px;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--c-fog);
+            transition: background-color 0.2s;
+        }
+        .preview-summary:hover {
+            background-color: var(--c-chalk);
+        }
+
+        .summary-arrow {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s var(--ease-out-extreme);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-details.is-open .summary-arrow {
+            transform: rotate(90deg);
+        }
+
+        .details-content-wrapper {
+            overflow: hidden;
+        }
+
+        .details-content {
+            padding: 16px;
+            font-size: 14px;
+            border-top: 1px solid var(--c-hair);
+            color: var(--c-graphite);
+        }
+
+        /* Empty Placeholder 变体 */
+        .empty-placeholder {
+            border: 1px dashed var(--c-ash);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            background-color: transparent;
+            opacity: 0.6;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+            display: none;
+        }
+        .empty-placeholder:hover {
+            opacity: 0.95;
+            background-color: rgba(0,0,0,0.01);
+        }
+        .empty-placeholder-title {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: 15px;
+            color: var(--c-ash);
+        }
+
+        /* -------------------------------------------------- */
+        /* 4. Status Bar (状态栏) */
+        /* -------------------------------------------------- */
+        .status-bar {
+            height: 32px;
+            background-color: var(--c-fog);
+            border-top: 1px solid var(--c-hair);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--c-ash);
+            padding: 0 16px;
+            user-select: none;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 联动区 (优化点2 - 防掠过闪烁 + 延迟) */
+        .status-sidebar-zone {
+            width: 220px; /* 对齐侧栏 */
+            margin-left: -16px;
+            padding-left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 100%;
+            cursor: pointer;
+            opacity: 0; /* 默认隐藏 */
+            transition: opacity 0.35s var(--ease-in-out);
+        }
+
+        .status-sidebar-zone.hovered {
+            opacity: 1;
+        }
+
+        .status-workspace-icon {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            color: var(--c-graphite);
+        }
+
+        /* 居中字数行列统计 */
+        .status-main {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-num-spin {
+            display: inline-block;
+            transition: transform 0.25s var(--ease-out-extreme),
+                        opacity 0.25s var(--ease-out-extreme),
+                        filter 0.25s var(--ease-out-extreme);
+        }
+
+        .status-num-spin.spin-active {
+            transform: translateY(-4px) scale(0.95);
+            opacity: 0.3;
+            filter: blur(1.5px);
+        }
+
+        /* 右区诊断诊断与导出按钮 */
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ERROR n 诊断触发器 (带微弱背景闪烁提示) */
+        .status-error-trigger {
+            color: var(--c-error);
+            font-weight: 600;
+            background-color: var(--c-error-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s var(--ease-out-extreme);
+            border: 1px solid transparent;
+        }
+        .status-error-trigger:hover {
+            background-color: rgba(217, 66, 66, 0.12);
+            border-color: rgba(217, 66, 66, 0.2);
+            transform: scale(1.02);
+        }
+
+        /* -------------------------------------------------- */
+        /* 5. Diagnostics Panel (诊断面板 - 优化点4) */
+        /* -------------------------------------------------- */
+        .diagnostics-panel {
+            position: absolute;
+            bottom: 40px;
+            right: 16px;
+            width: 380px;
+            background-color: rgba(248, 248, 250, 0.85); /* 85%不透明度 */
+            backdrop-filter: blur(20px); /* 毛玻璃 */
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--c-hair);
+            border-radius: 8px;
+            box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.08),
+                        0 0 1px rgba(0, 0, 0, 0.15);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+
+            /* 弹性弹出动效 */
+            transform-origin: bottom right;
+            transform: translateY(12px) scale(0.96);
+            opacity: 0;
+            filter: blur(4px);
+            visibility: hidden;
+            transition: transform 0.3s var(--ease-out-back),
+                        opacity 0.3s var(--ease-out-extreme),
+                        filter 0.3s var(--ease-out-extreme),
+                        visibility 0.3s;
+            z-index: 20;
+        }
+
+        .diagnostics-panel.is-active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            filter: blur(0);
+            visibility: visible;
+        }
+
+        .diag-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--c-hair);
+            padding-bottom: 8px;
+        }
+
+        .diag-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--c-graphite);
+        }
+
+        .diag-close {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--c-ash);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .diag-item {
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(0,0,0,0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .diag-item:hover {
+            background-color: var(--c-chalk);
+            border-color: var(--c-hair);
+        }
+
+        .diag-item-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 10px;
+            color: var(--c-ash);
+            text-transform: uppercase;
+        }
+
+        .diag-item-desc {
+            font-size: 12.5px;
+            color: var(--c-graphite);
+            line-height: 1.4;
+        }
+
+        /* -------------------------------------------------- */
+        /* 6. Document Relationship Graph (关系图谱 - 优化点5) */
+        /* -------------------------------------------------- */
+        .relationship-graph {
+            border: 1px solid var(--c-hair);
+            border-radius: 8px;
+            background-color: var(--c-canvas);
+            padding: 14px;
+            margin-top: 12px;
+            transition: all 0.3s var(--ease-out-extreme);
+        }
+        .graph-canvas-container {
+            height: 180px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Pentagram风格文本网络 */
+        .graph-svg {
+            width: 100%;
+            height: 100%;
+            transition: all 0.3s var(--ease-out-extreme);
+        }
+
+        .graph-node-txt {
+            font-family: var(--font-serif);
+            font-size: 11px;
+            fill: var(--c-ash);
+            cursor: pointer;
+            font-weight: bold;
+            transition: fill 0.3s var(--ease-out-extreme),
+                        opacity 0.3s var(--ease-out-extreme),
+                        transform 0.3s var(--ease-out-extreme);
+        }
+
+        .graph-link {
+            stroke: var(--c-ash);
+            stroke-width: 0.8;
+            stroke-dasharray: 2, 2;
+            transition: stroke 0.3s var(--ease-out-extreme),
+                        stroke-width 0.3s var(--ease-out-extreme),
+                        opacity 0.3s var(--ease-out-extreme);
+            opacity: 0.25;
+        }
+
+        /* Pentagram印刷派的 Hover & 联动高亮 */
+        .graph-svg.has-focus .graph-node-txt {
+            opacity: 0.15;
+        }
+        .graph-svg.has-focus .graph-node-txt.focused {
+            fill: var(--c-void);
+            opacity: 1;
+        }
+        .graph-svg.has-focus .graph-node-txt.connected {
+            fill: var(--c-graphite);
+            opacity: 0.8;
+        }
+
+        .graph-svg.has-focus .graph-link {
+            opacity: 0.04;
+        }
+        .graph-svg.has-focus .graph-link.active {
+            stroke: var(--c-graphite);
+            stroke-width: 1.2;
+            stroke-dasharray: none;
+            opacity: 0.85;
+        }
+
+        /* -------------------------------------------------- */
+        /* 传统彩色球派 (Classic Style) 视觉样式 */
+        /* -------------------------------------------------- */
+        .graph-circle {
+            transition: r 0.3s var(--ease-out-extreme),
+                        fill 0.3s var(--ease-out-extreme),
+                        opacity 0.3s var(--ease-out-extreme),
+                        filter 0.3s var(--ease-out-extreme);
+        }
+
+        /* 经典粒子球流派的 Hover & 联动高亮 */
+        .graph-svg.classic-style .graph-node-txt {
+            font-family: var(--font-body);
+            font-weight: 500;
+        }
+
+        .graph-svg.classic-style.has-focus .graph-node-txt {
+            opacity: 0.15;
+        }
+        .graph-svg.classic-style.has-focus .graph-node-txt.focused {
+            fill: var(--c-void);
+            opacity: 1;
+        }
+        .graph-svg.classic-style.has-focus .graph-node-txt.connected {
+            fill: var(--c-graphite);
+            opacity: 0.85;
+        }
+
+        .graph-svg.classic-style .graph-circle {
+            opacity: 0.6;
+        }
+        .graph-svg.classic-style.has-focus .graph-circle {
+            opacity: 0.15;
+        }
+        .graph-svg.classic-style.has-focus .graph-circle.focused {
+            fill: var(--c-error);
+            opacity: 1;
+            filter: drop-shadow(0 2px 8px rgba(219, 66, 66, 0.4));
+        }
+        .graph-svg.classic-style.has-focus .graph-circle.connected {
+            fill: var(--c-graphite);
+            opacity: 0.85;
+        }
+
+        .graph-svg.classic-style.has-focus .graph-link {
+            opacity: 0.05;
+        }
+        .graph-svg.classic-style.has-focus .graph-link.active {
+            stroke: var(--c-error);
+            stroke-width: 1.5;
+            stroke-dasharray: none;
+            opacity: 0.85;
+        }
+
+        /* -------------------------------------------------- */
+        /* 7. Tweaks 控制面板 (Variations Console) */
+        /* -------------------------------------------------- */
+        .tweaks-console {
+            width: 380px;
+            background-color: #f8f8fa;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .tweak-header {
+            border-bottom: 1px solid var(--c-hair);
+            padding-bottom: 12px;
+        }
+
+        .tweak-header h2 {
+            font-family: var(--font-display);
+            font-weight: 500;
+            font-size: 18px;
+            color: var(--c-void);
+            margin-bottom: 4px;
+        }
+
+        .tweak-header p {
+            font-size: 12px;
+            color: var(--c-ash);
+        }
+
+        .tweak-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tweak-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--c-graphite);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tweak-desc {
+            font-size: 11px;
+            color: var(--c-ash);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        /* 变体单选/多选按钮组 */
+        .tweak-options {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tweak-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background-color: var(--c-fog);
+            border: 1px solid var(--c-hair);
+            font-size: 12px;
+            color: var(--c-graphite);
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out-extreme);
+            font-weight: 500;
+        }
+        .tweak-btn:hover {
+            background-color: var(--c-chalk);
+        }
+        .tweak-btn.active {
+            background-color: var(--c-void);
+            color: #ffffff;
+            border-color: var(--c-void);
+        }
+
+        /* 实时参数滑块 */
+        .tweak-slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--c-graphite);
+        }
+
+        .tweak-slider {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            -webkit-appearance: none;
+            background: var(--c-chalk);
+            outline: none;
+        }
+        .tweak-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--c-void);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .tweak-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .tweak-feedback-box {
+            background-color: var(--c-fog);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 11.5px;
+            color: var(--c-ash);
+            line-height: 1.6;
+            border-left: 3px solid var(--c-void);
+        }
+
+        /* 暗色主题微调覆写 */
+        .theme-dark {
+            --c-canvas: var(--c-canvas-dark);
+            --c-void: #ffffff;
+            --c-fog: var(--c-fog-dark);
+            --c-chalk: var(--c-chalk-dark);
+            --c-graphite: var(--c-graphite-dark);
+            --c-ash: var(--c-ash-dark);
+            --c-hair: var(--c-hair-dark);
+            --c-hover: var(--c-hover-dark);
+            --c-selection: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶栏介绍 -->
+    <div class="showcase-header">
+        <h1>Prism · 画书UI/UX动效提案原型</h1>
+        <p>
+            本 HTML 原型基于 <strong>huashu-design</strong> 技能及 <strong>“Logic over Aesthetics”</strong> 哲学打造。
+            演示了 5 项针对 Prism 编辑器的高端细节与微动效改良，左侧为可交互软件模拟器，右侧为 <strong>Tweaks 设计变体控制面板</strong>。
+        </p>
+    </div>
+
+    <!-- 主容器 (纯原生 Vanilla JS 实现，100% 独立，无外部JS依赖，双击秒开) -->
+    <div class="proposal-container">
+
+        <!-- 左侧：可交互 macOS 软件模拟器 -->
+        <div class="prism-window" id="prismWindow">
+
+            <!-- 1. TitleBar (标题栏) -->
+            <div class="title-bar">
+                <!-- 红绿灯 -->
+                <div class="window-controls">
+                    <div class="control-dot close"></div>
+                    <div class="control-dot minimize"></div>
+                    <div class="control-dot zoom"></div>
+                </div>
+
+                <!-- 标题 & 脏状态表达 (优化点1) -->
+                <div class="doc-title-zone" id="saveButton" title="点击模拟保存 (Cmd+S)">
+                    <span class="doc-name" id="docName">
+                        Prism_Brand_Showcase.md
+                    </span>
+                    <div class="unsaved-ring-a" id="unsavedRing"></div>
+                    <span class="unsaved-text-b" id="unsavedText">已修改未保存「点此保存」</span>
+                    <span class="save-feedback" id="saveFeedback">✓ 已保存</span>
+                </div>
+
+                <!-- 右侧视图三态 -->
+                <div class="view-switch">
+                    <div class="view-btn">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/>
+                        </svg>
+                    </div>
+                    <div class="view-btn active">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <div class="view-btn">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Workspace & Editor-Split -->
+            <div class="workspace-body">
+                <!-- 左侧边栏 -->
+                <div class="sidebar">
+                    <div class="sidebar-section-title">工作区索引</div>
+                    <div class="file-list">
+                        <div class="file-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            docs/
+                        </div>
+                        <div class="file-item active" data-node-id="Prism.md">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            Prism_Brand.md
+                        </div>
+                        <div class="file-item" data-node-id="CONTEXT.md">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            CONTEXT.md
+                        </div>
+                        <div class="file-item" data-node-id="adr-0002.md">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            adr-0002.md
+                        </div>
+                    </div>
+
+                    <!-- 骨架关系图谱 (优化点5 - Pentagram美学) -->
+                    <div class="sidebar-section-title" style="margin-top: 16px;">本地图谱 (2-跳关系)</div>
+                    <div class="relationship-graph">
+                        <div class="graph-canvas-container">
+                            <svg class="graph-svg" id="graphSvg" viewBox="0 0 186 180">
+                                <!-- 由JS动态填充节点和边 -->
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 编辑与分栏区 -->
+                <div class="editor-split">
+                    <!-- 源码编辑区 -->
+                    <textarea class="pane pane-editor" id="paneEditor" spellcheck="false"></textarea>
+
+                    <!-- 高保真预览区 -->
+                    <div class="pane pane-preview">
+                        <h1 class="preview-h1">「妙言式高保真体验」</h1>
+                        <p class="preview-p">
+                            Prism 正逐步向高保真、稳定、可诊断的单文档 Markdown 写作器进化。这是我们为你准备的动效优化提案...
+                        </p>
+
+                        <div class="preview-callout">
+                            <div class="preview-callout-title">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                Note
+                            </div>
+                            本示例运用了 120% 的微交互质感打磨，所有的渲染元素都经过严格的 HSL 调色控制。
+                        </div>
+
+                        <!-- 诊断问题引导定位 -->
+                        <p class="preview-p">
+                            <span id="triggerBrokenLink" style="color: var(--c-error); border-bottom: 1px dashed var(--c-error); cursor: pointer;">
+                                [断开的页面链接](broken_link.md)
+                            </span>
+                        </p>
+
+                        <!-- Toggle折叠演示 (优化点3) -->
+                        <div class="preview-details is-open" id="previewToggle">
+                            <div class="preview-summary" id="toggleSummary">
+                                <span>点击展开详情数据 (丝滑 CSS Grid 动效)</span>
+                                <span class="summary-arrow">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"/>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="details-content-wrapper">
+                                <div class="details-content">
+                                    这里是展开后的流畅折叠演示数据。我们使用了 CSS Grid 动态调整行占比 <code>grid-template-rows: auto 0fr -> 1fr</code>，从而避开了 JavaScript 的高 CPU 耗损，实现原生 60fps 动效。
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 变体 B：原研哉式的虚线 Placeholder 占位 -->
+                        <div class="empty-placeholder" id="previewPlaceholder">
+                            <div class="empty-placeholder-title">
+                                「折叠折叠块 · Placeholder 待内容填充」
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Status Bar (状态栏) & 诊断面板 -->
+            <div class="status-bar" id="statusBar">
+
+                <!-- 联动区 (带悬停防闪烁延迟 - 优化点2) -->
+                <div class="status-sidebar-zone" id="statusSidebarZone">
+                    <span class="status-workspace-icon">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Prism-workspace
+                    </span>
+                </div>
+
+                <!-- 字数与行列统计 -->
+                <div class="status-main">
+                    <span class="status-num-spin" id="wordCount">128</span>
+                    <span>字 ·</span>
+                    <span class="status-num-spin" id="lineCol">12:8</span>
+                </div>
+
+                <!-- 诊断与导出 -->
+                <div class="status-right">
+                    <div class="status-error-trigger" id="errorTrigger">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        ERROR 1
+                    </div>
+                    <span style="opacity: 0.8; cursor: pointer;">导出</span>
+                </div>
+
+                <!-- 4. Diagnostics Panel (诊断面板 - 优化点4 - 弹性弹出毛玻璃) -->
+                <div class="diagnostics-panel" id="diagPanel">
+                    <div class="diag-header">
+                        <span class="diag-title">1 个问题诊断</span>
+                        <button class="diag-close" id="diagClose">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="diag-list">
+                        <div class="diag-item" id="diagItem">
+                            <div class="diag-item-meta">
+                                <span>链接错误</span>
+                                <span>第 12 行</span>
+                            </div>
+                            <div class="diag-item-desc">
+                                检测到无效链接：<code>broken_link.md</code> 目标文件在当前工作区不存在。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 右侧：Tweaks 实时参数调优面板 -->
+        <div class="tweaks-console">
+            <div class="tweak-header">
+                <h2>Tweaks 变体控制台</h2>
+                <p>实时切换和配置不同的 UI/UX 优化方案细节</p>
+            </div>
+
+            <!-- 变体 1: 主题色 -->
+            <div class="tweak-group">
+                <span class="tweak-group-title">1. 暗色模式测试</span>
+                <div class="tweak-desc">模拟 Prism 处于深色/夜间写作状态的视觉反差</div>
+                <div class="tweak-options">
+                    <button class="tweak-btn active" id="btnThemeLight">浅色妙言</button>
+                    <button class="tweak-btn" id="btnThemeDark">深色妙言</button>
+                </div>
+            </div>
+
+            <!-- 变体 2: 脏状态样式 -->
+            <div class="tweak-group">
+                <span class="tweak-group-title">2. 未保存状态表达 (优化点1)</span>
+                <div class="tweak-desc">变体 A 使用慢速灰蓝呼吸圆环；变体 B 使用轻量字形状态提示</div>
+                <div class="tweak-options">
+                    <button class="tweak-btn active" id="btnDirtyRing">变体 A (呼吸环)</button>
+                    <button class="tweak-btn" id="btnDirtyText">变体 B (文字淡化)</button>
+                </div>
+
+                <div class="tweak-slider-container" id="sliderBreathContainer">
+                    <span>呼吸周期:</span>
+                    <input type="range" min="2" max="12" class="tweak-slider" value="6" id="sliderBreath">
+                    <span style="min-width: 30px; text-align: right;" id="valBreath">6s</span>
+                </div>
+            </div>
+
+            <!-- 变体 3: 状态栏防闪烁延迟 -->
+            <div class="tweak-group">
+                <span class="tweak-group-title">3. 状态栏防余光闪烁延时 (优化点2)</span>
+                <div class="tweak-desc">防止鼠标无意划过底栏时触发频繁闪烁。建议设置为 150ms。</div>
+                <div class="tweak-slider-container">
+                    <span>防闪烁延时:</span>
+                    <input type="range" min="0" max="500" step="50" class="tweak-slider" value="150" id="sliderDelay">
+                    <span style="min-width: 40px; text-align: right;" id="valDelay">150ms</span>
+                </div>
+            </div>
+
+            <!-- 变体 4: Toggle 渲染 -->
+            <div class="tweak-group">
+                <span class="tweak-group-title">4. Toggle 折叠块交互 (优化点3)</span>
+                <div class="tweak-desc">动态变体使用 60fps 平滑 Grid 折叠；静态变体体现原研哉留白 Placeholder 艺术</div>
+                <div class="tweak-options">
+                    <button class="tweak-btn active" id="btnToggleAnimated">丝滑折叠展开</button>
+                    <button class="tweak-btn" id="btnTogglePlaceholder">原研哉式空占位</button>
+                </div>
+            </div>
+
+            <!-- 变体 5: 图谱美学 -->
+            <div class="tweak-group">
+                <span class="tweak-group-title">5. 文档图谱视觉流派 (优化点5)</span>
+                <div class="tweak-desc">切换 Pentagram 骨架印刷派与传统大球粒子派</div>
+                <div class="tweak-options">
+                    <button class="tweak-btn active" id="btnGraphPentagram">Pentagram印刷派</button>
+                    <button class="tweak-btn" id="btnGraphClassic">传统彩色球派</button>
+                </div>
+            </div>
+
+            <!-- 设计评审卡 -->
+            <div class="tweak-feedback-box">
+                <strong>💡 画书设计专家评审 (Critique)</strong><br/>
+                「减少无关装饰以体现绝对的内容安全，增加在微小处的 120% 细节质感，这就是反 AI Slop 的核心。使用 150ms 延时保护创作者的视线不受余光闪烁干扰，以及使用纯 CSS 的 60fps 动态 Grid 渲染，这些看似不起眼的‘技术性品位’是成就一款伟大写作器的基石。」
+            </div>
+        </div>
+
+    </div>
+
+    <!-- -------------------------------------------------- -->
+    <!-- 8. Vanilla JS 核心控制器逻辑 (零网络依赖，完美健壮) -->
+    <!-- -------------------------------------------------- */ -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 模拟数据初值 ---
+            let isDirty = true;
+            let theme = "light";
+            let dirtyStyle = "ring";
+            let toggleType = "animated";
+            let hoverDelay = 150;
+            let graphStyle = "pentagram";
+            let focusedNode = null;
+
+            const initialText = `# 妙言式高保真体验\n\nPrism 正逐步向高保真、稳定、可诊断的单文档 Markdown 写作器进化。这是我们为你准备的动效优化提案...\n\n> [!NOTE]\n> 本示例运用了 120% 的微交互质感打磨，所有的渲染元素都经过严格的 HSL 调色控制。\n\n## 诊断错误示例\n[断开的页面链接](broken_link.md)\n\n<details>\n<summary>点击展开详情数据</summary>\n\n这里是展开后的流畅折叠演示数据。我们使用了 CSS Grid 动态调整行占比，从而避开了 JavaScript 的高 CPU 耗损，实现原生 60fps 动效。\n\n</details>`;
+
+            // --- 获取DOM节点 ---
+            const prismWindow = document.getElementById('prismWindow');
+            const paneEditor = document.getElementById('paneEditor');
+            const saveButton = document.getElementById('saveButton');
+            const docName = document.getElementById('docName');
+            const unsavedRing = document.getElementById('unsavedRing');
+            const unsavedText = document.getElementById('unsavedText');
+            const saveFeedback = document.getElementById('saveFeedback');
+            const wordCountSpan = document.getElementById('wordCount');
+            const lineColSpan = document.getElementById('lineCol');
+            const previewToggle = document.getElementById('previewToggle');
+            const toggleSummary = document.getElementById('toggleSummary');
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const statusSidebarZone = document.getElementById('statusSidebarZone');
+            const errorTrigger = document.getElementById('errorTrigger');
+            const diagPanel = document.getElementById('diagPanel');
+            const diagClose = document.getElementById('diagClose');
+            const diagItem = document.getElementById('diagItem');
+            const triggerBrokenLink = document.getElementById('triggerBrokenLink');
+
+            // Tweaks控制面板节点
+            const btnThemeLight = document.getElementById('btnThemeLight');
+            const btnThemeDark = document.getElementById('btnThemeDark');
+            const btnDirtyRing = document.getElementById('btnDirtyRing');
+            const btnDirtyText = document.getElementById('btnDirtyText');
+            const sliderBreath = document.getElementById('sliderBreath');
+            const valBreath = document.getElementById('valBreath');
+            const sliderBreathContainer = document.getElementById('sliderBreathContainer');
+            const sliderDelay = document.getElementById('sliderDelay');
+            const valDelay = document.getElementById('valDelay');
+            const btnToggleAnimated = document.getElementById('btnToggleAnimated');
+            const btnTogglePlaceholder = document.getElementById('btnTogglePlaceholder');
+            const btnGraphPentagram = document.getElementById('btnGraphPentagram');
+            const btnGraphClassic = document.getElementById('btnGraphClassic');
+            const graphSvg = document.getElementById('graphSvg');
+
+            // 初始化编辑器文字
+            paneEditor.value = initialText;
+
+            // --- 状态流转与联动效果 ---
+
+            // 模拟输入变化
+            const handleInput = () => {
+                isDirty = true;
+                updateDirtyState();
+
+                // 闪烁字数和行列
+                wordCountSpan.classList.add('spin-active');
+                lineColSpan.classList.add('spin-active');
+
+                setTimeout(() => {
+                    const text = paneEditor.value;
+                    wordCountSpan.textContent = text.length;
+                    const lines = text.split('\n').length;
+                    const lastLineLength = text.split('\n')[lines - 1].length + 1;
+                    lineColSpan.textContent = `${lines}:${lastLineLength}`;
+
+                    wordCountSpan.classList.remove('spin-active');
+                    lineColSpan.classList.remove('spin-active');
+                }, 180);
+            };
+            paneEditor.addEventListener('input', handleInput);
+            handleInput(); // 初次调用更新
+
+            // 更新脏状态视觉
+            const updateDirtyState = () => {
+                if (isDirty) {
+                    saveFeedback.classList.remove('show');
+                    if (dirtyStyle === 'ring') {
+                        unsavedRing.style.display = "inline-block";
+                        unsavedText.style.display = "none";
+                        docName.classList.remove('is-dirty-text');
+                    } else {
+                        unsavedRing.style.display = "none";
+                        unsavedText.style.display = "inline-block";
+                        docName.classList.add('is-dirty-text');
+                    }
+                } else {
+                    unsavedRing.style.display = "none";
+                    unsavedText.style.display = "none";
+                    docName.classList.remove('is-dirty-text');
+                }
+            };
+
+            // 模拟保存
+            const handleSave = () => {
+                if (!isDirty) return;
+                isDirty = false;
+                updateDirtyState();
+
+                // 显示✓已保存反馈
+                saveFeedback.classList.add('show');
+                setTimeout(() => {
+                    saveFeedback.classList.remove('show');
+                }, 1800);
+            };
+            saveButton.addEventListener('click', handleSave);
+
+            // 快捷键 Cmd+S 拦截
+            window.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                    e.preventDefault();
+                    handleSave();
+                }
+            });
+
+            // 4. Toggle CSS 丝滑折叠展开
+            toggleSummary.addEventListener('click', () => {
+                previewToggle.classList.toggle('is-open');
+            });
+
+            // 5. 诊断面板弹出
+            const toggleDiag = (show) => {
+                if (show) {
+                    diagPanel.classList.add('is-active');
+                } else {
+                    diagPanel.classList.remove('is-active');
+                }
+            };
+            errorTrigger.addEventListener('click', () => toggleDiag(!diagPanel.classList.contains('is-active')));
+            diagClose.addEventListener('click', () => toggleDiag(false));
+            diagItem.addEventListener('click', () => {
+                toggleDiag(false);
+                // 聚焦并闪烁预览区断链
+                triggerBrokenLink.style.transition = "background-color 0.2s";
+                triggerBrokenLink.style.backgroundColor = "rgba(219, 66, 66, 0.2)";
+                setTimeout(() => {
+                    triggerBrokenLink.style.backgroundColor = "transparent";
+                }, 800);
+            });
+            triggerBrokenLink.addEventListener('click', () => toggleDiag(true));
+
+            // 6. 状态栏防闪烁联动区延迟 (优化点2)
+            let sidebarHoverTimer = null;
+            statusSidebarZone.addEventListener('mouseenter', () => {
+                if (sidebarHoverTimer) clearTimeout(sidebarHoverTimer);
+                sidebarHoverTimer = setTimeout(() => {
+                    statusSidebarZone.classList.add('hovered');
+                }, hoverDelay);
+            });
+
+            statusSidebarZone.addEventListener('mouseleave', () => {
+                if (sidebarHoverTimer) clearTimeout(sidebarHoverTimer);
+                statusSidebarZone.classList.remove('hovered');
+            });
+
+            // --------------------------------------------------
+            // 7. Graph SVG 动态绘制与交互 (Pentagram印刷流派 vs 彩色球)
+            // --------------------------------------------------
+            // 将节点完全约束在 186x180 的 viewBox 坐标系中，实现在侧边栏居中完美显示
+            const graphNodes = [
+                { id: "Prism.md", x: 93, y: 90, type: "center" },
+                { id: "Brand_Showcase.md", x: 45, y: 40, type: "link" },
+                { id: "CONTEXT.md", x: 141, y: 40, type: "link" },
+                { id: "adr-0002.md", x: 42, y: 140, type: "link" },
+                { id: "templates.md", x: 144, y: 140, type: "link" }
+            ];
+
+            const graphLinks = [
+                { source: "Prism.md", target: "Brand_Showcase.md" },
+                { source: "Prism.md", target: "CONTEXT.md" },
+                { source: "Prism.md", target: "adr-0002.md" },
+                { source: "Prism.md", target: "templates.md" },
+                { source: "CONTEXT.md", target: "templates.md" }
+            ];
+
+            // 保持 DOM 强引用缓存，杜绝 Hover 重绘时销毁 DOM 元素引起的“事件断连”与“无法交互”缺陷
+            let linkElements = [];
+            let nodeElements = [];
+
+            const renderGraph = () => {
+                graphSvg.innerHTML = ""; // 仅在初始化或流派切换时重绘一次 DOM
+                linkElements = [];
+                nodeElements = [];
+
+                if (graphStyle === 'classic') {
+                    graphSvg.classList.add('classic-style');
+                } else {
+                    graphSvg.classList.remove('classic-style');
+                }
+
+                // 1. 先生成底层连线 DOM
+                graphLinks.forEach((link) => {
+                    const sourceNode = graphNodes.find(n => n.id === link.source);
+                    const targetNode = graphNodes.find(n => n.id === link.target);
+
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", sourceNode.x);
+                    line.setAttribute("y1", sourceNode.y);
+                    line.setAttribute("x2", targetNode.x);
+                    line.setAttribute("y2", targetNode.y);
+                    line.className.baseVal = "graph-link";
+
+                    // 用自定义属性挂载关联节点数据，供事件极速匹配
+                    line.setAttribute("data-source", link.source);
+                    line.setAttribute("data-target", link.target);
+
+                    if (graphStyle === 'classic') {
+                        line.style.strokeDasharray = "none";
+                    }
+                    graphSvg.appendChild(line);
+                    linkElements.push(line);
+                });
+
+                // 2. 再生成顶层节点文本与大球
+                graphNodes.forEach((node) => {
+                    const isCenter = node.type === 'center';
+                    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.setAttribute("cursor", "pointer");
+
+                    // 如果是传统经典彩色球流派，则绘制背景节点球
+                    let circle = null;
+                    if (graphStyle === 'classic') {
+                        circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        circle.setAttribute("cx", node.x);
+                        circle.setAttribute("cy", node.y);
+                        circle.setAttribute("r", isCenter ? "6" : "4");
+                        circle.setAttribute("fill", isCenter ? "#0076e0" : "#8e8e93");
+                        circle.className.baseVal = "graph-circle";
+                        group.appendChild(circle);
+                    }
+
+                    // 节点排版文本（Pentagram 印刷流派）
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", node.x);
+                    text.setAttribute("y", graphStyle === 'classic' ? node.y - 8 : node.y + 4);
+                    text.setAttribute("text-anchor", "middle");
+                    text.className.baseVal = "graph-node-txt";
+                    text.textContent = node.id.replace('.md', '');
+
+                    // 印刷美学样式细节
+                    text.style.fontFamily = graphStyle === 'pentagram' ? 'var(--font-serif)' : 'var(--font-body)';
+                    group.appendChild(text);
+
+                    // 精准鼠标响应，通过无损修改 DOM classList 促发 60fps CSS 极其流畅的明暗变化
+                    group.addEventListener('mouseenter', () => {
+                        highlightNode(node.id);
+                    });
+                    group.addEventListener('mouseleave', () => {
+                        clearHighlight();
+                    });
+
+                    graphSvg.appendChild(group);
+                    nodeElements.push({ id: node.id, group, text, circle, isCenter });
+                });
+            };
+
+            // 动态高亮函数，零 DOM 销毁开销
+            const highlightNode = (nodeId) => {
+                focusedNode = nodeId;
+                graphSvg.classList.add('has-focus');
+
+                // 1. 动态挂载线条高亮
+                linkElements.forEach(line => {
+                    const source = line.getAttribute("data-source");
+                    const target = line.getAttribute("data-target");
+                    const isActive = source === nodeId || target === nodeId;
+
+                    if (isActive) {
+                        line.classList.add('active');
+                        if (graphStyle === 'classic') {
+                            line.style.stroke = "#d94242";
+                        }
+                    } else {
+                        line.classList.remove('active');
+                        if (graphStyle === 'classic') {
+                            line.style.stroke = "";
+                        }
+                    }
+                });
+
+                // 2. 动态联动节点高亮
+                nodeElements.forEach(item => {
+                    const isFocused = item.id === nodeId;
+                    const isConnected = graphLinks.some(link =>
+                        (link.source === nodeId && link.target === item.id) ||
+                        (link.source === item.id && link.target === nodeId)
+                    );
+
+                    // 排印文本样式更新
+                    item.text.classList.remove('focused', 'connected');
+                    if (isFocused) {
+                        item.text.classList.add('focused');
+                        if (graphStyle === 'pentagram') {
+                            item.text.style.textDecoration = "underline";
+                        }
+                    } else if (isConnected) {
+                        item.text.classList.add('connected');
+                        item.text.style.textDecoration = "";
+                    } else {
+                        item.text.style.textDecoration = "";
+                    }
+
+                    // 经典彩色球样式更新
+                    if (item.circle) {
+                        item.circle.classList.remove('focused', 'connected');
+                        if (isFocused) {
+                            item.circle.classList.add('focused');
+                            item.circle.setAttribute("r", item.isCenter ? "8" : "6");
+                        } else if (isConnected) {
+                            item.circle.classList.add('connected');
+                            item.circle.setAttribute("r", item.isCenter ? "6" : "4");
+                        } else {
+                            item.circle.setAttribute("r", item.isCenter ? "6" : "4");
+                        }
+                    }
+                });
+            };
+
+            // 清除高亮
+            const clearHighlight = () => {
+                focusedNode = null;
+                graphSvg.classList.remove('has-focus');
+
+                linkElements.forEach(line => {
+                    line.classList.remove('active');
+                    if (graphStyle === 'classic') {
+                        line.style.stroke = "";
+                    }
+                });
+
+                nodeElements.forEach(item => {
+                    item.text.classList.remove('focused', 'connected');
+                    item.text.style.textDecoration = "";
+
+                    if (item.circle) {
+                        item.circle.classList.remove('focused', 'connected');
+                        item.circle.setAttribute("r", item.isCenter ? "6" : "4");
+                    }
+                });
+            };
+
+            renderGraph();
+
+            // --------------------------------------------------
+            // Tweaks 控制面板事件绑定
+            // --------------------------------------------------
+
+            // 1. 主题色
+            btnThemeLight.addEventListener('click', () => {
+                btnThemeLight.classList.add('active');
+                btnThemeDark.classList.remove('active');
+                prismWindow.classList.remove('theme-dark');
+            });
+            btnThemeDark.addEventListener('click', () => {
+                btnThemeLight.classList.remove('active');
+                btnThemeDark.classList.add('active');
+                prismWindow.classList.add('theme-dark');
+            });
+
+            // 2. 未保存样式
+            btnDirtyRing.addEventListener('click', () => {
+                btnDirtyRing.classList.add('active');
+                btnDirtyText.classList.remove('active');
+                dirtyStyle = "ring";
+                sliderBreathContainer.style.display = "flex";
+                updateDirtyState();
+            });
+            btnDirtyText.addEventListener('click', () => {
+                btnDirtyRing.classList.remove('active');
+                btnDirtyText.classList.add('active');
+                dirtyStyle = "text";
+                sliderBreathContainer.style.display = "none";
+                updateDirtyState();
+            });
+
+            // 呼吸周期滑块
+            sliderBreath.addEventListener('input', () => {
+                const s = sliderBreath.value;
+                valBreath.textContent = `${s}s`;
+                document.documentElement.style.setProperty('--breath-duration', `${s}s`);
+            });
+
+            // 3. 状态栏防闪烁滑块
+            sliderDelay.addEventListener('input', () => {
+                const ms = sliderDelay.value;
+                valDelay.textContent = `${ms}ms`;
+                hoverDelay = Number(ms);
+            });
+
+            // 4. Toggle 折叠
+            btnToggleAnimated.addEventListener('click', () => {
+                btnToggleAnimated.classList.add('active');
+                btnTogglePlaceholder.classList.remove('active');
+                previewToggle.style.display = "grid";
+                previewPlaceholder.style.display = "none";
+            });
+            btnTogglePlaceholder.addEventListener('click', () => {
+                btnToggleAnimated.classList.remove('active');
+                btnTogglePlaceholder.classList.add('active');
+                previewToggle.style.display = "none";
+                previewPlaceholder.style.display = "block";
+            });
+
+            // 5. 图谱流派
+            btnGraphPentagram.addEventListener('click', () => {
+                btnGraphPentagram.classList.add('active');
+                btnGraphClassic.classList.remove('active');
+                graphStyle = "pentagram";
+                renderGraph();
+            });
+            btnGraphClassic.addEventListener('click', () => {
+                btnGraphPentagram.classList.remove('active');
+                btnGraphClassic.classList.add('active');
+                graphStyle = "classic";
+                renderGraph();
+            });
+
+            // 8. 侧栏文件列表项与图谱节点的双向 Hover 联动
+            document.querySelectorAll('.file-item[data-node-id]').forEach(item => {
+                const nodeId = item.getAttribute('data-node-id');
+                item.addEventListener('mouseenter', () => {
+                    highlightNode(nodeId);
+                });
+                item.addEventListener('mouseleave', () => {
+                    clearHighlight();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

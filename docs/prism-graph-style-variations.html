@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prism · 图谱视觉流派品鉴与选择实验室 (Prism Graph Aesthetics Pavilion)</title>
+
+    <!-- 引入高端 Google 字体，营造印刷品及现代数字美感 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- 单文件 React + Babel 依赖 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js"></script>
+
+    <style>
+        /* -------------------------------------------------- */
+        /* 画书极致极简美学系统全局 Tokens */
+        /* -------------------------------------------------- */
+        :root {
+            /* macOS 极致阻尼曲线 */
+            --ease-out-extreme: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+            /* 全局字栈 */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* 毛玻璃发光影 */
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04), 0 0 1px 0 rgba(0, 0, 0, 0.08);
+            --glass-shadow-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: #ededf2;
+            color: #1c1c1e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 24px;
+            transition: background-color 0.8s var(--ease-out-extreme);
+        }
+
+        body.dark-env {
+            background-color: #121214;
+            color: #e5e5ea;
+        }
+
+        /* 渲染容器外壳 */
+        #root {
+            width: 100%;
+            max-width: 1380px;
+            height: 860px;
+            display: flex;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(30px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.08),
+                        0 0 1px 0 rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+            transition: all 0.8s var(--ease-out-extreme);
+        }
+
+        .dark-env #root {
+            background: rgba(26, 26, 28, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.4),
+                        0 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 3px;
+        }
+        .dark-env ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<!-- React 主组件与渲染逻辑 -->
+<script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // 1. 定义 4 套极致差异化的美学配置方案
+    const STYLE_SCHEMES = {
+        pentagram: {
+            id: 'pentagram',
+            name: 'Pentagram 瑞士印刷流派',
+            designer: 'Pentagram 式理性主义',
+            keywords: ['瑞士现代主义', '极致客观', '游丝银线', '强字重对比'],
+            philosophy: '去除一切装饰性圆点，彻底消灭 AI Slop 塑料拟物感。直接以骨架文字本身作为信息核心，利用如纤细游丝般的实线体现理性制图美感。辅以高级 Serif 衬线体形成强烈视觉张力。',
+            config: {
+                light: {
+                    canvasBg: '#f4f4f6',
+                    nodeColor: '#1c1c1e',
+                    nodeAccent: '#000000',
+                    linkColor: 'rgba(28, 28, 30, 0.08)',
+                    linkActiveColor: '#1c1c1e',
+                    textColor: '#636366',
+                    textActiveColor: '#000000',
+                    ringColor: 'rgba(28, 28, 30, 0.15)',
+                    ringPulseColor: 'rgba(0, 0, 0, 0.05)'
+                },
+                dark: {
+                    canvasBg: '#121214',
+                    nodeColor: '#e5e5ea',
+                    nodeAccent: '#ffffff',
+                    linkColor: 'rgba(229, 229, 234, 0.08)',
+                    linkActiveColor: '#ffffff',
+                    textColor: '#aeaeae',
+                    textActiveColor: '#ffffff',
+                    ringColor: 'rgba(229, 229, 234, 0.2)',
+                    ringPulseColor: 'rgba(255, 255, 255, 0.05)'
+                },
+                fontFamily: "'EB Garamond', Georgia, serif",
+                textCase: 'lowercase',
+                hideExtension: true,
+                showPulseRing: true,
+                pulseRingStyle: 'thin-outline', // 极细外框
+                linkStyle: 'solid-thin',
+                nodeRadius: 3,
+                accentRadius: 4,
+                textOffset: 0, // 印刷派文字在正中心
+                enableShading: false,
+                floatSpeed: 1.0
+            }
+        },
+        zen: {
+            id: 'zen',
+            name: 'Kenya Hara 东方禅意留白流派',
+            designer: '原研哉式 “空 (Emptiness)”',
+            keywords: ['宣纸温润', '焦墨淡然', '留白无度', '水墨晕染'],
+            philosophy: '以极淡的温润宣纸质感作为画布，节点为无边框的静谧焦墨圆点。Hover 时，非聚焦节点近乎遁形于留白之中，而聚焦节点则向外泛起多层半透明、徐徐退晕的温和水墨晕染环，呈现极度静谧、克制的东方气韵。',
+            config: {
+                light: {
+                    canvasBg: '#faf9f6', // 宣纸米白
+                    nodeColor: 'rgba(42, 40, 38, 0.25)',
+                    nodeAccent: '#2a2826', // 焦墨
+                    linkColor: 'rgba(42, 40, 38, 0.04)',
+                    linkActiveColor: '#2a2826',
+                    textColor: '#86837f',
+                    textActiveColor: '#2a2826',
+                    ringColor: 'rgba(42, 40, 38, 0.12)',
+                    ringPulseColor: 'rgba(42, 40, 38, 0.03)'
+                },
+                dark: {
+                    canvasBg: '#181716', // 焦炭黑
+                    nodeColor: 'rgba(220, 218, 215, 0.25)',
+                    nodeAccent: '#dcdad7',
+                    linkColor: 'rgba(220, 218, 215, 0.04)',
+                    linkActiveColor: '#dcdad7',
+                    textColor: '#8d8b87',
+                    textActiveColor: '#dcdad7',
+                    ringColor: 'rgba(220, 218, 215, 0.15)',
+                    ringPulseColor: 'rgba(220, 218, 215, 0.03)'
+                },
+                fontFamily: "'Inter', -apple-system, sans-serif",
+                textCase: 'none',
+                hideExtension: true,
+                showPulseRing: true,
+                pulseRingStyle: 'ink-fade', // 水墨晕染
+                linkStyle: 'ink-line',
+                nodeRadius: 3,
+                accentRadius: 5,
+                textOffset: 12,
+                enableShading: false,
+                floatSpeed: 0.6 // 东方派速度极缓
+            }
+        },
+        nocturne: {
+            id: 'nocturne',
+            name: 'Nocturne 深邃星曜流派',
+            designer: 'Field.io 数字星图',
+            keywords: ['黛黑夜空', '极光青发光', '磨砂水晶', '幽微荧光'],
+            philosophy: '专为暗色模式而生的奢华数字星图。以星夜黛黑色为底，节点为极其通透的磨砂高透玻璃微球，辅以极温和的极光青（Aurora Cyan）或幽微荧光发光。Hover 时节点仿佛注入了生命，发出温润而充盈的呼吸微光。',
+            config: {
+                light: {
+                    canvasBg: '#f6f9fc',
+                    nodeColor: 'rgba(42, 157, 143, 0.3)',
+                    nodeAccent: '#2a9d8f', // 极光青
+                    linkColor: 'rgba(42, 157, 143, 0.08)',
+                    linkActiveColor: '#2a9d8f',
+                    textColor: '#52796f',
+                    textActiveColor: '#2a9d8f',
+                    ringColor: 'rgba(42, 157, 143, 0.25)',
+                    ringPulseColor: 'rgba(42, 157, 143, 0.06)'
+                },
+                dark: {
+                    canvasBg: '#090b0d', // 黛黑深蓝
+                    nodeColor: 'rgba(100, 255, 218, 0.25)',
+                    nodeAccent: '#64ffda', // 极光荧光青
+                    linkColor: 'rgba(100, 255, 218, 0.06)',
+                    linkActiveColor: '#64ffda',
+                    textColor: '#6f8f87',
+                    textActiveColor: '#64ffda',
+                    ringColor: 'rgba(100, 255, 218, 0.25)',
+                    ringPulseColor: 'rgba(100, 255, 218, 0.08)'
+                },
+                fontFamily: "'JetBrains Mono', monospace",
+                textCase: 'uppercase',
+                hideExtension: true,
+                showPulseRing: true,
+                pulseRingStyle: 'aurora-glow', // 极光发光
+                linkStyle: 'glow-line',
+                nodeRadius: 4,
+                accentRadius: 6,
+                textOffset: 12,
+                enableShading: true, // 开启球体微阴影
+                floatSpeed: 1.2
+            }
+        },
+        vermilion: {
+            id: 'vermilion',
+            name: 'Miaoyan 经典朱砂红流派',
+            designer: 'Prism 妙言传承美学',
+            keywords: ['朱砂正红', '暖调棉白', '呼吸红环', '文人雅致'],
+            philosophy: '回归妙言写作器标志性的朱砂红（Miaoyan Vermilion）与温暖棉白。主节点设计为纯正的朱砂空心呼吸环，Hover 时像红墨入水般向外泛起温和的多层波纹。与妙言现有的 macOS 红绿灯和极简底色形成完美的视觉继承。',
+            config: {
+                light: {
+                    canvasBg: '#fcfaf7', // 暖棉白
+                    nodeColor: 'rgba(217, 66, 66, 0.2)',
+                    nodeAccent: '#d94242', // 朱砂红
+                    linkColor: 'rgba(217, 66, 66, 0.07)',
+                    linkActiveColor: '#d94242',
+                    textColor: '#8a7d77',
+                    textActiveColor: '#d94242',
+                    ringColor: 'rgba(217, 66, 66, 0.22)',
+                    ringPulseColor: 'rgba(217, 66, 66, 0.05)'
+                },
+                dark: {
+                    canvasBg: '#1e1c1b', // 温暖焦炭暖黑
+                    nodeColor: 'rgba(242, 92, 92, 0.25)',
+                    nodeAccent: '#f25c5c',
+                    linkColor: 'rgba(242, 92, 92, 0.08)',
+                    linkActiveColor: '#f25c5c',
+                    textColor: '#a3928a',
+                    textActiveColor: '#f25c5c',
+                    ringColor: 'rgba(242, 92, 92, 0.25)',
+                    ringPulseColor: 'rgba(242, 92, 92, 0.05)'
+                },
+                fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
+                textCase: 'none',
+                hideExtension: true,
+                showPulseRing: true,
+                pulseRingStyle: 'vermilion-wave', // 朱砂波纹
+                linkStyle: 'vermilion-line',
+                nodeRadius: 3.5,
+                accentRadius: 5.5,
+                textOffset: 12,
+                enableShading: false,
+                floatSpeed: 0.9
+            }
+        }
+    };
+
+    // 2. 拓扑节点与关联连线数据
+    const INITIAL_NODES = [
+        { id: "Prism.md", label: "Prism.md", x: 260, y: 220, isCenter: true, phase: 0 },
+        { id: "CONTEXT.md", label: "CONTEXT.md", x: 130, y: 110, isCenter: false, phase: 1.5 },
+        { id: "Brand_Showcase.md", label: "Brand_Showcase.md", x: 140, y: 330, isCenter: false, phase: 3.1 },
+        { id: "adr-0002.md", label: "adr-0002.md", x: 380, y: 110, isCenter: false, phase: 4.8 },
+        { id: "templates.md", label: "templates.md", x: 390, y: 330, isCenter: false, phase: 2.3 },
+        { id: "RelationGraphPanel.tsx", label: "RelationGraphPanel.tsx", x: 260, y: 70, isCenter: false, phase: 0.8 },
+        { id: "diagnostics.css", label: "diagnostics.css", x: 260, y: 370, isCenter: false, phase: 5.5 }
+    ];
+
+    const LINKS = [
+        { source: "Prism.md", target: "CONTEXT.md" },
+        { source: "Prism.md", target: "Brand_Showcase.md" },
+        { source: "Prism.md", target: "adr-0002.md" },
+        { source: "Prism.md", target: "templates.md" },
+        { source: "Prism.md", target: "RelationGraphPanel.tsx" },
+        { source: "Prism.md", target: "diagnostics.css" },
+        { source: "CONTEXT.md", target: "RelationGraphPanel.tsx" },
+        { source: "adr-0002.md", target: "RelationGraphPanel.tsx" },
+        { source: "Brand_Showcase.md", target: "diagnostics.css" }
+    ];
+
+    function App() {
+        const [activeStyle, setActiveStyle] = useState('pentagram');
+        const [envMode, setEnvMode] = useState('light'); // 'light' | 'dark'
+        const [floatAmp, setFloatAmp] = useState(2.5); // 物理飘移振幅
+        const [pulseFreq, setPulseFreq] = useState(1.0); // 呼吸圆环频率
+        const [linkOpacity, setLinkOpacity] = useState(1.0); // 连线清晰度
+        const [labelSize, setLabelSize] = useState(12); // 文字大小
+        const [showLabels, setShowLabels] = useState(true); // 是否显示标签
+        const [cruiseMode, setCruiseMode] = useState(false); // 自动巡航模式
+        const [focusedNode, setFocusedNode] = useState(null); // hover 聚焦的节点
+        const [draggedNode, setDraggedNode] = useState(null); // 当前拖拽的节点
+
+        const [nodes, setNodes] = useState(INITIAL_NODES);
+        const requestRef = useRef();
+        const previousTimeRef = useRef();
+
+        const currentStyle = STYLE_SCHEMES[activeStyle];
+        const colors = currentStyle.config[envMode];
+
+        // 同步修改 body class 以渲染外层背景过渡
+        useEffect(() => {
+            if (envMode === 'dark') {
+                document.body.classList.add('dark-env');
+            } else {
+                document.body.classList.remove('dark-env');
+            }
+        }, [envMode]);
+
+        // 3. 动态物理飘游算法 (Float Physics Loop)
+        useEffect(() => {
+            const animate = (time) => {
+                if (draggedNode === null) {
+                    setNodes((prevNodes) =>
+                        prevNodes.map((node) => {
+                            const speedMultiplier = currentStyle.config.floatSpeed * 0.0015;
+                            const t = time * speedMultiplier + node.phase;
+
+                            // 主节点摆动极弱以保持重心稳定，关联节点稍微强些
+                            const amp = node.isCenter ? floatAmp * 0.4 : floatAmp;
+                            const dx = Math.sin(t) * amp;
+                            const dy = Math.cos(t * 0.8) * amp;
+
+                            return {
+                                ...node,
+                                currentX: node.x + dx,
+                                currentY: node.y + dy
+                            };
+                        })
+                    );
+                }
+                requestRef.current = requestAnimationFrame(animate);
+            };
+
+            requestRef.current = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(requestRef.current);
+        }, [floatAmp, draggedNode, activeStyle]);
+
+        // 4. 自动巡航演练逻辑
+        useEffect(() => {
+            let interval = null;
+            if (cruiseMode) {
+                let index = 0;
+                interval = setInterval(() => {
+                    setFocusedNode(nodes[index].id);
+                    index = (index + 1) % nodes.length;
+                }, 2000);
+            } else {
+                setFocusedNode(null);
+            }
+            return () => {
+                if (interval) clearInterval(interval);
+            };
+        }, [cruiseMode, nodes]);
+
+        // 鼠标拖拽节点逻辑
+        const handleMouseDown = (nodeId, e) => {
+            e.preventDefault();
+            setDraggedNode(nodeId);
+            setCruiseMode(false); // 拖拽时中断巡航
+        };
+
+        const handleMouseMove = (e) => {
+            if (draggedNode !== null) {
+                const svg = document.getElementById('pavilion-svg');
+                const rect = svg.getBoundingClientRect();
+                // 转换到 viewBox 坐标系 (0-520, 0-440)
+                const x = ((e.clientX - rect.left) / rect.width) * 520;
+                const y = ((e.clientY - rect.top) / rect.height) * 440;
+
+                // 限制边界
+                const boundedX = Math.max(20, Math.min(500, x));
+                const boundedY = Math.max(20, Math.min(420, y));
+
+                setNodes((prevNodes) =>
+                    prevNodes.map((n) =>
+                        n.id === draggedNode
+                            ? { ...n, x: boundedX, y: boundedY, currentX: boundedX, currentY: boundedY }
+                            : n
+                    )
+                );
+            }
+        };
+
+        const handleMouseUp = () => {
+            setDraggedNode(null);
+        };
+
+        // 处理文件名后缀过滤
+        const getDisplayLabel = (label) => {
+            if (currentStyle.config.hideExtension) {
+                return label.replace(/\.(md|tsx|css)$/, '');
+            }
+            return label;
+        };
+
+        // 文字的转换样式
+        const getTextTransform = () => {
+            return currentStyle.config.textCase;
+        };
+
+        // 判断当前节点是否与 hover 的节点有直接关联
+        const isNodeConnected = (nodeId) => {
+            if (!focusedNode) return false;
+            if (focusedNode === nodeId) return true;
+            return LINKS.some(link =>
+                (link.source === focusedNode && link.target === nodeId) ||
+                (link.source === nodeId && link.target === focusedNode)
+            );
+        };
+
+        return (
+            <div style={{ display: 'flex', width: '100%', height: '100%', position: 'relative' }}
+                 onMouseMove={handleMouseMove}
+                 onMouseUp={handleMouseUp}>
+
+                {/* ======================================================== */}
+                {/* 左侧：美学高保真预览视窗 */}
+                {/* ======================================================== */}
+                <div style={{
+                    flex: 1.2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRight: '1px solid ' + (envMode === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'),
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    {/* macOS 风格三色红绿灯 */}
+                    <div style={{
+                        position: 'absolute',
+                        top: 24,
+                        left: 24,
+                        display: 'flex',
+                        gap: 8,
+                        zIndex: 10
+                    }}>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ff5f56' }}></div>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ffbd2e' }}></div>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#27c93f' }}></div>
+                        <span style={{
+                            marginLeft: 12,
+                            fontSize: 11,
+                            color: envMode === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)',
+                            fontFamily: 'var(--font-mono)'
+                        }}>prism.app (RelationGraphPreview)</span>
+                    </div>
+
+                    {/* 日夜模式无感小切换开关 */}
+                    <div style={{
+                        position: 'absolute',
+                        top: 20,
+                        right: 24,
+                        zIndex: 10,
+                        display: 'flex',
+                        background: envMode === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
+                        padding: 3,
+                        borderRadius: 20,
+                        border: '1px solid ' + (envMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)')
+                    }}>
+                        <button
+                            id="btn-env-light"
+                            onClick={() => setEnvMode('light')}
+                            style={{
+                                border: 'none',
+                                background: envMode === 'light' ? '#fff' : 'transparent',
+                                color: envMode === 'light' ? '#000' : (envMode === 'dark' ? '#aaa' : '#666'),
+                                padding: '4px 10px',
+                                borderRadius: 15,
+                                fontSize: 11,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s var(--ease-out-extreme)',
+                                boxShadow: envMode === 'light' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+                            }}>
+                            ☀️ 白天
+                        </button>
+                        <button
+                            id="btn-env-dark"
+                            onClick={() => setEnvMode('dark')}
+                            style={{
+                                border: 'none',
+                                background: envMode === 'dark' ? '#2a2a2e' : 'transparent',
+                                color: envMode === 'dark' ? '#fff' : '#666',
+                                padding: '4px 10px',
+                                borderRadius: 15,
+                                fontSize: 11,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s var(--ease-out-extreme)',
+                                boxShadow: envMode === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none'
+                            }}>
+                            🌙 暗黑
+                        </button>
+                    </div>
+
+                    {/* SVG 图谱视窗画布 */}
+                    <div style={{
+                        flex: 1,
+                        backgroundColor: colors.canvasBg,
+                        transition: 'background-color 0.8s var(--ease-out-extreme)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifycontent: 'center',
+                        position: 'relative'
+                    }}>
+                        <svg
+                            id="pavilion-svg"
+                            viewBox="0 0 520 440"
+                            style={{
+                                width: '92%',
+                                height: '92%',
+                                userSelect: 'none',
+                                transition: 'all 0.8s var(--ease-out-extreme)'
+                            }}>
+
+                            {/* SVG 阴影滤镜，专供 Nocturne 流派磨砂质感使用 */}
+                            <defs>
+                                <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                                <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                                    <feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity={envMode === 'light' ? "0.08" : "0.3"} floodColor={colors.nodeAccent} />
+                                </filter>
+                            </defs>
+
+                            {/* 1. 渲染底层拓扑连线 */}
+                            {LINKS.map((link, idx) => {
+                                const sourceNode = nodes.find(n => n.id === link.source);
+                                const targetNode = nodes.find(n => n.id === link.target);
+                                if (!sourceNode || !targetNode) return null;
+
+                                const sX = sourceNode.currentX || sourceNode.x;
+                                const sY = sourceNode.currentY || sourceNode.y;
+                                const tX = targetNode.currentX || targetNode.x;
+                                const tY = targetNode.currentY || targetNode.y;
+
+                                // 计算连线高亮状态
+                                const isActive = focusedNode && (link.source === focusedNode || link.target === focusedNode);
+                                const isHidden = focusedNode && !isActive;
+
+                                // 连线样式微调
+                                let strokeWidth = 0.8;
+                                let strokeDash = "none";
+                                let shadowFilter = "none";
+
+                                if (currentStyle.config.linkStyle === 'solid-thin') {
+                                    strokeWidth = isActive ? 1.2 : 0.8;
+                                } else if (currentStyle.config.linkStyle === 'ink-line') {
+                                    strokeWidth = isActive ? 1.0 : 0.6;
+                                } else if (currentStyle.config.linkStyle === 'glow-line') {
+                                    strokeWidth = isActive ? 1.4 : 0.7;
+                                    shadowFilter = isActive ? "url(#glow)" : "none";
+                                } else if (currentStyle.config.linkStyle === 'vermilion-line') {
+                                    strokeWidth = isActive ? 1.3 : 0.7;
+                                }
+
+                                return (
+                                    <line
+                                        key={`link-${idx}`}
+                                        x1={sX}
+                                        y1={sY}
+                                        x2={tX}
+                                        y2={tY}
+                                        stroke={isActive ? colors.linkActiveColor : colors.linkColor}
+                                        strokeWidth={strokeWidth}
+                                        strokeDasharray={strokeDash}
+                                        filter={shadowFilter}
+                                        style={{
+                                            transition: 'stroke 0.6s var(--ease-out-extreme), stroke-width 0.3s, opacity 0.5s',
+                                            opacity: isHidden ? 0.08 : (isActive ? 1.0 : linkOpacity)
+                                        }}
+                                    />
+                                );
+                            })}
+
+                            {/* 2. 渲染底层呼吸水晕/脉冲外圈 */}
+                            {nodes.map((node) => {
+                                if (!currentStyle.config.showPulseRing || !node.isCenter) return null;
+
+                                const nX = node.currentX || node.x;
+                                const nY = node.currentY || node.y;
+
+                                // 晕染半径与动画
+                                let pulseClass = "pulse-anim";
+                                let ringRadius = 16;
+                                let innerRing = null;
+
+                                if (currentStyle.config.pulseRingStyle === 'thin-outline') {
+                                    ringRadius = 14;
+                                } else if (currentStyle.config.pulseRingStyle === 'ink-fade') {
+                                    ringRadius = 22;
+                                } else if (currentStyle.config.pulseRingStyle === 'aurora-glow') {
+                                    ringRadius = 18;
+                                } else if (currentStyle.config.pulseRingStyle === 'vermilion-wave') {
+                                    ringRadius = 20;
+                                }
+
+                                return (
+                                    <g key={`pulse-${node.id}`} style={{ pointerEvents: 'none' }}>
+                                        {/* 第一层扩散圈 */}
+                                        <circle
+                                            cx={nX}
+                                            cy={nY}
+                                            r={ringRadius}
+                                            fill="none"
+                                            stroke={colors.ringColor}
+                                            strokeWidth="0.8"
+                                            style={{
+                                                transformOrigin: `${nX}px ${nY}px`,
+                                                animation: `pulse-expand ${3 / pulseFreq}s infinite linear`,
+                                                opacity: focusedNode === node.id ? 0.8 : 0.3
+                                            }}
+                                        />
+                                        {/* 第二层极弱扩散圈 */}
+                                        <circle
+                                            cx={nX}
+                                            cy={nY}
+                                            r={ringRadius * 1.6}
+                                            fill="none"
+                                            stroke={colors.ringPulseColor}
+                                            strokeWidth="0.5"
+                                            style={{
+                                                transformOrigin: `${nX}px ${nY}px`,
+                                                animation: `pulse-expand-slow ${4.5 / pulseFreq}s infinite linear`,
+                                                opacity: focusedNode === node.id ? 0.4 : 0.15
+                                            }}
+                                        />
+                                    </g>
+                                );
+                            })}
+
+                            {/* 3. 渲染顶层节点粒子 */}
+                            {nodes.map((node) => {
+                                const nX = node.currentX || node.x;
+                                const nY = node.currentY || node.y;
+
+                                const isFocused = focusedNode === node.id;
+                                const isConnected = isNodeConnected(node.id);
+                                const isDimmed = focusedNode && !isFocused && !isConnected;
+
+                                let radius = node.isCenter ? currentStyle.config.accentRadius : currentStyle.config.nodeRadius;
+                                if (isFocused) radius *= 1.35; // Hover 放大
+
+                                let fill = node.isCenter ? colors.nodeAccent : colors.nodeColor;
+                                if (isFocused) fill = colors.nodeAccent;
+                                else if (isConnected) fill = colors.nodeAccent;
+
+                                // 节点本身独特的视觉投影或样式
+                                let nodeFilter = "none";
+                                if (currentStyle.config.enableShading && node.isCenter) {
+                                    nodeFilter = "url(#soft-shadow)";
+                                }
+
+                                // 瑞士印刷派特殊画法：如果是主节点，画成中空环
+                                const isPentagramCenter = activeStyle === 'pentagram' && node.isCenter;
+                                const isVermilionCenter = activeStyle === 'vermilion' && node.isCenter;
+
+                                return (
+                                    <g
+                                        key={`node-${node.id}`}
+                                        onMouseEnter={() => {
+                                            if (!draggedNode) setFocusedNode(node.id);
+                                        }}
+                                        onMouseLeave={() => {
+                                            if (!draggedNode) setFocusedNode(null);
+                                        }}
+                                        onMouseDown={(e) => handleMouseDown(node.id, e)}
+                                        style={{ cursor: draggedNode === node.id ? 'grabbing' : 'grab' }}
+                                    >
+                                        {/* 隐藏的透明大圆形交互区，增大鼠标判定范围，提升操作流畅感 */}
+                                        <circle
+                                            cx={nX}
+                                            cy={nY}
+                                            r="16"
+                                            fill="transparent"
+                                        />
+
+                                        {/* 真实节点粒子 */}
+                                        {(isPentagramCenter || isVermilionCenter) ? (
+                                            // 印刷派/朱砂红派主节点画为极雅致之空心双环
+                                            <g filter={nodeFilter}>
+                                                <circle
+                                                    cx={nX}
+                                                    cy={nY}
+                                                    r={radius}
+                                                    fill={colors.canvasBg}
+                                                    stroke={colors.nodeAccent}
+                                                    strokeWidth={isFocused ? "2" : "1.2"}
+                                                    style={{ transition: 'all 0.3s var(--ease-out-extreme)' }}
+                                                />
+                                                <circle
+                                                    cx={nX}
+                                                    cy={nY}
+                                                    r={radius * 0.4}
+                                                    fill={colors.nodeAccent}
+                                                    style={{ transition: 'all 0.3s var(--ease-out-extreme)' }}
+                                                />
+                                            </g>
+                                        ) : (
+                                            // 普通实心粒子
+                                            <circle
+                                                cx={nX}
+                                                cy={nY}
+                                                r={radius}
+                                                fill={fill}
+                                                filter={nodeFilter}
+                                                style={{
+                                                    transition: 'r 0.35s var(--ease-spring), fill 0.5s var(--ease-out-extreme), opacity 0.5s',
+                                                    opacity: isDimmed ? 0.12 : 1.0
+                                                }}
+                                            />
+                                        )}
+
+                                        {/* 瑞士印刷派特殊画法：非主节点，Hover 时只在外面加一个细环，不显示实心 */}
+                                        {activeStyle === 'pentagram' && !node.isCenter && isFocused && (
+                                            <circle
+                                                cx={nX}
+                                                cy={nY}
+                                                r={radius + 3}
+                                                fill="none"
+                                                stroke={colors.nodeAccent}
+                                                strokeWidth="0.5"
+                                                style={{ animation: 'scale-up 0.25s forwards' }}
+                                            />
+                                        )}
+                                    </g>
+                                );
+                            })}
+
+                            {/* 4. 渲染节点文字标签 (以最完美图纸感盖在粒子上方) */}
+                            {showLabels && nodes.map((node) => {
+                                const nX = node.currentX || node.x;
+                                const nY = node.currentY || node.y;
+
+                                const isFocused = focusedNode === node.id;
+                                const isConnected = isNodeConnected(node.id);
+                                const isDimmed = focusedNode && !isFocused && !isConnected;
+
+                                let textY = nY + currentStyle.config.textOffset;
+                                let textAnchor = "middle";
+
+                                // 特殊排版：印刷派 (Pentagram) 文字正盖在节点中心，主节点字号显著加大
+                                if (activeStyle === 'pentagram') {
+                                    textY = node.isCenter ? nY + 4 : nY + 4;
+                                } else {
+                                    // 其他流派字浮在粒子下方
+                                    textY = nY + 14;
+                                }
+
+                                // 动态高亮字号与粗细
+                                const fontSize = isFocused
+                                    ? labelSize * 1.15
+                                    : (isConnected ? labelSize * 1.05 : labelSize);
+
+                                const fontWeight = node.isCenter
+                                    ? 600
+                                    : (isFocused ? 600 : 500);
+
+                                return (
+                                    <text
+                                        key={`label-${node.id}`}
+                                        x={nX}
+                                        y={textY}
+                                        textAnchor={textAnchor}
+                                        fill={isFocused ? colors.textActiveColor : (isConnected ? colors.nodeAccent : colors.textColor)}
+                                        style={{
+                                            fontFamily: currentStyle.config.fontFamily,
+                                            fontSize: `${fontSize}px`,
+                                            fontWeight: fontWeight,
+                                            textTransform: getTextTransform(),
+                                            letterSpacing: '-0.01em',
+                                            transition: 'fill 0.4s, font-size 0.3s var(--ease-spring), opacity 0.5s',
+                                            pointerEvents: 'none',
+                                            opacity: isDimmed ? 0.12 : 1.0
+                                        }}>
+                                        {getDisplayLabel(node.label)}
+                                    </text>
+                                );
+                            })}
+                        </svg>
+
+                        {/* 巡航浮层提示 */}
+                        {cruiseMode && (
+                            <div style={{
+                                position: 'absolute',
+                                bottom: 20,
+                                left: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                background: envMode === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(30,30,35,0.9)',
+                                border: '1px solid ' + (envMode === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'),
+                                padding: '6px 14px',
+                                borderRadius: 30,
+                                fontSize: 11,
+                                fontWeight: 500,
+                                boxShadow: 'var(--glass-shadow)',
+                                animation: 'pulse-hint 1.5s infinite alternate'
+                            }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: colors.nodeAccent }}></span>
+                                <span>自动漫游巡航演练中... 鼠标 Hover 节点即可打断</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ======================================================== */}
+                {/* 右侧：美学控制台 & 品鉴面板 */}
+                {/* ======================================================== */}
+                <div style={{
+                    flex: 0.8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: 32,
+                    overflowY: 'auto',
+                    background: envMode === 'light' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(20, 20, 22, 0.45)'
+                }}>
+                    {/* 头部标题区 */}
+                    <div style={{ marginBottom: 28 }}>
+                        <h2 style={{
+                            fontSize: 22,
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            marginBottom: 8,
+                            color: envMode === 'light' ? '#1c1c1e' : '#fff'
+                        }}>Prism 图谱美学实验室</h2>
+                        <p style={{
+                            fontSize: 13,
+                            color: envMode === 'light' ? '#636366' : '#aeaeae',
+                            lineHeight: 1.6
+                        }}>
+                            已暂停 React 源码修改。请在下方选择最契合 Prism 妙言写作器设计哲学的图谱配色方案，我们支持极细致的手动调优参数，以规避任何低端 AI Slop 塑料感。
+                        </p>
+                    </div>
+
+                    {/* 流派选择切盘 */}
+                    <div style={{ marginBottom: 32 }}>
+                        <h3 style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: envMode === 'light' ? '#8e8e93' : '#8e8e93',
+                            marginBottom: 14
+                        }}>4 大美学流派切盘 (Aesthetic Themes)</h3>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {Object.values(STYLE_SCHEMES).map((scheme) => {
+                                const isSelected = activeStyle === scheme.id;
+                                return (
+                                    <div
+                                        key={scheme.id}
+                                        id={"theme-card-" + scheme.id}
+                                        onClick={() => {
+                                            setActiveStyle(scheme.id);
+                                            setCruiseMode(false); // 切换方案时关闭巡航，让用户自主端详
+                                        }}
+                                        style={{
+                                            border: '1px solid ' + (isSelected
+                                                ? colors.nodeAccent
+                                                : (envMode === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)')),
+                                            background: isSelected
+                                                ? (envMode === 'light' ? '#ffffff' : 'rgba(255,255,255,0.04)')
+                                                : (envMode === 'light' ? 'rgba(255,255,255,0.3)' : 'transparent'),
+                                            borderRadius: 14,
+                                            padding: 16,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.4s var(--ease-out-extreme)',
+                                            boxShadow: isSelected ? 'var(--glass-shadow)' : 'none',
+                                            transform: isSelected ? 'scale(1.01)' : 'scale(1.0)'
+                                        }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                            <span style={{
+                                                fontSize: 14,
+                                                fontWeight: 600,
+                                                color: isSelected
+                                                    ? colors.nodeAccent
+                                                    : (envMode === 'light' ? '#1c1c1e' : '#e5e5ea')
+                                            }}>{scheme.name}</span>
+
+                                            {/* 小圆点表示此流派主打色 */}
+                                            <span style={{
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: '50%',
+                                                backgroundColor: scheme.config[envMode].nodeAccent,
+                                                boxShadow: `0 0 8px ${scheme.config[envMode].nodeAccent}`
+                                            }}></span>
+                                        </div>
+                                        <div style={{
+                                            fontSize: 11,
+                                            color: envMode === 'light' ? '#8e8e93' : '#8e8e93',
+                                            marginBottom: 8,
+                                            fontFamily: 'var(--font-mono)'
+                                        }}>
+                                            流派标签: {scheme.keywords.join(' · ')}
+                                        </div>
+                                        <p style={{
+                                            fontSize: 12,
+                                            lineHeight: 1.5,
+                                            color: envMode === 'light' ? '#636366' : '#aeaeae'
+                                        }}>{scheme.philosophy}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* 漫游巡航与控制 */}
+                    <div style={{
+                        marginBottom: 32,
+                        padding: 16,
+                        borderRadius: 12,
+                        background: envMode === 'light' ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)',
+                        border: '1px solid ' + (envMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <div>
+                            <span style={{ fontSize: 13, fontWeight: 600, display: 'block', color: envMode === 'light' ? '#1c1c1e' : '#fff' }}>一键漫游演示巡航</span>
+                            <span style={{ fontSize: 11, color: envMode === 'light' ? '#8e8e93' : '#8e8e93' }}>开启后，系统将自动高亮流派节点链路</span>
+                        </div>
+                        <button
+                            onClick={() => setCruiseMode(!cruiseMode)}
+                            style={{
+                                border: 'none',
+                                background: cruiseMode ? colors.nodeAccent : (envMode === 'light' ? '#1c1c1e' : '#fff'),
+                                color: cruiseMode ? '#fff' : (envMode === 'light' ? '#fff' : '#000'),
+                                padding: '8px 16px',
+                                borderRadius: 20,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s var(--ease-out-extreme)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                            }}>
+                            {cruiseMode ? '⏹️ 停止漫游' : '▶️ 开启漫游'}
+                        </button>
+                    </div>
+
+                    {/* 5. 实验室微调面板 (Tweaks Panel) */}
+                    <div style={{ marginBottom: 32 }}>
+                        <h3 style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: envMode === 'light' ? '#8e8e93' : '#8e8e93',
+                            marginBottom: 16
+                        }}>实验室微调控制台 (Tweaks Console)</h3>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {/* 1. 物理飘移振幅 */}
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                                    <span style={{ fontWeight: 500, color: envMode === 'light' ? '#48484a' : '#c7c7cc' }}>物理飘游振幅 (Float Amplitude)</span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', color: colors.nodeAccent }}>{floatAmp.toFixed(1)}px</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.0"
+                                    max="6.0"
+                                    step="0.5"
+                                    value={floatAmp}
+                                    onChange={(e) => setFloatAmp(parseFloat(e.target.value))}
+                                    style={{
+                                        width: '100%',
+                                        accentColor: colors.nodeAccent,
+                                        cursor: 'ew-resize'
+                                    }}
+                                />
+                            </div>
+
+                            {/* 2. 呼吸圆环频率 */}
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                                    <span style={{ fontWeight: 500, color: envMode === 'light' ? '#48484a' : '#c7c7cc' }}>圆环呼吸频率 (Pulse Frequency)</span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', color: colors.nodeAccent }}>{pulseFreq.toFixed(1)}x</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.2"
+                                    max="2.0"
+                                    step="0.2"
+                                    value={pulseFreq}
+                                    onChange={(e) => setPulseFreq(parseFloat(e.target.value))}
+                                    style={{
+                                        width: '100%',
+                                        accentColor: colors.nodeAccent,
+                                        cursor: 'ew-resize'
+                                    }}
+                                />
+                            </div>
+
+                            {/* 3. 连线清晰度 */}
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                                    <span style={{ fontWeight: 500, color: envMode === 'light' ? '#48484a' : '#c7c7cc' }}>背景连线清晰度 (Link Visibility)</span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', color: colors.nodeAccent }}>{Math.round(linkOpacity * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.1"
+                                    max="1.0"
+                                    step="0.1"
+                                    value={linkOpacity}
+                                    onChange={(e) => setLinkOpacity(parseFloat(e.target.value))}
+                                    style={{
+                                        width: '100%',
+                                        accentColor: colors.nodeAccent,
+                                        cursor: 'ew-resize'
+                                    }}
+                                />
+                            </div>
+
+                            {/* 4. 文本显示大小 */}
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                                    <span style={{ fontWeight: 500, color: envMode === 'light' ? '#48484a' : '#c7c7cc' }}>文本显示大小 (Label Font Size)</span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', color: colors.nodeAccent }}>{labelSize}px</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="16"
+                                    step="1"
+                                    value={labelSize}
+                                    onChange={(e) => setLabelSize(parseInt(e.target.value))}
+                                    style={{
+                                        width: '100%',
+                                        accentColor: colors.nodeAccent,
+                                        cursor: 'ew-resize'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 美学策展建议书 (Curator's Notes) */}
+                    <div style={{
+                        marginTop: 'auto',
+                        padding: 16,
+                        borderRadius: 12,
+                        background: envMode === 'light' ? '#fff' : 'rgba(255,255,255,0.02)',
+                        border: '1px solid ' + (envMode === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'),
+                        boxShadow: 'var(--glass-shadow)'
+                    }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: envMode === 'light' ? '#1c1c1e' : '#fff',
+                            marginBottom: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6
+                        }}>
+                            💡 策展人提示与建议
+                        </h4>
+                        <ul style={{
+                            fontSize: 11.5,
+                            color: envMode === 'light' ? '#636366' : '#aeaeae',
+                            paddingLeft: 16,
+                            lineHeight: 1.6
+                        }}>
+                            <li style={{ marginBottom: 4 }}><strong>主节点呼吸环：</strong>已将 `Prism.md` 的文件名后面的 `.md` 后缀彻底隐藏，并在节点内部嵌入极具动感的“物理呼吸双环”动画。</li>
+                            <li style={{ marginBottom: 4 }}><strong>关于拟物化翡翠绿：</strong>3D玉石球在高透磨砂或留白环境下容易流于土气。我们极力推荐 <strong>Pentagram 瑞士印刷派</strong> 或 <strong>Classic 朱砂红流派</strong>，两者完美对齐妙言的人文写作根骨。</li>
+                            <li><strong>物理拓扑：</strong>你可以用鼠标<strong>点击并任意拖拽</strong>其中任何节点，体验带有阻尼的力导向跟随反馈。</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        );
+    }
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+</script>
+
+<style>
+    /* -------------------------------------------------- */
+    /* 物理脉冲呼吸外环扩散动画 (Pulse Core CSS) */
+    /* -------------------------------------------------- */
+    @keyframes pulse-expand {
+        0% {
+            transform: scale(0.6);
+            opacity: 0.8;
+        }
+        100% {
+            transform: scale(1.6);
+            opacity: 0;
+        }
+    }
+
+    @keyframes pulse-expand-slow {
+        0% {
+            transform: scale(0.7);
+            opacity: 0.6;
+        }
+        100% {
+            transform: scale(2.0);
+            opacity: 0;
+        }
+    }
+
+    @keyframes scale-up {
+        from {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+    }
+
+    @keyframes pulse-hint {
+        from {
+            opacity: 0.85;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+    }
+</style>
+
+</body>
+</html>

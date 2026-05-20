@@ -44,10 +44,8 @@ export function LinkDiagnosticsPanel({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, visible]);
 
-  if (!visible) return null;
-
   return (
-    <div className="modal prism-link-diagnostics-modal prism-diagnostics-popover" role="dialog" aria-label="链接问题">
+    <div className={`modal prism-link-diagnostics-modal prism-diagnostics-popover ${visible ? 'is-active' : ''}`} role="dialog" aria-label="链接问题">
         <div className="modal-header">
           <div>
             <div className="modal-title">{diagnostics.length || 0} 个链接问题</div>

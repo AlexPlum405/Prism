@@ -51,6 +51,7 @@ export function createWorkspaceCommands(): CommandDefinition[] {
       label: '查看关系图谱',
       category: '视图',
       keywords: ['graph', 'relation', '关系', '图谱'],
+      shortcuts: [{ code: 'KeyG', mod: true, alt: true }],
       enabled: hasSavedDocumentPath,
       run: (context) => context.openRelationGraph?.(),
     },

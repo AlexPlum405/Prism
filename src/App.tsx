@@ -970,6 +970,8 @@ function App() {
             typographyIssueCount={typographyDiagnostics.length}
             typographyIssueTitle={firstTypographyDiagnostic?.message}
             onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
+            onRelationGraphClick={() => setRelationGraphVisible(true)}
+            hasSavedPath={Boolean(currentDocument?.path)}
             exportProgress={exportProgress}
             exportProgressInBackground={exportProgressInBackground}
             onShowExportProgress={showBackgroundExportProgress}
