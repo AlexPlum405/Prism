@@ -19,10 +19,11 @@ import {
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import { MARKDOWN_FILE_FILTERS, addRecentFile, basename, dirname } from '../../workspace/services';
 import type { CommandContext, CommandDefinition } from '../types';
+import { t } from '../../i18n';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (err instanceof Event) return err.type || '未知事件错误';
+  if (err instanceof Event) return err.type || t('common.unknownEventError');
   return String(err);
 }
 
@@ -67,7 +68,7 @@ function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: Command
     context.documentStore.createNewDocument(resolveMarkdownTemplateContent(template.content, {
       title: template.label,
     }), template.filename);
-    context.showToast?.(`已创建 ${template.label} 模板`);
+    context.showToast?.(t('command.templateCreated', { label: template.label }));
     return;
   }
 
@@ -89,8 +90,8 @@ async function handleOpen(context: CommandContext): Promise<void> {
 
     if (fileSizeMB > 10) {
       const shouldContinue = await ask(
-        `文件大小为 ${fileSizeMB.toFixed(2)} MB，可能影响性能。是否继续打开？`,
-        { title: '大文件警告', kind: 'warning' },
+        t('command.largeFileWarning', { size: fileSizeMB.toFixed(2) }),
+        { title: t('command.largeFileTitle'), kind: 'warning' },
       );
       if (!shouldContinue) return;
     }
@@ -119,7 +120,10 @@ async function handleOpen(context: CommandContext): Promise<void> {
   } catch (err) {
     console.error('[Command] Failed to open file:', err);
     const message = formatError(err);
-    await ask(`无法打开文件：${message}`, { title: '打开文件失败', kind: 'error' });
+    await ask(t('command.openFileFailedDialog', { message }), {
+      title: t('command.openFileFailedTitle'),
+      kind: 'error',
+    });
   }
 }
 
@@ -131,7 +135,7 @@ async function handleSave(context: CommandContext): Promise<void> {
 
   if (!targetPath) {
     if (!context.requestSavePath) {
-      context.showToast?.('保存面板未就绪');
+      context.showToast?.(t('command.savePanelUnavailable'));
       return;
     }
     const chosen = await context.requestSavePath({
@@ -174,7 +178,7 @@ async function handleSaveAs(context: CommandContext): Promise<void> {
   if (!doc) return;
 
   if (!context.requestSavePath) {
-    context.showToast?.('保存面板未就绪');
+    context.showToast?.(t('command.savePanelUnavailable'));
     return;
   }
 
@@ -219,7 +223,7 @@ async function handleOpenCurrentLocation(context: CommandContext): Promise<void>
     return;
   }
 
-  context.showToast?.('当前没有可显示的位置');
+  context.showToast?.(t('command.noLocationToReveal'));
 }
 
 async function handleCloseDocument(context: CommandContext): Promise<void> {
@@ -230,7 +234,7 @@ async function handleCloseDocument(context: CommandContext): Promise<void> {
     let targetPath = doc.path;
     if (!targetPath) {
       if (!context.requestSavePath) {
-        context.showToast?.('保存面板未就绪');
+        context.showToast?.(t('command.savePanelUnavailable'));
         return;
       }
       const chosen = await context.requestSavePath({
@@ -269,31 +273,27 @@ export function createFileCommands(): CommandDefinition[] {
   return [
     {
       id: 'new',
-      label: '新建文稿',
-      category: '文件',
+      category: 'file',
       keywords: ['create', 'file'],
       shortcuts: [{ code: 'KeyN', mod: true }],
       run: handleNew,
     },
     {
       id: 'newWindow',
-      label: '新建窗口',
-      category: '文件',
+      category: 'file',
       shortcuts: [{ code: 'KeyN', mod: true, shift: true }],
       run: () => openPrismWindow({}),
     },
     {
       id: 'open',
-      label: '打开文件',
-      category: '文件',
+      category: 'file',
       keywords: ['open', 'file'],
       shortcuts: [{ code: 'KeyO', mod: true }],
       run: handleOpen,
     },
     {
       id: 'save',
-      label: '保存',
-      category: '文件',
+      category: 'file',
       keywords: ['save'],
       shortcuts: [{ code: 'KeyS', mod: true }],
       enabled: hasDocument,
@@ -301,8 +301,7 @@ export function createFileCommands(): CommandDefinition[] {
     },
     {
       id: 'saveAs',
-      label: '另存为',
-      category: '文件',
+      category: 'file',
       keywords: ['save as'],
       shortcuts: [{ code: 'KeyS', mod: true, shift: true }],
       enabled: hasDocument,
@@ -310,92 +309,79 @@ export function createFileCommands(): CommandDefinition[] {
     },
     {
       id: 'templateReadme',
-      label: 'README 模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'readme'],
       run: (context) => handleMarkdownTemplate('readme', context),
     },
     {
       id: 'templatePrd',
-      label: 'PRD 模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'prd', 'product'],
       run: (context) => handleMarkdownTemplate('prd', context),
     },
     {
       id: 'templateMeeting',
-      label: '会议纪要模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'meeting'],
       run: (context) => handleMarkdownTemplate('meeting', context),
     },
     {
       id: 'templateWeekly',
-      label: '周报模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'weekly'],
       run: (context) => handleMarkdownTemplate('weekly', context),
     },
     {
       id: 'templateTechnicalPlan',
-      label: '技术方案模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'technical', 'plan'],
       run: (context) => handleMarkdownTemplate('technicalPlan', context),
     },
     {
       id: 'templateArticle',
-      label: '公众号长文模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'article'],
       run: (context) => handleMarkdownTemplate('article', context),
     },
     {
       id: 'templatePaperDraft',
-      label: '论文草稿模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'paper', 'academic', '论文'],
       run: (context) => handleMarkdownTemplate('paperDraft', context),
     },
     {
       id: 'templateReadingNote',
-      label: '读书笔记模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'reading', 'book', '读书笔记'],
       run: (context) => handleMarkdownTemplate('readingNote', context),
     },
     {
       id: 'templateResearchSummary',
-      label: '研究摘要模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'research', 'summary', '研究摘要'],
       run: (context) => handleMarkdownTemplate('researchSummary', context),
     },
     {
       id: 'templateWhitePaper',
-      label: '白皮书模板',
-      category: '文件',
+      category: 'file',
       keywords: ['template', 'whitepaper', '白皮书'],
       run: (context) => handleMarkdownTemplate('whitePaper', context),
     },
     {
       id: 'print',
-      label: '打印',
-      category: '文件',
+      category: 'file',
       keywords: ['print'],
       run: () => window.print(),
     },
     {
       id: 'openCurrentLocation',
-      label: '在文件管理器中显示',
-      category: '文件',
+      category: 'file',
       enabled: (context) => hasSavedDocumentPath(context) || Boolean(context.workspaceStore.rootPath),
       run: handleOpenCurrentLocation,
     },
     {
       id: 'closeDocument',
-      label: '关闭文稿',
-      category: '文件',
+      category: 'file',
       shortcuts: [{ code: 'KeyW', mod: true }],
       enabled: hasDocument,
       run: handleCloseDocument,

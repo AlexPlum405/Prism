@@ -3,7 +3,8 @@ export type PrismDiagnosticKind =
   | 'image'
   | 'render'
   | 'export'
-  | 'typography';
+  | 'typography'
+  | 'table';
 
 export type PrismDiagnosticSeverity = 'error' | 'warning' | 'info';
 

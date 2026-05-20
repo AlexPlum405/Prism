@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 export interface ExportTocHeading {
   level: number;
   text: string;
@@ -85,8 +87,8 @@ export function buildExportTocHtml(items: ExportTocItem[]) {
   }).join('');
 
   return [
-    '<nav class="prism-export-toc" aria-label="目录">',
-    '<div class="prism-export-toc-title">目录</div>',
+    `<nav class="prism-export-toc" aria-label="${escapeHtml(t('export.toc'))}">`,
+    `<div class="prism-export-toc-title">${escapeHtml(t('export.toc'))}</div>`,
     `<ol class="prism-export-toc-list">${rows}</ol>`,
     '</nav>',
   ].join('');

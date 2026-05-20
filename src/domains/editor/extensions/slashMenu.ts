@@ -1,5 +1,8 @@
 import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { MARKDOWN_TEMPLATES, resolveMarkdownTemplateContent, type MarkdownTemplateId } from './templates';
+import { t, type I18nKey } from '../../i18n';
+
+const TABLE_COMMAND_SENTINEL = '__PRISM_OPEN_TABLE_INSERT_POPOVER__';
 
 export type SlashMenuItemId =
   | 'heading'
@@ -26,120 +29,135 @@ export interface SlashMenuItem {
   label: string;
 }
 
-const CORE_SLASH_MENU_ITEMS: SlashMenuItem[] = [
-  {
+function getCoreSlashMenuItems(): SlashMenuItem[] {
+  return [
+    {
     id: 'heading',
-    label: '标题',
-    detail: '插入二级标题',
+    label: t('slash.heading.label'),
+    detail: t('slash.heading.detail'),
     keywords: ['heading', 'title', 'biaoti'],
     insert: '## 标题\n',
   },
   {
     id: 'table',
-    label: '表格',
-    detail: '插入 3 列 Markdown 表格',
+    label: t('slash.table.label'),
+    detail: t('slash.table.detail'),
     keywords: ['table', 'biaoge'],
-    insert: '| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n|  |  |  |\n',
+    insert: TABLE_COMMAND_SENTINEL,
   },
   {
     id: 'mermaid',
-    label: 'Mermaid 图表',
-    detail: '插入 Mermaid 代码块',
+    label: t('slash.mermaid.label'),
+    detail: t('slash.mermaid.detail'),
     keywords: ['mermaid', 'diagram', 'flowchart'],
     insert: '```mermaid\ngraph TD\n  A[Start] --> B[Next]\n```\n',
   },
   {
     id: 'katex',
-    label: 'KaTeX 公式',
-    detail: '插入块级数学公式',
+    label: t('slash.katex.label'),
+    detail: t('slash.katex.detail'),
     keywords: ['katex', 'math', 'formula'],
     insert: '$$\nE = mc^2\n$$\n',
   },
   {
     id: 'callout-note',
     label: 'Callout: Note',
-    detail: '插入 NOTE 提示块',
+    detail: t('slash.callout.note.detail'),
     keywords: ['callout', 'note', 'notice'],
     insert: '> [!NOTE]\n> 内容\n',
   },
   {
     id: 'callout-warning',
     label: 'Callout: Warning',
-    detail: '插入 WARNING 提示块',
+    detail: t('slash.callout.warning.detail'),
     keywords: ['callout', 'warning', 'warn'],
     insert: '> [!WARNING]\n> 需要注意的内容\n',
   },
   {
     id: 'callout-tip',
     label: 'Callout: Tip',
-    detail: '插入 TIP 提示块',
+    detail: t('slash.callout.tip.detail'),
     keywords: ['callout', 'tip'],
     insert: '> [!TIP]\n> 建议或技巧\n',
   },
   {
     id: 'callout-important',
     label: 'Callout: Important',
-    detail: '插入 IMPORTANT 重点提示块',
+    detail: t('slash.callout.important.detail'),
     keywords: ['callout', 'important'],
     insert: '> [!IMPORTANT]\n> 重要内容\n',
   },
   {
     id: 'toggle',
-    label: 'Toggle 折叠块',
-    detail: '插入 details/summary 折叠内容',
+    label: t('slash.toggle.label'),
+    detail: t('slash.toggle.detail'),
     keywords: ['toggle', 'details', 'summary'],
     insert: '<details>\n<summary>标题</summary>\n\n内容\n\n</details>\n',
   },
   {
     id: 'code-block',
-    label: '代码块',
-    detail: '插入 fenced code block',
+    label: t('slash.codeBlock.label'),
+    detail: t('slash.codeBlock.detail'),
     keywords: ['code', 'block'],
     insert: '```text\n\n```\n',
   },
   {
     id: 'divider',
-    label: '分割线',
-    detail: '插入 Markdown 分割线',
+    label: t('slash.divider.label'),
+    detail: t('slash.divider.detail'),
     keywords: ['divider', 'hr', 'horizontal rule'],
     insert: '---\n',
   },
   {
     id: 'image',
-    label: '图片',
-    detail: '插入 Markdown 图片',
+    label: t('slash.image.label'),
+    detail: t('slash.image.detail'),
     keywords: ['image', 'picture', 'asset'],
     insert: '![描述](path/to/image.png)',
   },
   {
     id: 'link',
-    label: '链接',
-    detail: '插入 Markdown 链接',
+    label: t('slash.link.label'),
+    detail: t('slash.link.detail'),
     keywords: ['link', 'url'],
     insert: '[链接文本](https://example.com)',
   },
   {
     id: 'export-settings',
-    label: '导出设置块',
-    detail: '插入 YAML front matter 导出设置',
+    label: t('slash.exportSettings.label'),
+    detail: t('slash.exportSettings.detail'),
     keywords: ['export', 'front matter', 'yaml'],
     insert: '---\ntitle: \nexport:\n  template: theme\n  paper: a4\n  margin: standard\n  toc: false\n---\n',
-  },
-];
+    },
+  ];
+}
+
+const templateLabelKeys: Record<MarkdownTemplateId, I18nKey> = {
+  readme: 'template.readme',
+  prd: 'template.prd',
+  meeting: 'template.meeting',
+  weekly: 'template.weekly',
+  technicalPlan: 'template.technicalPlan',
+  article: 'template.article',
+  paperDraft: 'template.paperDraft',
+  readingNote: 'template.readingNote',
+  researchSummary: 'template.researchSummary',
+  whitePaper: 'template.whitePaper',
+};
 
 function getTemplateSlashMenuItems(): SlashMenuItem[] {
   return Object.values(MARKDOWN_TEMPLATES).map((template) => ({
     id: `template-${template.id}`,
-    label: `模板：${template.label}`,
-    detail: `插入 ${template.label} Markdown 模板`,
-    keywords: ['template', template.id, template.label],
+    label: t('slash.template.label', { label: t(templateLabelKeys[template.id]) }),
+    detail: t('slash.template.detail', { label: t(templateLabelKeys[template.id]) }),
+    keywords: ['template', template.id, template.label, t(templateLabelKeys[template.id])],
     insert: `${resolveMarkdownTemplateContent(template.content).trimEnd()}\n`,
   }));
 }
 
 export function getSlashMenuItems(): SlashMenuItem[] {
   return [
-    ...CORE_SLASH_MENU_ITEMS,
+    ...getCoreSlashMenuItems(),
     ...getTemplateSlashMenuItems(),
   ];
 }
@@ -180,6 +198,15 @@ export function createSlashMenuCompletionSource() {
         apply: (view, completion, from, to) => {
           const insert = typeof option.apply === 'string' ? option.apply : completion.label;
           const replaceFrom = Math.max(slashFrom, from - 1);
+          if (insert === TABLE_COMMAND_SENTINEL) {
+            view.dispatch({
+              changes: { from: replaceFrom, to, insert: '' },
+              selection: { anchor: replaceFrom },
+              scrollIntoView: true,
+            });
+            window.dispatchEvent(new CustomEvent('prism-editor-command', { detail: { command: 'insertTable' } }));
+            return;
+          }
           view.dispatch({
             changes: { from: replaceFrom, to, insert },
             selection: { anchor: replaceFrom + insert.length },

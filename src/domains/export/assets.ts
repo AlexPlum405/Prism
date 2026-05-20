@@ -1,4 +1,5 @@
 import { readFile } from '@tauri-apps/plugin-fs';
+import { t } from '../i18n';
 import { dirname, joinPath } from '../workspace/services/path';
 
 export type RasterDocxImageType = 'png' | 'jpg' | 'gif' | 'bmp';
@@ -115,7 +116,7 @@ export function getImageSize(dataUrl: string) {
   return new Promise<{ width: number; height: number }>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-    image.onerror = () => reject(new Error('导出图像尺寸读取失败'));
+    image.onerror = () => reject(new Error(t('export.imageSizeReadFailed')));
     image.src = dataUrl;
   });
 }

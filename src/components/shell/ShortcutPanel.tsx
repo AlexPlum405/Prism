@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { commandRegistry, getPrimaryShortcutLabel } from '../../domains/commands';
 import { useSettingsStore } from '../../domains/settings/store';
+import { getLocalizedCommandCategory, getLocalizedCommandLabel, useI18n } from '../../domains/i18n';
+import type { CommandCategory } from '../../domains/commands/types';
 
 interface ShortcutItem {
-  category: string;
+  category: CommandCategory;
   shortcuts: Array<{ keys: string; description: string }>;
 }
 
-const CATEGORY_ORDER = ['文件', '编辑', '插入', '格式', '视图', '窗口', '帮助'];
+const CATEGORY_ORDER: CommandCategory[] = ['file', 'edit', 'insert', 'format', 'view', 'window', 'help'];
 
 function getShortcutItems(shortcutStyle: ReturnType<typeof useSettingsStore.getState>['shortcutStyle']): ShortcutItem[] {
   return CATEGORY_ORDER.map((category) => ({
@@ -16,7 +18,7 @@ function getShortcutItems(shortcutStyle: ReturnType<typeof useSettingsStore.getS
       .filter((command) => command.category === category)
       .map((command) => ({
         keys: getPrimaryShortcutLabel(command.id, shortcutStyle),
-        description: command.label,
+        description: getLocalizedCommandLabel(command.id),
       }))
       .filter((item): item is { keys: string; description: string } => Boolean(item.keys)),
   })).filter((category) => category.shortcuts.length > 0);
@@ -28,6 +30,7 @@ interface ShortcutPanelProps {
 }
 
 export function ShortcutPanel({ visible, onClose }: ShortcutPanelProps) {
+  const { t } = useI18n();
   const shortcutStyle = useSettingsStore((s) => s.shortcutStyle);
 
   useEffect(() => {
@@ -46,15 +49,15 @@ export function ShortcutPanel({ visible, onClose }: ShortcutPanelProps) {
   return (
     <>
       <div className="sp-overlay" onClick={onClose} />
-      <div className="sp" role="dialog" aria-label="快捷键">
+      <div className="sp" role="dialog" aria-label={t('shortcut.title')}>
         <div className="sp-header">
-          <h2>快捷键</h2>
-          <button className="sp-close" onClick={onClose} aria-label="关闭">×</button>
+          <h2>{t('shortcut.title')}</h2>
+          <button className="sp-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="sp-content">
           {shortcuts.map((category) => (
             <div key={category.category} className="sp-category">
-              <h3>{category.category}</h3>
+              <h3>{getLocalizedCommandCategory(category.category as CommandCategory)}</h3>
               <div className="sp-list">
                 {category.shortcuts.map((s, i) => (
                   <div key={i} className="sp-item">

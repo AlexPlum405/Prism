@@ -11,6 +11,8 @@ import { useWorkspaceStore } from '../../workspace/store';
 import type { WorkspaceIndex } from '../../workspace/services';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { getCommandMenuItems, type CommandContext } from '../../commands';
+import { t } from '../../i18n';
+import { previewHtmlToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
 
 interface SplitViewProps {
   content: string;
@@ -480,21 +482,21 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       ) as ContextMenuItem[];
 
       return [
-        { label: '复制', action: 'copy', shortcut: '⌘C', disabled: !hasSelection },
-        { label: '全选', action: 'selectAll', shortcut: '⌘A' },
+        { label: t('command.copy'), action: 'copy', shortcut: '⌘C', disabled: !hasSelection },
+        { label: t('command.selectAll'), action: 'selectAll', shortcut: '⌘A' },
         { type: 'separator' },
         {
-          label: '复制为',
+          label: t('menu.copyAs'),
           children: [
-            { label: '纯文本', action: 'copyPlain' },
+            { label: t('menu.plainText'), action: 'copyPlain' },
             { label: 'Markdown', action: 'copyMd' },
             { label: 'HTML', action: 'copyHtml' },
           ],
         },
-        { label: '在编辑器中定位源码', action: 'locateSource', disabled: line === null },
+        { label: t('editor.context.locateSource'), action: 'locateSource', disabled: line === null },
         { type: 'separator' },
         {
-          label: '导出',
+          label: t('common.export'),
           children: exportItems,
         },
       ];
@@ -579,11 +581,12 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           await copyText(contentRef.current);
           break;
         case 'copyHtml':
-          await copyText(
+          await writeRichClipboard(previewHtmlToRichClipboardInput(
             getSerializedSelectionHtml(preview)
             || preview?.innerHTML
             || markdownToHtml(contentRef.current),
-          );
+            selectedText || preview?.innerText || contentRef.current,
+          ));
           break;
         case 'locateSource': {
           const line = previewContextMenu?.line;

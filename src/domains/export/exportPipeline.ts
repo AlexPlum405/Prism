@@ -14,6 +14,7 @@ import { markdownToHtml } from '../../lib/markdownToHtml';
 import { applyCalloutMetadataToMdastBlockquote } from '../editor/extensions/callouts';
 import { findPandocCitations } from '../editor/extensions/citations';
 import type { ContentTheme } from '../settings/types';
+import { t } from '../i18n';
 import type { ExportDocumentInput } from './types';
 import {
   getDocxThemeByContentTheme,
@@ -99,14 +100,14 @@ type PandocCitationHtmlAttempt =
   | { attempted: true; html: string | null };
 
 const exportProgressMessages = {
-  parseMarkdown: '正在解析 Markdown',
-  renderDiagrams: '正在渲染图表',
-  applyTheme: '正在应用导出主题',
-  prepareNativePdf: '正在准备 WebKit PDF 文档',
-  printNativePdf: '正在调用 WebKit PDF 引擎',
-  applyPdfChrome: '正在补充 PDF 页眉页脚',
-  generateFile: (label: ExportFileLabel) => `正在生成 ${label} 文件`,
-  writeFile: (label: ExportFileLabel) => `正在写入 ${label} 文件`,
+  parseMarkdown: () => t('export.progress.parseMarkdown'),
+  renderDiagrams: () => t('export.progress.renderDiagrams'),
+  applyTheme: () => t('export.progress.applyTheme'),
+  prepareNativePdf: () => t('export.progress.prepareNativePdf'),
+  printNativePdf: () => t('export.progress.printNativePdf'),
+  applyPdfChrome: () => t('export.progress.applyPdfChrome'),
+  generateFile: (label: ExportFileLabel) => t('export.progress.generateFile', { label }),
+  writeFile: (label: ExportFileLabel) => t('export.progress.writeFile', { label }),
 } as const;
 type CitationPlaceholderContext = 'html' | 'builtIn';
 type PrismRuntimeWindow = Window & {
@@ -204,7 +205,7 @@ function assertExportCanvasWithinLimits(width: number, height: number, scale: nu
     || area > MAX_EXPORT_CANVAS_AREA
   ) {
     throw new Error(
-      `${label}画布超出系统限制 (${scaledWidth} x ${scaledHeight} @ ${scale}x)，请降低导出清晰度或拆分文档。`,
+      t('export.error.canvasLimit', { label, width: scaledWidth, height: scaledHeight, scale }),
     );
   }
 }
@@ -243,7 +244,7 @@ function isTauriExportWorkerRuntime() {
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) return error.message.trim();
   if (typeof error === 'string' && error.trim()) return error.trim();
-  return '未知错误';
+  return t('export.error.unknown');
 }
 
 function hasCitationExportConfig(input: ExportDocumentInput) {
@@ -274,20 +275,20 @@ function getCitationPlaceholderWarning(input: ExportDocumentInput, context: Cita
   const pandocError = input.pandoc?.lastError?.trim();
 
   if (!hasSupportedCitationPathExtension(bibliographyPath, ['.bib', '.bibtex', '.json'])) {
-    return '参考文献文件后缀需要是 .bib、.bibtex 或 .json；当前导出已回退内置管线，citekey 会以占位形式保留。';
+    return t('export.warning.citationInvalidBibliography');
   }
   if (!hasSupportedCitationPathExtension(cslStylePath, ['.csl'])) {
-    return 'CSL 样式文件后缀需要是 .csl；当前导出已回退内置管线，citekey 会以占位形式保留。';
+    return t('export.warning.citationInvalidCsl');
   }
   if (!hasBibliography && hasCslStyle) {
-    return '已配置 CSL 样式，但缺少参考文献文件；当前导出会保留 citekey 占位。';
+    return t('export.warning.citationMissingBibliography');
   }
   if (context === 'html' && hasBibliography && !input.pandoc?.detected) {
     return pandocError
-      ? `已配置参考文献，但 Pandoc 未检测成功：${pandocError}；HTML 导出已回退内置管线，citekey 会以占位形式保留。`
-      : '已配置参考文献，但 Pandoc 未检测成功；HTML 导出已回退内置管线，citekey 会以占位形式保留。请在设置中心检测 Pandoc。';
+      ? t('export.warning.citationPandocMissingWithError', { error: pandocError })
+      : t('export.warning.citationPandocMissing');
   }
-  return '当前导出格式使用内置管线，不生成完整参考文献；citekey 会以占位形式保留。';
+  return t('export.warning.citationBuiltIn');
 }
 
 function reportCitationPlaceholderWarning(input: ExportDocumentInput, context: CitationPlaceholderContext = 'builtIn') {
@@ -313,7 +314,7 @@ async function renderPandocCitationHtml(input: ExportDocumentInput): Promise<Pan
   } catch (error) {
     reportWarning(
       input,
-      `Pandoc 引用导出失败，已回退内置导出，citekey 会以占位形式保留：${getErrorMessage(error)}`,
+      t('export.warning.citationPandocFailed', { message: getErrorMessage(error) }),
     );
     return { attempted: true, html: null };
   }
@@ -610,8 +611,8 @@ function resolvePdfRenderBatchEndPage(
 
 function getPdfPageRenderProgressMessage(startPage: number, endPage: number, pageCount: number) {
   return startPage === endPage
-    ? `正在生成 PDF 页面 ${startPage} / ${pageCount}`
-    : `正在生成 PDF 页面 ${startPage}-${endPage} / ${pageCount}`;
+    ? t('export.progress.generatePdfPage', { page: startPage, total: pageCount })
+    : t('export.progress.generatePdfPageRange', { start: startPage, end: endPage, total: pageCount });
 }
 
 async function createPdfRenderedPageFromBatch(
@@ -629,7 +630,7 @@ async function createPdfRenderedPageFromBatch(
     canvas.width = batchCanvas.width;
     canvas.height = height;
     const context = canvas.getContext('2d');
-    if (!context) throw new Error(`${errorLabel}切片失败`);
+    if (!context) throw new Error(t('export.error.sliceFailed', { label: errorLabel }));
     context.drawImage(
       batchCanvas,
       0,
@@ -644,7 +645,7 @@ async function createPdfRenderedPageFromBatch(
   }
 
   return {
-    data: await canvasToPngBytes(canvas, `${errorLabel}画布超出系统限制`),
+    data: await canvasToPngBytes(canvas, t('export.error.canvasLimitSimple', { label: errorLabel })),
     width: canvas.width,
     height: canvas.height,
   };
@@ -867,7 +868,7 @@ async function renderMermaidPlaceholders(root: HTMLElement, contentTheme: Conten
 
   if ('fonts' in document) {
     try {
-      await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, '导出字体加载超时');
+      await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
     } catch {
       // Font readiness is best effort.
     }
@@ -879,13 +880,13 @@ async function renderMermaidPlaceholders(root: HTMLElement, contentTheme: Conten
     const source = decodeURIComponent(encoded);
     const renderSandbox = createMermaidExportRenderSandbox();
     if (placeholders.length > 1) {
-      reportProgress(input, `正在渲染图表 ${index + 1} / ${placeholders.length}`);
+      reportProgress(input, t('export.progress.renderDiagramIndexed', { index: index + 1, total: placeholders.length }));
     }
     try {
       const { svg } = await withTimeout(
         mermaid.render(`prism-export-mermaid-${Date.now()}-${index}`, source, renderSandbox),
         EXPORT_MERMAID_RENDER_TIMEOUT_MS,
-        `Mermaid 图表 ${index + 1} 渲染超时`,
+        t('export.error.mermaidTimeout', { index: index + 1 }),
       );
       placeholder.innerHTML = svg;
       placeholder.style.display = 'flex';
@@ -894,7 +895,7 @@ async function renderMermaidPlaceholders(root: HTMLElement, contentTheme: Conten
       const svgEl = placeholder.querySelector('svg');
       if (svgEl) normalizeMermaidSvg(svgEl);
     } catch (err) {
-      placeholder.innerHTML = `<pre>Mermaid 渲染失败: ${escapeHtml(String(err))}</pre>`;
+      placeholder.innerHTML = `<pre>${escapeHtml(t('export.error.mermaidRenderFailed'))}: ${escapeHtml(String(err))}</pre>`;
     } finally {
       renderSandbox.remove();
     }
@@ -945,25 +946,25 @@ async function svgToRasterDataUrl(
         new Promise<HTMLImageElement>((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error('Mermaid SVG 转图片失败'));
+          img.onerror = () => reject(new Error(t('export.error.mermaidSvgImageFailed')));
           img.src = url;
         }),
         EXPORT_MERMAID_RENDER_TIMEOUT_MS,
-        'Mermaid SVG 转图片超时',
+        t('export.error.mermaidSvgTimeout'),
       );
       const canvas = document.createElement('canvas');
-      assertExportCanvasWithinLimits(width, height, scale, 'SVG 栅格化');
+      assertExportCanvasWithinLimits(width, height, scale, t('export.error.svgRasterize'));
       canvas.width = Math.ceil(width * scale);
       canvas.height = Math.ceil(height * scale);
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('无法创建 Mermaid 图片画布');
+      if (!ctx) throw new Error(t('export.error.mermaidCanvasFailed'));
       ctx.scale(scale, scale);
       ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff';
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(image, 0, 0, width, height);
       const dataUrl = canvas.toDataURL(mimeType, options.quality);
       if (!dataUrl.startsWith(`data:${mimeType}`)) {
-        throw new Error('SVG 栅格化结果无效');
+        throw new Error(t('export.error.svgRasterInvalid'));
       }
       return { dataUrl, width, height };
     } finally {
@@ -979,7 +980,7 @@ async function svgToDocxPngImage(svgText: string, scale = 2) {
     mimeType: 'image/png',
     scale,
   });
-  if (!image) throw new Error('SVG 栅格化结果为空');
+  if (!image) throw new Error(t('export.error.svgRasterEmpty'));
   return {
     type: 'png' as const,
     data: dataUrlToBytes(image.dataUrl),
@@ -1033,7 +1034,7 @@ async function renderMermaidSvgToDocxPngImage(svgText: string, contentTheme: Con
 
     if ('fonts' in document) {
       try {
-        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, '导出字体加载超时');
+        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
       } catch {
         // Font readiness is best effort for Mermaid screenshot fallback.
       }
@@ -1065,12 +1066,12 @@ async function renderMermaidSvgToDocxPngImage(svgText: string, contentTheme: Con
         scrollY: 0,
       }),
       DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS,
-      'DOCX Mermaid 渲染超时',
+      t('export.error.docxMermaidTimeout'),
     );
 
     return {
       type: 'png',
-      data: await canvasToPngBytes(canvas, 'DOCX Mermaid 图像生成失败'),
+      data: await canvasToPngBytes(canvas, t('export.error.docxMermaidImageFailed')),
       width,
       height,
     };
@@ -1113,7 +1114,7 @@ async function renderMermaidImage(source: string, contentTheme: ContentTheme, sc
             renderSandbox,
           ),
           EXPORT_MERMAID_RENDER_TIMEOUT_MS,
-          `Mermaid 图表 ${sourceIndex + 1} 渲染超时`,
+          t('export.error.mermaidTimeout', { index: sourceIndex + 1 }),
         );
         const image = await renderMermaidSvgToDocxPngImage(svg, contentTheme, scale).catch(() => null);
         if (image) {
@@ -1221,7 +1222,7 @@ async function renderDocxVisualHtmlFragment(
     await inlineImages(root, input);
     if ('fonts' in document) {
       try {
-        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, '导出字体加载超时');
+        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
       } catch {
         // Font readiness is best effort for visual fallback blocks.
       }
@@ -1264,17 +1265,17 @@ async function renderDocxVisualHtmlFragment(
         scrollY: 0,
       }),
       DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS,
-      `DOCX ${options.label}渲染超时`,
+      t('export.error.docxVisualTimeout', { label: options.label }),
     );
 
     return {
       type: 'png',
-      data: await canvasToPngBytes(canvas, `DOCX ${options.label}图像生成失败`),
+      data: await canvasToPngBytes(canvas, t('export.error.docxVisualImageFailed', { label: options.label })),
       width,
       height,
     };
   } catch (err) {
-    reportWarning(input, `Word ${options.label}无法渲染为图片，已回退为文本：${getErrorMessage(err)}`);
+    reportWarning(input, t('export.warning.docxVisualFallback', { label: options.label, message: getErrorMessage(err) }));
     return null;
   } finally {
     root.remove();
@@ -1297,11 +1298,11 @@ async function renderDocxMathImage(
       output: 'htmlAndMathml',
     });
     return renderDocxVisualHtmlFragment(input, html, scale, {
-      label: displayMode ? '块级公式' : '行内公式',
+      label: displayMode ? t('export.label.mathBlock') : t('export.label.inlineMath'),
       inline: !displayMode,
     });
   } catch (err) {
-    reportWarning(input, `Word 公式渲染失败，已回退为 TeX 文本：${getErrorMessage(err)}`);
+    reportWarning(input, t('export.warning.wordMathFallback', { message: getErrorMessage(err) }));
     return null;
   }
 }
@@ -1311,7 +1312,7 @@ async function renderDocxHtmlBlockImage(input: ExportDocumentInput, source: stri
   if (!sanitized) return null;
   const wrapped = `<div class="prism-html-block" style="border:1px solid #d0d7de;border-left:4px solid #2563eb;background:#f6f8fa;padding:12px 16px;border-radius:6px;line-height:1.6;">${sanitized}</div>`;
   return renderDocxVisualHtmlFragment(input, wrapped, scale, {
-    label: 'HTML 块',
+    label: t('export.label.htmlBlock'),
   });
 }
 
@@ -1390,9 +1391,9 @@ function applyExportToc(root: HTMLElement, input: ExportDocumentInput) {
 }
 
 async function createRenderedExportNode(input: ExportDocumentInput, options: { html?: string | null } = {}) {
-  reportProgress(input, exportProgressMessages.parseMarkdown);
+  reportProgress(input, exportProgressMessages.parseMarkdown());
   const html = options.html ? sanitizeExportHtmlFragment(options.html) : markdownToHtml(input.content);
-  reportProgress(input, exportProgressMessages.applyTheme);
+  reportProgress(input, exportProgressMessages.applyTheme());
   const root = document.createElement('div');
   root.className = [
     'prism-export-document',
@@ -1411,12 +1412,12 @@ async function createRenderedExportNode(input: ExportDocumentInput, options: { h
   document.body.appendChild(root);
 
   try {
-    reportProgress(input, exportProgressMessages.renderDiagrams);
+    reportProgress(input, exportProgressMessages.renderDiagrams());
     await renderMermaidPlaceholders(root, input.contentTheme, input);
     await inlineImages(root, input);
     if ('fonts' in document) {
       try {
-        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, '导出字体加载超时');
+        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
       } catch {
         // Font readiness is best effort.
       }
@@ -1452,7 +1453,7 @@ async function buildStandaloneHtml(
   })();
 
   return `<!DOCTYPE html>
-<html lang="zh-CN" data-content-theme="${input.contentTheme}">
+<html lang="${input.locale ?? 'zh-CN'}" data-content-theme="${input.contentTheme}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1500,7 +1501,7 @@ async function createStandaloneExportFrame(input: ExportDocumentInput) {
   const frameDocument = iframe.contentDocument;
   if (!frameDocument) {
     iframe.remove();
-    throw new Error('无法创建导出渲染环境');
+    throw new Error(t('export.error.renderEnvironmentFailed'));
   }
 
   if ('fonts' in frameDocument) {
@@ -1548,8 +1549,8 @@ function getWebkitPdfCapturePath(targetPath: string, batchIndex: number) {
 
 function getWebkitPdfCaptureProgressMessage(startPage: number, endPage: number, pageCount: number) {
   return startPage === endPage
-    ? `正在捕获 PDF 页面 ${startPage} / ${pageCount}`
-    : `正在捕获 PDF 页面 ${startPage}-${endPage} / ${pageCount}`;
+    ? t('export.progress.capturePdfPage', { page: startPage, total: pageCount })
+    : t('export.progress.capturePdfPageRange', { start: startPage, end: endPage, total: pageCount });
 }
 
 function maskPdfPageMargins(
@@ -1578,7 +1579,7 @@ function maskPdfPageMargins(
 }
 
 async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Promise<WebkitPdfCaptureLayout> {
-  reportProgress(input, exportProgressMessages.prepareNativePdf);
+  reportProgress(input, exportProgressMessages.prepareNativePdf());
   const pandocCitation = await renderPandocCitationHtml(input);
   if (!pandocCitation.attempted) reportCitationPlaceholderWarning(input);
   const node = await createRenderedExportNode(input, { html: pandocCitation.html });
@@ -1624,14 +1625,14 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
     document.body.replaceChildren(clone);
     if ('fonts' in document) {
       try {
-        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, '导出字体加载超时');
+        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
       } catch {
         // Native print can still proceed with platform font fallback.
       }
     }
     await nextFrame();
     const target = document.body.querySelector<HTMLElement>('.prism-export-document');
-    if (!target) throw new Error('无法准备 WebKit PDF 捕获文档');
+    if (!target) throw new Error(t('export.error.webkitPdfPrepareFailed'));
 
     const measureTarget = () => {
       const rect = target.getBoundingClientRect();
@@ -1662,10 +1663,10 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
     measured = measureTarget();
     const pageCount = Math.max(1, Math.ceil(measured.height / pageCssHeight));
     if (!Number.isFinite(pageCssHeight) || !Number.isFinite(pageCount)) {
-      throw new Error('WebKit PDF 页面尺寸计算失败');
+      throw new Error(t('export.error.webkitPdfPageSizeFailed'));
     }
     if (pageCount > PDF_EXPORT_MAX_PAGES) {
-      throw new Error(`PDF 页数过多（${pageCount} 页，最大 ${PDF_EXPORT_MAX_PAGES} 页），请拆分文档或改用 HTML 导出。`);
+      throw new Error(t('export.error.pdfTooManyPages', { count: pageCount, max: PDF_EXPORT_MAX_PAGES }));
     }
     const linkRects = collectExportPdfLinkRects(target);
 
@@ -1761,7 +1762,7 @@ function addExportPdfLinkAnnotations(
 async function overlayPdfChrome(input: ExportDocumentInput, targetPath: string) {
   if (!input.pageHeaderFooter && !input.pdfPageNumbers) return;
 
-  reportProgress(input, exportProgressMessages.applyPdfChrome);
+  reportProgress(input, exportProgressMessages.applyPdfChrome());
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const bytes = await readFile(targetPath);
   const pdf = await PDFDocument.load(bytes);
@@ -1824,7 +1825,7 @@ async function overlayPdfChrome(input: ExportDocumentInput, targetPath: string) 
 
 async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath: string) {
   const layout = await prepareWebkitPdfCaptureDocument(input);
-  reportProgress(input, exportProgressMessages.printNativePdf);
+  reportProgress(input, exportProgressMessages.printNativePdf());
 
   const pdfLib = await import('pdf-lib');
   const { PDFDocument, rgb } = pdfLib;
@@ -1857,7 +1858,7 @@ async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath
 
       const captureBytes = await readFile(capturePath);
       const [embeddedPage] = await pdf.embedPdf(captureBytes);
-      if (!embeddedPage) throw new Error('WebKit PDF 捕获结果为空');
+      if (!embeddedPage) throw new Error(t('export.error.webkitPdfEmpty'));
 
       const scale = layout.contentWidth / embeddedPage.width;
       const embeddedWidth = embeddedPage.width * scale;
@@ -2009,7 +2010,7 @@ export async function exportPdf(input: ExportDocumentInput, outputPath?: string)
     } catch (error) {
       reportWarning(
         input,
-        `WebKit PDF 引擎不可用，已回退兼容导出管线：${getErrorMessage(error)}`,
+        t('export.warning.webkitFallback', { message: getErrorMessage(error) }),
       );
     }
   }
@@ -2026,7 +2027,7 @@ async function createRenderedPdfPages(
   try {
     const frameDocument = iframe.contentDocument;
     const target = frameDocument?.querySelector<HTMLElement>('.prism-export-document');
-    if (!frameDocument || !target) throw new Error('导出内容渲染失败');
+    if (!frameDocument || !target) throw new Error(t('export.error.contentRenderFailed'));
 
     const width = Math.max(980, Math.ceil(target.scrollWidth), Math.ceil(frameDocument.documentElement.scrollWidth));
     const height = Math.max(
@@ -2053,10 +2054,10 @@ async function createRenderedPdfPages(
     await nextFrame();
     const pageCount = Math.max(1, Math.ceil(paginatedHeight / pageCssHeight));
     if (!Number.isFinite(pageCssHeight) || !Number.isFinite(pageCount)) {
-      throw new Error('PDF 页面尺寸计算失败');
+      throw new Error(t('export.error.webkitPdfPageSizeFailed'));
     }
     if (pageCount > PDF_EXPORT_MAX_PAGES) {
-      throw new Error(`PDF 页数过多（${pageCount} 页，最大 ${PDF_EXPORT_MAX_PAGES} 页），请拆分文档或改用 HTML 导出。`);
+      throw new Error(t('export.error.pdfTooManyPages', { count: pageCount, max: PDF_EXPORT_MAX_PAGES }));
     }
     const linkRects = collectExportPdfLinkRects(target);
     const requestedScale = normalizeExportRasterScale(options.scale ?? PDF_EXPORT_RASTER_SCALE);
@@ -2084,8 +2085,8 @@ async function createRenderedPdfPages(
         batchHeight,
         scale,
         batchEndPage === pageIndex + 1
-          ? `PDF 第 ${pageIndex + 1} 页`
-          : `PDF 第 ${pageIndex + 1}-${batchEndPage} 页`,
+          ? t('export.label.pdfPage', { page: pageIndex + 1 })
+          : t('export.label.pdfPageRange', { start: pageIndex + 1, end: batchEndPage }),
       );
 
       reportProgress(input, getPdfPageRenderProgressMessage(pageIndex + 1, batchEndPage, pageCount));
@@ -2107,8 +2108,8 @@ async function createRenderedPdfPages(
         }),
         PDF_EXPORT_BATCH_RENDER_TIMEOUT_MS,
         batchEndPage === pageIndex + 1
-          ? `PDF 第 ${pageIndex + 1} 页渲染超时，请减少单页复杂图表或改用 HTML 导出。`
-          : `PDF 第 ${pageIndex + 1}-${batchEndPage} 页渲染超时，请减少复杂图表或改用 HTML 导出。`,
+          ? t('export.error.pdfPageTimeout', { page: pageIndex + 1 })
+          : t('export.error.pdfPageRangeTimeout', { start: pageIndex + 1, end: batchEndPage }),
       );
       canvas.width ||= Math.ceil(width * scale);
       canvas.height ||= Math.ceil(batchHeight * scale);
@@ -2128,7 +2129,7 @@ async function createRenderedPdfPages(
           canvas,
           pixelY,
           pixelHeight,
-          `PDF 第 ${splitPageIndex + 1} 页`,
+          t('export.label.pdfPage', { page: splitPageIndex + 1 }),
         ));
       }
 
@@ -2143,7 +2144,7 @@ async function createRenderedPdfPages(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : err instanceof Event ? err.type : String(err);
-    throw new Error(`PDF 渲染失败: ${message}`);
+    throw new Error(t('export.error.pdfRenderFailed', { message }));
   } finally {
     iframe.remove();
   }
@@ -2155,7 +2156,7 @@ async function createRenderedPng(input: ExportDocumentInput, options: { scale?: 
   try {
     const frameDocument = iframe.contentDocument;
     const target = frameDocument?.querySelector<HTMLElement>('.prism-export-document');
-    if (!frameDocument || !target) throw new Error('导出内容渲染失败');
+    if (!frameDocument || !target) throw new Error(t('export.error.contentRenderFailed'));
 
     const width = Math.max(980, Math.ceil(target.scrollWidth), Math.ceil(frameDocument.documentElement.scrollWidth));
     const height = Math.max(
@@ -2170,7 +2171,7 @@ async function createRenderedPng(input: ExportDocumentInput, options: { scale?: 
     normalizeRasterComputedColors(target);
 
     const scale = normalizeExportRasterScale(options.scale);
-    assertExportCanvasWithinLimits(width, height, scale, 'PNG 导出');
+    assertExportCanvasWithinLimits(width, height, scale, t('export.label.pngExport'));
 
     const canvas = await html2canvas(target, {
       backgroundColor: normalizeCssColorFunctionsForRaster(getComputedStyle(target).backgroundColor) || '#ffffff',
@@ -2186,7 +2187,7 @@ async function createRenderedPng(input: ExportDocumentInput, options: { scale?: 
     });
     const dataUrl = canvas.toDataURL('image/png');
     if (!dataUrl.startsWith('data:image/png')) {
-      throw new Error(`导出画布超出系统限制 (${Math.ceil(width * scale)} x ${Math.ceil(height * scale)})`);
+      throw new Error(t('export.error.exportCanvasLimit', { width: Math.ceil(width * scale), height: Math.ceil(height * scale) }));
     }
     return {
       dataUrl,
@@ -2195,7 +2196,7 @@ async function createRenderedPng(input: ExportDocumentInput, options: { scale?: 
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : err instanceof Event ? err.type : String(err);
-    throw new Error(`图像渲染失败: ${message}`);
+    throw new Error(t('export.error.imageRenderFailed', { message }));
   } finally {
     iframe.remove();
   }
@@ -2430,7 +2431,7 @@ async function inlineToRuns(
           nested.push(createDocxImageRun(docx, rasterizeLinkedDocxImage(image), { title: alt, description: alt, name: alt }));
           continue;
         }
-        const fallback = String(child.alt || child.title || child.url || '图片无法导出');
+        const fallback = String(child.alt || child.title || child.url || t('export.fallback.imageUnavailable'));
         nested.push(...splitMarkedText(docx, fallback, { ...style, italics: true, color: theme.muted }));
         continue;
       }
@@ -2506,7 +2507,7 @@ async function paragraphBlocksFromInlineChildren(
     await flushInline();
     const image = await renderMarkdownImage(String(child.url ?? ''), documentPath, imageScale);
     if (!image) {
-      const fallback = String(child.alt || child.title || child.url || '图片无法导出');
+      const fallback = String(child.alt || child.title || child.url || t('export.fallback.imageUnavailable'));
       blocks.push(new Paragraph({
         children: [new TextRun({ text: fallback, italics: true, color: theme.muted })],
         spacing: { after: 180, line: 330 },
@@ -2663,7 +2664,7 @@ function normalizeDetailsNodesForDocx(nodes: any[]): any[] {
     }
 
     const children: any[] = [];
-    let summary = extractSummaryTextFromHtmlNode(node) ?? '折叠内容';
+    let summary = extractSummaryTextFromHtmlNode(node) ?? t('export.fallback.details');
 
     for (index += 1; index < nodes.length; index += 1) {
       const child = nodes[index];
@@ -2696,7 +2697,7 @@ function createDocxTocBlocks(docx: DocxModule, items: ExportTocItem[], theme: Do
   return [
     new Paragraph({
       children: [new TextRun({
-        text: '目录',
+        text: t('export.toc'),
         color: theme.accent,
         size: 22,
         bold: true,
@@ -2879,7 +2880,11 @@ async function mdastToDocxBlocks(
     if (node.type === 'prismDetails') {
       blocks.push(new Paragraph({
         children: [
-          new TextRun({ text: `折叠：${String(node.title ?? '折叠内容')}`, bold: true, color: theme.accent }),
+          new TextRun({
+            text: t('export.fallback.detailsPrefix', { title: String(node.title ?? t('export.fallback.details')) }),
+            bold: true,
+            color: theme.accent,
+          }),
         ],
         indent: { left: 240 },
         border: {
@@ -2922,7 +2927,7 @@ async function mdastToDocxBlocks(
         blocks.push(new Paragraph({
           children: [
             new TextRun({
-              text: 'Mermaid 图表渲染失败，请检查语法',
+              text: t('export.fallback.mermaidFailed'),
               color: theme.accent,
               italics: true,
             }),
@@ -3076,10 +3081,10 @@ export async function exportDocx(input: ExportDocumentInput, outputPath?: string
   if (!targetPath) return false;
 
   reportCitationPlaceholderWarning(input);
-  reportProgress(input, exportProgressMessages.parseMarkdown);
+  reportProgress(input, exportProgressMessages.parseMarkdown());
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
   const tree = processor.runSync(processor.parse(input.content)) as any;
-  reportProgress(input, exportProgressMessages.applyTheme);
+  reportProgress(input, exportProgressMessages.applyTheme());
   const baseTheme = getDocxThemeByContentTheme(input.contentTheme);
   const theme: DocxTheme = {
     ...baseTheme,
@@ -3090,7 +3095,7 @@ export async function exportDocx(input: ExportDocumentInput, outputPath?: string
   const tocBlocks = input.toc
     ? createDocxTocBlocks(docx, buildExportTocItemsFromMdast(tree.children ?? []), theme)
     : [];
-  reportProgress(input, exportProgressMessages.renderDiagrams);
+  reportProgress(input, exportProgressMessages.renderDiagrams());
   const docxImageScale = normalizeExportRasterScale(input.pngScale);
   const bodyBlocks = await mdastToDocxBlocks(
     docx,
@@ -3111,7 +3116,7 @@ export async function exportDocx(input: ExportDocumentInput, outputPath?: string
 
   if (input.docxFontFile) {
     try {
-      reportProgress(input, '正在嵌入 Word 字体');
+      reportProgress(input, t('export.progress.embedWordFonts'));
       fonts.push({
         name: theme.font,
         data: await readCustomFontBytes({
@@ -3126,7 +3131,7 @@ export async function exportDocx(input: ExportDocumentInput, outputPath?: string
       } as any);
     } catch (err) {
       console.error('[Export] DOCX font embedding failed:', err);
-      reportWarning(input, 'Word 字体嵌入受限，已写入字体名称；打开设备需安装该字体才能完全一致。');
+      reportWarning(input, t('export.warning.wordFontEmbedLimited'));
     }
   }
 

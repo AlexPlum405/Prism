@@ -25,6 +25,7 @@ describe('normalizeSettings', () => {
     expect(settings.pandoc).toEqual(DEFAULT_SETTINGS.pandoc);
     expect(settings.citation).toEqual(DEFAULT_SETTINGS.citation);
     expect(settings.shortcutStyle).toBe(DEFAULT_SETTINGS.shortcutStyle);
+    expect(settings.locale).toBe(DEFAULT_SETTINGS.locale);
     expect(settings.wordWrap).toBe(DEFAULT_SETTINGS.wordWrap);
   });
 
@@ -78,6 +79,7 @@ describe('normalizeSettings', () => {
       previewFontSize: 'large',
       defaultViewMode: 'reader',
       shortcutStyle: 'linux',
+      locale: 'fr-FR',
       showLineNumbers: 'yes',
       wordWrap: 'no',
       exportDefaults: {
@@ -95,6 +97,7 @@ describe('normalizeSettings', () => {
     expect(settings.previewFontSize).toBe(DEFAULT_SETTINGS.previewFontSize);
     expect(settings.defaultViewMode).toBe(DEFAULT_SETTINGS.defaultViewMode);
     expect(settings.shortcutStyle).toBe(DEFAULT_SETTINGS.shortcutStyle);
+    expect(settings.locale).toBe(DEFAULT_SETTINGS.locale);
     expect(settings.showLineNumbers).toBe(DEFAULT_SETTINGS.showLineNumbers);
     expect(settings.wordWrap).toBe(DEFAULT_SETTINGS.wordWrap);
     expect(settings.exportDefaults).toEqual({

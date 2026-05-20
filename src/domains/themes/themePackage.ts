@@ -4,6 +4,7 @@ import {
   isThemeId,
   type ContentTheme,
 } from '../settings/types';
+import { t } from '../i18n';
 import type { DocxThemeContract, ThemeContract } from './themeContract';
 import { builtInThemeContracts } from './themeContract';
 import { ThemeError } from './themeErrors';
@@ -117,10 +118,10 @@ export function normalizeThemeRelativePath(value: unknown) {
 
 export function assertUserThemeId(themeId: unknown) {
   if (!isThemeId(themeId)) {
-    throw new ThemeError('invalid_theme', '主题 id 只能包含小写字母、数字、- 和 _，长度不超过 64');
+    throw new ThemeError('invalid_theme', t('theme.idInvalid'));
   }
   if (isBuiltInContentTheme(themeId)) {
-    throw new ThemeError('built_in_theme_id', `用户主题不能使用内置主题 id：${themeId}`, themeId);
+    throw new ThemeError('built_in_theme_id', t('theme.builtInId', { themeId }), themeId);
   }
   return themeId;
 }
@@ -194,21 +195,21 @@ export function parseThemeManifest(raw: string): ThemeManifest {
   try {
     manifest = JSON.parse(raw);
   } catch {
-    throw new ThemeError('invalid_theme', 'theme.json 不是合法 JSON');
+    throw new ThemeError('invalid_theme', t('theme.jsonInvalid'));
   }
 
   if (!manifest || typeof manifest !== 'object') {
-    throw new ThemeError('invalid_theme', 'theme.json 必须是对象');
+    throw new ThemeError('invalid_theme', t('theme.jsonNotObject'));
   }
 
   const candidate = manifest as Partial<ThemeManifest>;
   if (candidate.schemaVersion !== THEME_SCHEMA_VERSION) {
-    throw new ThemeError('invalid_theme', `只支持 schemaVersion ${THEME_SCHEMA_VERSION}`);
+    throw new ThemeError('invalid_theme', t('theme.schemaUnsupported', { version: THEME_SCHEMA_VERSION }));
   }
   const id = assertUserThemeId(candidate.id);
   const name = stringValue(candidate.name, '');
   if (!name) {
-    throw new ThemeError('invalid_theme', 'theme.json 缺少 name', id);
+    throw new ThemeError('invalid_theme', t('theme.nameMissing'), id);
   }
 
   return {

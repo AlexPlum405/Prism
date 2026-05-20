@@ -24,6 +24,7 @@ describe('SettingsModal', () => {
       ...DEFAULT_SETTINGS,
       themeRegistry: [],
       themeRegistryVersion: 0,
+      setLocale: vi.fn((locale) => useSettingsStore.setState({ locale })),
       detectPandoc: vi.fn(async () => DEFAULT_SETTINGS.pandoc),
       saveSettings: vi.fn(),
     });
@@ -43,6 +44,16 @@ describe('SettingsModal', () => {
     openCitationSettings();
     expect(screen.getByRole('button', { name: /引用/ })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText('Pandoc 路径')).toBeInTheDocument();
+  });
+
+  it('persists the interface language from general settings', () => {
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getAllByDisplayValue('跟随系统')[0], {
+      target: { value: 'ja-JP' },
+    });
+
+    expect(useSettingsStore.getState().setLocale).toHaveBeenCalledWith('ja-JP');
   });
 
   it('renders the pandoc detection entry in citation settings', () => {
@@ -75,7 +86,28 @@ describe('SettingsModal', () => {
     expect(screen.getByRole('button', { name: '导入并应用主题' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '打开主题目录' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '重新加载用户主题' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '删除当前用户主题' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '删除当前用户主题' })).not.toBeInTheDocument();
+  });
+
+  it('shows delete theme action only for the active user theme', () => {
+    useSettingsStore.setState({
+      contentTheme: 'custom-paper',
+      themeRegistry: [{
+        id: 'custom-paper',
+        name: 'Custom Paper',
+        label: 'Custom Paper',
+        source: 'user',
+        isDark: false,
+        contract: {} as any,
+        directory: '/tmp/custom-paper',
+        version: '1.0.0',
+      }],
+    });
+
+    render(<SettingsModal visible onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+
+    expect(screen.getByRole('button', { name: '删除当前用户主题' })).toBeEnabled();
   });
 
   it('shows invalid user themes as disabled options', () => {

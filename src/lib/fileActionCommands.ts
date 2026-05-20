@@ -1,3 +1,5 @@
+import { t } from '../domains/i18n';
+
 export type FileActionInput =
   | string
   | {
@@ -74,5 +76,5 @@ export function isSupportedFileActionCommand(input: FileActionInput): boolean {
 }
 
 export function getUnsupportedFileActionMessage(command: string): string {
-  return `未知文件操作: ${command}`;
+  return t('file.unsupportedAction', { command });
 }

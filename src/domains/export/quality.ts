@@ -1,3 +1,5 @@
+import { t, type I18nKey } from '../i18n';
+
 export interface ExportQualityPreset {
   scale: number;
   label: string;
@@ -5,36 +7,71 @@ export interface ExportQualityPreset {
   description: string;
 }
 
-export const EXPORT_QUALITY_PRESETS: ExportQualityPreset[] = [
+type LocalizedExportQualityPreset = ExportQualityPreset & {
+  labelKey: I18nKey;
+  shortLabelKey: I18nKey;
+  descriptionKey: I18nKey;
+};
+
+export const EXPORT_QUALITY_PRESETS: LocalizedExportQualityPreset[] = [
   {
     scale: 1,
-    label: '轻量',
-    shortLabel: '轻量 1x',
-    description: '适合快速预览，导出速度最快，文件体积较小。',
+    labelKey: 'export.quality.light.label',
+    shortLabelKey: 'export.quality.light.short',
+    descriptionKey: 'export.quality.light.description',
+    label: 'Light',
+    shortLabel: 'Light 1x',
+    description: 'Best for quick previews, fastest export, and smaller files.',
   },
   {
     scale: 2,
-    label: '清晰',
-    shortLabel: '清晰 2x',
-    description: '推荐用于日常文档，清晰度与导出速度较平衡。',
+    labelKey: 'export.quality.clear.label',
+    shortLabelKey: 'export.quality.clear.short',
+    descriptionKey: 'export.quality.clear.description',
+    label: 'Clear',
+    shortLabel: 'Clear 2x',
+    description: 'Recommended for everyday documents, balancing clarity and export speed.',
   },
   {
     scale: 3,
-    label: '高清',
-    shortLabel: '高清 3x',
-    description: '适合正式交付，图表和文字更清楚，导出时间会增加。',
+    labelKey: 'export.quality.high.label',
+    shortLabelKey: 'export.quality.high.short',
+    descriptionKey: 'export.quality.high.description',
+    label: 'High',
+    shortLabel: 'High 3x',
+    description: 'For formal delivery, with sharper diagrams and text at longer export time.',
   },
   {
     scale: 4,
-    label: '极致',
-    shortLabel: '极致 4x',
-    description: '按最高质量导出，可能持续数分钟；如果系统承载不了会失败并生成诊断。',
+    labelKey: 'export.quality.extreme.label',
+    shortLabelKey: 'export.quality.extreme.short',
+    descriptionKey: 'export.quality.extreme.description',
+    label: 'Extreme',
+    shortLabel: 'Extreme 4x',
+    description: 'Exports at maximum quality and may take several minutes. Prism fails with diagnostics if the system cannot handle it.',
   },
 ];
 
 export function getExportQualityPreset(scale: number | undefined) {
   return EXPORT_QUALITY_PRESETS.find((preset) => preset.scale === scale)
     ?? EXPORT_QUALITY_PRESETS[1];
+}
+
+export function localizeExportQualityPreset(preset: LocalizedExportQualityPreset): ExportQualityPreset {
+  return {
+    scale: preset.scale,
+    label: t(preset.labelKey),
+    shortLabel: t(preset.shortLabelKey),
+    description: t(preset.descriptionKey),
+  };
+}
+
+export function getLocalizedExportQualityPresets() {
+  return EXPORT_QUALITY_PRESETS.map(localizeExportQualityPreset);
+}
+
+export function getLocalizedExportQualityPreset(scale: number | undefined) {
+  return localizeExportQualityPreset(getExportQualityPreset(scale));
 }
 
 export function normalizeExportQualityScale(scale: unknown, fallback = 2) {

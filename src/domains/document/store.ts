@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { DocumentScrollState, DocumentState } from './types';
 import type { FileSnapshot } from './fileSnapshot';
 import { useSettingsStore } from '../settings/store';
+import { t } from '../i18n';
 
 interface DocumentStore extends DocumentState {
   openDocument: (path: string, name: string, content: string, snapshot?: FileSnapshot | null) => void;
@@ -21,7 +22,7 @@ interface DocumentStore extends DocumentState {
 function formatSaveError(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === 'string' && error.trim()) return error;
-  return '保存失败';
+  return t('document.saveFailed');
 }
 
 const DEFAULT_SCROLL_STATE: DocumentScrollState = {

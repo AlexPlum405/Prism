@@ -1,4 +1,5 @@
 import type { ExportDocumentInput, ExportFormat } from './types';
+import { t } from '../i18n';
 
 export async function exportDocumentLocal(
   input: ExportDocumentInput,
@@ -23,6 +24,6 @@ export async function exportDocumentLocal(
       return exportPngAdapter(input, outputPath);
     }
     default:
-      throw new Error('不支持的导出格式');
+      throw new Error(t('export.unsupportedFormat'));
   }
 }

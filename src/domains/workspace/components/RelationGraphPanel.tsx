@@ -6,6 +6,7 @@ import {
   type RelationGraphScope,
   type WorkspaceIndex,
 } from '../services';
+import { useI18n } from '../../i18n';
 
 interface RelationGraphPanelProps {
   currentPath?: string | null;
@@ -54,6 +55,7 @@ export function RelationGraphPanel({
   onSelect,
   visible,
 }: RelationGraphPanelProps) {
+  const { t } = useI18n();
   const [scope, setScope] = useState<RelationGraphScope>('current');
   const [depth, setDepth] = useState<RelationGraphDepth>(1);
   const [query, setQuery] = useState('');
@@ -387,48 +389,48 @@ export function RelationGraphPanel({
   return (
     <>
       <div className="modal-overlay" onClick={onClose} />
-      <div className="modal prism-relation-graph-modal" role="dialog" aria-label="关系图谱">
+      <div className="modal prism-relation-graph-modal" role="dialog" aria-label={t('workspace.relation.title')}>
         <div className="modal-header">
-          <div className="modal-title">关系图谱</div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
+          <div className="modal-title">{t('workspace.relation.title')}</div>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body prism-relation-graph-body">
           <div className="prism-relation-graph-toolbar">
-            <div className="prism-relation-graph-segment" aria-label="图谱范围">
+            <div className="prism-relation-graph-segment" aria-label={t('workspace.relation.scopeAria')}>
               <button type="button" data-active={scope === 'current' ? 'true' : undefined} onClick={() => setScope('current')}>
-                当前文档
+                {t('workspace.relation.currentDocument')}
               </button>
               <button type="button" data-active={scope === 'workspace' ? 'true' : undefined} onClick={() => setScope('workspace')}>
-                工作区
+                {t('workspace.relation.workspace')}
               </button>
             </div>
-            <div className="prism-relation-graph-segment" aria-label="关系深度">
+            <div className="prism-relation-graph-segment" aria-label={t('workspace.relation.depthAria')}>
               <button type="button" data-active={depth === 1 ? 'true' : undefined} onClick={() => setDepth(1)}>
-                直接关联
+                {t('workspace.relation.direct')}
               </button>
               <button type="button" data-active={depth === 2 ? 'true' : undefined} onClick={() => setDepth(2)}>
-                延展脉络
+                {t('workspace.relation.extended')}
               </button>
             </div>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索节点…"
-              aria-label="搜索图谱节点"
+              placeholder={t('workspace.relation.searchPlaceholder')}
+              aria-label={t('workspace.relation.searchAria')}
             />
           </div>
 
           <div className="prism-relation-graph-content">
             <div className="prism-relation-graph-canvas">
               {nodesWithPhysics.length === 0 ? (
-                <div className="prism-relation-graph-empty">没有可显示的关系</div>
+                <div className="prism-relation-graph-empty">{t('workspace.relation.empty')}</div>
               ) : (
                 <svg
                   ref={svgRef}
                   className={hoveredNodeId ? 'has-focus' : ''}
                   viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
                   role="img"
-                  aria-label="文档关系图"
+                  aria-label={t('workspace.relation.imageAria')}
                 >
                   <defs>
                     {/* 网格图案底饰 */}
@@ -474,7 +476,7 @@ export function RelationGraphPanel({
                         onMouseLeave={() => setHoveredNodeId(null)}
                         tabIndex={0}
                         role="button"
-                        aria-label={`打开 ${cleanTitle(node.title)}`}
+                        aria-label={t('workspace.relation.openNode', { title: cleanTitle(node.title) })}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
@@ -513,7 +515,7 @@ export function RelationGraphPanel({
                 >
                   <span>{cleanTitle(node.title)}</span>
                   <small>{node.relativePath.replace(/\.(md|tsx|css)$/i, '')}</small>
-                  <em>{node.linkCount} 出 · {node.backlinkCount} 入</em>
+                  <em>{t('workspace.relation.linkCounts', { out: node.linkCount, in: node.backlinkCount })}</em>
                 </button>
               ))}
             </div>

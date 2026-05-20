@@ -92,7 +92,7 @@ fn detect_pandoc(path: Option<String>) -> PandocDetectionResult {
                 version: String::new(),
                 last_checked_at: checked_at,
                 last_error: if stderr.is_empty() {
-                    format!("Pandoc --version 退出码: {}", output.status)
+                    format!("Pandoc --version exited with status: {}", output.status)
                 } else {
                     stderr
                 },
@@ -103,7 +103,7 @@ fn detect_pandoc(path: Option<String>) -> PandocDetectionResult {
             detected: false,
             version: String::new(),
             last_checked_at: checked_at,
-            last_error: format!("无法执行 pandoc: {err}"),
+            last_error: format!("Failed to run pandoc: {err}"),
         },
     }
 }
@@ -127,15 +127,15 @@ fn canonicalize_supported_file(
 ) -> Result<PathBuf, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
-        return Err(format!("{label}路径不能为空"));
+        return Err(format!("{label} path cannot be empty"));
     }
     let file_path = canonicalize_existing_path(trimmed)?;
     if !file_path.is_file() {
-        return Err(format!("{label}路径不是文件"));
+        return Err(format!("{label} path is not a file"));
     }
     if !has_extension(&file_path, allowed_extensions) {
         return Err(format!(
-            "{label}文件类型不支持，仅支持 {}",
+            "{label} file type is unsupported; supported types: {}",
             allowed_extensions.join(" / ")
         ));
     }
@@ -180,14 +180,17 @@ fn render_citations_with_pandoc(
     } else {
         requested_path
     };
-    let bibliography =
-        canonicalize_supported_file(&bibliography_path, "参考文献", &["bib", "bibtex", "json"])?;
+    let bibliography = canonicalize_supported_file(
+        &bibliography_path,
+        "Bibliography",
+        &["bib", "bibtex", "json"],
+    )?;
     let csl = match csl_style_path
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
     {
-        Some(path) => Some(canonicalize_supported_file(path, "CSL 样式", &["csl"])?),
+        Some(path) => Some(canonicalize_supported_file(path, "CSL style", &["csl"])?),
         None => None,
     };
     let args = build_pandoc_citation_html_args(&bibliography, csl.as_deref());
@@ -198,24 +201,24 @@ fn render_citations_with_pandoc(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|err| format!("无法执行 pandoc: {err}"))?;
+        .map_err(|err| format!("Failed to run pandoc: {err}"))?;
 
     if let Some(mut stdin) = child.stdin.take() {
         stdin
             .write_all(markdown.as_bytes())
-            .map_err(|err| format!("无法写入 pandoc 输入: {err}"))?;
+            .map_err(|err| format!("Failed to write pandoc input: {err}"))?;
     } else {
-        return Err("无法打开 pandoc 输入流".to_string());
+        return Err("Failed to open pandoc input stream".to_string());
     }
 
     let output = child
         .wait_with_output()
-        .map_err(|err| format!("无法读取 pandoc 输出: {err}"))?;
+        .map_err(|err| format!("Failed to read pandoc output: {err}"))?;
 
     if !output.status.success() {
         let stderr = first_non_empty_line(&output.stderr);
         return Err(if stderr.is_empty() {
-            format!("Pandoc citeproc 退出码: {}", output.status)
+            format!("Pandoc citeproc exited with status: {}", output.status)
         } else {
             stderr
         });
@@ -230,7 +233,7 @@ fn render_citations_with_pandoc(
 fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> {
     PathBuf::from(path)
         .canonicalize()
-        .map_err(|err| format!("无法访问路径: {err}"))
+        .map_err(|err| format!("Failed to access path: {err}"))
 }
 
 fn is_supported_markdown_path(path: &Path) -> bool {
@@ -293,6 +296,7 @@ fn is_sensitive_directory(app: &AppHandle, path: &Path) -> bool {
     }
 }
 
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn wait_for_child_output_with_timeout(
     mut child: Child,
     timeout: Duration,
@@ -303,15 +307,18 @@ fn wait_for_child_output_with_timeout(
             Ok(Some(_)) => {
                 return child
                     .wait_with_output()
-                    .map_err(|err| format!("无法读取系统废纸篓命令输出: {err}"));
+                    .map_err(|err| format!("Failed to read system trash command output: {err}"));
             }
             Ok(None) if started_at.elapsed() >= timeout => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Err(format!("移到系统废纸篓超时（{} 秒）", timeout.as_secs()));
+                return Err(format!(
+                    "Moving to system trash timed out after {} seconds",
+                    timeout.as_secs()
+                ));
             }
             Ok(None) => thread::sleep(Duration::from_millis(100)),
-            Err(err) => return Err(format!("无法等待系统废纸篓命令: {err}")),
+            Err(err) => return Err(format!("Failed to wait for system trash command: {err}")),
         }
     }
 }
@@ -346,7 +353,7 @@ fn move_existing_path_to_finder_trash(target_path: &Path) -> Result<(), String> 
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|err| format!("无法启动系统废纸篓命令: {err}"))?,
+            .map_err(|err| format!("Failed to start system trash command: {err}"))?,
         TRASH_TIMEOUT,
     )?;
 
@@ -356,15 +363,15 @@ fn move_existing_path_to_finder_trash(target_path: &Path) -> Result<(), String> 
 
     let stderr = first_non_empty_line(&output.stderr);
     Err(if stderr.is_empty() {
-        format!("无法移到系统废纸篓: {}", output.status)
+        format!("Failed to move to system trash: {}", output.status)
     } else {
-        format!("无法移到系统废纸篓: {stderr}")
+        format!("Failed to move to system trash: {stderr}")
     })
 }
 
 #[cfg(target_os = "macos")]
 fn move_existing_path_to_user_trash(target_path: &Path) -> Result<PathBuf, String> {
-    let home = std::env::var_os("HOME").ok_or("无法定位用户主目录")?;
+    let home = std::env::var_os("HOME").ok_or("Failed to locate the user home directory")?;
     move_existing_path_to_user_trash_dir(target_path, &PathBuf::from(home).join(".Trash"))
 }
 
@@ -373,15 +380,16 @@ fn move_existing_path_to_user_trash_dir(
     target_path: &Path,
     trash_dir: &Path,
 ) -> Result<PathBuf, String> {
-    std::fs::create_dir_all(trash_dir).map_err(|err| format!("无法创建系统废纸篓目录: {err}"))?;
+    std::fs::create_dir_all(trash_dir)
+        .map_err(|err| format!("Failed to create system trash directory: {err}"))?;
     let file_name = target_path
         .file_name()
-        .ok_or("无法识别待删除文件名")?
+        .ok_or("Failed to identify the file name to delete")?
         .to_string_lossy()
         .to_string();
     let destination = unique_user_trash_path(trash_dir, &file_name)?;
     std::fs::rename(target_path, &destination)
-        .map_err(|err| format!("无法移入 ~/.Trash: {err}"))?;
+        .map_err(|err| format!("Failed to move into ~/.Trash: {err}"))?;
     Ok(destination)
 }
 
@@ -412,22 +420,24 @@ fn unique_user_trash_path(trash_dir: &Path, file_name: &str) -> Result<PathBuf, 
         }
     }
 
-    Err(format!("无法为 {file_name} 生成不冲突的废纸篓路径"))
+    Err(format!(
+        "Failed to generate a non-conflicting trash path for {file_name}"
+    ))
 }
 
 #[cfg(not(target_os = "macos"))]
 fn move_existing_path_to_trash(target_path: &Path) -> Result<(), String> {
-    trash::delete(target_path).map_err(|err| format!("无法移到系统废纸篓: {err}"))
+    trash::delete(target_path).map_err(|err| format!("Failed to move to system trash: {err}"))
 }
 
 #[tauri::command]
 fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), String> {
     let file_path = canonicalize_existing_path(&path)?;
     if !file_path.is_file() {
-        return Err("路径不是文件".to_string());
+        return Err("Path is not a file".to_string());
     }
     if !is_supported_markdown_path(&file_path) {
-        return Err("只允许授权 Markdown / Text 文档".to_string());
+        return Err("Only Markdown / Text documents can be authorized".to_string());
     }
 
     let scope = app.fs_scope();
@@ -450,10 +460,13 @@ fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), String>
 fn grant_workspace_directory_scope(app: AppHandle, path: String) -> Result<(), String> {
     let directory_path = canonicalize_existing_path(&path)?;
     if !directory_path.is_dir() {
-        return Err("路径不是文件夹".to_string());
+        return Err("Path is not a folder".to_string());
     }
     if is_sensitive_directory(&app, &directory_path) {
-        return Err("不允许把系统目录或用户主目录整体授权为工作区".to_string());
+        return Err(
+            "System directories and the user home directory cannot be authorized as a workspace"
+                .to_string(),
+        );
     }
 
     app.fs_scope()
@@ -496,7 +509,7 @@ fn open_path_with_system(path: String) -> Result<(), String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
-        .map_err(|err| format!("无法打开导出文件: {err}"))?;
+        .map_err(|err| format!("Failed to open export file: {err}"))?;
 
     if output.status.success() {
         return Ok(());
@@ -504,24 +517,24 @@ fn open_path_with_system(path: String) -> Result<(), String> {
 
     let stderr = first_non_empty_line(&output.stderr);
     Err(if stderr.is_empty() {
-        format!("无法打开导出文件: {}", output.status)
+        format!("Failed to open export file: {}", output.status)
     } else {
-        format!("无法打开导出文件: {stderr}")
+        format!("Failed to open export file: {stderr}")
     })
 }
 
 fn validate_pdf_output_path(path: &str) -> Result<PathBuf, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
-        return Err("PDF 输出路径不能为空".to_string());
+        return Err("PDF output path cannot be empty".to_string());
     }
     let target_path = PathBuf::from(trimmed);
     if target_path.exists() && target_path.is_dir() {
-        return Err("PDF 输出路径不能是文件夹".to_string());
+        return Err("PDF output path cannot be a folder".to_string());
     }
     if let Some(parent) = target_path.parent() {
         if !parent.as_os_str().is_empty() && !parent.exists() {
-            return Err("PDF 输出目录不存在".to_string());
+            return Err("PDF output directory does not exist".to_string());
         }
     }
     if target_path
@@ -530,20 +543,20 @@ fn validate_pdf_output_path(path: &str) -> Result<PathBuf, String> {
         .map(|extension| extension.eq_ignore_ascii_case("pdf"))
         != Some(true)
     {
-        return Err("PDF 输出路径必须以 .pdf 结尾".to_string());
+        return Err("PDF output path must end with .pdf".to_string());
     }
     Ok(target_path)
 }
 
 fn validate_pdf_capture_rect(x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
     if !x.is_finite() || !y.is_finite() || !width.is_finite() || !height.is_finite() {
-        return Err("PDF 捕获区域包含非法数值".to_string());
+        return Err("PDF capture area contains invalid numbers".to_string());
     }
     if width <= 0.0 || height <= 0.0 {
-        return Err("PDF 捕获区域尺寸必须大于 0".to_string());
+        return Err("PDF capture area size must be greater than 0".to_string());
     }
     if width > 20_000.0 || height > 200_000.0 {
-        return Err("PDF 捕获区域过大，请拆分文档后重试".to_string());
+        return Err("PDF capture area is too large; split the document and try again".to_string());
     }
     Ok(())
 }
@@ -572,11 +585,11 @@ async fn capture_current_webview_pdf_macos(
             let result = (|| -> Result<(), String> {
                 if output_path_for_capture.exists() {
                     std::fs::remove_file(&output_path_for_capture)
-                        .map_err(|err| format!("无法覆盖已有 PDF 文件: {err}"))?;
+                        .map_err(|err| format!("Failed to overwrite existing PDF file: {err}"))?;
                 }
 
                 let mtm = MainThreadMarker::new()
-                    .ok_or_else(|| "WebKit PDF 捕获必须在主线程执行".to_string())?;
+                    .ok_or_else(|| "WebKit PDF capture must run on the main thread".to_string())?;
                 let configuration = unsafe { WKPDFConfiguration::new(mtm) };
                 unsafe {
                     configuration.setRect(CGRect {
@@ -593,26 +606,29 @@ async fn capture_current_webview_pdf_macos(
                             if !error.is_null() {
                                 let description =
                                     unsafe { (&*error).localizedDescription().to_string() };
-                                return Err(format!("WebKit PDF 捕获失败: {description}"));
+                                return Err(format!("WebKit PDF capture failed: {description}"));
                             }
                             if pdf_data.is_null() {
-                                return Err("WebKit PDF 捕获未返回数据".to_string());
+                                return Err("WebKit PDF capture returned no data".to_string());
                             }
 
                             let data = unsafe { &*pdf_data };
                             let length = data.length() as usize;
                             if length == 0 {
-                                return Err("WebKit PDF 捕获返回空数据".to_string());
+                                return Err("WebKit PDF capture returned empty data".to_string());
                             }
 
                             let mut bytes = vec![0_u8; length];
-                            let buffer = NonNull::new(bytes.as_mut_ptr().cast())
-                                .ok_or_else(|| "无法分配 PDF 捕获缓冲区".to_string())?;
+                            let buffer =
+                                NonNull::new(bytes.as_mut_ptr().cast()).ok_or_else(|| {
+                                    "Failed to allocate PDF capture buffer".to_string()
+                                })?;
                             unsafe {
                                 data.getBytes_length(buffer, length);
                             }
-                            std::fs::write(&output_path_for_callback, bytes)
-                                .map_err(|err| format!("无法写入 WebKit PDF 捕获文件: {err}"))?;
+                            std::fs::write(&output_path_for_callback, bytes).map_err(|err| {
+                                format!("Failed to write WebKit PDF capture file: {err}")
+                            })?;
                             Ok(())
                         })();
                         let _ = tx_callback.send(result);
@@ -634,14 +650,14 @@ async fn capture_current_webview_pdf_macos(
                 let _ = tx.send(Err(error));
             }
         })
-        .map_err(|err| format!("无法访问导出 WebView: {err}"))?;
+        .map_err(|err| format!("Failed to access export WebView: {err}"))?;
 
     tauri::async_runtime::spawn_blocking(move || {
         rx.recv_timeout(CREATE_PDF_TIMEOUT)
-            .map_err(|_| "WebKit PDF 捕获超时".to_string())?
+            .map_err(|_| "WebKit PDF capture timed out".to_string())?
     })
     .await
-    .map_err(|err| format!("WebKit PDF 捕获任务失败: {err}"))?
+    .map_err(|err| format!("WebKit PDF capture task failed: {err}"))?
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -653,7 +669,7 @@ async fn capture_current_webview_pdf_platform(
     _width: f64,
     _height: f64,
 ) -> Result<(), String> {
-    Err("当前平台暂未接入 Prism WebView PDF 捕获引擎".to_string())
+    Err("Prism WebView PDF capture is not available on this platform yet".to_string())
 }
 
 #[cfg(target_os = "macos")]
@@ -697,7 +713,7 @@ fn read_legacy_settings_config(app: AppHandle) -> Result<Option<String>, String>
 
     std::fs::read_to_string(legacy_path)
         .map(Some)
-        .map_err(|err| format!("无法读取旧设置文件: {err}"))
+        .map_err(|err| format!("Failed to read legacy settings file: {err}"))
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -716,6 +732,7 @@ fn extract_file_paths_from_args() -> Vec<String> {
 mod tests {
     use super::*;
     use std::fs;
+    #[cfg(unix)]
     use std::time::Instant;
 
     fn temp_file(name: &str, contents: &str) -> PathBuf {
@@ -730,6 +747,7 @@ mod tests {
         path
     }
 
+    #[cfg(target_os = "macos")]
     fn temp_dir(name: &str) -> PathBuf {
         let mut path = std::env::temp_dir();
         path.push(format!(
@@ -765,11 +783,11 @@ mod tests {
 
         assert!(canonicalize_supported_file(
             bibliography.to_str().unwrap(),
-            "参考文献",
+            "Bibliography",
             &["bib", "bibtex", "json"],
         )
         .is_ok());
-        assert!(canonicalize_supported_file(csl.to_str().unwrap(), "CSL 样式", &["csl"]).is_ok());
+        assert!(canonicalize_supported_file(csl.to_str().unwrap(), "CSL style", &["csl"]).is_ok());
 
         let _ = fs::remove_file(bibliography);
         let _ = fs::remove_file(csl);
@@ -780,12 +798,12 @@ mod tests {
         let bibliography = temp_file("library.txt", "plain text");
         let error = canonicalize_supported_file(
             bibliography.to_str().unwrap(),
-            "参考文献",
+            "Bibliography",
             &["bib", "bibtex", "json"],
         )
         .expect_err("txt should be rejected");
 
-        assert!(error.contains("参考文献文件类型不支持"));
+        assert!(error.contains("Bibliography file type is unsupported"));
         let _ = fs::remove_file(bibliography);
     }
 
@@ -800,7 +818,7 @@ mod tests {
 
         let error = move_path_to_trash(missing_path.to_string_lossy().to_string())
             .expect_err("missing path should be rejected before trashing");
-        assert!(error.contains("无法访问路径"));
+        assert!(error.contains("Failed to access path"));
     }
 
     #[cfg(unix)]
@@ -836,7 +854,7 @@ mod tests {
         let error = wait_for_child_output_with_timeout(child, Duration::from_millis(100))
             .expect_err("slow child should time out");
 
-        assert!(error.contains("移到系统废纸篓超时"));
+        assert!(error.contains("Moving to system trash timed out"));
         assert!(started_at.elapsed() < Duration::from_secs(2));
     }
 

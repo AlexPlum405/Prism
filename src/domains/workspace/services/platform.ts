@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 export type RuntimePlatform = 'mac' | 'windows' | 'linux';
 
 export function getRuntimePlatform(
@@ -15,11 +17,11 @@ export function getRuntimePlatform(
 }
 
 export function getFileManagerName(platform: RuntimePlatform = getRuntimePlatform()): string {
-  if (platform === 'mac') return '访达';
-  if (platform === 'windows') return '资源管理器';
-  return '文件管理器';
+  if (platform === 'mac') return t('workspace.fileManager.mac');
+  if (platform === 'windows') return t('workspace.fileManager.windows');
+  return t('workspace.fileManager.linux');
 }
 
 export function getShowInFileManagerLabel(platform: RuntimePlatform = getRuntimePlatform()): string {
-  return `在${getFileManagerName(platform)}中显示`;
+  return t('workspace.fileManager.showIn', { manager: getFileManagerName(platform) });
 }

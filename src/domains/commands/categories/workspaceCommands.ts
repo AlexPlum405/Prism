@@ -31,16 +31,14 @@ export function createWorkspaceCommands(): CommandDefinition[] {
   return [
     {
       id: 'openFolder',
-      label: '打开文件夹',
-      category: '文件',
+      category: 'file',
       keywords: ['folder'],
       shortcuts: [{ code: 'KeyO', mod: true, shift: true }],
       run: handleOpenFolder,
     },
     {
       id: 'quickOpen',
-      label: '快速打开文件',
-      category: '文件',
+      category: 'file',
       keywords: ['quick', 'open', 'file', 'workspace'],
       shortcuts: [{ code: 'KeyP', mod: true }],
       enabled: (context) => Boolean(context.workspaceStore.rootPath && context.workspaceStore.fileTree.length > 0),
@@ -48,8 +46,7 @@ export function createWorkspaceCommands(): CommandDefinition[] {
     },
     {
       id: 'showRelationGraph',
-      label: '查看关系图谱',
-      category: '视图',
+      category: 'view',
       keywords: ['graph', 'relation', '关系', '图谱'],
       shortcuts: [{ code: 'KeyG', mod: true, alt: true }],
       enabled: hasSavedDocumentPath,

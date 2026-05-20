@@ -7,8 +7,10 @@ import { MARKDOWN_FILE_FILTERS, basename, dirname } from '../../workspace/servic
 import { openPrismWindow } from '../../../lib/openWindow';
 import { getFileSnapshotOrNull } from '../fileSnapshot';
 import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
+import { useI18n } from '../../i18n';
 
 export function OpenFileButton() {
+  const { t } = useI18n();
   const currentDocument = useDocumentStore((s) => s.currentDocument);
   const openDocument = useDocumentStore((s) => s.openDocument);
   const { setRootPath, setFileTree } = useWorkspaceStore();
@@ -52,7 +54,7 @@ export function OpenFileButton() {
         fontSize: '14px',
       }}
     >
-      打开文件
+      {t('document.openFile')}
     </button>
   );
 }

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { currentCompletions, startCompletion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -171,6 +171,19 @@ function dispatchImagePaste(file: File) {
   return event;
 }
 
+function dispatchTextPaste(text: string) {
+  const event = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;
+  Object.defineProperty(event, 'clipboardData', {
+    value: {
+      getData: (type: string) => type === 'text/plain' ? text : '',
+      items: [],
+    },
+  });
+
+  getEditorDom().dispatchEvent(event);
+  return event;
+}
+
 function dispatchImageDrop(file: File, altKey = false) {
   const event = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
   Object.defineProperty(event, 'altKey', { value: altKey });
@@ -201,11 +214,82 @@ describe('EditorPane command event integration', () => {
     const { changes, onChange } = await renderEditorPane('# Draft\n');
 
     await dispatchEditorCommand({ command: 'insertTable' });
+    expect(document.querySelector('.prism-table-popover')).toBeInTheDocument();
+
+    const gridCell = document.querySelector('button[aria-label="3 x 2"]') as HTMLButtonElement;
+    await act(async () => {
+      fireEvent.click(gridCell);
+      await Promise.resolve();
+    });
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
       expect(latestChange(changes)).toContain('| Column 1 | Column 2 | Column 3 |');
-      expect(latestChange(changes)).toContain('| --- | --- | --- |');
+      expect(latestChange(changes)).toContain('| -------- | -------- | -------- |');
+    });
+  });
+
+  it('fills markdown tables through keyboard navigation and CSV paste', async () => {
+    const source = [
+      '| Name | Score |',
+      '| --- | --- |',
+      '| A<cursor> | 1 |',
+    ].join('\n');
+    const cursor = source.indexOf('<cursor>');
+    const { changes, onChange } = await renderEditorPane(source.replace('<cursor>', ''));
+    const view = getMountedEditorView();
+
+    act(() => {
+      view.dispatch({ selection: { anchor: cursor } });
+    });
+    expect(document.querySelector('.prism-table-toolbar')).toBeInTheDocument();
+
+    const tab = await pressEditorKey('Tab');
+    expect(tab.defaultPrevented).toBe(true);
+    expect(view.state.selection.main.head).toBeGreaterThan(cursor);
+
+    act(() => {
+      view.dispatch({ selection: { anchor: view.state.doc.toString().indexOf('A') + 1 } });
+    });
+
+    const paste = dispatchTextPaste('B,2\nC,3');
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toContain('| B    | 2     |');
+      expect(latestChange(changes)).toContain('| C    | 3     |');
+    });
+    expect(paste.defaultPrevented).toBe(true);
+  });
+
+  it('copies and sorts the active table through editor commands', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const source = [
+      '| Name | Score<cursor> |',
+      '| --- | --- |',
+      '| Beta | 2 |',
+      '| Alpha | 10 |',
+    ].join('\n');
+    const cursor = source.indexOf('<cursor>');
+    const { changes, onChange } = await renderEditorPane(source.replace('<cursor>', ''));
+    const view = getMountedEditorView();
+
+    act(() => {
+      view.dispatch({ selection: { anchor: cursor } });
+    });
+
+    await dispatchEditorCommand({ command: 'copyTableCsv' });
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('Name,Score\nBeta,2\nAlpha,10');
+    });
+
+    await dispatchEditorCommand({ command: 'sortTableDesc' });
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toContain('| Alpha | 10    |\n| Beta  | 2     |');
     });
   });
 

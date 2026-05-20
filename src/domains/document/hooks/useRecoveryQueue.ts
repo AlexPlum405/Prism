@@ -5,6 +5,7 @@ import {
   restoreRecoverySnapshot,
   type RecoverySnapshot,
 } from '../services/recovery';
+import { t } from '../../i18n';
 
 export type RecoveryAction = 'restore' | 'discard';
 
@@ -21,7 +22,7 @@ interface UseRecoveryQueueResult {
 
 function formatRecoveryError(error: unknown): string {
   if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || '未知事件错误';
+  if (error instanceof Event) return error.type || t('common.unknownEventError');
   return String(error);
 }
 
@@ -57,9 +58,9 @@ export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRec
     try {
       await restoreRecoverySnapshot(snapshot);
       removeRecoverySnapshotFromList(snapshot);
-      showToast('已恢复本地快照');
+      showToast(t('recovery.restoreDone'));
     } catch (error) {
-      showToast(`恢复失败: ${formatRecoveryError(error)}`);
+      showToast(t('recovery.restoreFailed', { message: formatRecoveryError(error) }));
     } finally {
       setRecoveryAction(null);
     }
@@ -73,9 +74,9 @@ export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRec
     try {
       await deleteRecoverySnapshot(snapshot);
       removeRecoverySnapshotFromList(snapshot);
-      showToast('已丢弃恢复快照');
+      showToast(t('recovery.discardDone'));
     } catch (error) {
-      showToast(`丢弃失败: ${formatRecoveryError(error)}`);
+      showToast(t('recovery.discardFailed', { message: formatRecoveryError(error) }));
     } finally {
       setRecoveryAction(null);
     }

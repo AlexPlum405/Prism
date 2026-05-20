@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
-import { basename } from '../../workspace/services';
+import { basename, flattenFiles } from '../../workspace/services';
 import {
   exportDocument,
   getExportFormatLabel,
@@ -8,13 +8,16 @@ import {
   type ExportFormat,
 } from '../../export';
 import { buildExportFailureDiagnostic } from '../../export/diagnostics';
+import { buildExportPreflightDiagnostics } from '../../export/preflight';
 import { normalizeExportQualityScale } from '../../export/quality';
+import { getActionableErrorDiagnostics } from '../../diagnostics/types';
 import type { ExportHistoryEntry, ExportHistorySettings, SettingsState } from '../../settings/types';
 import type { CommandContext, CommandDefinition } from '../types';
+import { t } from '../../i18n';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (err instanceof Event) return err.type || '未知事件错误';
+  if (err instanceof Event) return err.type || t('common.unknownEventError');
   return String(err);
 }
 
@@ -92,9 +95,15 @@ function emitExportFailure(input: {
 }) {
   window.dispatchEvent(new CustomEvent('prism-export-failure', {
     detail: {
-      title: `${getExportFormatLabel(input.format)} 导出失败`,
+      title: t('export.failedTitle', { format: getExportFormatLabel(input.format) }),
       diagnostic: input.diagnostic,
     },
+  }));
+}
+
+function emitDocumentDiagnosticsOpen(diagnostics: ReturnType<typeof getActionableErrorDiagnostics>) {
+  window.dispatchEvent(new CustomEvent('prism-document-diagnostics-open', {
+    detail: { diagnostics },
   }));
 }
 
@@ -114,7 +123,10 @@ async function openExportedPath(path: string) {
     try {
       await openPath(path);
     } catch (pluginError) {
-      throw new Error(`系统打开失败: ${formatError(nativeError)}；备用打开失败: ${formatError(pluginError)}`);
+      throw new Error(t('export.systemOpenFailed', {
+        nativeError: formatError(nativeError),
+        pluginError: formatError(pluginError),
+      }));
     }
   }
 }
@@ -148,7 +160,7 @@ async function handleExport(
 ): Promise<void> {
   const doc = context.documentStore.currentDocument;
   if (!doc) {
-    context.showToast?.('没有可导出的文档');
+    context.showToast?.(t('export.noDocument'));
     return;
   }
 
@@ -158,15 +170,41 @@ async function handleExport(
     }));
   };
   let outputPath: string | null | undefined;
-  let lastProgress = '准备导出';
+  let lastProgress = t('app.prepareExport');
   const exportSettings = options.settings ?? context.settingsStore;
   let resolvedExportSettings = exportSettings;
   const exportWarnings: string[] = [];
   const formatLabel = getExportFormatLabel(format);
 
   try {
+    const preflightDiagnostics = getActionableErrorDiagnostics(await buildExportPreflightDiagnostics({
+      content: doc.content,
+      documentPath: doc.path,
+      format,
+      workspaceFiles: flattenFiles(context.workspaceStore.fileTree ?? [], context.workspaceStore.rootPath)
+        .map(({ node }) => node.path),
+      workspaceRoot: context.workspaceStore.rootPath,
+    }));
+    if (preflightDiagnostics.length > 0) {
+      emitDocumentDiagnosticsOpen(preflightDiagnostics);
+      context.showToast?.({
+        tone: 'error',
+        title: t('export.preflight.blockedTitle', { format: formatLabel }),
+        message: t('export.preflight.blockedMessage', { count: preflightDiagnostics.length }),
+        durationMs: 9000,
+        actions: [
+          {
+            label: t('export.preflight.viewIssues'),
+            dismissOnClick: false,
+            onClick: () => emitDocumentDiagnosticsOpen(preflightDiagnostics),
+          },
+        ],
+      });
+      return;
+    }
+
     if (!options.outputPath && !context.requestExportPath) {
-      context.showToast?.('导出保存面板未就绪');
+      context.showToast?.(t('export.savePanelUnavailable'));
       return;
     }
 
@@ -199,7 +237,7 @@ async function handleExport(
         exportWarnings.push(message);
         context.showToast?.({
           tone: 'warning',
-          title: '导出提示',
+          title: t('export.warningTitle'),
           message,
           durationMs: 7200,
         });
@@ -221,27 +259,27 @@ async function handleExport(
       }
       context.showToast?.({
         tone: 'success',
-        title: `${formatLabel} 导出完成`,
+        title: t('export.completedTitle', { format: formatLabel }),
         message: basename(completedOutputPath),
         durationMs: 7200,
         actions: [
           {
-            label: '打开',
+            label: t('export.openAction'),
             onClick: async () => {
               try {
                 await openExportedPath(completedOutputPath);
               } catch (error) {
-                showExportPathActionError(context, '打开导出文件失败', error);
+                showExportPathActionError(context, t('export.openFailed'), error);
               }
             },
           },
           {
-            label: '显示位置',
+            label: t('export.revealAction'),
             onClick: async () => {
               try {
                 await revealItemInDir(completedOutputPath);
               } catch (error) {
-                showExportPathActionError(context, '显示导出位置失败', error);
+                showExportPathActionError(context, t('export.revealFailed'), error);
               }
             },
           },
@@ -262,17 +300,17 @@ async function handleExport(
     emitExportFailure({ format, diagnostic });
     context.showToast?.({
       tone: 'error',
-      title: `${formatLabel} 导出失败`,
-      message: '已生成诊断文本，可查看后重试。',
+      title: t('export.failedTitle', { format: formatLabel }),
+      message: t('export.failureGenerated'),
       durationMs: 9000,
       actions: [
         {
-          label: '查看诊断',
+          label: t('export.viewDiagnostic'),
           dismissOnClick: false,
           onClick: () => emitExportFailure({ format, diagnostic }),
         },
         {
-          label: '重试',
+          label: t('common.retry'),
           onClick: () => handleExport(format, context, {
             ...options,
             outputPath: outputPath ?? options.outputPath,
@@ -289,7 +327,7 @@ async function handleExport(
 async function handleExportWithPrevious(context: CommandContext, overwrite: boolean): Promise<void> {
   const history = getCurrentDocumentExportHistory(context);
   if (!history) {
-    context.showToast?.('当前文档没有上次导出记录');
+    context.showToast?.(t('export.noPreviousHistory'));
     return;
   }
 
@@ -309,48 +347,42 @@ export function createExportCommands(deps: {
   return [
     {
       id: 'exportPdf',
-      label: '导出为 PDF',
-      category: '文件',
+      category: 'file',
       keywords: ['export', 'pdf'],
       enabled: hasDocument,
       run: (context) => handleExport('pdf', context),
     },
     {
       id: 'exportDocx',
-      label: '导出为 Word (.docx)',
-      category: '文件',
+      category: 'file',
       keywords: ['export', 'word', 'docx'],
       enabled: hasDocument,
       run: (context) => handleExport('docx', context),
     },
     {
       id: 'exportHtml',
-      label: '导出为 HTML',
-      category: '文件',
+      category: 'file',
       keywords: ['export', 'html'],
       enabled: hasDocument,
       run: (context) => handleExport('html', context),
     },
     {
       id: 'exportPng',
-      label: '导出为 PNG 图像',
-      category: '文件',
+      category: 'file',
       keywords: ['export', 'png', 'image'],
       enabled: hasDocument,
       run: (context) => handleExport('png', context),
     },
     {
       id: 'exportWithPrevious',
-      label: '按上次设置导出',
-      category: '文件',
+      category: 'file',
       keywords: ['export', 'last', 'previous'],
       enabled: hasCurrentDocumentExportHistory,
       run: (context) => handleExportWithPrevious(context, false),
     },
     {
       id: 'exportOverwritePrevious',
-      label: '覆盖上次导出文件',
-      category: '文件',
+      category: 'file',
       keywords: ['export', 'overwrite', 'last'],
       enabled: hasCurrentDocumentExportHistory,
       run: (context) => handleExportWithPrevious(context, true),

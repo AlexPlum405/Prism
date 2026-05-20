@@ -88,6 +88,7 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       ...DEFAULT_SETTINGS,
       themeRegistryVersion: 0,
       themeRegistry: [],
+      setLocale: vi.fn(),
       setTheme: vi.fn(),
       setContentTheme: vi.fn(),
       reloadThemeRegistry: vi.fn(),
@@ -483,6 +484,12 @@ describe('command registry', () => {
         expect.objectContaining({ action: 'addTableColumn' }),
         expect.objectContaining({ action: 'deleteTableRow' }),
         expect.objectContaining({ action: 'deleteTableColumn' }),
+        expect.objectContaining({ action: 'insertTableRowAbove' }),
+        expect.objectContaining({ action: 'insertTableColumnRight' }),
+        expect.objectContaining({ action: 'moveTableRowUp' }),
+        expect.objectContaining({ action: 'sortTableAsc' }),
+        expect.objectContaining({ action: 'copyTableCsv' }),
+        expect.objectContaining({ action: 'convertTableToHtml' }),
       ]),
     });
   });
@@ -1113,11 +1120,11 @@ describe('command registry', () => {
     expect(detail.diagnostic).toContain('输出路径: /tmp/report.pdf');
     expect(detail.diagnostic).toContain('内容主题: slate');
     expect(detail.diagnostic).toContain('导出模板: business');
-    expect(detail.diagnostic).toContain('Front matter 覆盖: 关闭');
-    expect(detail.diagnostic).toContain('目录: 开启');
+    expect(detail.diagnostic).toContain('Front matter 覆盖: 已关闭');
+    expect(detail.diagnostic).toContain('目录: 已开启');
     expect(detail.diagnostic).toContain('默认导出位置: custom');
-    expect(detail.diagnostic).toContain('页码: 关闭');
-    expect(detail.diagnostic).toContain('页眉页脚: 开启');
+    expect(detail.diagnostic).toContain('页码: 已关闭');
+    expect(detail.diagnostic).toContain('页眉页脚: 已开启');
     expect(detail.diagnostic).toContain('页眉文本: {title}');
     expect(detail.diagnostic).toContain('页脚文本: {filename}');
     expect(detail.diagnostic).toContain('DOCX 自定义字体: font-1');

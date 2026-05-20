@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { TypographyDiagnostic } from '../extensions/typographyDiagnostics';
+import { useI18n, type I18nKey } from '../../i18n';
 
 interface TypographyDiagnosticsPanelProps {
   diagnostics: TypographyDiagnostic[];
@@ -8,18 +9,18 @@ interface TypographyDiagnosticsPanelProps {
   visible: boolean;
 }
 
-const KIND_LABEL: Record<TypographyDiagnostic['kind'], string> = {
-  'cjk-latin-spacing': '间距',
-  'halfwidth-punctuation': '标点',
-  'heading-hierarchy': '标题',
-  'repeated-empty-lines': '空行',
+const KIND_LABEL_KEY: Record<TypographyDiagnostic['kind'], I18nKey> = {
+  'cjk-latin-spacing': 'editor.typography.kind.spacing',
+  'halfwidth-punctuation': 'editor.typography.kind.punctuation',
+  'heading-hierarchy': 'editor.typography.kind.heading',
+  'repeated-empty-lines': 'editor.typography.kind.emptyLines',
 };
 
-const KIND_ACTION: Record<TypographyDiagnostic['kind'], string> = {
-  'cjk-latin-spacing': '定位后调整空格',
-  'halfwidth-punctuation': '定位后替换标点',
-  'heading-hierarchy': '定位后调整层级',
-  'repeated-empty-lines': '定位后压缩空行',
+const KIND_ACTION_KEY: Record<TypographyDiagnostic['kind'], I18nKey> = {
+  'cjk-latin-spacing': 'editor.typography.action.spacing',
+  'halfwidth-punctuation': 'editor.typography.action.punctuation',
+  'heading-hierarchy': 'editor.typography.action.heading',
+  'repeated-empty-lines': 'editor.typography.action.emptyLines',
 };
 
 export function TypographyDiagnosticsPanel({
@@ -28,6 +29,7 @@ export function TypographyDiagnosticsPanel({
   onSelect,
   visible,
 }: TypographyDiagnosticsPanelProps) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!visible) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -41,17 +43,17 @@ export function TypographyDiagnosticsPanel({
   }, [onClose, visible]);
 
   return (
-    <div className={`modal prism-link-diagnostics-modal prism-diagnostics-popover ${visible ? 'is-active' : ''}`} role="dialog" aria-label="排版提示">
+    <div className={`modal prism-link-diagnostics-modal prism-diagnostics-popover ${visible ? 'is-active' : ''}`} role="dialog" aria-label={t('editor.typography.aria')}>
         <div className="modal-header">
           <div>
-            <div className="modal-title">{diagnostics.length || 0} 个排版提示</div>
-            <div className="prism-diagnostics-subtitle">类型、位置、原因和处理动作</div>
+            <div className="modal-title">{t('editor.typography.title', { count: diagnostics.length || 0 })}</div>
+            <div className="prism-diagnostics-subtitle">{t('editor.typography.subtitle')}</div>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body prism-link-diagnostics-body">
           {diagnostics.length === 0 ? (
-            <div className="prism-link-diagnostics-empty">当前文档没有排版提示</div>
+            <div className="prism-link-diagnostics-empty">{t('editor.typography.empty')}</div>
           ) : (
             <div className="prism-link-diagnostics-list">
               {diagnostics.map((diagnostic, index) => (
@@ -61,7 +63,7 @@ export function TypographyDiagnosticsPanel({
                   className="prism-link-diagnostic-item"
                   onClick={() => onSelect(diagnostic.line)}
                 >
-                  <span className="prism-link-diagnostic-kind">{KIND_LABEL[diagnostic.kind]}</span>
+                  <span className="prism-link-diagnostic-kind">{t(KIND_LABEL_KEY[diagnostic.kind])}</span>
                   <span className="prism-link-diagnostic-main">
                     <span className="prism-link-diagnostic-message">{diagnostic.message}</span>
                     <span className="prism-link-diagnostic-target">{diagnostic.suggestion}</span>
@@ -70,7 +72,7 @@ export function TypographyDiagnosticsPanel({
                     <span className="prism-link-diagnostic-location">
                       {diagnostic.line}:{diagnostic.column}
                     </span>
-                    <span className="prism-link-diagnostic-action">{KIND_ACTION[diagnostic.kind]}</span>
+                    <span className="prism-link-diagnostic-action">{t(KIND_ACTION_KEY[diagnostic.kind])}</span>
                   </span>
                 </button>
               ))}

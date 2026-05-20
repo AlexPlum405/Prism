@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 export type ThemeErrorCode =
   | 'invalid_theme'
   | 'theme_exists'
@@ -21,5 +23,5 @@ export class ThemeError extends Error {
 export function getThemeErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) return error.message;
   if (typeof error === 'string' && error.trim()) return error;
-  return '主题操作失败';
+  return t('theme.operationFailed');
 }

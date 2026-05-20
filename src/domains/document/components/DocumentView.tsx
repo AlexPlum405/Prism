@@ -3,6 +3,7 @@ import { useDocumentStore } from '../store';
 import { SplitView } from '../../editor/components/SplitView';
 import { EditorPaneHandle } from '../../editor/components/EditorPane';
 import type { WorkspaceIndex } from '../../workspace/services';
+import { useI18n } from '../../i18n';
 
 interface DocumentViewProps {
   onCursorChange?: (cursor: { line: number; column: number }) => void;
@@ -17,6 +18,7 @@ interface DocumentViewProps {
 
 export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
   function DocumentView({ onCursorChange, onOpenDocumentLink, onSelectionTextChange, onNotice, workspaceIndex }, ref) {
+    const { t } = useI18n();
     const currentDocument = useDocumentStore((s) => s.currentDocument);
     const updateContent = useDocumentStore((s) => s.updateContent);
     const updateScrollState = useDocumentStore((s) => s.updateScrollState);
@@ -33,7 +35,7 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
             fontSize: '14px',
           }}
         >
-          请打开一个 Markdown 文件开始编辑
+          {t('document.emptyPrompt')}
         </div>
       );
     }

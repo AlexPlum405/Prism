@@ -71,6 +71,8 @@ describe('export diagnostics', () => {
       expect(diagnostic).toContain('Pandoc 状态: 可用');
       expect(diagnostic).toContain('Pandoc 路径: /opt/homebrew/bin/pandoc');
       expect(diagnostic).toContain('导出警告:\n- 引用渲染降级为占位符');
+      expect(diagnostic).toContain('可能原因: 导出阶段遇到文件路径、图片资源、渲染块、字体、Pandoc 或系统写入权限问题。');
+      expect(diagnostic).toContain('下一步建议: 先处理 ERROR 诊断；确认输出目录可写；如果是 DOCX 或引用相关，检查 Pandoc、引用和字体设置；仍失败时复制本诊断反馈。');
       expect(diagnostic).toContain('错误: PDF 页面尺寸计算失败');
     } finally {
       vi.useRealTimers();

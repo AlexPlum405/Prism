@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { ViewModeSwitch } from '../../domains/document/components/ViewModeSwitch';
 import { getRuntimePlatform } from '../../domains/workspace/services';
+import { useI18n } from '../../domains/i18n';
 import styles from './TitleBar.module.css';
 
 interface TitleBarProps {
@@ -28,6 +29,7 @@ const IconClose = () => (
 );
 
 export function TitleBar({ docName, isDirty = false }: TitleBarProps) {
+  const { t } = useI18n();
   const [window] = useState(() => getCurrentWindow());
 
   const handleMinimize = async () => {
@@ -50,7 +52,13 @@ export function TitleBar({ docName, isDirty = false }: TitleBarProps) {
         <div className={styles.titleGroup}>
           <div className={styles.title}>
             <span className={styles.docName}>{docName.replace(/\.md$/, '')}</span>
-            {isDirty && <span className={styles.dirtyRing} title="已修改未保存" aria-label="已修改未保存" />}
+            {isDirty && (
+              <span
+                className={styles.dirtyRing}
+                title={t('titlebar.dirty')}
+                aria-label={t('titlebar.dirty')}
+              />
+            )}
             <span className={styles.sep}>—</span>
             <span className={styles.app}>Prism</span>
           </div>
@@ -59,13 +67,13 @@ export function TitleBar({ docName, isDirty = false }: TitleBarProps) {
       <ViewModeSwitch />
       {!IS_MACOS && (
         <div className={styles.controls}>
-          <button className={styles.btn} onClick={handleMinimize} title="最小化" aria-label="最小化">
+          <button className={styles.btn} onClick={handleMinimize} title={t('titlebar.minimize')} aria-label={t('titlebar.minimize')}>
             <IconMin />
           </button>
-          <button className={styles.btn} onClick={handleMaximize} title="最大化" aria-label="最大化">
+          <button className={styles.btn} onClick={handleMaximize} title={t('titlebar.maximize')} aria-label={t('titlebar.maximize')}>
             <IconMax />
           </button>
-          <button className={`${styles.btn} ${styles.close}`} onClick={handleClose} title="关闭" aria-label="关闭">
+          <button className={`${styles.btn} ${styles.close}`} onClick={handleClose} title={t('titlebar.close')} aria-label={t('titlebar.close')}>
             <IconClose />
           </button>
         </div>

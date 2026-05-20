@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { ThemeError } from './themeErrors';
 
 const CSS_URL_PATTERN = /url\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
@@ -47,7 +48,7 @@ function validateScopedSelectors(css: string, themeId: string) {
 
     for (const selector of selectorList) {
       if (!scopePattern.test(selector)) {
-        errors.push(`选择器必须 scoped 到 html[data-content-theme='${themeId}']：${selector}`);
+        errors.push(t('theme.selectorScope', { themeId, selector }));
       }
     }
   }
@@ -70,17 +71,17 @@ function validateDangerousDeclarations(css: string) {
     if (!affectsCoreSurface) continue;
 
     if (/\bdisplay\s*:\s*none\b/i.test(declarations)) {
-      errors.push(`不能隐藏核心界面：${selector}`);
+      errors.push(t('theme.hideCore', { selector }));
     }
     if (/\bpointer-events\s*:\s*none\b/i.test(declarations)) {
-      errors.push(`不能让核心界面不可点击：${selector}`);
+      errors.push(t('theme.disableCorePointer', { selector }));
     }
     if (/\bposition\s*:\s*fixed\b/i.test(declarations) && /\binset\s*:\s*0\b/i.test(declarations)) {
-      errors.push(`不能创建覆盖整个窗口的 fixed 层：${selector}`);
+      errors.push(t('theme.fixedOverlay', { selector }));
     }
     const zIndex = /\bz-index\s*:\s*(-?\d+)/i.exec(declarations)?.[1];
     if (zIndex && Number(zIndex) > 999) {
-      errors.push(`z-index 不能超过 999：${selector}`);
+      errors.push(t('theme.zIndexTooHigh', { selector }));
     }
   }
 
@@ -92,25 +93,25 @@ export function validateThemeCss(css: string, themeId: string) {
   const errors: string[] = [];
 
   if (!normalizedCss.trim()) {
-    errors.push('theme.css 不能为空');
+    errors.push(t('theme.cssEmpty'));
   }
   if (/@import\b/i.test(normalizedCss)) {
-    errors.push('theme.css 不允许使用 @import');
+    errors.push(t('theme.cssImport'));
   }
   if (/@font-face\b/i.test(normalizedCss)) {
-    errors.push('字体请通过 theme.json fonts 声明，theme.css 不允许 @font-face');
+    errors.push(t('theme.cssFontFace'));
   }
   if (/(?:expression\s*\(|javascript:|vbscript:)/i.test(normalizedCss)) {
-    errors.push('theme.css 包含危险脚本表达式');
+    errors.push(t('theme.cssDangerousExpression'));
   }
 
   for (const match of normalizedCss.matchAll(CSS_URL_PATTERN)) {
     const url = match[2];
     if (isRemoteOrUnsafeUrl(url)) {
-      errors.push(`theme.css 不允许远程或危险资源：${url}`);
+      errors.push(t('theme.cssRemoteResource', { url }));
     }
     if (!isRelativeAssetUrl(url) && !url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith('#')) {
-      errors.push(`theme.css 只允许相对本地资源：${url}`);
+      errors.push(t('theme.cssRelativeOnly', { url }));
     }
   }
 

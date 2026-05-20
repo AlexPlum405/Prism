@@ -1,4 +1,5 @@
 import { dump, load } from 'js-yaml';
+import { t } from '../../i18n';
 import {
   parseDocumentFrontMatter,
   type DocumentFrontMatterProperties,
@@ -32,7 +33,7 @@ export function updateDocumentFrontMatter(
 ): string {
   const parsed = parseDocumentFrontMatter(content);
   if (parsed.error) {
-    throw new Error('当前 Front Matter 不是有效 YAML，无法安全更新');
+    throw new Error(t('editor.properties.invalidYaml'));
   }
 
   const data = { ...parsed.data };

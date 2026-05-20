@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css';
 import './styles/global.css';
 import { exportDocumentLocal } from './domains/export/localExport';
 import { applyThemeRuntime, initializeThemeRegistry } from './domains/themes';
+import { applyLocaleRuntime, t } from './domains/i18n';
 import {
   EXPORT_WORKER_PROGRESS_EVENT,
   EXPORT_WORKER_READY_EVENT,
@@ -18,12 +19,12 @@ type WorkerWindow = Window & { __PRISM_EXPORT_WORKER__?: boolean };
 function getErrorPayload(error: unknown) {
   if (error instanceof Error) {
     return {
-      message: error.message || '导出失败',
+      message: error.message || t('export.failed'),
       stack: error.stack,
     };
   }
   return {
-    message: typeof error === 'string' ? error : '导出失败',
+    message: typeof error === 'string' ? error : t('export.failed'),
   };
 }
 
@@ -34,6 +35,7 @@ async function main() {
   await listen<ExportWorkerRunPayload>(EXPORT_WORKER_RUN_EVENT, async (event) => {
     const { taskId, replyTarget, input, format, outputPath } = event.payload;
     try {
+      applyLocaleRuntime(input.localePreference ?? input.locale ?? 'auto');
       await initializeThemeRegistry();
       await applyThemeRuntime(input.contentTheme);
       const exported = await exportDocumentLocal({

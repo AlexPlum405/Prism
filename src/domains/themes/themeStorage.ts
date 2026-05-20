@@ -11,6 +11,7 @@ import {
 } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
+import { getCurrentLocale, t } from '../i18n';
 import { joinPath } from '../workspace/services/path';
 import {
   THEME_CSS_FILENAME,
@@ -55,7 +56,7 @@ export async function ensureThemesDirectory() {
 export function joinThemeAssetPath(themeDirectory: string, relativePath: string) {
   const normalized = normalizeThemeRelativePath(relativePath);
   if (!normalized) {
-    throw new ThemeError('invalid_theme', `主题资源路径不合法：${relativePath}`);
+    throw new ThemeError('invalid_theme', t('theme.invalidAssetPath', { path: relativePath }));
   }
   return normalized.split('/').reduce((current, part) => joinPath(current, part), themeDirectory);
 }
@@ -63,11 +64,11 @@ export function joinThemeAssetPath(themeDirectory: string, relativePath: string)
 async function assertThemeAssetExists(themeDirectory: string, relativePath: string, label: string) {
   const assetPath = joinThemeAssetPath(themeDirectory, relativePath);
   if (!(await exists(assetPath))) {
-    throw new ThemeError('invalid_theme', `${label} 缺失：${relativePath}`);
+    throw new ThemeError('invalid_theme', t('theme.assetMissing', { label, path: relativePath }));
   }
   const info = await stat(assetPath);
   if (!info.isFile) {
-    throw new ThemeError('invalid_theme', `${label} 不是文件：${relativePath}`);
+    throw new ThemeError('invalid_theme', t('theme.assetNotFile', { label, path: relativePath }));
   }
   return assetPath;
 }
@@ -77,22 +78,22 @@ export async function readThemePackageFromDirectory(themeDirectory: string): Pro
   const cssPath = joinPath(themeDirectory, THEME_CSS_FILENAME);
 
   if (!(await exists(manifestPath))) {
-    throw new ThemeError('invalid_theme', '主题目录缺少 theme.json');
+    throw new ThemeError('invalid_theme', t('theme.missingJson'));
   }
   if (!(await exists(cssPath))) {
-    throw new ThemeError('invalid_theme', '主题目录缺少 theme.css');
+    throw new ThemeError('invalid_theme', t('theme.missingCss'));
   }
 
   const manifest = parseThemeManifest(await readTextFile(manifestPath));
   const css = await readTextFile(cssPath);
   for (const font of manifest.fonts ?? []) {
-    await assertThemeAssetExists(themeDirectory, font.file, '主题字体');
+    await assertThemeAssetExists(themeDirectory, font.file, t('theme.fontAsset'));
   }
   if (manifest.previewImage) {
     if (!/\.(png|jpe?g)$/i.test(manifest.previewImage)) {
-      throw new ThemeError('invalid_theme', '预览图只支持 png / jpg / jpeg', manifest.id);
+      throw new ThemeError('invalid_theme', t('theme.previewImageUnsupported'), manifest.id);
     }
-    await assertThemeAssetExists(themeDirectory, manifest.previewImage, '主题预览图');
+    await assertThemeAssetExists(themeDirectory, manifest.previewImage, t('theme.previewImageAsset'));
   }
 
   return validateThemePackageInput({ manifest, css, directory: themeDirectory });
@@ -121,8 +122,9 @@ export async function scanInstalledThemePackages() {
     }
   }
 
-  valid.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-  invalid.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  const locale = getCurrentLocale();
+  valid.sort((a, b) => a.name.localeCompare(b.name, locale));
+  invalid.sort((a, b) => a.name.localeCompare(b.name, locale));
   return { valid, invalid };
 }
 
@@ -158,7 +160,7 @@ async function copyDirectoryRecursive(sourceDirectory: string, targetDirectory: 
   const entries = await readDir(sourceDirectory);
   for (const entry of entries) {
     if (entry.isSymlink) {
-      throw new ThemeError('invalid_theme', `主题目录不能包含符号链接：${entry.name}`);
+      throw new ThemeError('invalid_theme', t('theme.directorySymlink', { name: entry.name }));
     }
     const sourcePath = joinPath(sourceDirectory, entry.name);
     const targetPath = joinPath(targetDirectory, entry.name);
@@ -178,7 +180,7 @@ export async function copyThemeDirectory(sourceDirectory: string, targetDirector
 export async function writeThemeFile(targetDirectory: string, relativePath: string, bytes: Uint8Array) {
   const normalized = normalizeThemeRelativePath(relativePath);
   if (!normalized) {
-    throw new ThemeError('invalid_theme', `ZIP 内资源路径不合法：${relativePath}`);
+    throw new ThemeError('invalid_theme', t('theme.zipInvalidAssetPath', { path: relativePath }));
   }
   const targetPath = joinThemeAssetPath(targetDirectory, normalized);
   await mkdir(dirname(targetPath), { recursive: true });

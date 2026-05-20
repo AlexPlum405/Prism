@@ -1,6 +1,7 @@
 import { FileNode, SidebarTab } from '../types';
 import { FileTree } from './FileTree';
 import { OutlinePanel } from './OutlinePanel';
+import { useI18n } from '../../i18n';
 
 interface SidebarProps {
   fileTree: FileNode[];
@@ -21,6 +22,7 @@ export function Sidebar({
   onFileClick,
   onOutlineClick,
 }: SidebarProps) {
+  const { t } = useI18n();
   return (
     <div
       className="sidebar"
@@ -48,8 +50,8 @@ export function Sidebar({
         }}
       >
         {[
-          { key: 'files', label: '文件' },
-          { key: 'outline', label: '大纲' },
+          { key: 'files', label: t('workspace.sidebar.files') },
+          { key: 'outline', label: t('workspace.sidebar.outline') },
         ].map((tab) => {
           const isActive = sidebarTab === tab.key;
           return (

@@ -1042,6 +1042,87 @@ svg.has-focus .prism-relation-graph-node.is-adjacent text {
 .settings-row:last-child { border-bottom: 0; }
 .settings-row .row-label { font-size: 13px; font-weight: 500; color: var(--c-void); }
 .settings-row .row-hint { font-size: 12px; color: var(--c-ash); margin-top: 2px; }
+.settings-row--theme-management {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: flex-start;
+  justify-content: stretch;
+  gap: 10px;
+  padding-top: 14px;
+  padding-bottom: 16px;
+}
+.settings-row--theme-management > div:first-child {
+  min-width: 0;
+  max-width: 480px;
+}
+.theme-management-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+.settings-action-button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-link);
+  background: var(--c-canvas);
+  color: var(--c-void);
+  padding: 0 11px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+.settings-action-button:hover:not(:disabled) {
+  background: var(--c-chalk);
+  border-color: color-mix(in srgb, var(--c-void) 14%, var(--c-fog));
+}
+.settings-action-button--primary {
+  border-color: var(--c-void);
+  background: var(--c-void);
+  color: var(--c-canvas);
+  padding-inline: 13px;
+}
+.settings-action-button--primary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--c-void) 86%, black);
+  background: color-mix(in srgb, var(--c-void) 88%, white);
+}
+.settings-action-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.settings-action-button--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--c-graphite);
+  padding-inline: 8px;
+}
+.settings-action-button--quiet:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--c-chalk);
+}
+.settings-action-button--danger {
+  border-color: transparent;
+  background: transparent;
+  color: color-mix(in srgb, #b42318 82%, var(--c-void));
+  padding-inline: 8px;
+}
+.settings-action-button--danger:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, #b42318 6%, var(--c-canvas));
+}
 .settings-content select,
 .settings-content input:not([type='range']) {
   min-height: 30px;

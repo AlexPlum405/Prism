@@ -8,6 +8,7 @@ import {
   type WorkspaceIndex,
   type WorkspaceIndexSearchResult,
 } from '../../domains/workspace/services';
+import { t, useI18n } from '../../domains/i18n';
 
 export type CommandPaletteMode = 'files' | 'search';
 
@@ -41,6 +42,7 @@ export function CommandPalette({
   onClose,
   onExecute,
 }: CommandPaletteProps) {
+  const { locale } = useI18n();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,16 +53,16 @@ export function CommandPalette({
         id: `openWorkspaceFile:${encodeURIComponent(result.document.path)}`,
         label: result.document.title || result.document.name,
         category: result.snippet || result.document.relativePath,
-        shortcut: result.match === 'heading' ? '标题' : undefined,
+        shortcut: result.match === 'heading' ? t('palette.match.title') : undefined,
       }));
     }
     return rankQuickOpenFiles(files, query, 30, workspaceRoot, recentFiles).map((result) => ({
       id: `openWorkspaceFile:${encodeURIComponent(result.node.path)}`,
       label: result.node.name,
-      category: result.folderLabel || '工作区文件',
+      category: result.folderLabel || t('palette.workspaceFile'),
       shortcut: undefined,
     }));
-  }, [files, query, recentFiles, workspaceIndex, workspaceRoot]);
+  }, [files, locale, query, recentFiles, workspaceIndex, workspaceRoot]);
   const workspaceSearchItems = useMemo(() => (
     workspaceIndex
       ? searchWorkspaceIndex(workspaceIndex, query, 40).map((result) => ({
@@ -70,21 +72,21 @@ export function CommandPalette({
           shortcut: searchMatchLabel(result.match),
         }))
       : []
-  ), [query, workspaceIndex]);
+  ), [locale, query, workspaceIndex]);
   const visibleItems = useMemo(() => {
     if (mode === 'files') return quickOpenItems;
     return workspaceSearchItems;
   }, [mode, quickOpenItems, workspaceSearchItems]);
   const placeholder = mode === 'files'
-    ? '搜索工作区文件…'
-    : '全文搜索工作区…';
-  const title = mode === 'files' ? '快速打开' : '全文搜索';
+    ? t('palette.searchFilesPlaceholder')
+    : t('palette.searchWorkspacePlaceholder');
+  const title = mode === 'files' ? t('palette.quickOpen') : t('palette.fullTextSearch');
   const hint = mode === 'files'
-    ? '文件、标题、路径'
-    : '当前工作区 Markdown';
+    ? t('palette.filesHint')
+    : t('palette.searchHint');
   const emptyText = mode === 'files'
-    ? workspaceIndexing ? '正在建立索引…' : '未找到匹配的文件'
-    : workspaceIndexing ? '正在建立索引…' : '未找到匹配的内容';
+    ? workspaceIndexing ? t('palette.indexing') : t('palette.noFiles')
+    : workspaceIndexing ? t('palette.indexing') : t('palette.noContent');
 
   useEffect(() => {
     if (visible) {
@@ -144,7 +146,7 @@ export function CommandPalette({
   return (
     <>
       <div className="cmdk-overlay" onClick={onClose} />
-      <div className="cmdk" role="dialog" aria-label={mode === 'files' ? '快速打开' : '全文搜索工作区'}>
+      <div className="cmdk" role="dialog" aria-label={mode === 'files' ? t('palette.quickOpen') : t('palette.aria.fullTextSearch')}>
         <div className="cmdk-titlebar">
           <span className="cmdk-title">{title}</span>
           <span className="cmdk-hint">{hint}</span>
@@ -176,15 +178,15 @@ export function CommandPalette({
 function searchMatchLabel(match: WorkspaceIndexSearchResult['match']) {
   switch (match) {
     case 'title':
-      return '标题';
+      return t('palette.match.title');
     case 'name':
-      return '文件';
+      return t('palette.match.name');
     case 'path':
-      return '路径';
+      return t('palette.match.path');
     case 'heading':
-      return '小标题';
+      return t('palette.match.heading');
     case 'content':
-      return '正文';
+      return t('palette.match.content');
     default:
       return undefined;
   }

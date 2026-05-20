@@ -7,6 +7,7 @@ import {
   recoverySnapshotStore,
   writeDocumentFileSession,
 } from './fileSafety';
+import { t } from '../../i18n';
 
 export interface RequestSavePathInput {
   filename: string;
@@ -60,7 +61,7 @@ export async function saveConflictedDocumentAs(
   const doc = getCurrentConflictDocument();
   if (!doc) return { resolved: false };
   if (!requestSavePath) {
-    const error = new Error('保存面板未就绪');
+    const error = new Error(t('command.savePanelUnavailable'));
     markConflictFailure(doc, error);
     throw error;
   }

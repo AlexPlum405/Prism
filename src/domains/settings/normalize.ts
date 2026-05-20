@@ -22,6 +22,7 @@ import {
   type ShortcutStyle,
   isContentTheme,
 } from './types';
+import { normalizeLocalePreference } from '../i18n';
 
 function isAppearanceMode(value: unknown): value is AppearanceMode {
   return value === 'light' || value === 'dark' || value === 'auto';
@@ -363,6 +364,7 @@ export function normalizeSettings(saved: Partial<SettingsState>): SettingsState 
     ...DEFAULT_SETTINGS,
     ...saved,
     settingsVersion: DEFAULT_SETTINGS.settingsVersion,
+    locale: normalizeLocalePreference(saved.locale),
     theme: isAppearanceMode(saved.theme) ? saved.theme : DEFAULT_SETTINGS.theme,
     contentTheme: isContentTheme(saved.contentTheme)
       ? saved.contentTheme

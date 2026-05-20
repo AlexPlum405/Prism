@@ -7,6 +7,7 @@ import type {
   PdfMargin,
   PdfPaper,
 } from '../settings/types';
+import { t, type AppLocale, type LocalePreference } from '../i18n';
 import type { ExportFrontMatter } from './frontMatter';
 
 export type ExportFormat = 'html' | 'pdf' | 'docx' | 'png';
@@ -41,6 +42,8 @@ export interface ExportDocumentInput {
     format: 'ttf' | 'otf' | 'woff' | 'woff2';
   };
   docxFontPolicy?: DocxFontPolicy;
+  locale?: AppLocale;
+  localePreference?: LocalePreference;
   onProgress?: (message: string) => void;
   onWarning?: (message: string) => void;
 }
@@ -49,9 +52,20 @@ export const exportFormatLabels: Record<ExportFormat, string> = {
   html: 'HTML',
   pdf: 'PDF',
   docx: 'Word',
-  png: 'PNG 图像',
+  png: 'PNG Image',
 };
 
 export function getExportFormatLabel(format: ExportFormat) {
-  return exportFormatLabels[format];
+  switch (format) {
+    case 'html':
+      return t('export.format.html');
+    case 'pdf':
+      return t('export.format.pdf');
+    case 'docx':
+      return t('export.format.docx');
+    case 'png':
+      return t('export.format.png');
+    default:
+      return exportFormatLabels[format];
+  }
 }

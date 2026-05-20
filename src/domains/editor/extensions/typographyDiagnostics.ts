@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 export type TypographyDiagnosticKind =
   | 'cjk-latin-spacing'
   | 'halfwidth-punctuation'
@@ -74,8 +76,8 @@ export function scanChineseTypography(content: string): TypographyDiagnostic[] {
           column: 1,
           kind: 'repeated-empty-lines',
           line,
-          message: '连续空行超过 2 行',
-          suggestion: '保留 1-2 个空行即可，避免正文节奏被拉开。',
+          message: t('diagnostics.typography.repeatedEmptyLines.message'),
+          suggestion: t('diagnostics.typography.repeatedEmptyLines.suggestion'),
         });
       }
       return;
@@ -91,8 +93,8 @@ export function scanChineseTypography(content: string): TypographyDiagnostic[] {
           column: 1,
           kind: 'heading-hierarchy',
           line,
-          message: `标题层级从 H${previousHeadingLevel} 跳到 H${level}`,
-          suggestion: `补一个 H${previousHeadingLevel + 1}，或把当前标题降为 H${previousHeadingLevel + 1}。`,
+          message: t('diagnostics.typography.headingHierarchy.message', { from: previousHeadingLevel, to: level }),
+          suggestion: t('diagnostics.typography.headingHierarchy.suggestion', { level: previousHeadingLevel + 1 }),
         });
       }
       previousHeadingLevel = level;
@@ -104,27 +106,27 @@ export function scanChineseTypography(content: string): TypographyDiagnostic[] {
       kind: 'cjk-latin-spacing',
       line,
       lineText: text,
-      message: '中英文之间缺少空格',
+      message: t('diagnostics.typography.cjkLatinLeft.message'),
       regex: CJK_LATIN_LEFT_RE,
-      suggestion: '在中文与英文/数字之间补一个半角空格。',
+      suggestion: t('diagnostics.typography.cjkLatinLeft.suggestion'),
     });
     pushBoundaryDiagnostics({
       diagnostics,
       kind: 'cjk-latin-spacing',
       line,
       lineText: text,
-      message: '英文/数字与中文之间缺少空格',
+      message: t('diagnostics.typography.cjkLatinRight.message'),
       regex: CJK_LATIN_RIGHT_RE,
-      suggestion: '在英文/数字与中文之间补一个半角空格。',
+      suggestion: t('diagnostics.typography.cjkLatinRight.suggestion'),
     });
     pushBoundaryDiagnostics({
       diagnostics,
       kind: 'halfwidth-punctuation',
       line,
       lineText: text,
-      message: '中文语境中出现半角标点',
+      message: t('diagnostics.typography.halfwidthPunctuation.message'),
       regex: HALFWIDTH_PUNCT_RE,
-      suggestion: '中文正文优先使用全角标点，例如 ，。！？：；。',
+      suggestion: t('diagnostics.typography.halfwidthPunctuation.suggestion'),
     });
   });
 

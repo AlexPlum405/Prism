@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../../i18n';
 
 export type SearchMode = 'find' | 'replace';
 export type SearchAction = 'input' | 'next' | 'prev' | 'all' | 'replace' | 'replaceAll';
@@ -67,6 +68,7 @@ export function SearchPanel({
   activationKey = 0,
   onModeChange,
 }: SearchPanelProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(initialQuery);
   const [replaceWith, setReplaceWith] = useState(initialReplaceWith);
   const matchCase = false;
@@ -173,8 +175,8 @@ export function SearchPanel({
           <button
             type="button"
             className={`compat-search-button compat-search-button--mode ${panelMode === 'replace' ? 'is-active' : ''}`}
-            title={panelMode === 'replace' ? '隐藏替换' : '显示替换'}
-            aria-label={panelMode === 'replace' ? '隐藏替换' : '显示替换'}
+            title={panelMode === 'replace' ? t('editor.search.hideReplace') : t('editor.search.showReplace')}
+            aria-label={panelMode === 'replace' ? t('editor.search.hideReplace') : t('editor.search.showReplace')}
             aria-pressed={panelMode === 'replace'}
             onClick={toggleReplaceMode}
           />
@@ -183,8 +185,8 @@ export function SearchPanel({
           <input
             ref={queryInputRef}
             type="text"
-            placeholder="查找"
-            aria-label="查找"
+            placeholder={t('editor.search.find')}
+            aria-label={t('editor.search.find')}
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             onKeyDown={onKeyDown}
@@ -199,24 +201,24 @@ export function SearchPanel({
         <button
           type="button"
           className="compat-search-button compat-search-button--previous"
-          title="上一个"
-          aria-label="上一个"
+          title={t('editor.search.previous')}
+          aria-label={t('editor.search.previous')}
           disabled={!resolvedMatchCount}
           onClick={() => handleAction('prev')}
         />
         <button
           type="button"
           className="compat-search-button compat-search-button--next"
-          title="下一个"
-          aria-label="下一个"
+          title={t('editor.search.next')}
+          aria-label={t('editor.search.next')}
           disabled={!resolvedMatchCount}
           onClick={() => handleAction('next')}
         />
         <button
           type="button"
           className="compat-search-button compat-search-button--close"
-          title="完成"
-          aria-label="完成"
+          title={t('editor.search.done')}
+          aria-label={t('editor.search.done')}
           onClick={onClose}
         />
       </div>
@@ -226,8 +228,8 @@ export function SearchPanel({
           <div className="compat-search-field-wrap compat-search-field-wrap--replace">
             <input
               type="text"
-              placeholder="替换"
-              aria-label="替换"
+              placeholder={t('editor.search.replace')}
+              aria-label={t('editor.search.replace')}
               value={replaceWith}
               onChange={(e) => handleReplaceChange(e.target.value)}
               onKeyDown={(e) => {
@@ -242,16 +244,16 @@ export function SearchPanel({
           <button
             type="button"
             className="compat-search-button compat-search-button--replace"
-            title="替换"
-            aria-label="替换"
+            title={t('editor.search.replace')}
+            aria-label={t('editor.search.replace')}
             disabled={!resolvedMatchCount}
             onClick={() => handleAction('replace')}
           />
           <button
             type="button"
             className="compat-search-button compat-search-button--replace-all"
-            title="全部替换"
-            aria-label="全部替换"
+            title={t('editor.search.replaceAll')}
+            aria-label={t('editor.search.replaceAll')}
             disabled={!resolvedMatchCount}
             onClick={() => handleAction('replaceAll')}
           />

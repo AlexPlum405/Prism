@@ -1,4 +1,7 @@
+import type { LocalePreference } from '../i18n';
+
 export type AppearanceMode = 'light' | 'dark' | 'auto';
+export type { LocalePreference };
 export type DefaultViewMode = 'edit' | 'split' | 'preview';
 export type ShortcutStyle = 'auto' | 'mac' | 'windows';
 export type ExportDefaultFormat = 'html' | 'pdf' | 'docx' | 'png';
@@ -104,6 +107,7 @@ export interface CitationSettings {
 
 export interface SettingsState {
   settingsVersion: number;
+  locale: LocalePreference;
   theme: AppearanceMode;
   contentTheme: ContentTheme;
   fontSize: number;
@@ -156,6 +160,7 @@ export interface SettingsState {
 
 export const DEFAULT_SETTINGS: SettingsState = {
   settingsVersion: CURRENT_SETTINGS_VERSION,
+  locale: 'auto',
   theme: 'auto',
   contentTheme: 'miaoyan',
   fontSize: 16,

@@ -23,7 +23,6 @@ import { useWorkspaceStore } from '../../workspace/store';
 import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services';
 import type { SearchAction, SearchParams } from './SearchPanel';
 import { ContextMenu } from '../../../components/shell/ContextMenu';
-import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { isCommandId } from '../../commands';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
 import { getEditorFormatResult, type EditorFormat } from '../extensions/formatting';
@@ -42,7 +41,21 @@ import {
   saveClipboardImage,
 } from '../extensions/imagePaste';
 import { markdownListKeymap } from '../extensions/markdownLists';
-import { getMarkdownTableCommandEdit, type MarkdownTableCommand } from '../extensions/tables';
+import {
+  findMarkdownTableBlock,
+  getHtmlTableToMarkdownEdit,
+  getMarkdownTableCommandEdit,
+  getMarkdownTableNavigationEdit,
+  getMarkdownTablePasteEdit,
+  getMarkdownTableSelection,
+  getMarkdownTableSerialization,
+  getMarkdownTableToHtmlEdit,
+  type MarkdownTableCommand,
+  type MarkdownTableCommandEdit,
+  type MarkdownTableInsertOptions,
+  type MarkdownTableNavigation,
+} from '../extensions/tables';
+import { markdownSelectionToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
 import {
   getMarkdownTemplateInsertEdit,
   isMarkdownTemplateId,
@@ -58,6 +71,9 @@ import {
 import { createHiddenSearchPanel, ensureSearchHighlighterEnabled } from '../extensions/search';
 import { addLineFlash, editorSelectionPlugin, lineFlashField, removeLineFlash } from '../extensions/selection';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
+import { useI18n } from '../../i18n';
+import { TableFloatingToolbar } from './TableFloatingToolbar';
+import { TableInsertPopover } from './TableInsertPopover';
 
 const editorLineNumbersCompartment = new Compartment();
 const editorLineWrappingCompartment = new Compartment();
@@ -65,6 +81,7 @@ const editorDarkThemeCompartment = new Compartment();
 const editorContentThemeCompartment = new Compartment();
 const editorTypographyCompartment = new Compartment();
 const editorLinkCompletionCompartment = new Compartment();
+const editorPhrasesCompartment = new Compartment();
 const editorDarkThemeExtension = [
   oneDark,
   EditorView.theme(
@@ -200,9 +217,50 @@ function getSelectedText(view: EditorView) {
   return view.state.doc.sliceString(selection.from, selection.to);
 }
 
+function applyMarkdownTableEdit(view: EditorView, result: MarkdownTableCommandEdit) {
+  view.dispatch({
+    changes: {
+      from: result.from,
+      to: result.to,
+      insert: result.insert,
+    },
+    selection: { anchor: result.selectionFrom, head: result.selectionTo },
+    scrollIntoView: true,
+  });
+  view.focus();
+}
+
+function runMarkdownTableNavigation(view: EditorView, navigation: MarkdownTableNavigation) {
+  const selection = view.state.selection.main;
+  if (selection.from !== selection.to) return false;
+  const result = getMarkdownTableNavigationEdit(
+    view.state.doc.toString(),
+    selection.head,
+    navigation,
+  );
+  if (!result) return false;
+  applyMarkdownTableEdit(view, result);
+  return true;
+}
+
 function formatEditorError(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return String(error);
+}
+
+function getEditorPhrases(t: ReturnType<typeof useI18n>['t']) {
+  return {
+    Find: t('editor.cm.find'),
+    Replace: t('editor.cm.replaceWith'),
+    next: t('editor.search.next'),
+    previous: t('editor.search.previous'),
+    all: t('editor.search.replaceAll'),
+    'match case': t('editor.cm.matchCase'),
+    regexp: t('editor.cm.regexp'),
+    'by word': t('editor.cm.wholeWord'),
+    replace: t('editor.search.replace'),
+    'replace all': t('editor.search.replaceAll'),
+  };
 }
 
 function getCurrentHeadingFoldRange(view: EditorView) {
@@ -218,6 +276,27 @@ function getCurrentHeadingFoldRange(view: EditorView) {
 
   return null;
 }
+
+const EDITOR_TABLE_COMMANDS: Partial<Record<string, MarkdownTableCommand>> = {
+  addTableColumn: 'addColumn',
+  addTableRow: 'addRow',
+  alignTableColumnCenter: 'alignCenter',
+  alignTableColumnLeft: 'alignLeft',
+  alignTableColumnRight: 'alignRight',
+  deleteTableColumn: 'deleteColumn',
+  deleteTableRow: 'deleteRow',
+  formatTable: 'format',
+  insertTableColumnLeft: 'insertColumnLeft',
+  insertTableColumnRight: 'insertColumnRight',
+  insertTableRowAbove: 'insertRowAbove',
+  insertTableRowBelow: 'insertRowBelow',
+  moveTableColumnLeft: 'moveColumnLeft',
+  moveTableColumnRight: 'moveColumnRight',
+  moveTableRowDown: 'moveRowDown',
+  moveTableRowUp: 'moveRowUp',
+  sortTableAsc: 'sortAsc',
+  sortTableDesc: 'sortDesc',
+};
 
 export const __editorPaneTesting = {
   getMiaoyanCodeLanguage,
@@ -245,6 +324,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     },
     ref,
   ) {
+    const { locale, t } = useI18n();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
@@ -285,7 +365,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       x: number;
       y: number;
       hasSelection: boolean;
+      isInTable: boolean;
     } | null>(null);
+    const [tableInsertVisible, setTableInsertVisible] = useState(false);
+    const [tableToolbar, setTableToolbar] = useState<{
+      visible: boolean;
+      x: number;
+      y: number;
+    }>({ visible: false, x: 16, y: 16 });
 
     useEffect(() => {
       onChangeRef.current = onChange;
@@ -474,7 +561,33 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       view.focus();
     }, []);
 
-    const handleTableCommand = useCallback((command: MarkdownTableCommand) => {
+    const updateTableToolbar = useCallback((view: EditorView) => {
+      const selection = view.state.selection.main;
+      if (selection.from !== selection.to) {
+        setTableToolbar((current) => current.visible ? { ...current, visible: false } : current);
+        return;
+      }
+
+      const block = findMarkdownTableBlock(view.state.doc.toString(), selection.head);
+      if (!block) {
+        setTableToolbar((current) => current.visible ? { ...current, visible: false } : current);
+        return;
+      }
+
+      const hostRect = editorRef.current?.getBoundingClientRect();
+      const coords = view.coordsAtPos(selection.head) ?? view.coordsAtPos(block.from);
+      if (!hostRect || !coords) {
+        setTableToolbar({ visible: true, x: 16, y: 16 });
+        return;
+      }
+
+      const toolbarWidth = 560;
+      const x = Math.max(12, Math.min(coords.left - hostRect.left - 12, hostRect.width - toolbarWidth - 12));
+      const y = Math.max(12, coords.top - hostRect.top - 44);
+      setTableToolbar({ visible: true, x, y });
+    }, []);
+
+    const handleTableCommand = useCallback((command: MarkdownTableCommand, options?: MarkdownTableInsertOptions) => {
       const view = viewRef.current;
       if (!view) return false;
 
@@ -484,21 +597,78 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         selection.from,
         selection.to,
         command,
+        options,
       );
       if (!result) return false;
 
+      applyMarkdownTableEdit(view, result);
+      updateTableToolbar(view);
+      return true;
+    }, [updateTableToolbar]);
+
+    const handleTableInsert = useCallback((options: MarkdownTableInsertOptions) => {
+      setTableInsertVisible(false);
+      handleTableCommand('insert', options);
+    }, [handleTableCommand]);
+
+    const handleSelectTable = useCallback(() => {
+      const view = viewRef.current;
+      if (!view) return false;
+      const selection = getMarkdownTableSelection(view.state.doc.toString(), view.state.selection.main.head);
+      if (!selection) return false;
       view.dispatch({
-        changes: {
-          from: result.from,
-          to: result.to,
-          insert: result.insert,
-        },
-        selection: { anchor: result.selectionFrom, head: result.selectionTo },
+        selection: { anchor: selection.from, head: selection.to },
         scrollIntoView: true,
       });
       view.focus();
+      setTableToolbar((current) => ({ ...current, visible: false }));
       return true;
     }, []);
+
+    const handleTableCopy = useCallback(async (format: 'markdown' | 'html' | 'csv' | 'tsv') => {
+      const view = viewRef.current;
+      if (!view) return false;
+      const serialization = getMarkdownTableSerialization(view.state.doc.toString(), view.state.selection.main.head);
+      if (!serialization) return false;
+
+      if (format === 'html') {
+        await writeRichClipboard({
+          html: serialization.html,
+          text: serialization.markdown,
+        });
+        return true;
+      }
+
+      await navigator.clipboard.writeText(serialization[format]);
+      return true;
+    }, []);
+
+    const handleTableConvert = useCallback((target: 'html' | 'markdown') => {
+      const view = viewRef.current;
+      if (!view) return false;
+      const cursor = view.state.selection.main.head;
+      const result = target === 'html'
+        ? getMarkdownTableToHtmlEdit(view.state.doc.toString(), cursor)
+        : getHtmlTableToMarkdownEdit(view.state.doc.toString(), cursor);
+      if (!result) return false;
+      applyMarkdownTableEdit(view, result);
+      updateTableToolbar(view);
+      return true;
+    }, [updateTableToolbar]);
+
+    const handleTablePasteText = useCallback((view: EditorView, text: string) => {
+      const selection = view.state.selection.main;
+      const result = getMarkdownTablePasteEdit(
+        view.state.doc.toString(),
+        selection.from,
+        selection.to,
+        text,
+      );
+      if (!result) return false;
+      applyMarkdownTableEdit(view, result);
+      updateTableToolbar(view);
+      return true;
+    }, [updateTableToolbar]);
 
     const handleTemplateInsert = useCallback((templateId: unknown) => {
       const view = viewRef.current;
@@ -565,7 +735,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
 
     const handleClipboardImagePaste = useCallback(async (event: ClipboardEvent, view: EditorView) => {
       const imageItem = Array.from(event.clipboardData?.items ?? []).find((item) => item.type.startsWith('image/'));
-      if (!imageItem) return;
+      if (!imageItem) return false;
 
       event.preventDefault();
       event.stopPropagation();
@@ -573,12 +743,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       const imageFile = imageItem.getAsFile();
       const document = useDocumentStore.getState().currentDocument;
       if (!imageFile) {
-        onNoticeRef.current?.('剪贴板图片不可读取');
-        return;
+        onNoticeRef.current?.(t('editor.image.clipboardUnreadable'));
+        return true;
       }
       if (!document?.path) {
-        onNoticeRef.current?.('请先保存 Markdown 文档，再粘贴图片');
-        return;
+        onNoticeRef.current?.(t('editor.image.saveBeforePaste'));
+        return true;
       }
 
       try {
@@ -594,9 +764,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           scrollIntoView: true,
         });
       } catch (error) {
-        onNoticeRef.current?.(`图片粘贴失败: ${formatEditorError(error)}`);
+        onNoticeRef.current?.(t('editor.image.pasteFailed', { message: formatEditorError(error) }));
       }
-    }, []);
+      return true;
+    }, [t]);
 
     const insertAtSelection = useCallback((view: EditorView, text: string) => {
       const selection = view.state.selection.main;
@@ -624,7 +795,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           .filter((link): link is string => Boolean(link));
 
         if (markdownLinks.length === 0) {
-          onNoticeRef.current?.('当前运行环境无法读取拖拽文件原始路径');
+          onNoticeRef.current?.(t('editor.image.nativePathUnavailable'));
           return;
         }
 
@@ -634,7 +805,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
 
       const document = useDocumentStore.getState().currentDocument;
       if (!document?.path) {
-        onNoticeRef.current?.('请先保存 Markdown 文档，再拖入图片');
+        onNoticeRef.current?.(t('editor.image.saveBeforeDrop'));
         return;
       }
 
@@ -649,9 +820,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         }
         insertAtSelection(view, markdownImages.join('\n'));
       } catch (error) {
-        onNoticeRef.current?.(`图片拖拽失败: ${formatEditorError(error)}`);
+        onNoticeRef.current?.(t('editor.image.dropFailed', { message: formatEditorError(error) }));
       }
-    }, [insertAtSelection]);
+    }, [insertAtSelection, t]);
 
     // 监听菜单格式化事件
     useEffect(() => {
@@ -788,6 +959,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           return;
         }
 
+        const tableCommand = EDITOR_TABLE_COMMANDS[command];
+        if (tableCommand) {
+          handleTableCommand(tableCommand);
+          return;
+        }
+
         switch (command) {
           case 'undo':
             undo(view);
@@ -809,7 +986,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           case 'copyHtml': {
             const sel2 = view.state.selection.main;
             const text2 = view.state.doc.sliceString(sel2.from, sel2.to);
-            if (text2) navigator.clipboard.writeText(markdownToHtml(text2));
+            if (text2) void writeRichClipboard(markdownSelectionToRichClipboardInput(text2));
             break;
           }
           case 'selectAll':
@@ -818,6 +995,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           case 'paste':
           case 'pastePlain':
             navigator.clipboard.readText().then(text => {
+              if (handleTablePasteText(view, text)) return;
               view.dispatch({
                 changes: { from: view.state.selection.main.from, to: view.state.selection.main.to, insert: text },
               });
@@ -831,22 +1009,32 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
             break;
           }
           case 'insertTable':
-            handleTableCommand('insert');
+            if (detail?.options && typeof detail.options === 'object') {
+              handleTableCommand('insert', detail.options as MarkdownTableInsertOptions);
+            } else {
+              setTableInsertVisible(true);
+            }
             break;
-          case 'formatTable':
-            handleTableCommand('format');
+          case 'selectTable':
+            handleSelectTable();
             break;
-          case 'addTableRow':
-            handleTableCommand('addRow');
+          case 'copyTableMarkdown':
+            void handleTableCopy('markdown');
             break;
-          case 'addTableColumn':
-            handleTableCommand('addColumn');
+          case 'copyTableHtml':
+            void handleTableCopy('html');
             break;
-          case 'deleteTableRow':
-            handleTableCommand('deleteRow');
+          case 'copyTableCsv':
+            void handleTableCopy('csv');
             break;
-          case 'deleteTableColumn':
-            handleTableCommand('deleteColumn');
+          case 'copyTableTsv':
+            void handleTableCopy('tsv');
+            break;
+          case 'convertTableToHtml':
+            handleTableConvert('html');
+            break;
+          case 'convertHtmlTableToMarkdown':
+            handleTableConvert('markdown');
             break;
           case 'insertTemplate':
             handleTemplateInsert(detail.templateId);
@@ -874,7 +1062,17 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         window.removeEventListener('prism-block-format', onBlock);
         window.removeEventListener('prism-editor-command', onEditorCommand);
       };
-    }, [handleFoldCurrentHeading, handleFormat, handleSourceBlockOperation, handleTableCommand, handleTemplateInsert]);
+    }, [
+      handleFoldCurrentHeading,
+      handleFormat,
+      handleSelectTable,
+      handleSourceBlockOperation,
+      handleTableCommand,
+      handleTableConvert,
+      handleTableCopy,
+      handleTablePasteText,
+      handleTemplateInsert,
+    ]);
 
     // 处理来自 Props 的内容同步（非重挂载情况）
     useEffect(() => {
@@ -899,6 +1097,30 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         doc: content,
         extensions: [
           Prec.highest(keymap.of([
+            {
+              key: 'Tab',
+              run: (view) => runMarkdownTableNavigation(view, 'nextCell'),
+            },
+            {
+              key: 'Shift-Tab',
+              run: (view) => runMarkdownTableNavigation(view, 'previousCell'),
+            },
+            {
+              key: 'Enter',
+              run: (view) => runMarkdownTableNavigation(view, 'nextRow'),
+            },
+            {
+              key: 'Shift-Enter',
+              run: (view) => runMarkdownTableNavigation(view, 'lineBreak'),
+            },
+            {
+              key: 'Mod-Enter',
+              run: (view) => runMarkdownTableNavigation(view, 'lineBreak'),
+            },
+            {
+              key: 'Escape',
+              run: (view) => runMarkdownTableNavigation(view, 'escape'),
+            },
             {
               key: 'Mod-f',
               run: () => {
@@ -979,10 +1201,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
               backgroundColor: 'var(--editor-selection-bg, var(--accent-tint-strong)) !important',
             }
           }),
-          EditorState.phrases.of({
-            "Find": "查找内容", "Replace": "替换为", "next": "下一个", "previous": "上一个", "all": "全部",
-            "match case": "大小写", "regexp": "正则", "by word": "全词", "replace": "替换", "replace all": "全部替换"
-          }),
+          editorPhrasesCompartment.of(EditorState.phrases.of(getEditorPhrases(t))),
           EditorView.updateListener.of((update: ViewUpdate) => {
             if (update.docChanged) {
               if (isUpdatingFromPropsRef.current) {
@@ -994,6 +1213,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
             if (update.docChanged || update.selectionSet) {
               onCursorChangeRef.current?.(getCursorPosition(update.view));
               onSelectionTextChangeRef.current?.(getSelectedText(update.view));
+              updateTableToolbar(update.view);
               if (typewriterModeRef.current && update.selectionSet) {
                 scrollPrimarySelectionToCenter(update.view);
               }
@@ -1030,11 +1250,21 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           x: event.clientX,
           y: event.clientY,
           hasSelection: nextSelection.from !== nextSelection.to,
+          isInTable: pos !== null && Boolean(findMarkdownTableBlock(view.state.doc.toString(), pos)),
         });
       };
 
       view.dom.addEventListener('contextmenu', handleContextMenu);
       const handlePaste = (event: ClipboardEvent) => {
+        const hasImage = Array.from(event.clipboardData?.items ?? []).some((item) => item.type.startsWith('image/'));
+        if (!hasImage) {
+          const text = event.clipboardData?.getData('text/plain') ?? '';
+          if (text && handleTablePasteText(view, text)) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+        }
         void handleClipboardImagePaste(event, view);
       };
       view.dom.addEventListener('paste', handlePaste);
@@ -1053,6 +1283,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         const maxScroll = scroller.scrollHeight - scroller.clientHeight;
         onScrollRatioChangeRef.current?.(maxScroll > 0 ? scroller.scrollTop / maxScroll : 0);
         onScrollRef.current?.();
+        updateTableToolbar(view);
 
         if (onTopLineChangeRef.current) {
           const rect = scroller.getBoundingClientRect();
@@ -1080,6 +1311,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+      view.dispatch({
+        effects: editorPhrasesCompartment.reconfigure(EditorState.phrases.of(getEditorPhrases(t))),
+      });
+    }, [locale, t]);
 
     useEffect(() => {
       const view = viewRef.current;
@@ -1151,12 +1390,30 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           ref={editorRef}
           style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         />
+        <TableInsertPopover
+          visible={tableInsertVisible}
+          onClose={() => setTableInsertVisible(false)}
+          onInsert={handleTableInsert}
+        />
+        <TableFloatingToolbar
+          visible={tableToolbar.visible}
+          x={tableToolbar.x}
+          y={tableToolbar.y}
+          onCommand={handleTableCommand}
+          onCopy={handleTableCopy}
+          onSelectTable={handleSelectTable}
+          onConvert={handleTableConvert}
+        />
         <HorizontalScrollbar getScroller={getEditorScroller} />
         {editorContextMenu && (
           <ContextMenu
             x={editorContextMenu.x}
             y={editorContextMenu.y}
-            items={getEditorContextMenuItems(editorContextMenu.hasSelection, shortcutStyle)}
+            items={getEditorContextMenuItems(
+              editorContextMenu.hasSelection,
+              shortcutStyle,
+              editorContextMenu.isInTable,
+            )}
             onAction={handleEditorContextMenuAction}
             onClose={() => setEditorContextMenu(null)}
           />

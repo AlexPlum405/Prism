@@ -30,6 +30,7 @@ import {
   parseFileAction,
   type FileActionInput,
 } from './fileActionCommands';
+import { t } from '../domains/i18n';
 
 export type { FileActionInput } from './fileActionCommands';
 
@@ -80,12 +81,12 @@ export async function deletePathWithTrashFallback({
   permanentDelete,
 }: DeletePathWithTrashFallbackInput): Promise<DeletePathWithTrashFallbackResult> {
   const confirmed = await confirmDialog(
-    `确定要将“${displayName}”移到系统废纸篓吗？`,
+    t('file.confirmMoveToTrash', { name: displayName }),
     {
-      title: '移到废纸篓',
+      title: t('file.moveToTrash'),
       kind: 'warning',
-      okLabel: '移到废纸篓',
-      cancelLabel: '取消',
+      okLabel: t('file.moveToTrash'),
+      cancelLabel: t('common.cancel'),
     },
   );
 
@@ -97,12 +98,12 @@ export async function deletePathWithTrashFallback({
   } catch (err) {
     const error = formatError(err);
     const permanentConfirmed = await confirmDialog(
-      `无法移到系统废纸篓：${error}\n\n是否永久删除“${displayName}”？此操作不可撤销。`,
+      t('file.confirmPermanentDelete', { error, name: displayName }),
       {
-        title: '永久删除确认',
+        title: t('file.permanentDeleteTitle'),
         kind: 'warning',
-        okLabel: '永久删除',
-        cancelLabel: '取消',
+        okLabel: t('file.permanentDelete'),
+        cancelLabel: t('common.cancel'),
       },
     );
 
@@ -114,7 +115,7 @@ export async function deletePathWithTrashFallback({
 }
 
 function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes)) return '未知';
+  if (!Number.isFinite(bytes)) return t('common.unknown');
   if (bytes < 1024) return `${bytes} B`;
 
   const units = ['KB', 'MB', 'GB', 'TB'];
@@ -129,7 +130,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(date: Date | null): string {
-  return date ? date.toLocaleString() : '不可用';
+  return date ? date.toLocaleString() : t('common.unavailable');
 }
 
 function requestInlineRename(path: string): void {
@@ -154,7 +155,7 @@ async function copyText(text: string): Promise<void> {
   document.body.removeChild(textarea);
 
   if (!copied) {
-    throw new Error('无法写入系统剪贴板');
+    throw new Error(t('file.clipboardWriteFailed'));
   }
 }
 
@@ -171,7 +172,7 @@ async function getUniquePath(parentDir: string, stem: string, ext = ''): Promise
     if (!(await exists(candidate))) return candidate;
   }
 
-  throw new Error(`无法生成不重名的路径: ${stem}${ext}`);
+  throw new Error(t('file.uniquePathFailed', { name: `${stem}${ext}` }));
 }
 
 async function getUniqueCopyPath(originalPath: string): Promise<string> {
@@ -179,19 +180,19 @@ async function getUniqueCopyPath(originalPath: string): Promise<string> {
   const { stem, ext } = splitName(basename(originalPath));
 
   for (let index = 0; index < 1000; index += 1) {
-    const suffix = index === 0 ? ' (副本)' : ` (副本 ${index})`;
+    const suffix = index === 0 ? t('file.copySuffix') : t('file.copySuffixNumbered', { index });
     const candidate = joinPath(parentDir, `${stem}${suffix}${ext}`);
     if (!(await exists(candidate))) return candidate;
   }
 
-  throw new Error(`无法生成副本路径: ${basename(originalPath)}`);
+  throw new Error(t('file.uniqueCopyPathFailed', { name: basename(originalPath) }));
 }
 
 function getWorkspaceTargetDir(context: FileActionContext, requestedPath?: string): string | null {
   if (requestedPath) return requestedPath;
   if (context.workspaceStore.rootPath) return context.workspaceStore.rootPath;
 
-  context.showToast?.('请先打开一个工作区文件夹');
+  context.showToast?.(t('app.openWorkspaceFirst'));
   return null;
 }
 
@@ -223,7 +224,7 @@ async function handleOpenNewWindow(path: string | undefined, context: FileAction
   }
 
   if (!context.workspaceStore.rootPath) {
-    throw new Error('当前没有打开的工作区');
+    throw new Error(t('file.noWorkspace'));
   }
 
   await openPrismWindow({ folderPath: context.workspaceStore.rootPath });
@@ -233,7 +234,7 @@ async function handleNewFile(parentPath: string | undefined, context: FileAction
   const targetDir = getWorkspaceTargetDir(context, parentPath);
   if (!targetDir) return;
 
-  const filePath = await getUniquePath(targetDir, '未命名', '.md');
+  const filePath = await getUniquePath(targetDir, t('file.newUntitledStem'), '.md');
   await writeTextFile(filePath, '', { createNew: true });
   const snapshot = await getFileSnapshotOrNull(filePath);
   const content = await readTextFile(filePath);
@@ -241,29 +242,29 @@ async function handleNewFile(parentPath: string | undefined, context: FileAction
   addRecentFile(filePath, basename(filePath));
   await refreshWorkspace(context);
   requestInlineRename(filePath);
-  context.showToast?.('已创建新文件');
+  context.showToast?.(t('file.createdNewFile'));
 }
 
 async function handleNewFolder(parentPath: string | undefined, context: FileActionContext): Promise<void> {
   const targetDir = getWorkspaceTargetDir(context, parentPath);
   if (!targetDir) return;
 
-  const folderPath = await getUniquePath(targetDir, '新建文件夹');
+  const folderPath = await getUniquePath(targetDir, t('file.newFolderStem'));
   await mkdir(folderPath);
   context.workspaceStore.setFileTreeMode('tree');
   await refreshWorkspace(context);
   requestInlineRename(folderPath);
-  context.showToast?.('已创建新文件夹');
+  context.showToast?.(t('file.createdNewFolder'));
 }
 
 async function handleCommitRename(path: string, newName: string, context: FileActionContext): Promise<void> {
   const safeName = newName.trim();
   if (!safeName) {
-    context.showToast?.('名称不能为空');
+    context.showToast?.(t('file.nameRequired'));
     return;
   }
   if (/[\\/]/.test(safeName)) {
-    context.showToast?.('名称不能包含路径分隔符');
+    context.showToast?.(t('file.nameCannotContainSeparator'));
     return;
   }
 
@@ -272,7 +273,7 @@ async function handleCommitRename(path: string, newName: string, context: FileAc
   if (isSamePath(path, targetPath)) return;
 
   if ((await exists(targetPath)) && !isSamePath(path, targetPath)) {
-    context.showToast?.(`“${safeName}” 已存在`);
+    context.showToast?.(t('file.nameAlreadyExists', { name: safeName }));
     return;
   }
 
@@ -289,13 +290,13 @@ async function handleCommitRename(path: string, newName: string, context: FileAc
   }
 
   await refreshWorkspace(context);
-  context.showToast?.('重命名完成');
+  context.showToast?.(t('file.renameDone'));
 }
 
 async function handleDuplicate(path: string, context: FileActionContext): Promise<void> {
   const info = await stat(path);
   if (!info.isFile) {
-    context.showToast?.('只能为文件创建副本');
+    context.showToast?.(t('file.duplicateFileOnly'));
     return;
   }
 
@@ -303,7 +304,7 @@ async function handleDuplicate(path: string, context: FileActionContext): Promis
   const targetPath = await getUniqueCopyPath(path);
   await writeTextFile(targetPath, content, { createNew: true });
   await refreshWorkspace(context);
-  context.showToast?.(`已创建副本: ${basename(targetPath)}`);
+  context.showToast?.(t('file.duplicateDone', { name: basename(targetPath) }));
 }
 
 async function handleDelete(path: string, context: FileActionContext): Promise<void> {
@@ -318,7 +319,7 @@ async function handleDelete(path: string, context: FileActionContext): Promise<v
   });
 
   if (!result.deleted) {
-    if (result.error) context.showToast?.('已取消删除');
+    if (result.error) context.showToast?.(t('file.deleteCancelled'));
     return;
   }
 
@@ -328,7 +329,7 @@ async function handleDelete(path: string, context: FileActionContext): Promise<v
   }
 
   await refreshWorkspace(context);
-  context.showToast?.(result.mode === 'trash' ? '已移到系统废纸篓' : '已永久删除');
+  context.showToast?.(result.mode === 'trash' ? t('file.movedToTrash') : t('file.permanentlyDeleted'));
 }
 
 async function handleOpenLocation(path: string): Promise<void> {
@@ -343,33 +344,33 @@ async function handleOpenLocation(path: string): Promise<void> {
 
 async function handleCopyPath(path: string, context: FileActionContext): Promise<void> {
   await copyText(path);
-  context.showToast?.('路径已复制到剪贴板');
+  context.showToast?.(t('file.pathCopied'));
 }
 
 async function handleProperties(path: string): Promise<void> {
   const info = await stat(path);
   const details = [
-    `名称: ${basename(path)}`,
-    `路径: ${path}`,
-    `类型: ${info.isDirectory ? '文件夹' : info.isFile ? '文件' : '符号链接'}`,
-    `大小: ${formatBytes(info.size)}`,
-    `创建时间: ${formatDate(info.birthtime)}`,
-    `修改时间: ${formatDate(info.mtime)}`,
-    `访问时间: ${formatDate(info.atime)}`,
-    `只读: ${info.readonly ? '是' : '否'}`,
+    `${t('file.property.name')}: ${basename(path)}`,
+    `${t('file.property.path')}: ${path}`,
+    `${t('file.property.type')}: ${info.isDirectory ? t('file.type.folder') : info.isFile ? t('file.type.file') : t('file.type.symlink')}`,
+    `${t('file.property.size')}: ${formatBytes(info.size)}`,
+    `${t('file.property.created')}: ${formatDate(info.birthtime)}`,
+    `${t('file.property.modified')}: ${formatDate(info.mtime)}`,
+    `${t('file.property.accessed')}: ${formatDate(info.atime)}`,
+    `${t('file.property.readonly')}: ${info.readonly ? t('common.yes') : t('common.no')}`,
   ].join('\n');
 
-  await message(details, { title: '属性', kind: 'info' });
+  await message(details, { title: t('file.properties'), kind: 'info' });
 }
 
 async function handleRefresh(context: FileActionContext): Promise<void> {
   if (!context.workspaceStore.rootPath) {
-    context.showToast?.('当前没有打开的工作区');
+    context.showToast?.(t('file.noWorkspace'));
     return;
   }
 
   await refreshWorkspace(context);
-  context.showToast?.('文件树已刷新');
+  context.showToast?.(t('file.treeRefreshed'));
 }
 
 export async function executeFileAction(
@@ -381,7 +382,7 @@ export async function executeFileAction(
   try {
     switch (command) {
       case 'openFile':
-        if (!path) throw new Error('缺少文件路径');
+        if (!path) throw new Error(t('file.missingPath'));
         await handleOpenFile(path, context);
         return;
 
@@ -398,47 +399,47 @@ export async function executeFileAction(
         return;
 
       case 'rename':
-        if (!path) throw new Error('缺少重命名路径');
+        if (!path) throw new Error(t('file.missingRenamePath'));
         requestInlineRename(path);
         return;
 
       case 'commitRename':
-        if (!path || name === undefined) throw new Error('缺少重命名参数');
+        if (!path || name === undefined) throw new Error(t('file.missingRenameArgs'));
         await handleCommitRename(path, name, context);
         return;
 
       case 'duplicate':
-        if (!path) throw new Error('缺少副本路径');
+        if (!path) throw new Error(t('file.missingDuplicatePath'));
         await handleDuplicate(path, context);
         return;
 
       case 'delete':
-        if (!path) throw new Error('缺少删除路径');
+        if (!path) throw new Error(t('file.missingDeletePath'));
         await handleDelete(path, context);
         return;
 
       case 'openRootLocation':
-        if (!context.workspaceStore.rootPath) throw new Error('当前没有打开的工作区');
+        if (!context.workspaceStore.rootPath) throw new Error(t('file.noWorkspace'));
         await openPath(context.workspaceStore.rootPath);
         return;
 
       case 'openLocation':
-        if (!path) throw new Error('缺少打开位置路径');
+        if (!path) throw new Error(t('file.missingOpenLocationPath'));
         await handleOpenLocation(path);
         return;
 
       case 'copyRootPath':
-        if (!context.workspaceStore.rootPath) throw new Error('当前没有打开的工作区');
+        if (!context.workspaceStore.rootPath) throw new Error(t('file.noWorkspace'));
         await handleCopyPath(context.workspaceStore.rootPath, context);
         return;
 
       case 'copyPath':
-        if (!path) throw new Error('缺少复制路径');
+        if (!path) throw new Error(t('file.missingCopyPath'));
         await handleCopyPath(path, context);
         return;
 
       case 'properties':
-        if (!path) throw new Error('缺少属性路径');
+        if (!path) throw new Error(t('file.missingPropertiesPath'));
         await handleProperties(path);
         return;
 
@@ -471,7 +472,7 @@ export async function executeFileAction(
         return;
 
       case 'searchInFolder':
-        if (!context.workspaceStore.rootPath) throw new Error('当前没有打开的工作区');
+        if (!context.workspaceStore.rootPath) throw new Error(t('file.noWorkspace'));
         window.dispatchEvent(new CustomEvent('prism-search', {
           detail: { action: 'open', rootPath: context.workspaceStore.rootPath },
         }));
@@ -482,6 +483,6 @@ export async function executeFileAction(
     }
   } catch (err) {
     console.error(`[FileAction] ${command} failed:`, err);
-    context.showToast?.(`操作失败: ${formatError(err)}`);
+    context.showToast?.(t('command.operationFailed', { message: formatError(err) }));
   }
 }

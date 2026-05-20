@@ -7,6 +7,7 @@ import {
   rename,
   stat,
 } from '@tauri-apps/plugin-fs';
+import { t } from '../i18n';
 import { joinPath } from '../workspace/services/path';
 import {
   THEME_CSS_FILENAME,
@@ -41,13 +42,13 @@ function normalizeZipEntries(entries: Record<string, Uint8Array>) {
     .map(([path, bytes]) => {
       const normalized = normalizeThemeRelativePath(path);
       if (!normalized) {
-        throw new ThemeError('invalid_theme', `ZIP 内路径不合法：${path}`);
+        throw new ThemeError('invalid_theme', t('theme.zipInvalidPath', { path }));
       }
       return [normalized, bytes] as const;
     });
 
   if (files.length === 0) {
-    throw new ThemeError('invalid_theme', '主题压缩包为空');
+    throw new ThemeError('invalid_theme', t('theme.zipEmpty'));
   }
 
   const hasRootManifest = files.some(([path]) => path === THEME_MANIFEST_FILENAME);
@@ -55,19 +56,19 @@ function normalizeZipEntries(entries: Record<string, Uint8Array>) {
 
   const rootNames = new Set(files.map(([path]) => path.split('/')[0]));
   if (rootNames.size !== 1) {
-    throw new ThemeError('invalid_theme', '主题压缩包必须包含 theme.json，或只包含一层根目录');
+    throw new ThemeError('invalid_theme', t('theme.zipMissingRoot'));
   }
   const rootName = Array.from(rootNames)[0];
   const stripped = files.map(([path, bytes]) => {
     const nextPath = path.slice(rootName.length + 1);
     if (!nextPath) {
-      throw new ThemeError('invalid_theme', `ZIP 内路径不合法：${path}`);
+      throw new ThemeError('invalid_theme', t('theme.zipInvalidPath', { path }));
     }
     return [nextPath, bytes] as const;
   });
 
   if (!stripped.some(([path]) => path === THEME_MANIFEST_FILENAME)) {
-    throw new ThemeError('invalid_theme', '主题压缩包缺少 theme.json');
+    throw new ThemeError('invalid_theme', t('theme.zipMissingJson'));
   }
   return stripped;
 }
@@ -76,7 +77,7 @@ async function writeZipToDirectory(sourcePath: string, targetDirectory: string) 
   const bytes = await readFile(sourcePath);
   const entries = normalizeZipEntries(unzipSync(bytes));
   if (!entries.some(([path]) => path === THEME_CSS_FILENAME)) {
-    throw new ThemeError('invalid_theme', '主题压缩包缺少 theme.css');
+    throw new ThemeError('invalid_theme', t('theme.zipMissingCss'));
   }
   for (const [relativePath, data] of entries) {
     await writeThemeFile(targetDirectory, relativePath, data);
@@ -90,7 +91,7 @@ async function stageThemeFromPath(sourcePath: string, stagingDirectory: string) 
     return;
   }
   if (!info.isFile || !isThemeArchivePath(sourcePath)) {
-    throw new ThemeError('invalid_theme', '请选择主题文件夹、.zip 或 .prism-theme 文件');
+    throw new ThemeError('invalid_theme', t('theme.choosePackage'));
   }
   await writeZipToDirectory(sourcePath, stagingDirectory);
 }
@@ -118,7 +119,7 @@ export async function installThemeFromPath(sourcePath: string, options: { replac
     const targetExists = await exists(targetDirectory);
 
     if (targetExists && !options.replace) {
-      throw new ThemeError('theme_exists', `已存在同 id 用户主题：${themeId}`, themeId);
+      throw new ThemeError('theme_exists', t('theme.exists', { themeId }), themeId);
     }
 
     if (targetExists) {

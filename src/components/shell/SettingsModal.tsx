@@ -9,10 +9,12 @@ import type {
   ExportDefaultLocation,
   ExportTemplateId,
   FontSource,
+  LocalePreference,
   PdfMargin,
   PdfPaper,
   ShortcutStyle,
 } from '../../domains/settings/types';
+import { LOCALE_PREFERENCES, t as translate, useI18n, type I18nKey } from '../../domains/i18n';
 import {
   ThemeError,
   deleteInstalledUserTheme,
@@ -27,10 +29,14 @@ import {
   deleteCustomFontFile,
   importCustomFont,
 } from '../../domains/settings/fontService';
-import { EXPORT_TEMPLATES } from '../../domains/export/templates';
 import {
-  EXPORT_QUALITY_PRESETS,
-  getExportQualityPreset,
+  EXPORT_TEMPLATES,
+  getExportTemplateDescription,
+  getExportTemplateLabel,
+} from '../../domains/export/templates';
+import {
+  getLocalizedExportQualityPreset,
+  getLocalizedExportQualityPresets,
   normalizeExportQualityScale,
 } from '../../domains/export/quality';
 
@@ -40,15 +46,22 @@ interface SettingsModalProps {
 }
 
 const SETTINGS_SECTIONS = [
-  { id: 'general', label: '通用', hint: '视图与快捷键' },
-  { id: 'writing', label: '写作', hint: '编辑器与自动保存' },
-  { id: 'appearance', label: '外观', hint: '主题与字体' },
-  { id: 'export', label: '导出', hint: '格式与默认位置' },
-  { id: 'citation', label: '引用', hint: 'Pandoc 与文献' },
-  { id: 'files', label: '文件', hint: '恢复与最近文档' },
+  { id: 'general', labelKey: 'settings.section.general', hintKey: 'settings.section.generalHint' },
+  { id: 'writing', labelKey: 'settings.section.writing', hintKey: 'settings.section.writingHint' },
+  { id: 'appearance', labelKey: 'settings.section.appearance', hintKey: 'settings.section.appearanceHint' },
+  { id: 'export', labelKey: 'settings.section.export', hintKey: 'settings.section.exportHint' },
+  { id: 'citation', labelKey: 'settings.section.citation', hintKey: 'settings.section.citationHint' },
+  { id: 'files', labelKey: 'settings.section.files', hintKey: 'settings.section.filesHint' },
 ] as const;
 
 type SettingsSectionId = typeof SETTINGS_SECTIONS[number]['id'];
+
+const localeLabelKeys: Record<LocalePreference, I18nKey> = {
+  auto: 'locale.auto',
+  'zh-CN': 'locale.zh-CN',
+  'en-US': 'locale.en-US',
+  'ja-JP': 'locale.ja-JP',
+};
 
 function encodeFontSource(source: FontSource) {
   return `${source.kind}:${source.value}`;
@@ -64,13 +77,13 @@ function decodeFontSource(value: string): FontSource {
 }
 
 function getFontSourceHint(source: FontSource, resolvedFamily: string) {
-  return source.kind === 'theme' ? '跟随主题' : resolvedFamily;
+  return source.kind === 'theme' ? translate('settings.followTheme') : resolvedFamily;
 }
 
 function getPandocHint(settings: ReturnType<typeof useSettingsStore.getState>['pandoc']) {
-  if (settings.detected && settings.version) return `已检测 ${settings.version}`;
+  if (settings.detected && settings.version) return translate('settings.pandoc.detected', { version: settings.version });
   if (settings.lastError) return settings.lastError;
-  return '留空检测系统 pandoc，也可填写完整可执行文件路径';
+  return translate('settings.pandoc.hint');
 }
 
 function hasSupportedPathExtension(path: string, extensions: string[]) {
@@ -79,19 +92,19 @@ function hasSupportedPathExtension(path: string, extensions: string[]) {
 }
 
 function getBibliographyHint(path: string) {
-  if (!path.trim()) return 'BibTeX / CSL JSON 文件路径，用于 Pandoc 引用导出';
+  if (!path.trim()) return translate('settings.bibliography.emptyHint');
   if (!hasSupportedPathExtension(path, ['.bib', '.bibtex', '.json'])) {
-    return '建议使用 .bib、.bibtex 或 .json 文件';
+    return translate('settings.bibliography.invalidHint');
   }
-  return '已配置，HTML 导出会在 Pandoc 可用时处理引用';
+  return translate('settings.bibliography.readyHint');
 }
 
 function getCslStyleHint(path: string) {
-  if (!path.trim()) return '可填写 .csl 路径，留空时使用 Pandoc 默认样式';
+  if (!path.trim()) return translate('settings.csl.emptyHint');
   if (!hasSupportedPathExtension(path, ['.csl'])) {
-    return 'CSL 样式通常是 .csl 文件';
+    return translate('settings.csl.invalidHint');
   }
-  return '已配置，引用导出会优先使用该样式';
+  return translate('settings.csl.readyHint');
 }
 
 function getCitationReadinessHint(input: {
@@ -105,21 +118,22 @@ function getCitationReadinessHint(input: {
   const hasCslStyle = input.cslStylePath.trim().length > 0;
 
   if (!input.bibliographyPathIsSupported || !input.cslStylePathIsSupported) {
-    return '引用路径后缀需要先修正；否则导出会回退到 citekey 占位。';
+    return translate('settings.citation.invalid');
   }
   if (!hasBibliography && hasCslStyle) {
-    return '已配置 CSL，但还需要参考文献文件才会启用引用导出。';
+    return translate('settings.citation.cslNeedsBibliography');
   }
   if (!hasBibliography) {
-    return '未配置参考文献文件；Markdown 预览会保留 citekey 占位。';
+    return translate('settings.citation.noBibliography');
   }
   if (!input.pandocDetected) {
-    return '已配置参考文献；当前未检测到 Pandoc，导出会保留 citekey 占位并提示原因。';
+    return translate('settings.citation.noPandoc');
   }
-  return '引用导出已就绪；HTML 导出会优先尝试 Pandoc citeproc。';
+  return translate('settings.citation.ready');
 }
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
+  const { t } = useI18n();
   const settings = useSettingsStore();
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('general');
   const [pandocChecking, setPandocChecking] = useState(false);
@@ -187,8 +201,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   };
 
   const chooseThemePath = async () => {
-    const chooseFolder = await ask('要导入主题文件夹吗？选择“否”可导入 .zip / .prism-theme 文件。', {
-      title: '导入主题',
+    const chooseFolder = await ask(t('settings.importTheme.ask'), {
+      title: t('settings.importTheme.title'),
       kind: 'info',
     });
     const selected = await open({
@@ -214,8 +228,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
         result = await installThemeFromPath(selected);
       } catch (error) {
         if (error instanceof ThemeError && error.code === 'theme_exists' && error.themeId) {
-          const shouldReplace = await ask(`已存在同 id 用户主题 ${error.themeId}，是否替换？`, {
-            title: '替换主题',
+          const shouldReplace = await ask(t('settings.replaceTheme.ask', { themeId: error.themeId }), {
+            title: t('settings.replaceTheme.title'),
             kind: 'warning',
           });
           if (!shouldReplace) return;
@@ -230,12 +244,14 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
         await settings.setContentTheme(result.id);
       }
       await message(
-        applyAfterImport ? `已导入并应用主题：${result.name}` : `已导入主题：${result.name}`,
-        { title: '主题导入', kind: 'info' },
+        applyAfterImport
+          ? t('settings.importTheme.applied', { name: result.name })
+          : t('settings.importTheme.imported', { name: result.name }),
+        { title: t('settings.importTheme.title'), kind: 'info' },
       );
     } catch (error) {
-      await message(`主题导入失败：${getThemeErrorMessage(error)}`, {
-        title: '主题导入',
+      await message(t('settings.importTheme.failed', { message: getThemeErrorMessage(error) }), {
+        title: t('settings.importTheme.title'),
         kind: 'error',
       });
     } finally {
@@ -249,10 +265,10 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     try {
       await settings.reloadThemeRegistry();
       await settings.setContentTheme(settings.contentTheme);
-      await message('用户主题已重新加载', { title: '主题', kind: 'info' });
+      await message(t('settings.themeReloaded'), { title: t('settings.theme.title'), kind: 'info' });
     } catch (error) {
-      await message(`重新加载主题失败：${getThemeErrorMessage(error)}`, {
-        title: '主题',
+      await message(t('settings.themeReloadFailed', { message: getThemeErrorMessage(error) }), {
+        title: t('settings.theme.title'),
         kind: 'error',
       });
     } finally {
@@ -265,8 +281,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     const current = getThemeRegistrySnapshot().find((theme) => theme.id === settings.contentTheme)
       ?? settings.themeRegistry.find((theme) => theme.id === settings.contentTheme);
     if (!current || current.source !== 'user') return;
-    const confirmed = await ask(`确定删除用户主题“${current.label}”吗？Prism 会先切回 Miaoyan。`, {
-      title: '删除主题',
+    const confirmed = await ask(t('settings.deleteTheme.ask', { label: current.label }), {
+      title: t('settings.deleteTheme.title'),
       kind: 'warning',
     });
     if (!confirmed) return;
@@ -276,10 +292,10 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
       await settings.setContentTheme('miaoyan');
       await deleteInstalledUserTheme(current.id);
       await settings.reloadThemeRegistry();
-      await message('主题已删除，并已切回 Miaoyan', { title: '主题', kind: 'info' });
+      await message(t('settings.themeDeleted'), { title: t('settings.theme.title'), kind: 'info' });
     } catch (error) {
-      await message(`删除主题失败：${getThemeErrorMessage(error)}`, {
-        title: '主题',
+      await message(t('settings.themeDeleteFailed', { message: getThemeErrorMessage(error) }), {
+        title: t('settings.theme.title'),
         kind: 'error',
       });
     } finally {
@@ -316,12 +332,12 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
   const fontOptions = (
     <>
-      <option value="theme:">跟随主题</option>
+      <option value="theme:">{t('settings.followTheme')}</option>
       {BUILTIN_FONT_OPTIONS.map((font) => (
         <option key={font.id} value={`builtin:${font.family}`}>{font.label}</option>
       ))}
       {SYSTEM_FONT_OPTIONS.map((font) => (
-        <option key={font.id} value={`system:${font.family}`}>{font.label}</option>
+        <option key={font.id} value={`system:${font.family}`}>{font.labelKey ? t(font.labelKey) : font.label}</option>
       ))}
       {settings.customFonts.map((font) => (
         <option key={font.id} value={`custom:${font.id}`}>{font.displayName}</option>
@@ -338,13 +354,13 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   return (
     <>
       <div className="modal-overlay" onClick={onClose} />
-      <div className="modal settings-modal" role="dialog" aria-label="设置中心">
+      <div className="modal settings-modal" role="dialog" aria-label={t('settings.title')}>
         <div className="modal-header">
-          <div className="modal-title">设置中心</div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
+          <div className="modal-title">{t('settings.title')}</div>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body settings-modal-body">
-          <nav className="settings-nav" aria-label="设置分类">
+          <nav className="settings-nav" aria-label={t('settings.navLabel')}>
             {SETTINGS_SECTIONS.map((section) => (
               <button
                 key={section.id}
@@ -353,41 +369,56 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 aria-current={activeSection === section.id ? 'page' : undefined}
                 onClick={() => setActiveSection(section.id)}
               >
-                <span>{section.label}</span>
-                <small>{section.hint}</small>
+                <span>{t(section.labelKey)}</span>
+                <small>{t(section.hintKey)}</small>
               </button>
             ))}
           </nav>
           <div className="settings-content">
           {activeSection === 'general' && (
           <div className="settings-group">
-            <h4>通用</h4>
+            <h4>{t('settings.section.general')}</h4>
             <div className="settings-row">
               <div>
-                <div className="row-label">默认视图</div>
-                <div className="row-hint">新建和打开文档时使用</div>
+                <div className="row-label">{t('settings.language.label')}</div>
+                <div className="row-hint">{t('settings.language.hint')}</div>
+              </div>
+              <select
+                value={settings.locale}
+                onChange={(e) => settings.setLocale(e.target.value as LocalePreference)}
+                style={selectStyle}
+              >
+                {LOCALE_PREFERENCES.map((locale) => (
+                  <option key={locale} value={locale}>{t(localeLabelKeys[locale])}</option>
+                ))}
+              </select>
+            </div>
+            <div className="settings-row">
+              <div>
+                <div className="row-label">{t('settings.defaultView.label')}</div>
+                <div className="row-hint">{t('settings.defaultView.hint')}</div>
               </div>
               <select
                 value={settings.defaultViewMode}
                 onChange={(e) => settings.setDefaultViewMode(e.target.value as DefaultViewMode)}
                 style={selectStyle}
               >
-                <option value="edit">编辑</option>
-                <option value="split">分栏</option>
-                <option value="preview">预览</option>
+                <option value="edit">{t('settings.view.edit')}</option>
+                <option value="split">{t('settings.view.split')}</option>
+                <option value="preview">{t('settings.view.preview')}</option>
               </select>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">快捷键显示</div>
-                <div className="row-hint">菜单和快捷键面板中的快捷键文案</div>
+                <div className="row-label">{t('settings.shortcutStyle.label')}</div>
+                <div className="row-hint">{t('settings.shortcutStyle.hint')}</div>
               </div>
               <select
                 value={settings.shortcutStyle}
                 onChange={(e) => settings.setShortcutStyle(e.target.value as ShortcutStyle)}
                 style={selectStyle}
               >
-                <option value="auto">跟随系统</option>
+                <option value="auto">{t('settings.shortcutStyle.auto')}</option>
                 <option value="mac">macOS</option>
                 <option value="windows">Windows</option>
               </select>
@@ -397,11 +428,11 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
           {activeSection === 'writing' && (
           <div className="settings-group">
-            <h4>写作</h4>
+            <h4>{t('settings.section.writing')}</h4>
             <div className="settings-row">
               <div>
-                <div className="row-label">显示行号</div>
-                <div className="row-hint">编辑器左侧行号栏</div>
+                <div className="row-label">{t('settings.lineNumbers.label')}</div>
+                <div className="row-hint">{t('settings.lineNumbers.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.showLineNumbers)}
@@ -412,8 +443,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">自动保存</div>
-                <div className="row-hint">只对已保存过路径的文档生效</div>
+                <div className="row-label">{t('settings.autoSave.label')}</div>
+                <div className="row-hint">{t('settings.autoSave.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.autoSaveEnabled)}
@@ -424,22 +455,24 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">自动保存策略</div>
-                <div className="row-hint">{(settings.autoSaveInterval / 1000).toFixed(1)} 秒</div>
+                <div className="row-label">{t('settings.autoSaveStrategy.label')}</div>
+                <div className="row-hint">
+                  {t('settings.seconds', { seconds: (settings.autoSaveInterval / 1000).toFixed(1) })}
+                </div>
               </div>
               <select
                 value={settings.autoSaveStrategy}
                 onChange={(e) => settings.setAutoSaveStrategy(e.target.value as AutoSaveStrategy)}
                 style={selectStyle}
               >
-                <option value="instant">即时</option>
-                <option value="balanced">均衡</option>
-                <option value="battery">省电</option>
+                <option value="instant">{t('settings.autoSaveStrategy.instant')}</option>
+                <option value="balanced">{t('settings.autoSaveStrategy.balanced')}</option>
+                <option value="battery">{t('settings.autoSaveStrategy.battery')}</option>
               </select>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">编辑器字体</div>
+                <div className="row-label">{t('settings.editorFont.label')}</div>
                 <div className="row-hint">{getFontSourceHint(settings.editorFontSource, settings.editorFontFamily)}</div>
               </div>
               <select
@@ -452,7 +485,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">编辑器字号</div>
+                <div className="row-label">{t('settings.editorSize.label')}</div>
                 <div className="row-hint">{settings.fontSize}px</div>
               </div>
               <input
@@ -467,7 +500,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">编辑器行高</div>
+                <div className="row-label">{t('settings.editorLineHeight.label')}</div>
                 <div className="row-hint">{settings.editorLineHeight.toFixed(2)}</div>
               </div>
               <input
@@ -485,11 +518,11 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
           {activeSection === 'appearance' && (
           <div className="settings-group">
-            <h4>外观</h4>
+            <h4>{t('settings.section.appearance')}</h4>
             <div className="settings-row">
               <div>
-                <div className="row-label">内容主题</div>
-                <div className="row-hint">编辑、预览、搜索和导出共享主题 token</div>
+                <div className="row-label">{t('settings.contentTheme.label')}</div>
+                <div className="row-hint">{t('settings.contentTheme.hint')}</div>
               </div>
               <select
                 value={settings.contentTheme}
@@ -498,11 +531,11 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               >
                 {availableThemes.map((theme) => (
                   <option key={theme.id} value={theme.id}>
-                    {theme.source === 'user' ? `${theme.label} · 用户主题` : theme.label}
+                    {theme.source === 'user' ? `${theme.label} · ${t('menu.userThemeSuffix')}` : theme.label}
                   </option>
                 ))}
                 {invalidThemes.length > 0 && (
-                  <optgroup label="异常主题">
+                  <optgroup label={t('menu.invalidThemes')}>
                     {invalidThemes.map((theme) => (
                       <option key={theme.id} value={theme.id} disabled>
                         {theme.label} · {theme.error}
@@ -512,64 +545,65 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 )}
               </select>
             </div>
-            <div className="settings-row">
+            <div className="settings-row settings-row--theme-management">
               <div>
-                <div className="row-label">主题管理</div>
+                <div className="row-label">{t('settings.themeManagement.label')}</div>
                 <div className="row-hint">
                   {currentTheme?.source === 'user'
-                    ? `${currentTheme.version || '本地主题'} · ${currentTheme.directory || ''}`
-                    : '导入本地主题包，不会自动覆盖内置主题'}
+                    ? t('settings.themeManagement.userHint', {
+                        version: currentTheme.version || t('settings.themeManagement.localTheme'),
+                        directory: currentTheme.directory || '',
+                      })
+                    : t('settings.themeManagement.hint')}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div className="theme-management-actions" aria-label={t('settings.themeManagement.label')}>
                 <button
                   type="button"
-                  style={themeBusy ? { ...buttonStyle, opacity: 0.55, cursor: 'default' } : buttonStyle}
-                  onClick={() => void importTheme(false)}
-                  disabled={themeBusy}
-                >
-                  导入主题
-                </button>
-                <button
-                  type="button"
-                  style={themeBusy ? { ...buttonStyle, opacity: 0.55, cursor: 'default' } : buttonStyle}
+                  className="settings-action-button settings-action-button--primary"
                   onClick={() => void importTheme(true)}
                   disabled={themeBusy}
                 >
-                  导入并应用主题
+                  {t('settings.importAndApplyTheme')}
                 </button>
                 <button
                   type="button"
-                  style={buttonStyle}
+                  className="settings-action-button"
+                  onClick={() => void importTheme(false)}
+                  disabled={themeBusy}
+                >
+                  {t('settings.importTheme')}
+                </button>
+                <button
+                  type="button"
+                  className="settings-action-button settings-action-button--quiet"
                   onClick={() => void openThemesDirectory()}
                 >
-                  打开主题目录
+                  {t('settings.openThemesDirectory')}
                 </button>
                 <button
                   type="button"
-                  style={themeBusy ? { ...buttonStyle, opacity: 0.55, cursor: 'default' } : buttonStyle}
+                  className="settings-action-button settings-action-button--quiet"
                   onClick={() => void reloadThemes()}
                   disabled={themeBusy}
                 >
-                  重新加载用户主题
+                  {t('settings.reloadUserThemes')}
                 </button>
-                <button
-                  type="button"
-                  style={
-                    currentTheme?.source === 'user' && !themeBusy
-                      ? buttonStyle
-                      : { ...buttonStyle, opacity: 0.5, cursor: 'default' }
-                  }
-                  onClick={() => void deleteCurrentTheme()}
-                  disabled={currentTheme?.source !== 'user' || themeBusy}
-                >
-                  删除当前用户主题
-                </button>
+                {currentTheme?.source === 'user' && (
+                  <button
+                    type="button"
+                    className="settings-action-button settings-action-button--danger"
+                    onClick={() => void deleteCurrentTheme()}
+                    disabled={themeBusy}
+                  >
+                    {t('settings.deleteCurrentUserTheme')}
+                  </button>
+                )}
               </div>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">预览字体</div>
+                <div className="row-label">{t('settings.previewFont.label')}</div>
                 <div className="row-hint">{getFontSourceHint(settings.previewFontSource, settings.previewFontFamily)}</div>
               </div>
               <select
@@ -582,7 +616,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">预览字号</div>
+                <div className="row-label">{t('settings.previewSize.label')}</div>
                 <div className="row-hint">{settings.previewFontSize}px</div>
               </div>
               <input
@@ -597,10 +631,10 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">导入字体</div>
-                <div className="row-hint">支持 ttf / otf / woff / woff2，可用于编辑、预览和 DOCX</div>
+                <div className="row-label">{t('settings.importFont.label')}</div>
+                <div className="row-hint">{t('settings.importFont.hint')}</div>
               </div>
-              <button type="button" style={buttonStyle} onClick={importFont}>导入字体</button>
+              <button type="button" style={buttonStyle} onClick={importFont}>{t('settings.importFont.button')}</button>
             </div>
             {settings.customFonts.map((font) => (
               <div className="settings-row" key={font.id}>
@@ -608,7 +642,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                   <div className="row-label">{font.displayName}</div>
                   <div className="row-hint">{font.filename}</div>
                 </div>
-                <button type="button" style={buttonStyle} onClick={() => removeFont(font.id)}>移除</button>
+                <button type="button" style={buttonStyle} onClick={() => removeFont(font.id)}>{t('settings.removeFont')}</button>
               </div>
             ))}
           </div>
@@ -616,11 +650,11 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
           {activeSection === 'export' && (
           <div className="settings-group">
-            <h4>导出</h4>
+            <h4>{t('settings.section.export')}</h4>
             <div className="settings-row">
               <div>
-                <div className="row-label">导出模板</div>
-                <div className="row-hint">{EXPORT_TEMPLATES[settings.exportDefaults.templateId].description}</div>
+                <div className="row-label">{t('settings.exportTemplate.label')}</div>
+                <div className="row-hint">{getExportTemplateDescription(EXPORT_TEMPLATES[settings.exportDefaults.templateId])}</div>
               </div>
               <select
                 value={settings.exportDefaults.templateId}
@@ -634,14 +668,14 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 style={selectStyle}
               >
                 {Object.values(EXPORT_TEMPLATES).map((template) => (
-                  <option key={template.id} value={template.id}>{template.label}</option>
+                  <option key={template.id} value={template.id}>{getExportTemplateLabel(template)}</option>
                 ))}
               </select>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">PDF 纸张</div>
-                <div className="row-hint">影响 PDF 分页尺寸</div>
+                <div className="row-label">{t('settings.pdfPaper.label')}</div>
+                <div className="row-hint">{t('settings.pdfPaper.hint')}</div>
               </div>
               <select
                 value={settings.exportDefaults.pdfPaper}
@@ -654,8 +688,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">允许 Front matter 覆盖导出</div>
-                <div className="row-hint">开启后当前文件可覆盖 title / template / paper / margin / toc</div>
+                <div className="row-label">{t('settings.frontMatterOverrides.label')}</div>
+                <div className="row-hint">{t('settings.frontMatterOverrides.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.exportDefaults.frontMatterOverrides)}
@@ -666,8 +700,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">目录</div>
-                <div className="row-hint">导出 HTML / PDF / PNG / DOCX 时插入静态目录</div>
+                <div className="row-label">{t('settings.toc.label')}</div>
+                <div className="row-hint">{t('settings.toc.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.exportDefaults.toc)}
@@ -678,23 +712,23 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">PDF 边距</div>
-                <div className="row-hint">紧凑适合长文，宽松适合正式文档</div>
+                <div className="row-label">{t('settings.pdfMargin.label')}</div>
+                <div className="row-hint">{t('settings.pdfMargin.hint')}</div>
               </div>
               <select
                 value={settings.exportDefaults.pdfMargin}
                 onChange={(e) => settings.setExportPdfMargin(e.target.value as PdfMargin)}
                 style={selectStyle}
               >
-                <option value="compact">紧凑</option>
-                <option value="standard">标准</option>
-                <option value="wide">宽松</option>
+                <option value="compact">{t('settings.pdfMargin.compact')}</option>
+                <option value="standard">{t('settings.pdfMargin.standard')}</option>
+                <option value="wide">{t('settings.pdfMargin.wide')}</option>
               </select>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">页码</div>
-                <div className="row-hint">导出 PDF / DOCX 时在页脚居中显示页码</div>
+                <div className="row-label">{t('settings.pageNumbers.label')}</div>
+                <div className="row-hint">{t('settings.pageNumbers.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.exportDefaults.pdfPageNumbers)}
@@ -705,8 +739,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">页眉页脚</div>
-                <div className="row-hint">导出 PDF / DOCX 时使用相同模板变量</div>
+                <div className="row-label">{t('settings.headerFooter.label')}</div>
+                <div className="row-hint">{t('settings.headerFooter.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.exportDefaults.pageHeaderFooter)}
@@ -719,8 +753,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               <>
                 <div className="settings-row">
                   <div>
-                    <div className="row-label">页眉文本</div>
-                    <div className="row-hint">默认使用导出标题</div>
+                    <div className="row-label">{t('settings.headerText.label')}</div>
+                    <div className="row-hint">{t('settings.headerText.hint')}</div>
                   </div>
                   <input
                     value={settings.exportDefaults.pageHeaderText}
@@ -731,8 +765,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 </div>
                 <div className="settings-row">
                   <div>
-                    <div className="row-label">页脚文本</div>
-                    <div className="row-hint">默认使用文件名，可与页码并存</div>
+                    <div className="row-label">{t('settings.footerText.label')}</div>
+                    <div className="row-hint">{t('settings.footerText.hint')}</div>
                   </div>
                   <input
                     value={settings.exportDefaults.pageFooterText}
@@ -745,54 +779,54 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             )}
             <div className="settings-row">
               <div>
-                <div className="row-label">默认导出位置</div>
-                <div className="row-hint">{settings.exportDefaults.customDirectory || '未指定自定义目录'}</div>
+                <div className="row-label">{t('settings.defaultExportLocation.label')}</div>
+                <div className="row-hint">{settings.exportDefaults.customDirectory || t('common.unspecified')}</div>
               </div>
               <select
                 value={settings.exportDefaults.defaultLocation}
                 onChange={(e) => settings.setExportDefaultLocation(e.target.value as ExportDefaultLocation)}
                 style={selectStyle}
               >
-                <option value="ask">每次询问</option>
-                <option value="document">文档所在文件夹</option>
-                <option value="downloads">下载文件夹</option>
-                <option value="custom">自定义目录</option>
+                <option value="ask">{t('settings.defaultExportLocation.ask')}</option>
+                <option value="document">{t('settings.defaultExportLocation.document')}</option>
+                <option value="downloads">{t('settings.defaultExportLocation.downloads')}</option>
+                <option value="custom">{t('settings.defaultExportLocation.custom')}</option>
               </select>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">自定义导出目录</div>
-                <div className="row-hint">{settings.exportDefaults.customDirectory || '选择一个固定目录'}</div>
+                <div className="row-label">{t('settings.customExportDirectory.label')}</div>
+                <div className="row-hint">{settings.exportDefaults.customDirectory || t('settings.customExportDirectory.hint')}</div>
               </div>
-              <button type="button" style={buttonStyle} onClick={chooseCustomExportDirectory}>选择目录</button>
+              <button type="button" style={buttonStyle} onClick={chooseCustomExportDirectory}>{t('settings.chooseDirectory')}</button>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">DOCX 字体</div>
-                <div className="row-hint">导入字体会尝试嵌入到 Word 文件</div>
+                <div className="row-label">{t('settings.docxFont.label')}</div>
+                <div className="row-hint">{t('settings.docxFont.hint')}</div>
               </div>
               <select
                 value={settings.exportDefaults.docxFontPolicy}
                 onChange={(e) => settings.setExportDocxFontPolicy(e.target.value as DocxFontPolicy)}
                 style={selectStyle}
               >
-                <option value="theme">跟随主题</option>
-                <option value="preview">使用预览字体</option>
-                <option value="custom">指定导入字体</option>
+                <option value="theme">{t('settings.docxFont.theme')}</option>
+                <option value="preview">{t('settings.docxFont.preview')}</option>
+                <option value="custom">{t('settings.docxFont.custom')}</option>
               </select>
             </div>
             {settings.exportDefaults.docxFontPolicy === 'custom' && (
               <div className="settings-row">
                 <div>
-                  <div className="row-label">指定 DOCX 字体</div>
-                  <div className="row-hint">仅显示已导入字体</div>
+                  <div className="row-label">{t('settings.docxCustomFont.label')}</div>
+                  <div className="row-hint">{t('settings.docxCustomFont.hint')}</div>
                 </div>
                 <select
                   value={settings.exportDefaults.docxCustomFontId}
                   onChange={(e) => settings.setExportDocxCustomFontId(e.target.value)}
                   style={selectStyle}
                 >
-                  <option value="">跟随主题</option>
+                  <option value="">{t('settings.followTheme')}</option>
                   {settings.customFonts.map((font) => (
                     <option key={font.id} value={font.id}>{font.displayName}</option>
                   ))}
@@ -801,8 +835,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             )}
             <div className="settings-row">
               <div>
-                <div className="row-label">HTML 包含主题</div>
-                <div className="row-hint">导出时内联当前主题样式</div>
+                <div className="row-label">{t('settings.htmlIncludeTheme.label')}</div>
+                <div className="row-hint">{t('settings.htmlIncludeTheme.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.exportDefaults.htmlIncludeTheme)}
@@ -813,9 +847,9 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">导出清晰度</div>
+                <div className="row-label">{t('settings.exportQuality.label')}</div>
                 <div className="row-hint">
-                  {getExportQualityPreset(normalizeExportQualityScale(settings.exportDefaults.pngScale)).description}
+                  {getLocalizedExportQualityPreset(normalizeExportQualityScale(settings.exportDefaults.pngScale)).description}
                 </div>
               </div>
               <select
@@ -823,7 +857,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 onChange={(e) => settings.setExportPngScale(normalizeExportQualityScale(Number(e.target.value)))}
                 style={selectStyle}
               >
-                {EXPORT_QUALITY_PRESETS.map((preset) => (
+                {getLocalizedExportQualityPresets().map((preset) => (
                   <option key={preset.scale} value={preset.scale}>
                     {preset.shortLabel}
                   </option>
@@ -835,18 +869,18 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
           {activeSection === 'citation' && (
           <div className="settings-group">
-            <h4>引用</h4>
+            <h4>{t('settings.section.citation')}</h4>
             <div className="settings-row">
               <div>
-                <div className="row-label">Pandoc 路径</div>
+                <div className="row-label">{t('settings.pandocPath.label')}</div>
                 <div className="row-hint">{getPandocHint(settings.pandoc)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
-                  aria-label="Pandoc 路径"
+                  aria-label={t('settings.pandocPath.label')}
                   value={settings.pandoc.path}
                   onChange={(e) => settings.setPandocPath(e.target.value)}
-                  placeholder="pandoc 或 /opt/homebrew/bin/pandoc"
+                  placeholder={t('settings.pandocPath.placeholder')}
                   style={inputStyle}
                 />
                 <button
@@ -855,22 +889,22 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                   onClick={detectPandoc}
                   disabled={pandocChecking}
                 >
-                  {pandocChecking ? '检测中' : '检测'}
+                  {pandocChecking ? t('common.detecting') : t('common.detect')}
                 </button>
               </div>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">参考文献文件</div>
+                <div className="row-label">{t('settings.bibliography.label')}</div>
                 <div className="row-hint">{getBibliographyHint(settings.citation.bibliographyPath)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
-                  aria-label="参考文献文件路径"
+                  aria-label={t('settings.bibliography.aria')}
                   aria-invalid={!bibliographyPathIsSupported}
                   value={settings.citation.bibliographyPath}
                   onChange={(e) => settings.setCitationBibliographyPath(e.target.value)}
-                  placeholder="/Users/Alex/library.bib"
+                  placeholder={t('settings.bibliography.placeholder')}
                   style={citationPathInputStyle}
                 />
                 {settings.citation.bibliographyPath && (
@@ -878,25 +912,25 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                     type="button"
                     style={buttonStyle}
                     onClick={() => settings.setCitationBibliographyPath('')}
-                    aria-label="清除参考文献文件"
+                    aria-label={t('settings.clearBibliography')}
                   >
-                    清除
+                    {t('common.clear')}
                   </button>
                 )}
               </div>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">CSL 样式文件</div>
+                <div className="row-label">{t('settings.csl.label')}</div>
                 <div className="row-hint">{getCslStyleHint(settings.citation.cslStylePath)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
-                  aria-label="CSL 样式文件路径"
+                  aria-label={t('settings.csl.aria')}
                   aria-invalid={!cslStylePathIsSupported}
                   value={settings.citation.cslStylePath}
                   onChange={(e) => settings.setCitationCslStylePath(e.target.value)}
-                  placeholder="/Users/Alex/styles/chinese-gb7714.csl"
+                  placeholder={t('settings.csl.placeholder')}
                   style={citationPathInputStyle}
                 />
                 {settings.citation.cslStylePath && (
@@ -904,16 +938,16 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                     type="button"
                     style={buttonStyle}
                     onClick={() => settings.setCitationCslStylePath('')}
-                    aria-label="清除 CSL 样式"
+                    aria-label={t('settings.clearCsl')}
                   >
-                    清除
+                    {t('common.clear')}
                   </button>
                 )}
               </div>
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">引用导出状态</div>
+                <div className="row-label">{t('settings.citationStatus.label')}</div>
                 <div className="row-hint" aria-live="polite">{citationReadinessHint}</div>
               </div>
             </div>
@@ -922,11 +956,11 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
           {activeSection === 'files' && (
           <div className="settings-group">
-            <h4>文件</h4>
+            <h4>{t('settings.section.files')}</h4>
             <div className="settings-row">
               <div>
-                <div className="row-label">启动时恢复上次窗口</div>
-                <div className="row-hint">没有显式打开文件时恢复上次文档和工作区</div>
+                <div className="row-label">{t('settings.restoreLastSession.label')}</div>
+                <div className="row-hint">{t('settings.restoreLastSession.hint')}</div>
               </div>
               <div
                 className={toggleClass(settings.restoreLastSession)}
@@ -937,8 +971,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">最近文档数量</div>
-                <div className="row-hint">当前 {settings.recentFiles.length} 个</div>
+                <div className="row-label">{t('settings.recentFilesLimit.label')}</div>
+                <div className="row-hint">{t('settings.recentFilesLimit.hint', { count: settings.recentFiles.length })}</div>
               </div>
               <select
                 value={settings.recentFilesLimit}
@@ -952,10 +986,12 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </div>
             <div className="settings-row">
               <div>
-                <div className="row-label">清空最近文档</div>
-                <div className="row-hint">只清除记录，不删除文件</div>
+                <div className="row-label">{t('settings.clearRecentFiles.label')}</div>
+                <div className="row-hint">{t('settings.clearRecentFiles.hint')}</div>
               </div>
-              <button type="button" style={buttonStyle} onClick={() => settings.clearRecentFiles()}>清空</button>
+              <button type="button" style={buttonStyle} onClick={() => settings.clearRecentFiles()}>
+                {t('settings.clearRecentFiles.button')}
+              </button>
             </div>
           </div>
           )}

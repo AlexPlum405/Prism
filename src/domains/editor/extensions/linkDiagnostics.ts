@@ -1,4 +1,5 @@
 import { getMarkdownHeadingSlug } from './headingSlug';
+import { t } from '../../i18n';
 
 export type LinkDiagnosticKind = 'empty-target' | 'missing-heading' | 'missing-file';
 
@@ -115,7 +116,7 @@ export function scanMarkdownLinks(content: string, context: LinkScanContext = {}
           column,
           kind: 'empty-target',
           line: lineIndex + 1,
-          message: '链接目标为空',
+          message: t('diagnostics.link.emptyTarget.message'),
           target,
         });
         continue;
@@ -132,7 +133,7 @@ export function scanMarkdownLinks(content: string, context: LinkScanContext = {}
             column,
             kind: 'missing-heading',
             line: lineIndex + 1,
-            message: `未找到标题锚点 #${slug}`,
+            message: t('diagnostics.link.missingHeading.message', { slug }),
             target,
           });
         }
@@ -146,7 +147,7 @@ export function scanMarkdownLinks(content: string, context: LinkScanContext = {}
           column,
           kind: 'missing-file',
           line: lineIndex + 1,
-          message: `未找到链接文件 ${path}`,
+          message: t('diagnostics.link.missingFile.message', { path }),
           target,
         });
       }

@@ -3,6 +3,7 @@ import { appDataDir } from '@tauri-apps/api/path';
 import { copyFile, exists, mkdir, readFile, remove } from '@tauri-apps/plugin-fs';
 import type { CustomFont, FontSource } from './types';
 import { joinPath } from '../workspace/services/path';
+import { t, type I18nKey } from '../i18n';
 
 const FONT_EXTENSIONS = ['ttf', 'otf', 'woff', 'woff2'] as const;
 
@@ -44,17 +45,20 @@ export const BUILTIN_FONT_OPTIONS = [
 export const SYSTEM_FONT_OPTIONS = [
   {
     id: 'system-sans',
-    label: '系统无衬线',
+    label: 'System Sans',
+    labelKey: 'settings.font.systemSans' as I18nKey,
     family: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   {
     id: 'system-serif',
-    label: '系统衬线',
+    label: 'System Serif',
+    labelKey: 'settings.font.systemSerif' as I18nKey,
     family: 'Georgia, "Times New Roman", "Songti SC", serif',
   },
   {
     id: 'system-mono',
-    label: '系统等宽',
+    label: 'System Mono',
+    labelKey: 'settings.font.systemMono' as I18nKey,
     family: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
   },
 ] as const;
@@ -124,7 +128,7 @@ export async function importCustomFont(): Promise<ImportedFontResult | null> {
 
   const format = getFontExtension(selected);
   if (!format) {
-    throw new Error('请选择 ttf / otf / woff / woff2 字体文件');
+    throw new Error(t('settings.font.unsupported'));
   }
 
   const sourceFilename = basename(selected);

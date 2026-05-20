@@ -17,6 +17,7 @@ import {
   parseDocumentFrontMatter,
   type DocumentFrontMatterProperties,
 } from '../domains/editor/extensions/frontMatterProperties';
+import { t } from '../domains/i18n';
 
 function remarkMermaid() {
   return (tree: any) => {
@@ -392,7 +393,7 @@ function remarkCitations() {
             hProperties: {
               className: ['prism-citation'],
               dataCitekeys: citation.keys.join(' '),
-              title: `引用占位：${citation.keys.map((key) => `@${key}`).join(', ')}`,
+              title: t('frontMatter.citationPlaceholder', { keys: citation.keys.map((key) => `@${key}`).join(', ') }),
             },
             hChildren: [{ type: 'text', value: citation.raw }],
           },
@@ -419,16 +420,16 @@ const FRONT_MATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
 const FRONT_MATTER_FIELDS: Array<{
   className: string;
   key: keyof DocumentFrontMatterProperties;
-  label: string;
+  labelKey: 'frontMatter.title' | 'frontMatter.tags' | 'frontMatter.description' | 'frontMatter.author' | 'frontMatter.date' | 'frontMatter.status' | 'frontMatter.export';
   renderAs?: 'tags' | 'code';
 }> = [
-  { key: 'title', label: '标题', className: 'title' },
-  { key: 'tags', label: '标签', className: 'tags', renderAs: 'tags' },
-  { key: 'description', label: '描述', className: 'description' },
-  { key: 'author', label: '作者', className: 'author' },
-  { key: 'date', label: '日期', className: 'date' },
-  { key: 'status', label: '状态', className: 'status' },
-  { key: 'exportRaw', label: '导出', className: 'export', renderAs: 'code' },
+  { key: 'title', labelKey: 'frontMatter.title', className: 'title' },
+  { key: 'tags', labelKey: 'frontMatter.tags', className: 'tags', renderAs: 'tags' },
+  { key: 'description', labelKey: 'frontMatter.description', className: 'description' },
+  { key: 'author', labelKey: 'frontMatter.author', className: 'author' },
+  { key: 'date', labelKey: 'frontMatter.date', className: 'date' },
+  { key: 'status', labelKey: 'frontMatter.status', className: 'status' },
+  { key: 'exportRaw', labelKey: 'frontMatter.export', className: 'export', renderAs: 'code' },
 ];
 
 function escapeGeneratedHtml(value: string) {
@@ -473,7 +474,7 @@ function renderFrontMatterField(
 
   return [
     `<div class="prism-frontmatter-preview__row prism-frontmatter-preview__row--${field.className}">`,
-    `<dt>${field.label}</dt>`,
+    `<dt>${escapeGeneratedHtml(t(field.labelKey))}</dt>`,
     `<dd>${content}</dd>`,
     '</div>',
   ].join('');
@@ -486,10 +487,10 @@ function renderFrontMatterMetadataHtml(content: string) {
     return [
       '<section class="prism-frontmatter-preview prism-frontmatter-preview--invalid" data-source-line="1" data-line="1" data-frontmatter-state="invalid">',
       '<div class="prism-frontmatter-preview__header">',
-      '<span class="prism-frontmatter-preview__title">文档属性</span>',
-      '<span class="prism-frontmatter-preview__meta">YAML 错误</span>',
+      `<span class="prism-frontmatter-preview__title">${escapeGeneratedHtml(t('frontMatter.documentProperties'))}</span>`,
+      `<span class="prism-frontmatter-preview__meta">${escapeGeneratedHtml(t('frontMatter.yamlError'))}</span>`,
       '</div>',
-      `<p class="prism-frontmatter-preview__empty">Front Matter 解析失败：${escapeGeneratedHtml(parsed.error)}</p>`,
+      `<p class="prism-frontmatter-preview__empty">${escapeGeneratedHtml(t('frontMatter.parseFailed', { message: parsed.error }))}</p>`,
       '</section>',
     ].join('');
   }
@@ -499,14 +500,16 @@ function renderFrontMatterMetadataHtml(content: string) {
     .filter(Boolean);
   const body = fields.length > 0
     ? `<dl class="prism-frontmatter-preview__list">${fields.join('')}</dl>`
-    : '<p class="prism-frontmatter-preview__empty">未设置文档属性</p>';
-  const count = fields.length > 0 ? `${fields.length} 项` : '空';
+    : `<p class="prism-frontmatter-preview__empty">${escapeGeneratedHtml(t('frontMatter.empty'))}</p>`;
+  const count = fields.length > 0
+    ? t('frontMatter.count', { count: fields.length })
+    : t('frontMatter.emptyCount');
 
   return [
     '<section class="prism-frontmatter-preview" data-source-line="1" data-line="1" data-frontmatter-state="valid">',
     '<div class="prism-frontmatter-preview__header">',
-    '<span class="prism-frontmatter-preview__title">文档属性</span>',
-    `<span class="prism-frontmatter-preview__meta">${count}</span>`,
+    `<span class="prism-frontmatter-preview__title">${escapeGeneratedHtml(t('frontMatter.documentProperties'))}</span>`,
+    `<span class="prism-frontmatter-preview__meta">${escapeGeneratedHtml(count)}</span>`,
     '</div>',
     body,
     '</section>',

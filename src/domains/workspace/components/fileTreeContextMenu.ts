@@ -5,6 +5,7 @@ import {
   getShowInFileManagerLabel,
   isDirectoryNode,
 } from '../services';
+import { t } from '../../i18n';
 
 interface FileTreeContextMenuInput {
   node?: FileNode;
@@ -26,54 +27,54 @@ export function createFileTreeContextMenuItems({
 
   if (!node) {
     return [
-      ...(includeOpenNewWindow ? [{ label: '在新窗口中打开', action: 'openNewWindow' }] : []),
+      ...(includeOpenNewWindow ? [{ label: t('workspace.fileTree.openInNewWindow'), action: 'openNewWindow' }] : []),
       ...(includeOpenNewWindow ? [{ type: 'separator' as const }] : []),
-      { label: '新建文件', action: 'newFile' },
-      { label: '新建文件夹', action: 'newFolder' },
+      { label: t('workspace.fileTree.newFile'), action: 'newFile' },
+      { label: t('workspace.fileTree.newFolder'), action: 'newFolder' },
       { type: 'separator' },
-      { label: '文档树', action: 'viewTree', checked: fileTreeMode === 'tree' },
-      { label: '文档列表', action: 'viewList', checked: fileTreeMode === 'list' },
+      { label: t('workspace.fileTree.viewTree'), action: 'viewTree', checked: fileTreeMode === 'tree' },
+      { label: t('workspace.fileTree.viewList'), action: 'viewList', checked: fileTreeMode === 'list' },
       {
-        label: '排序方式',
+        label: t('workspace.fileTree.sortBy'),
         children: [
-          { label: '名称', action: 'sortByName', checked: fileSortMode === 'name' },
-          { label: '修改时间', action: 'sortByModified', checked: fileSortMode === 'modified' },
-          { label: '创建时间', action: 'sortByCreated', checked: fileSortMode === 'created' },
-          { label: '大小', action: 'sortBySize', checked: fileSortMode === 'size' },
+          { label: t('workspace.fileTree.sort.name'), action: 'sortByName', checked: fileSortMode === 'name' },
+          { label: t('workspace.fileTree.sort.modified'), action: 'sortByModified', checked: fileSortMode === 'modified' },
+          { label: t('workspace.fileTree.sort.created'), action: 'sortByCreated', checked: fileSortMode === 'created' },
+          { label: t('workspace.fileTree.sort.size'), action: 'sortBySize', checked: fileSortMode === 'size' },
         ],
       },
       { type: 'separator' },
-      { label: '刷新', action: 'refreshFolder' },
+      { label: t('workspace.fileTree.refresh'), action: 'refreshFolder' },
       { type: 'separator' },
-      { label: '复制工作区路径', action: 'copyRootPath' },
+      { label: t('workspace.fileTree.copyWorkspacePath'), action: 'copyRootPath' },
       { label: showInFileManagerLabel, action: 'openRootLocation' },
     ];
   }
 
   if (!nodeIsDirectory) {
     return [
-      { label: '打开', action: `openFile:${node.path}` },
-      { label: '在新窗口中打开', action: `openNewWindow:${node.path}` },
+      { label: t('common.open'), action: `openFile:${node.path}` },
+      { label: t('workspace.fileTree.openInNewWindow'), action: `openNewWindow:${node.path}` },
       { type: 'separator' },
-      { label: '重命名', action: `rename:${node.path}`, shortcut: 'F2' },
-      { label: '创建副本', action: `duplicate:${node.path}` },
-      { label: '删除', action: `delete:${node.path}`, danger: true },
+      { label: t('workspace.fileTree.rename'), action: `rename:${node.path}`, shortcut: 'F2' },
+      { label: t('workspace.fileTree.duplicate'), action: `duplicate:${node.path}` },
+      { label: t('workspace.fileTree.delete'), action: `delete:${node.path}`, danger: true },
       { type: 'separator' },
-      { label: '复制文件路径', action: `copyPath:${node.path}` },
+      { label: t('workspace.fileTree.copyFilePath'), action: `copyPath:${node.path}` },
       { label: showInFileManagerLabel, action: `openLocation:${node.path}` },
     ];
   }
 
   return [
-    { label: '在新窗口中打开', action: `openNewWindow:${node.path}` },
+    { label: t('workspace.fileTree.openInNewWindow'), action: `openNewWindow:${node.path}` },
     { type: 'separator' },
-    { label: '新建文件', action: targetDir ? `newFile:${targetDir}` : 'newFile' },
-    { label: '新建文件夹', action: targetDir ? `newFolder:${targetDir}` : 'newFolder' },
+    { label: t('workspace.fileTree.newFile'), action: targetDir ? `newFile:${targetDir}` : 'newFile' },
+    { label: t('workspace.fileTree.newFolder'), action: targetDir ? `newFolder:${targetDir}` : 'newFolder' },
     { type: 'separator' },
-    { label: '重命名', action: `rename:${node.path}`, shortcut: 'F2' },
-    { label: '删除', action: `delete:${node.path}`, danger: true },
+    { label: t('workspace.fileTree.rename'), action: `rename:${node.path}`, shortcut: 'F2' },
+    { label: t('workspace.fileTree.delete'), action: `delete:${node.path}`, danger: true },
     { type: 'separator' },
-    { label: '复制文件夹路径', action: `copyPath:${node.path}` },
+    { label: t('workspace.fileTree.copyFolderPath'), action: `copyPath:${node.path}` },
     { label: showInFileManagerLabel, action: `openLocation:${node.path}` },
   ];
 }

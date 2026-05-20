@@ -1,4 +1,5 @@
 import { stat, type FileInfo } from '@tauri-apps/plugin-fs';
+import { t } from '../i18n';
 
 export interface FileSnapshot {
   mtimeMs: number | null;
@@ -33,5 +34,5 @@ export function hasFileSnapshotChanged(known: FileSnapshot, current: FileSnapsho
 }
 
 export function getExternalChangeMessage() {
-  return '文件已在磁盘上被外部修改，请先重新加载或另存为。';
+  return t('conflict.externalChangeMessage');
 }

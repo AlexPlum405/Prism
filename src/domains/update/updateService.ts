@@ -1,4 +1,5 @@
 import { check } from '@tauri-apps/plugin-updater';
+import { t } from '../i18n';
 
 export interface AvailableUpdate {
   status: 'available';
@@ -21,7 +22,7 @@ export type UpdateCheckResult = AvailableUpdate | NoUpdate | UpdateUnavailable;
 
 function getUpdateErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || '未知事件错误';
+  if (error instanceof Event) return error.type || t('common.unknownEventError');
   return String(error);
 }
 
@@ -38,7 +39,7 @@ export async function checkForAppUpdate(): Promise<UpdateCheckResult> {
     if (isMissingOrInvalidReleaseManifestError(message)) {
       return {
         status: 'unavailable',
-        reason: '当前发布通道暂未提供可用的更新清单，请稍后再试或前往 GitHub Releases 查看最新版本。',
+        reason: t('update.manifestUnavailable'),
       };
     }
     throw error;

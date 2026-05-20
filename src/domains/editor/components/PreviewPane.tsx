@@ -6,6 +6,7 @@ import { ContentTheme, DEFAULT_SETTINGS, isContentTheme } from '../../settings/t
 import { useSettingsStore } from '../../settings/store';
 import { getMermaidThemeConfig, getThemeContract } from '../../themes';
 import { dirname, joinPath } from '../../workspace/services/path';
+import { t, useI18n } from '../../i18n';
 
 interface PreviewPaneProps {
   content: string;
@@ -152,18 +153,18 @@ function renderMermaidSvg(container: HTMLElement, svg: string) {
 function renderMermaidError(container: HTMLElement, error: unknown) {
   const sourceLine = container.getAttribute('data-source-line') ?? container.getAttribute('data-line') ?? '';
   const sourceAction = sourceLine
-    ? `<button type="button" data-preview-source-line="${escapeHtml(sourceLine)}">跳到源码</button>`
+    ? `<button type="button" data-preview-source-line="${escapeHtml(sourceLine)}">${escapeHtml(t('editor.preview.jumpToSource'))}</button>`
     : '';
 
   container.classList.add('mermaid-placeholder--failed');
   container.innerHTML = `
     <div class="preview-render-error" role="note" data-render-kind="mermaid">
       <div class="preview-render-error-main">
-        <div class="preview-render-error-title">Mermaid 渲染失败</div>
+        <div class="preview-render-error-title">${escapeHtml(t('editor.preview.mermaidFailed'))}</div>
         <div class="preview-render-error-message">${escapeHtml(formatRenderError(error))}</div>
       </div>
       <div class="preview-render-error-actions">
-        ${sourceLine ? `<span>源码行 ${escapeHtml(sourceLine)}</span>` : ''}
+        ${sourceLine ? `<span>${escapeHtml(t('editor.preview.sourceLine', { line: sourceLine }))}</span>` : ''}
         ${sourceAction}
       </div>
     </div>
@@ -184,7 +185,7 @@ function enhanceKatexErrors(container: HTMLElement) {
     if (errorElement.dataset.previewKatexEnhanced === 'true') return;
 
     const sourceLine = readClosestSourceLine(errorElement);
-    const message = errorElement.getAttribute('title') || 'KaTeX 渲染失败';
+    const message = errorElement.getAttribute('title') || t('editor.preview.katexFailed');
     errorElement.dataset.previewKatexEnhanced = 'true';
     errorElement.classList.add('preview-katex-error');
     errorElement.setAttribute('title', message);
@@ -196,7 +197,7 @@ function enhanceKatexErrors(container: HTMLElement) {
     action.type = 'button';
     action.className = 'preview-katex-error-action';
     action.dataset.previewSourceLine = sourceLine;
-    action.textContent = '跳到源码';
+    action.textContent = t('editor.preview.jumpToSource');
     errorElement.insertAdjacentElement('afterend', action);
   });
 }
@@ -265,6 +266,7 @@ function normalizeMermaidSvg(svg: SVGSVGElement) {
 }
 
 export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLink }: PreviewPaneProps) {
+  const { locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [contentTheme, setContentTheme] = useState<ContentTheme>(getCurrentContentTheme);
   const [renderContent, setRenderContent] = useState(content);
@@ -283,9 +285,9 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
     try {
       return markdownToHtml(renderContent, { frontMatterMode: 'metadata' });
     } catch {
-      return '<p>渲染失败</p>';
+      return `<p>${t('editor.preview.renderFailed')}</p>`;
     }
-  }, [renderContent]);
+  }, [locale, renderContent]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -333,7 +335,7 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
           if (onOpenDocumentLink) {
             await onOpenDocumentLink(wikiTarget, { kind: 'wiki', sourcePath: documentPath });
           } else {
-            onNotice?.('未找到可打开的链接文档');
+            onNotice?.(t('editor.preview.linkDocumentUnavailable'));
           }
           return;
         }
@@ -347,14 +349,14 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
           try {
             await openUrl(externalUrl);
           } catch {
-            onNotice?.('打开外部链接失败');
+            onNotice?.(t('editor.preview.openExternalFailed'));
           }
           return;
         }
 
         if (hasUnsupportedLinkProtocol(rawHref)) {
           e.preventDefault();
-          onNotice?.('预览中的链接不可打开');
+          onNotice?.(t('editor.preview.unsupportedLink'));
           return;
         }
 
@@ -362,14 +364,14 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
         if (onOpenDocumentLink) {
           await onOpenDocumentLink(rawHref, { kind: 'markdown', sourcePath: documentPath });
         } else {
-          onNotice?.('预览中的本地链接已拦截，请通过文件树打开');
+          onNotice?.(t('editor.preview.localLinkIntercepted'));
         }
       }
     };
 
     container.addEventListener('click', handleLinkClick);
     return () => container.removeEventListener('click', handleLinkClick);
-  }, [documentPath, html, onNotice, onOpenDocumentLink]);
+  }, [documentPath, html, locale, onNotice, onOpenDocumentLink]);
 
   useEffect(() => {
     const container = containerRef.current;

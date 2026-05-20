@@ -24,11 +24,12 @@ import { createHelpCommands } from './categories/helpCommands';
 import { createThemeCommands } from './categories/themeCommands';
 import { createViewCommands } from './categories/viewCommands';
 import { createWindowCommands } from './categories/windowCommands';
+import { t } from '../i18n';
 import { createWorkspaceCommands } from './categories/workspaceCommands';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (err instanceof Event) return err.type || '未知事件错误';
+  if (err instanceof Event) return err.type || t('common.unknownEventError');
   return String(err);
 }
 
@@ -91,7 +92,7 @@ async function handleZoom(direction: 'in' | 'out' | 'reset', context: CommandCon
     console.warn('[Command] Webview zoom unavailable, falling back to CSS zoom', error);
   }
 
-  context.showToast?.(`缩放 ${Math.round(currentZoom * 100)}%`);
+  context.showToast?.(t('command.zoomPercent', { percent: Math.round(currentZoom * 100) }));
 }
 
 async function handleDevTools(context: CommandContext): Promise<void> {
@@ -99,7 +100,7 @@ async function handleDevTools(context: CommandContext): Promise<void> {
     await invoke('plugin:webview|internal_toggle_devtools');
   } catch (error) {
     console.error('[Command] DevTools toggle failed', error);
-    context.showToast?.('开发者工具暂不可用');
+    context.showToast?.(t('command.devToolsUnavailable'));
   }
 }
 
@@ -115,28 +116,28 @@ async function handleHelpLink(command: CommandId): Promise<void> {
 }
 
 async function handleCheckUpdate(context: CommandContext): Promise<void> {
-  context.showToast?.('正在检查更新...');
+  context.showToast?.(t('command.updateChecking'));
 
   try {
     const result = await checkForAppUpdate();
     if (result.status === 'none') {
-      context.showToast?.('当前已是最新版本');
+      context.showToast?.(t('command.updateLatest'));
       return;
     }
     if (result.status === 'unavailable') {
-      context.showToast?.(`检查更新暂不可用: ${result.reason}`);
+      context.showToast?.(t('command.updateUnavailable', { reason: result.reason }));
       return;
     }
 
     const shouldOpen = await ask(
-      `发现新版本 ${result.version}（当前 ${result.currentVersion}）。是否打开 GitHub Releases？`,
-      { title: '检查更新', kind: 'info' },
+      t('command.updateAvailable', { version: result.version, currentVersion: result.currentVersion }),
+      { title: t('command.checkUpdate'), kind: 'info' },
     );
     if (shouldOpen) {
       await openUrl('https://github.com/AlexPlum405/Prism/releases/latest');
     }
   } catch (error) {
-    context.showToast?.(`检查更新失败: ${formatError(error)}`);
+    context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
   }
 }
 
@@ -177,7 +178,7 @@ export const commandRegistryById = new Map<CommandId, CommandDefinition>(
 
 export function getCommandDefinition(id: CommandId): CommandDefinition {
   const definition = commandRegistryById.get(id);
-  if (!definition) throw new Error(`未知命令: ${id}`);
+  if (!definition) throw new Error(t('app.unknownCommand', { action: id }));
   return definition;
 }
 
@@ -198,7 +199,7 @@ export async function runCommand(id: CommandId, context: CommandContext): Promis
     await definition.run(context);
   } catch (err) {
     console.error(`[Command] ${id} failed:`, err);
-    context.showToast?.(`操作失败: ${formatError(err)}`);
+    context.showToast?.(t('command.operationFailed', { message: formatError(err) }));
   }
 }
 

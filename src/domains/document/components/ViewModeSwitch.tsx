@@ -1,5 +1,7 @@
 import { useDocumentStore } from '../store';
 import styles from './ViewModeSwitch.module.css';
+import { useI18n } from '../../i18n';
+import type { I18nKey } from '../../i18n';
 
 type ViewMode = 'edit' | 'split' | 'preview';
 
@@ -21,13 +23,14 @@ const IconPreview = () => (
   </svg>
 );
 
-const VIEW_MODES: Array<{ key: ViewMode; label: string; icon: () => JSX.Element }> = [
-  { key: 'edit', label: '编辑', icon: IconEdit },
-  { key: 'split', label: '分栏', icon: IconSplit },
-  { key: 'preview', label: '预览', icon: IconPreview },
+const VIEW_MODES: Array<{ key: ViewMode; labelKey: I18nKey; icon: () => JSX.Element }> = [
+  { key: 'edit', labelKey: 'document.view.edit', icon: IconEdit },
+  { key: 'split', labelKey: 'document.view.split', icon: IconSplit },
+  { key: 'preview', labelKey: 'document.view.preview', icon: IconPreview },
 ];
 
 export function ViewModeSwitch() {
+  const { t } = useI18n();
   const viewMode = useDocumentStore((s) => s.currentDocument?.viewMode);
   const setViewMode = useDocumentStore((s) => s.setViewMode);
 
@@ -37,13 +40,14 @@ export function ViewModeSwitch() {
     <div className={styles.container}>
       {VIEW_MODES.map((m) => {
         const Icon = m.icon;
+        const label = t(m.labelKey);
         return (
           <button
             key={m.key}
             className={`${styles.btn} ${viewMode === m.key ? styles.active : ''}`}
             onClick={() => setViewMode(m.key)}
-            title={m.label}
-            aria-label={m.label}
+            title={label}
+            aria-label={label}
           >
             <Icon />
           </button>

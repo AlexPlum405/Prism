@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { DocumentLinkReference } from '../services';
+import { useI18n } from '../../i18n';
 
 interface DocumentLinksPanelProps {
   links: DocumentLinkReference[];
@@ -19,6 +20,7 @@ export function DocumentLinksPanel({
   onSelect,
   visible,
 }: DocumentLinksPanelProps) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!visible) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -36,14 +38,14 @@ export function DocumentLinksPanel({
   return (
     <>
       <div className="modal-overlay" onClick={onClose} />
-      <div className="modal prism-document-links-modal" role="dialog" aria-label="当前文档链接">
+      <div className="modal prism-document-links-modal" role="dialog" aria-label={t('workspace.documentLinks.title')}>
         <div className="modal-header">
-          <div className="modal-title">当前文档链接</div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
+          <div className="modal-title">{t('workspace.documentLinks.title')}</div>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body prism-document-links-body">
           {links.length === 0 ? (
-            <div className="prism-document-links-empty">当前文档没有链接</div>
+            <div className="prism-document-links-empty">{t('workspace.documentLinks.empty')}</div>
           ) : (
             <div className="prism-document-links-list">
               {links.map((link, index) => (

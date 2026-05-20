@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import styles from './StatusBar.module.css';
 import { useWorkspaceStore } from '../../workspace/store';
 import type { WritingStats } from '../services';
+import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 
 const IconFocus = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
@@ -90,7 +91,7 @@ interface StatusBarProps {
 
 
 function formatStatusNumber(value: number) {
-  return value.toLocaleString('en-US');
+  return formatLocalizedNumber(value);
 }
 
 export function StatusBar({
@@ -116,14 +117,25 @@ export function StatusBar({
   exportProgressInBackground = false,
   onShowExportProgress,
 }: StatusBarProps) {
+  useI18n();
 
   const rootPath = useWorkspaceStore((s) => s.rootPath);
   const fileTreeMode = useWorkspaceStore((s) => s.fileTreeMode);
   const focusMode = useWorkspaceStore((s) => s.focusMode);
   const activeStats = selectionStats && selectionStats.characters > 0 ? selectionStats : writingStats;
   const isSelectionStats = activeStats === selectionStats;
-  const statsTitle = `${isSelectionStats ? '选区：' : ''}字数 ${activeStats.wordCount}，行 ${cursor.line}，列 ${cursor.column}`;
-  const statusText = `${isSelectionStats ? '选区 ' : ''}${formatStatusNumber(activeStats.wordCount)} 字 · ${cursor.line}:${cursor.column}`;
+  const statsTitle = t('status.statsTitle', {
+    prefix: isSelectionStats ? t('status.selectionPrefix') : '',
+    words: formatStatusNumber(activeStats.wordCount),
+    line: cursor.line,
+    column: cursor.column,
+  });
+  const statusText = t('status.statusText', {
+    prefix: isSelectionStats ? t('status.selectionTextPrefix') : '',
+    words: formatStatusNumber(activeStats.wordCount),
+    line: cursor.line,
+    column: cursor.column,
+  });
 
   const rootName = useMemo(() => {
     if (!rootPath) return 'Documents';
@@ -138,20 +150,20 @@ export function StatusBar({
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
         >
-          <button className={`${styles.btn} ${styles.iconBtn}`} title="新建文件" onClick={onNewFile}>
+          <button className={`${styles.btn} ${styles.iconBtn}`} title={t('status.newFile')} onClick={onNewFile}>
             <IconPlus />
           </button>
           <button
             className={styles.folder}
             onContextMenu={onFolderContextMenu}
             onClick={onFolderContextMenu}
-            title="工作区操作"
+            title={t('status.workspaceActions')}
           >
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{rootName}</span>
           </button>
           <button
             className={`${styles.btn} ${styles.iconBtn} ${styles.treeBtn} ${fileTreeMode === 'list' ? styles.active + ' is-active' : ''}`}
-            title={fileTreeMode === 'tree' ? '切换到文档列表' : '切换到文档树'}
+            title={fileTreeMode === 'tree' ? t('status.switchToList') : t('status.switchToTree')}
             onClick={onToggleFileTreeMode}
           >
             {fileTreeMode === 'tree' ? <IconTree /> : <IconList />}
@@ -164,7 +176,7 @@ export function StatusBar({
           <button
             className={`${styles.btn} ${styles.iconBtn}`}
             onClick={onToggleSidebar}
-            title={sidebarVisible ? '收起侧边栏' : '展开侧边栏'}
+            title={sidebarVisible ? t('status.collapseSidebar') : t('status.expandSidebar')}
           >
             {sidebarVisible ? <IconCollapse /> : <IconExpand />}
           </button>
@@ -178,7 +190,7 @@ export function StatusBar({
           {linkIssueCount > 0 && (
             <button
               className={styles.diagnostic}
-              title={linkIssueTitle ?? '文档诊断'}
+              title={linkIssueTitle ?? t('status.documentDiagnostics')}
               onClick={onLinkDiagnosticsClick}
             >
               ERROR {linkIssueCount}
@@ -187,18 +199,18 @@ export function StatusBar({
           {exportProgress && exportProgressInBackground && (
             <button
               className={styles.exportStatus}
-              title={`后台导出：${exportProgress}。点击查看前台进度。`}
+              title={t('status.backgroundExport', { progress: exportProgress })}
               onClick={onShowExportProgress}
             >
               <span className={styles.exportStatusSpinner} aria-hidden="true" />
-              <span className={styles.exportStatusText}>导出中</span>
+              <span className={styles.exportStatusText}>{t('status.exporting')}</span>
             </button>
           )}
           {hasSavedPath && onRelationGraphClick && (
             <button
               className={`${styles.btn} ${styles.iconBtn}`}
               onClick={onRelationGraphClick}
-              title="查看关系图谱 (⌥⌘G)"
+              title={t('status.relationGraph')}
             >
               <IconGraph />
             </button>
@@ -206,7 +218,7 @@ export function StatusBar({
           <button
             className={`${styles.btn} ${styles.iconBtn} ${focusMode ? styles.active : ''}`}
             onClick={onToggleFocusMode}
-            title="专注模式 (F8)"
+            title={t('status.focusMode')}
           >
             <IconFocus />
           </button>
@@ -215,7 +227,7 @@ export function StatusBar({
             className={`${styles.btn} ${styles.iconBtn}`}
             onClick={onExportMenu}
             onContextMenu={onExportMenu}
-            title="导出"
+            title={t('status.export')}
           >
             <IconExport />
           </button>

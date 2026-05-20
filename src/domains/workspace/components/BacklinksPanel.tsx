@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { BacklinkReference } from '../services';
+import { useI18n } from '../../i18n';
 
 interface BacklinksPanelProps {
   backlinks: BacklinkReference[];
@@ -40,6 +41,7 @@ export function BacklinksPanel({
   onSelect,
   visible,
 }: BacklinksPanelProps) {
+  const { t } = useI18n();
   const groups = groupBacklinks(backlinks);
 
   useEffect(() => {
@@ -59,14 +61,14 @@ export function BacklinksPanel({
   return (
     <>
       <div className="modal-overlay" onClick={onClose} />
-      <div className="modal prism-backlinks-modal" role="dialog" aria-label="反向链接">
+      <div className="modal prism-backlinks-modal" role="dialog" aria-label={t('workspace.backlinks.title')}>
         <div className="modal-header">
-          <div className="modal-title">反向链接</div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
+          <div className="modal-title">{t('workspace.backlinks.title')}</div>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body prism-backlinks-body">
           {backlinks.length === 0 ? (
-            <div className="prism-backlinks-empty">当前文档没有反向链接</div>
+            <div className="prism-backlinks-empty">{t('workspace.backlinks.empty')}</div>
           ) : (
             <div className="prism-backlinks-list">
               {groups.map((group) => (

@@ -1,6 +1,7 @@
 import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { BackgroundThrottlingPolicy } from '@tauri-apps/api/window';
+import { t } from '../i18n';
 import type { ExportDocumentInput, ExportFormat } from './types';
 import {
   EXPORT_WORKER_PROGRESS_EVENT,
@@ -72,7 +73,7 @@ export async function exportDocumentInIsolatedWebview(
   let stallTimeout: number | null = null;
   let rejectReady: (error: Error) => void = () => undefined;
   let rejectResult: (error: Error) => void = () => undefined;
-  let lastProgress = '准备导出';
+  let lastProgress = t('export.worker.prepare');
 
   const cleanup = async () => {
     if (readyTimeout !== null) {
@@ -102,7 +103,7 @@ export async function exportDocumentInIsolatedWebview(
       resolveReady = resolve;
       rejectReady = reject;
       readyTimeout = window.setTimeout(() => {
-        reject(new Error('独立导出 WebView 启动超时'));
+        reject(new Error(t('export.worker.startTimeout')));
       }, EXPORT_WORKER_READY_TIMEOUT_MS);
     });
 
@@ -111,7 +112,7 @@ export async function exportDocumentInIsolatedWebview(
       resolveResult = resolve;
       rejectResult = reject;
       taskTimeout = window.setTimeout(() => {
-        reject(new Error('独立导出 WebView 执行超时，请拆分文档或减少复杂图表后重试。'));
+        reject(new Error(t('export.worker.executionTimeout')));
       }, EXPORT_WORKER_TASK_TIMEOUT_MS);
     });
     const resetStallTimeout = () => {
@@ -120,7 +121,10 @@ export async function exportDocumentInIsolatedWebview(
       }
       stallTimeout = window.setTimeout(() => {
         rejectResult(new Error(
-          `独立导出 WebView 超过 ${Math.round(EXPORT_WORKER_STALL_TIMEOUT_MS / 1000)} 秒没有进度，当前阶段：${lastProgress}`,
+          t('export.worker.stallTimeout', {
+            seconds: Math.round(EXPORT_WORKER_STALL_TIMEOUT_MS / 1000),
+            stage: lastProgress,
+          }),
         ));
       }, EXPORT_WORKER_STALL_TIMEOUT_MS);
     };
@@ -170,7 +174,7 @@ export async function exportDocumentInIsolatedWebview(
       backgroundThrottling: DISABLED_BACKGROUND_THROTTLING,
     });
     void worker.once('tauri://error', (event) => {
-      rejectReady(new Error(`独立导出 WebView 创建失败: ${String(event.payload)}`));
+      rejectReady(new Error(t('export.worker.createFailed', { message: String(event.payload) })));
     });
 
     await readyPromise;

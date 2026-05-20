@@ -7,6 +7,7 @@ import {
 } from './registry';
 import type { ShortcutDisplayStyle } from './platform';
 import { getAvailableThemeEntries } from '../themes';
+import { getLocalizedCommandLabel, t } from '../i18n';
 
 type MenuModelItem =
   | { type: 'separator' }
@@ -16,12 +17,40 @@ type MenuModelItem =
 
 type MenuModel = Record<string, MenuModelItem[]>;
 
+const menuLabelKeys = {
+  file: 'menu.file',
+  edit: 'menu.edit',
+  insert: 'menu.insert',
+  format: 'menu.format',
+  view: 'menu.view',
+  theme: 'menu.theme',
+  window: 'menu.window',
+  help: 'menu.help',
+  templates: 'menu.templates',
+  openRecent: 'menu.openRecent',
+  export: 'menu.export',
+  findReplace: 'menu.findReplace',
+  copyAs: 'menu.copyAs',
+  plainText: 'menu.plainText',
+  table: 'menu.table',
+  paragraphStyle: 'menu.paragraphStyle',
+  headingLevel: 'menu.headingLevel',
+  blockOperations: 'menu.blockOperations',
+  documentInfo: 'menu.documentInfo',
+  sidebar: 'menu.sidebar',
+} as const;
+
+function localizeMenuLabel(label: string) {
+  const key = menuLabelKeys[label as keyof typeof menuLabelKeys];
+  return key ? t(key) : label;
+}
+
 const menuModel: MenuModel = {
-  '文件': [
+  file: [
     { command: 'new' },
     { command: 'newWindow' },
     {
-      label: '模板',
+      label: 'templates',
       children: [
         { command: 'templateReadme' },
         { command: 'templatePrd' },
@@ -41,13 +70,13 @@ const menuModel: MenuModel = {
     { command: 'openFolder' },
     { command: 'quickOpen' },
     {
-      label: '打开最近文档',
+      label: 'openRecent',
       children: [
         {
           dynamic: (context) => {
             const recentFiles = context.settingsStore.recentFiles.slice(0, 10);
             if (recentFiles.length === 0) {
-              return [{ label: '无最近文档', disabled: true }];
+              return [{ label: t('menu.noRecent'), disabled: true }];
             }
 
             return recentFiles.map((file) => ({
@@ -66,7 +95,7 @@ const menuModel: MenuModel = {
     { command: 'preferences' },
     { type: 'separator' },
     {
-      label: '导出',
+      label: 'export',
       children: [
         { command: 'exportWithPrevious' },
         { command: 'exportOverwritePrevious' },
@@ -80,7 +109,7 @@ const menuModel: MenuModel = {
     { type: 'separator' },
     { command: 'closeDocument' },
   ],
-  '编辑': [
+  edit: [
     { command: 'undo' },
     { command: 'redo' },
     { type: 'separator' },
@@ -92,7 +121,7 @@ const menuModel: MenuModel = {
     { command: 'selectAll' },
     { type: 'separator' },
     {
-      label: '查找与替换',
+      label: 'findReplace',
       children: [
         { command: 'showSearch' },
         { command: 'showReplace' },
@@ -100,15 +129,15 @@ const menuModel: MenuModel = {
       ],
     },
     {
-      label: '复制为',
+      label: 'copyAs',
       children: [
-        { command: 'copyPlain', label: '纯文本' },
+        { command: 'copyPlain', label: 'plainText' },
         { command: 'copyMd', label: 'Markdown' },
         { command: 'copyHtml', label: 'HTML' },
       ],
     },
   ],
-  '插入': [
+  insert: [
     { command: 'link' },
     { type: 'separator' },
     { command: 'codeBlock' },
@@ -120,14 +149,38 @@ const menuModel: MenuModel = {
     { command: 'taskList' },
     { type: 'separator' },
     {
-      label: '表格',
+      label: 'table',
       children: [
         { command: 'insertTable' },
         { command: 'formatTable' },
+        { command: 'selectTable' },
+        { type: 'separator' },
         { command: 'addTableRow' },
         { command: 'addTableColumn' },
+        { command: 'insertTableRowAbove' },
+        { command: 'insertTableRowBelow' },
+        { command: 'insertTableColumnLeft' },
+        { command: 'insertTableColumnRight' },
         { command: 'deleteTableRow' },
         { command: 'deleteTableColumn' },
+        { command: 'moveTableRowUp' },
+        { command: 'moveTableRowDown' },
+        { command: 'moveTableColumnLeft' },
+        { command: 'moveTableColumnRight' },
+        { type: 'separator' },
+        { command: 'alignTableColumnLeft' },
+        { command: 'alignTableColumnCenter' },
+        { command: 'alignTableColumnRight' },
+        { command: 'sortTableAsc' },
+        { command: 'sortTableDesc' },
+        { type: 'separator' },
+        { command: 'copyTableMarkdown' },
+        { command: 'copyTableHtml' },
+        { command: 'copyTableCsv' },
+        { command: 'copyTableTsv' },
+        { type: 'separator' },
+        { command: 'convertTableToHtml' },
+        { command: 'convertHtmlTableToMarkdown' },
       ],
     },
     { type: 'separator' },
@@ -137,7 +190,7 @@ const menuModel: MenuModel = {
     { command: 'toc' },
     { command: 'yaml' },
   ],
-  '格式': [
+  format: [
     { command: 'bold' },
     { command: 'italic' },
     { command: 'underline' },
@@ -145,7 +198,7 @@ const menuModel: MenuModel = {
     { command: 'inlineCode' },
     { type: 'separator' },
     {
-      label: '段落样式',
+      label: 'paragraphStyle',
       children: [
         { command: 'paragraph' },
         { command: 'h1' },
@@ -157,14 +210,14 @@ const menuModel: MenuModel = {
       ],
     },
     {
-      label: '标题级别',
+      label: 'headingLevel',
       children: [
         { command: 'increaseHeading' },
         { command: 'decreaseHeading' },
       ],
     },
     {
-      label: '块级源码操作',
+      label: 'blockOperations',
       children: [
         { command: 'moveParagraphUp' },
         { command: 'moveParagraphDown' },
@@ -187,13 +240,13 @@ const menuModel: MenuModel = {
     { type: 'separator' },
     { command: 'clearFormat' },
   ],
-  '视图': [
+  view: [
     { command: 'sourceMode' },
     { command: 'splitMode' },
     { command: 'previewMode' },
     { type: 'separator' },
     {
-      label: '文档信息',
+      label: 'documentInfo',
       children: [
         { command: 'openDocumentProperties' },
         { command: 'showDocumentLinks' },
@@ -204,7 +257,7 @@ const menuModel: MenuModel = {
     { type: 'separator' },
     { command: 'toggleSidebar' },
     {
-      label: '侧边栏',
+      label: 'sidebar',
       children: [
         { command: 'showFiles' },
         { command: 'showOutline' },
@@ -222,7 +275,7 @@ const menuModel: MenuModel = {
     { type: 'separator' },
     { command: 'devTools' },
   ],
-  '主题': [
+  theme: [
     {
       dynamic: (context) => getAvailableThemeEntries().map((theme) => ({
         label: theme.source === 'user' ? `${theme.label}` : theme.label,
@@ -231,14 +284,14 @@ const menuModel: MenuModel = {
       })),
     },
   ],
-  '窗口': [
+  window: [
     { command: 'minimize' },
     { command: 'fullscreen' },
     { command: 'alwaysOnTop' },
     { type: 'separator' },
     { command: 'newWindow' },
   ],
-  '帮助': [
+  help: [
     { command: 'showShortcuts' },
     { command: 'checkUpdate' },
     { type: 'separator' },
@@ -285,7 +338,7 @@ function toMenuItem(
     if (!children.length) return null;
 
     return {
-      label: item.label,
+      label: localizeMenuLabel(item.label),
       submenu: true,
       children,
     };
@@ -295,7 +348,7 @@ function toMenuItem(
 
   const definition = getCommandDefinition(item.command);
   return {
-    label: item.label ?? definition.label,
+    label: item.label ? localizeMenuLabel(item.label) : getLocalizedCommandLabel(definition.id),
     action: definition.id,
     shortcut: getPrimaryShortcutLabel(definition.id, displayStyle),
     checked: definition.checked?.(context) ?? false,
@@ -308,7 +361,7 @@ export function getMenuSections(context: CommandContext): MenuSection {
 
   return Object.fromEntries(
     Object.entries(menuModel).map(([section, items]) => [
-      section,
+      localizeMenuLabel(section),
       normalizeItems(
         items
           .flatMap((item) => {

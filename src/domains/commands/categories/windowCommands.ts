@@ -12,23 +12,20 @@ export function createWindowCommands(deps: WindowCommandDeps): CommandDefinition
   return [
     {
       id: 'minimize',
-      label: '最小化',
-      category: '窗口',
+      category: 'window',
       shortcuts: [{ code: 'KeyM', mod: true }],
       run: minimize,
     },
     {
       id: 'fullscreen',
-      label: '切换全屏',
-      category: '窗口',
+      category: 'window',
       shortcuts: [{ code: 'F11' }],
       checked: (context) => context.workspaceStore.isFullscreen,
       run: handleFullscreen,
     },
     {
       id: 'alwaysOnTop',
-      label: '保持窗口在最前端',
-      category: '窗口',
+      category: 'window',
       keywords: ['top', 'pin'],
       checked: (context) => context.workspaceStore.isAlwaysOnTop,
       run: handleAlwaysOnTop,

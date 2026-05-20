@@ -4,8 +4,10 @@ import { useWorkspaceStore } from '../store';
 import { loadFolderTree } from '../lib/loadFolderTree';
 import { openPrismWindow } from '../../../lib/openWindow';
 import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
+import { useI18n } from '../../i18n';
 
 export function OpenFolderButton() {
+  const { t } = useI18n();
   const currentDocument = useDocumentStore((s) => s.currentDocument);
   const { setRootPath, setFileTree } = useWorkspaceStore();
 
@@ -44,7 +46,7 @@ export function OpenFolderButton() {
         fontSize: '14px',
       }}
     >
-      打开文件夹
+      {t('workspace.openFolder')}
     </button>
   );
 }

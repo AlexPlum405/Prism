@@ -57,7 +57,7 @@ describe('slashMenu', () => {
     const table = options.find((option) => option.label === '表格');
     const template = options.find((option) => option.label === '模板：会议纪要');
 
-    expect(table?.apply).toContain('| Column 1 | Column 2 | Column 3 |');
+    expect(table?.apply).not.toContain('| Column 1 | Column 2 | Column 3 |');
     expect(table?.type).toBe('keyword');
     expect(template?.apply).toContain('# 会议纪要');
     expect(template?.type).toBe('text');

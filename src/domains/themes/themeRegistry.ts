@@ -1,4 +1,5 @@
 import { CONTENT_THEMES, type BuiltInContentTheme, type ContentTheme } from '../settings/types';
+import { t } from '../i18n';
 import {
   builtInThemeContracts,
   type MermaidThemeContract,
@@ -81,7 +82,7 @@ function buildInvalidEntry(themePackage: InvalidThemePackage): ThemeRegistryEntr
   return {
     id: themePackage.id,
     name: themePackage.name,
-    label: `${themePackage.name}（异常）`,
+    label: `${themePackage.name} (${t('theme.invalidSuffix')})`,
     source: 'invalid',
     isDark: false,
     contract: builtInThemeContracts.miaoyan,
@@ -175,7 +176,7 @@ async function registerThemeFonts(entry: ThemeRegistryEntry) {
       await document.fonts.load(`16px "${font.family}"`);
       activeThemeFontFamilies.add(font.family);
     } catch {
-      warnings.push(`主题字体加载失败：${font.family}`);
+      warnings.push(t('theme.fontLoadFailed', { family: font.family }));
     }
   }
 
@@ -191,7 +192,7 @@ async function buildRuntimeCss(entry: ThemeRegistryEntry) {
       replacements.set(assetUrl, objectUrl);
       activeThemeObjectUrls.push(objectUrl);
     } catch {
-      throw new ThemeError('invalid_theme', `主题 CSS 资源缺失：${assetUrl}`, entry.id);
+      throw new ThemeError('invalid_theme', t('theme.cssAssetMissing', { assetUrl }), entry.id);
     }
   }
   const fontFaceCss = await Promise.all(entry.package.fonts.map(async (font) => {
@@ -211,7 +212,7 @@ export async function applyThemeRuntime(themeId: ContentTheme): Promise<ApplyThe
     return {
       themeId: 'miaoyan',
       fallback: true,
-      warnings: entry?.error ? [entry.error] : ['主题不存在，已回退到 Miaoyan'],
+      warnings: entry?.error ? [entry.error] : [t('theme.missingFallback')],
     };
   }
 

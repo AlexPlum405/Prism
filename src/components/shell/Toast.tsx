@@ -1,4 +1,5 @@
 import type { ToastAction, ToastState } from '../../lib/toast';
+import { t } from '../../domains/i18n';
 
 interface ToastProps {
   toast: ToastState;
@@ -42,7 +43,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       <button
         type="button"
         className="prism-toast-dismiss"
-        aria-label="关闭提示"
+        aria-label={t('toast.close')}
         onClick={onDismiss}
       >
         ×

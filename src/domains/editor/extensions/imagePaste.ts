@@ -1,4 +1,5 @@
 import { exists, mkdir, writeFile } from '@tauri-apps/plugin-fs';
+import { t } from '../../i18n';
 
 interface ClipboardImageInput {
   documentName: string;
@@ -125,5 +126,5 @@ export async function saveClipboardImage(input: ClipboardImageInput): Promise<st
     }
   }
 
-  throw new Error('无法生成唯一图片文件名');
+  throw new Error(t('editor.image.uniqueNameFailed'));
 }

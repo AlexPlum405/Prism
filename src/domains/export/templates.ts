@@ -8,11 +8,14 @@ import type {
 import { getDocxThemeByContentTheme } from './exportSettings';
 import { parseExportFrontMatter } from './frontMatter';
 import type { ExportDocumentInput } from './types';
+import { resolveAppLocale, t, type I18nKey } from '../i18n';
 
 export interface ExportTemplate {
   id: ExportTemplateId;
   label: string;
   description: string;
+  labelKey: I18nKey;
+  descriptionKey: I18nKey;
   pdfMargin: PdfMargin;
   docxFontPolicy: DocxFontPolicy;
   codeStyle: 'theme' | 'boxed' | 'plain';
@@ -22,8 +25,10 @@ export interface ExportTemplate {
 export const EXPORT_TEMPLATES: Record<ExportTemplateId, ExportTemplate> = {
   theme: {
     id: 'theme',
-    label: '跟随主题',
-    description: '尽量保持当前写作主题的视觉风格。',
+    labelKey: 'export.template.theme.label',
+    descriptionKey: 'export.template.theme.description',
+    label: 'Follow Theme',
+    description: 'Keep the current writing theme as closely as possible.',
     pdfMargin: 'standard',
     docxFontPolicy: 'theme',
     codeStyle: 'theme',
@@ -31,8 +36,10 @@ export const EXPORT_TEMPLATES: Record<ExportTemplateId, ExportTemplate> = {
   },
   business: {
     id: 'business',
-    label: '商务文档',
-    description: '更宽边距、清晰表格边线，适合正式交付。',
+    labelKey: 'export.template.business.label',
+    descriptionKey: 'export.template.business.description',
+    label: 'Business Document',
+    description: 'Wider margins and clear table borders for formal delivery.',
     pdfMargin: 'wide',
     docxFontPolicy: 'preview',
     codeStyle: 'boxed',
@@ -40,8 +47,10 @@ export const EXPORT_TEMPLATES: Record<ExportTemplateId, ExportTemplate> = {
   },
   plain: {
     id: 'plain',
-    label: '纯净兼容',
-    description: '减少装饰和背景，适合外发或平台粘贴。',
+    labelKey: 'export.template.plain.label',
+    descriptionKey: 'export.template.plain.description',
+    label: 'Clean Compatible',
+    description: 'Reduce decoration and backgrounds for sharing or platform paste.',
     pdfMargin: 'standard',
     docxFontPolicy: 'theme',
     codeStyle: 'plain',
@@ -49,14 +58,24 @@ export const EXPORT_TEMPLATES: Record<ExportTemplateId, ExportTemplate> = {
   },
   academic: {
     id: 'academic',
-    label: '长文论文',
-    description: '标题层级更稳，引用和脚注更适合长文。',
+    labelKey: 'export.template.academic.label',
+    descriptionKey: 'export.template.academic.description',
+    label: 'Long Paper',
+    description: 'More stable heading hierarchy, citations, and footnotes for long-form writing.',
     pdfMargin: 'compact',
     docxFontPolicy: 'preview',
     codeStyle: 'boxed',
     tableStyle: 'grid',
   },
 };
+
+export function getExportTemplateLabel(template: ExportTemplate) {
+  return t(template.labelKey);
+}
+
+export function getExportTemplateDescription(template: ExportTemplate) {
+  return t(template.descriptionKey);
+}
 
 export interface ResolvedExportOptions extends ExportDocumentInput {
   templateId: ExportTemplateId;
@@ -135,6 +154,8 @@ export function resolveExportOptions(input: {
     templateId: template.id,
     codeStyle: template.codeStyle,
     tableStyle: template.tableStyle,
+    localePreference: input.settings.locale,
+    locale: resolveAppLocale(input.settings.locale),
     citation: input.settings.citation,
     pandoc: input.settings.pandoc,
     docxFontFamily: docxFont.family,

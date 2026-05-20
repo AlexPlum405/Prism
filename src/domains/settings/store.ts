@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import {
   SettingsState,
   DEFAULT_SETTINGS,
+  LocalePreference,
   ContentTheme,
   AppearanceMode,
   DefaultViewMode,
@@ -21,6 +22,7 @@ import {
   PdfPaper,
   RecentFileEntry,
 } from './types';
+import { applyLocaleRuntime, t } from '../i18n';
 import {
   normalizeCitationSettings,
   normalizeExportHistory,
@@ -105,12 +107,13 @@ function resolveFontFamily(source: FontSource, customFonts: CustomFont[], fallba
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   if (typeof error === 'string' && error.trim()) return error;
-  return 'Pandoc 检测失败';
+  return t('settings.pandocDetectionFailed');
 }
 
 interface SettingsStore extends SettingsState {
   themeRegistryVersion: number;
   themeRegistry: ThemeRegistryEntry[];
+  setLocale: (locale: LocalePreference) => void;
   setTheme: (theme: AppearanceMode) => void;
   setContentTheme: (theme: ContentTheme) => Promise<void>;
   reloadThemeRegistry: () => Promise<ThemeRegistryEntry[]>;
@@ -166,6 +169,12 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   ...DEFAULT_SETTINGS,
   themeRegistryVersion: 0,
   themeRegistry: [],
+
+  setLocale: (locale) => {
+    set({ locale });
+    applyLocaleRuntime(locale);
+    get().saveSettings();
+  },
 
   setTheme: (theme) => {
     set({ theme });
@@ -541,6 +550,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         themeRegistryVersion: state.themeRegistryVersion + 1,
       }));
 
+      applyLocaleRuntime(settings.locale);
       applyAppearanceTheme(settings.theme);
       await applyContentTheme(contentTheme);
       void registerCustomFonts(settings.customFonts);
@@ -590,6 +600,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         // If legacy migration fails, continue with defaults.
       }
 
+      applyLocaleRuntime(DEFAULT_SETTINGS.locale);
       applyAppearanceTheme(DEFAULT_SETTINGS.theme);
       const themeRegistry = await initializeThemeRegistry().catch(() => []);
       set((state) => ({
@@ -624,6 +635,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const configPath = await getConfigPath();
       const {
         settingsVersion,
+        locale,
         theme,
         contentTheme,
         fontSize,
@@ -654,6 +666,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const data = JSON.stringify(
         {
           settingsVersion,
+          locale,
           theme,
           contentTheme,
           fontSize,

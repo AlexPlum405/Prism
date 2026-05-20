@@ -1,10 +1,11 @@
 import type { SettingsState } from '../settings/types';
 import { getThemeEntry } from '../themes';
+import { t } from '../i18n';
 import { getExportFormatLabel, type ExportFormat } from './types';
 
 function formatExportDiagnosticError(error: unknown): string {
   if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || '未知事件错误';
+  if (error instanceof Event) return error.type || t('common.unknownEventError');
   return String(error);
 }
 
@@ -16,15 +17,15 @@ function hasSupportedCitationPathExtension(path: string, extensions: string[]) {
 export function getExportCitationPathValidation(citation: SettingsState['citation']) {
   const issues: string[] = [];
   if (!hasSupportedCitationPathExtension(citation.bibliographyPath, ['.bib', '.bibtex', '.json'])) {
-    issues.push('参考文献文件后缀需为 .bib / .bibtex / .json');
+    issues.push(t('export.diagnostic.citationBibliographyExtension'));
   }
   if (!hasSupportedCitationPathExtension(citation.cslStylePath, ['.csl'])) {
-    issues.push('CSL 样式文件后缀需为 .csl');
+    issues.push(t('export.diagnostic.citationCslExtension'));
   }
   if (!citation.bibliographyPath.trim() && citation.cslStylePath.trim()) {
-    issues.push('缺少参考文献文件');
+    issues.push(t('export.diagnostic.citationMissingBibliography'));
   }
-  return issues.length > 0 ? issues.join('；') : '通过';
+  return issues.length > 0 ? issues.join('；') : t('export.diagnostic.pass');
 }
 
 export function buildExportFailureDiagnostic(input: {
@@ -45,52 +46,59 @@ export function buildExportFailureDiagnostic(input: {
   const themeEntry = getThemeEntry(input.settings.contentTheme);
   const themeSource = themeEntry?.source ?? 'fallback';
   const pandocStatus = pandoc.lastCheckedAt === null
-    ? '未检测'
+    ? t('export.diagnostic.notChecked')
     : pandoc.detected
-      ? '可用'
-      : '不可用';
+      ? t('export.diagnostic.available')
+      : t('export.diagnostic.unavailable');
   const citation = input.settings.citation;
   const citationPathValidation = getExportCitationPathValidation(citation);
-  const citationPandocReady = pandoc.detected && Boolean(citation.bibliographyPath) && citationPathValidation === '通过';
+  const citationPandocReady =
+    pandoc.detected
+    && Boolean(citation.bibliographyPath)
+    && citationPathValidation === t('export.diagnostic.pass');
+  const empty = t('export.diagnostic.empty');
+  const line = (label: string, value: string) => `${label}: ${value}`;
   return [
-    'Prism 导出失败诊断',
-    `时间: ${new Date().toISOString()}`,
-    `格式: ${getExportFormatLabel(input.format)} (${input.format})`,
-    `阶段: ${input.stage}`,
-    `文档: ${input.documentName}`,
-    `文档路径: ${input.documentPath || '(未保存)'}`,
-    `输出路径: ${input.outputPath || '(未选择)'}`,
-    `内容主题: ${input.settings.contentTheme}`,
-    `主题名称: ${themeEntry?.label ?? 'Miaoyan fallback'}`,
-    `主题来源: ${themeSource}`,
-    `用户主题 CSS: ${themeEntry?.source === 'user' ? '启用' : '未启用'}`,
-    themeEntry?.error ? `主题异常: ${themeEntry.error}` : '',
-    `导出模板: ${input.settings.exportDefaults.templateId}`,
-    `Front matter 覆盖: ${input.settings.exportDefaults.frontMatterOverrides ? '开启' : '关闭'}`,
-    `目录: ${input.settings.exportDefaults.toc ? '开启' : '关闭'}`,
-    `默认导出位置: ${input.settings.exportDefaults.defaultLocation}`,
-    `PDF 纸张: ${input.settings.exportDefaults.pdfPaper}`,
-    `PDF 边距: ${input.settings.exportDefaults.pdfMargin}`,
-    `页码: ${input.settings.exportDefaults.pdfPageNumbers ? '开启' : '关闭'}`,
-    `页眉页脚: ${input.settings.exportDefaults.pageHeaderFooter ? '开启' : '关闭'}`,
-    `页眉文本: ${input.settings.exportDefaults.pageHeaderText || '(空)'}`,
-    `页脚文本: ${input.settings.exportDefaults.pageFooterText || '(空)'}`,
-    `导出清晰度: ${input.settings.exportDefaults.pngScale}x`,
-    `HTML 内联主题: ${input.settings.exportDefaults.htmlIncludeTheme ? '是' : '否'}`,
-    `DOCX 字体策略: ${input.settings.exportDefaults.docxFontPolicy}`,
-    `DOCX 自定义字体: ${input.settings.exportDefaults.docxCustomFontId || '(未指定)'}`,
-    `参考文献文件: ${citation.bibliographyPath || '(未配置)'}`,
-    `CSL 样式文件: ${citation.cslStylePath || '(未配置)'}`,
-    `引用路径校验: ${citationPathValidation}`,
-    `Pandoc 引用条件: ${citationPandocReady ? '满足' : '未满足'}`,
-    `Pandoc 状态: ${pandocStatus}`,
-    `Pandoc 路径: ${pandoc.path || '(系统 pandoc)'}`,
-    pandoc.version ? `Pandoc 版本: ${pandoc.version}` : '',
-    pandoc.lastError ? `Pandoc 错误: ${pandoc.lastError}` : '',
+    t('export.diagnostic.title'),
+    line(t('export.diagnostic.time'), new Date().toISOString()),
+    line(t('export.diagnostic.format'), `${getExportFormatLabel(input.format)} (${input.format})`),
+    line(t('export.diagnostic.stage'), input.stage),
+    line(t('export.diagnostic.document'), input.documentName),
+    line(t('export.diagnostic.documentPath'), input.documentPath || `(${t('export.diagnostic.unsaved')})`),
+    line(t('export.diagnostic.outputPath'), input.outputPath || `(${t('export.diagnostic.notSelected')})`),
+    line(t('export.diagnostic.contentTheme'), input.settings.contentTheme),
+    line(t('export.diagnostic.themeName'), themeEntry?.label ?? 'Miaoyan fallback'),
+    line(t('export.diagnostic.themeSource'), themeSource),
+    line(t('export.diagnostic.userThemeCss'), themeEntry?.source === 'user' ? t('common.enabled') : t('common.disabled')),
+    themeEntry?.error ? line(t('export.diagnostic.themeError'), themeEntry.error) : '',
+    line(t('export.diagnostic.exportTemplate'), input.settings.exportDefaults.templateId),
+    line(t('export.diagnostic.frontMatterOverrides'), input.settings.exportDefaults.frontMatterOverrides ? t('common.enabled') : t('common.disabled')),
+    line(t('export.diagnostic.toc'), input.settings.exportDefaults.toc ? t('common.enabled') : t('common.disabled')),
+    line(t('export.diagnostic.defaultExportLocation'), input.settings.exportDefaults.defaultLocation),
+    line(t('export.diagnostic.pdfPaper'), input.settings.exportDefaults.pdfPaper),
+    line(t('export.diagnostic.pdfMargin'), input.settings.exportDefaults.pdfMargin),
+    line(t('export.diagnostic.pageNumbers'), input.settings.exportDefaults.pdfPageNumbers ? t('common.enabled') : t('common.disabled')),
+    line(t('export.diagnostic.headerFooter'), input.settings.exportDefaults.pageHeaderFooter ? t('common.enabled') : t('common.disabled')),
+    line(t('export.diagnostic.headerText'), input.settings.exportDefaults.pageHeaderText || `(${empty})`),
+    line(t('export.diagnostic.footerText'), input.settings.exportDefaults.pageFooterText || `(${empty})`),
+    line(t('export.diagnostic.exportQuality'), `${input.settings.exportDefaults.pngScale}x`),
+    line(t('export.diagnostic.htmlInlineTheme'), input.settings.exportDefaults.htmlIncludeTheme ? t('common.yes') : t('common.no')),
+    line(t('export.diagnostic.docxFontPolicy'), input.settings.exportDefaults.docxFontPolicy),
+    line(t('export.diagnostic.docxCustomFont'), input.settings.exportDefaults.docxCustomFontId || `(${t('common.unspecified')})`),
+    line(t('export.diagnostic.bibliographyFile'), citation.bibliographyPath || `(${t('common.unspecified')})`),
+    line(t('export.diagnostic.cslStyleFile'), citation.cslStylePath || `(${t('common.unspecified')})`),
+    line(t('export.diagnostic.citationPathValidation'), citationPathValidation),
+    line(t('export.diagnostic.pandocCitationCondition'), citationPandocReady ? t('export.diagnostic.satisfied') : t('export.diagnostic.notSatisfied')),
+    line(t('export.diagnostic.pandocStatus'), pandocStatus),
+    line(t('export.diagnostic.pandocPath'), pandoc.path || `(${t('export.diagnostic.systemPandoc')})`),
+    pandoc.version ? line(t('export.diagnostic.pandocVersion'), pandoc.version) : '',
+    pandoc.lastError ? line(t('export.diagnostic.pandocError'), pandoc.lastError) : '',
     input.warnings?.length
-      ? `导出警告:\n${input.warnings.map((message) => `- ${message}`).join('\n')}`
+      ? `${t('export.diagnostic.exportWarnings')}:\n${input.warnings.map((message) => `- ${message}`).join('\n')}`
       : '',
-    `错误: ${errorMessage}`,
-    stack ? `堆栈:\n${stack}` : '',
+    line(t('export.diagnostic.possibleCause'), t('export.diagnostic.possibleCauseText')),
+    line(t('export.diagnostic.nextSteps'), t('export.diagnostic.nextStepsText')),
+    line(t('export.diagnostic.error'), errorMessage),
+    stack ? `${t('export.diagnostic.stack')}:\n${stack}` : '',
   ].filter(Boolean).join('\n');
 }

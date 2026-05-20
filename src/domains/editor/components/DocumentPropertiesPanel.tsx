@@ -4,6 +4,7 @@ import {
   updateDocumentFrontMatter,
   type DocumentFrontMatterProperties,
 } from '../extensions/frontMatterProperties';
+import { useI18n } from '../../i18n';
 
 interface DocumentPropertiesPanelProps {
   content: string;
@@ -30,6 +31,7 @@ export function DocumentPropertiesPanel({
   onNotice,
   visible,
 }: DocumentPropertiesPanelProps) {
+  const { t } = useI18n();
   const parsed = useMemo(() => parseDocumentFrontMatter(content), [content]);
   const [properties, setProperties] = useState<DocumentFrontMatterProperties>(EMPTY_PROPERTIES);
 
@@ -59,40 +61,40 @@ export function DocumentPropertiesPanel({
     try {
       onApply(updateDocumentFrontMatter(content, properties));
       onClose();
-      onNotice?.('文档属性已更新');
+      onNotice?.(t('editor.properties.updated'));
     } catch (error) {
-      onNotice?.(error instanceof Error ? error.message : '文档属性更新失败');
+      onNotice?.(error instanceof Error ? error.message : t('editor.properties.updateFailed'));
     }
   };
 
   return (
     <>
       <div className="modal-overlay" onClick={onClose} />
-      <div className="modal prism-document-properties-modal" role="dialog" aria-label="文档属性">
+      <div className="modal prism-document-properties-modal" role="dialog" aria-label={t('editor.properties.title')}>
         <div className="modal-header">
-          <div className="modal-title">文档属性</div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">×</button>
+          <div className="modal-title">{t('editor.properties.title')}</div>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body prism-document-properties-body">
           {parsed.error && (
             <div className="prism-document-properties-error">
-              当前 Front Matter 不是有效 YAML，请先回到源码修正后再编辑属性。
+              {t('editor.properties.invalidYaml')}
             </div>
           )}
           <label className="prism-document-property-field">
-            <span>标题</span>
+            <span>{t('editor.properties.field.title')}</span>
             <input value={properties.title} onChange={(event) => updateField('title', event.currentTarget.value)} />
           </label>
           <label className="prism-document-property-field">
-            <span>标签</span>
+            <span>{t('editor.properties.field.tags')}</span>
             <input
               value={properties.tags}
-              placeholder="多个标签用逗号分隔"
+              placeholder={t('editor.properties.tagsPlaceholder')}
               onChange={(event) => updateField('tags', event.currentTarget.value)}
             />
           </label>
           <label className="prism-document-property-field">
-            <span>描述</span>
+            <span>{t('editor.properties.field.description')}</span>
             <textarea
               rows={3}
               value={properties.description}
@@ -101,20 +103,20 @@ export function DocumentPropertiesPanel({
           </label>
           <div className="prism-document-property-grid">
             <label className="prism-document-property-field">
-              <span>作者</span>
+              <span>{t('editor.properties.field.author')}</span>
               <input value={properties.author} onChange={(event) => updateField('author', event.currentTarget.value)} />
             </label>
             <label className="prism-document-property-field">
-              <span>日期</span>
+              <span>{t('editor.properties.field.date')}</span>
               <input value={properties.date} onChange={(event) => updateField('date', event.currentTarget.value)} />
             </label>
             <label className="prism-document-property-field">
-              <span>状态</span>
+              <span>{t('editor.properties.field.status')}</span>
               <input value={properties.status} onChange={(event) => updateField('status', event.currentTarget.value)} />
             </label>
           </div>
           <label className="prism-document-property-field">
-            <span>导出</span>
+            <span>{t('editor.properties.field.export')}</span>
             <textarea
               rows={4}
               value={properties.exportRaw}
@@ -123,12 +125,12 @@ export function DocumentPropertiesPanel({
             />
           </label>
           <div className="prism-document-properties-hint">
-            属性会写回当前 Markdown 顶部的 YAML Front Matter；Prism 不创建数据库或隐藏副本。
+            {t('editor.properties.hint')}
           </div>
         </div>
         <div className="modal-footer">
-          <button className="pill-ghost" onClick={onClose}>取消</button>
-          <button className="pill-filled" onClick={apply} disabled={Boolean(parsed.error)}>应用</button>
+          <button className="pill-ghost" onClick={onClose}>{t('common.cancel')}</button>
+          <button className="pill-filled" onClick={apply} disabled={Boolean(parsed.error)}>{t('common.apply')}</button>
         </div>
       </div>
     </>

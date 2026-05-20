@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ToastInput } from '../lib/toast';
+import { t } from '../domains/i18n';
 
 export interface ExportFailureState {
   title: string;
@@ -16,7 +17,7 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
       const detail = (event as CustomEvent<{ visible?: boolean; message?: string }>).detail;
       if (detail?.visible) {
         setExportFailure(null);
-        setExportProgress(detail.message ?? '正在导出');
+        setExportProgress(detail.message ?? t('export.progressDefault'));
         return;
       }
       setExportProgress(null);
@@ -31,7 +32,7 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
       const detail = (event as CustomEvent<ExportFailureState>).detail;
       if (!detail?.diagnostic) return;
       setExportFailure({
-        title: detail.title || '导出失败',
+        title: detail.title || t('export.failed'),
         diagnostic: detail.diagnostic,
       });
     };
@@ -55,9 +56,9 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
     if (!exportFailure) return;
     try {
       await navigator.clipboard.writeText(exportFailure.diagnostic);
-      showToast('导出诊断文本已复制');
+      showToast(t('export.diagnosticCopied'));
     } catch {
-      showToast('复制诊断文本失败');
+      showToast(t('export.diagnosticCopyFailed'));
     }
   }, [exportFailure, showToast]);
 

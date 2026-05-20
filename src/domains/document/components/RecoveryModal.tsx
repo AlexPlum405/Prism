@@ -1,4 +1,5 @@
 import type { RecoverySnapshot } from '../services/recovery';
+import { t, useI18n } from '../../i18n';
 
 type RecoveryAction = 'restore' | 'discard';
 
@@ -21,6 +22,7 @@ export function RecoveryModal({
   onRestore,
   onDiscard,
 }: RecoveryModalProps) {
+  useI18n();
   if (!visible || !snapshot) return null;
 
   const isBusy = busyAction !== null;
@@ -28,26 +30,26 @@ export function RecoveryModal({
   return (
     <>
       <div className="modal-overlay" />
-      <div className="modal prism-recovery-modal" role="dialog" aria-label="恢复文档" aria-modal="true">
+      <div className="modal prism-recovery-modal" role="dialog" aria-label={t('recovery.title')} aria-modal="true">
         <div className="modal-header">
-          <div className="modal-title">恢复文档</div>
+          <div className="modal-title">{t('recovery.title')}</div>
         </div>
         <div className="modal-body prism-recovery-body">
-          <div className="prism-recovery-kicker">发现未保存版本</div>
+          <div className="prism-recovery-kicker">{t('recovery.kicker')}</div>
           <div className="prism-recovery-title">{snapshot.documentName}</div>
           <div className="prism-recovery-path" title={snapshot.documentPath}>
             {snapshot.documentPath}
           </div>
           <p>
-            Prism 找到一个本地恢复快照，保存于 {formatRecoveryTime(snapshot.createdAt)}。
+            {t('recovery.body', { time: formatRecoveryTime(snapshot.createdAt) })}
           </p>
         </div>
         <div className="prism-recovery-actions">
           <button type="button" onClick={onDiscard} disabled={isBusy}>
-            {busyAction === 'discard' ? '正在丢弃...' : '丢弃快照'}
+            {busyAction === 'discard' ? t('recovery.discarding') : t('recovery.discard')}
           </button>
           <button type="button" className="primary" onClick={onRestore} disabled={isBusy}>
-            {busyAction === 'restore' ? '正在恢复...' : '恢复这个版本'}
+            {busyAction === 'restore' ? t('recovery.restoring') : t('recovery.restore')}
           </button>
         </div>
       </div>

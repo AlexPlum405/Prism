@@ -1,4 +1,5 @@
 import { basename } from '../services';
+import { useI18n } from '../../i18n';
 
 interface RecentFilesProps {
   recentFiles: string[];
@@ -6,10 +7,11 @@ interface RecentFilesProps {
 }
 
 export function RecentFiles({ recentFiles, onFileClick }: RecentFilesProps) {
+  const { t } = useI18n();
   if (recentFiles.length === 0) {
     return (
       <div style={{ padding: '16px', fontSize: '13px', opacity: 0.6, lineHeight: 1.6 }}>
-        暂无最近打开的文件
+        {t('workspace.recent.empty')}
       </div>
     );
   }

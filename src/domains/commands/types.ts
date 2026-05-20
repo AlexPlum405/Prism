@@ -5,14 +5,14 @@ import type { ExportFormat } from '../export';
 import type { ToastInput } from '../../lib/toast';
 
 export type CommandCategory =
-  | '文件'
-  | '编辑'
-  | '插入'
-  | '格式'
-  | '视图'
-  | '主题'
-  | '窗口'
-  | '帮助';
+  | 'file'
+  | 'edit'
+  | 'insert'
+  | 'format'
+  | 'view'
+  | 'theme'
+  | 'window'
+  | 'help';
 
 export type CommandId =
   | 'new'
@@ -71,6 +71,26 @@ export type CommandId =
   | 'addTableColumn'
   | 'deleteTableRow'
   | 'deleteTableColumn'
+  | 'alignTableColumnLeft'
+  | 'alignTableColumnCenter'
+  | 'alignTableColumnRight'
+  | 'insertTableRowAbove'
+  | 'insertTableRowBelow'
+  | 'insertTableColumnLeft'
+  | 'insertTableColumnRight'
+  | 'moveTableRowUp'
+  | 'moveTableRowDown'
+  | 'moveTableColumnLeft'
+  | 'moveTableColumnRight'
+  | 'selectTable'
+  | 'copyTableMarkdown'
+  | 'copyTableHtml'
+  | 'copyTableCsv'
+  | 'copyTableTsv'
+  | 'sortTableAsc'
+  | 'sortTableDesc'
+  | 'convertTableToHtml'
+  | 'convertHtmlTableToMarkdown'
   | 'hr'
   | 'footnote'
   | 'linkReference'
@@ -178,7 +198,6 @@ export interface CommandContext {
 
 export interface CommandDefinition {
   id: CommandId;
-  label: string;
   category: CommandCategory;
   keywords?: string[];
   shortcuts?: ShortcutBinding[];

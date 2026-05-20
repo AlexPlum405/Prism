@@ -9,6 +9,7 @@ import {
   sortFileNodes,
 } from '../services';
 import { createFileTreeContextMenuItems } from './fileTreeContextMenu';
+import { useI18n } from '../../i18n';
 
 interface FileTreeProps {
   nodes: FileNode[];
@@ -80,6 +81,7 @@ function RenameField({ value, onCommit, onCancel }: RenameFieldProps) {
 }
 
 export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
+  const { t } = useI18n();
   const rootPath = useWorkspaceStore((s) => s.rootPath);
   const fileTreeMode = useWorkspaceStore((s) => s.fileTreeMode);
   const fileSortMode = useWorkspaceStore((s) => s.fileSortMode);
@@ -282,10 +284,10 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
       {isEmpty ? (
         <div className="file-tree-empty">
           <div style={{ marginBottom: '8px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            {rootPath ? '暂无文档' : '未打开工作区'}
+            {rootPath ? t('workspace.fileTree.emptyWithWorkspace.title') : t('workspace.fileTree.emptyNoWorkspace.title')}
           </div>
           <div style={{ fontSize: '12px' }}>
-            {rootPath ? '可以从这里新建文件或刷新文件夹' : '通过菜单或快捷键打开文件 / 文件夹'}
+            {rootPath ? t('workspace.fileTree.emptyWithWorkspace.hint') : t('workspace.fileTree.emptyNoWorkspace.hint')}
           </div>
         </div>
       ) : fileTreeMode === 'list' ? (

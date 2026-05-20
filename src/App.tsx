@@ -31,20 +31,27 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { downloadDir, homeDir } from '@tauri-apps/api/path';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { DocumentPropertiesPanel } from './domains/editor/components/DocumentPropertiesPanel';
-import { LinkDiagnosticsPanel } from './domains/editor/components/LinkDiagnosticsPanel';
+import { DocumentDiagnosticsPanel } from './domains/editor/components/DocumentDiagnosticsPanel';
 import { TypographyDiagnosticsPanel } from './domains/editor/components/TypographyDiagnosticsPanel';
 import { scanMarkdownLinks } from './domains/editor/extensions/linkDiagnostics';
+import { scanMarkdownImageDiagnostics, type ImageDiagnostic } from './domains/editor/extensions/imageDiagnostics';
+import { scanHeadingAnchorDiagnostics } from './domains/editor/extensions/headingDiagnostics';
+import { scanMarkdownTableDiagnostics } from './domains/editor/extensions/tables';
 import { scanChineseTypography } from './domains/editor/extensions/typographyDiagnostics';
 import {
+  headingDiagnosticsToPrismDiagnostics,
+  imageDiagnosticsToPrismDiagnostics,
   linkDiagnosticsToPrismDiagnostics,
+  tableDiagnosticsToPrismDiagnostics,
   typographyDiagnosticsToPrismDiagnostics,
 } from './domains/diagnostics/adapters';
-import { getActionableErrorDiagnostics } from './domains/diagnostics/types';
+import { getActionableErrorDiagnostics, type PrismDiagnostic } from './domains/diagnostics/types';
 import type { ExportFormat } from './domains/export';
 import { getExportFormatLabel } from './domains/export';
+import { scanMarkdownRenderDiagnostics } from './domains/export/preflight';
 import {
-  EXPORT_QUALITY_PRESETS,
-  getExportQualityPreset,
+  getLocalizedExportQualityPreset,
+  getLocalizedExportQualityPresets,
   normalizeExportQualityScale,
 } from './domains/export/quality';
 import { WindowShell } from './components/shell/WindowShell';
@@ -82,6 +89,7 @@ import {
   resolveDocumentLinkTarget,
 } from './domains/workspace/services';
 import type { ExportDefaultLocation } from './domains/settings/types';
+import { t, useI18n } from './domains/i18n';
 
 const exportExtensionByFormat: Record<ExportFormat, string> = {
   html: 'html',
@@ -156,7 +164,7 @@ async function resolveDefaultExportDirectory(input: {
     }
   }
 
-  input.showToast?.('默认导出目录不可用，已回退到当前文档位置');
+  input.showToast?.(t('app.defaultExportDirectoryUnavailable'));
   return fallback;
 }
 
@@ -189,32 +197,34 @@ export function shouldShowRecoveryPrompt({
 
 function getSaveDialogTitle(dialog: SaveDialogState) {
   if (dialog.kind === 'export' && dialog.format) {
-    return `导出 ${getExportFormatLabel(dialog.format)}`;
+    return t('app.exportTitle', { format: getExportFormatLabel(dialog.format) });
   }
-  return '保存 Markdown';
+  return t('app.saveMarkdown');
 }
 
 function getSaveDialogPrimaryLabel(dialog: SaveDialogState) {
-  return dialog.kind === 'export' ? '导出' : '保存';
+  return dialog.kind === 'export' ? t('common.export') : t('common.save');
 }
 
 function getSaveDialogOverwriteText(dialog: SaveDialogState) {
   return dialog.kind === 'export'
-    ? '继续导出会覆盖当前位置的同名文件。'
-    : '继续保存会覆盖当前位置的同名文件。';
+    ? t('app.exportOverwriteText')
+    : t('app.saveOverwriteText');
 }
 
 function formatAppError(error: unknown): string {
   if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || '未知事件错误';
+  if (error instanceof Event) return error.type || t('common.unknownEventError');
   return String(error);
 }
 
 function App() {
+  const { locale, localePreference } = useI18n();
   const currentDocument = useDocumentStore((s) => s.currentDocument);
 
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const contentTheme = useSettingsStore((s) => s.contentTheme);
+  const settingsLocale = useSettingsStore((s) => s.locale);
   const shortcutStyle = useSettingsStore((s) => s.shortcutStyle);
   const autoSaveInterval = useSettingsStore((s) => s.autoSaveInterval);
   const autoSaveEnabled = useSettingsStore((s) => s.autoSaveEnabled);
@@ -241,6 +251,9 @@ function App() {
   const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
+  const [imageDiagnostics, setImageDiagnostics] = useState<ImageDiagnostic[]>([]);
+  const [renderDiagnostics, setRenderDiagnostics] = useState<PrismDiagnostic[]>([]);
+  const [preflightDiagnostics, setPreflightDiagnostics] = useState<PrismDiagnostic[] | null>(null);
   const [documentLinksVisible, setDocumentLinksVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
   const [relationGraphVisible, setRelationGraphVisible] = useState(false);
@@ -387,6 +400,56 @@ function App() {
       workspaceRoot: workspace.rootPath,
     });
   }, [currentDocument, workspace.fileTree, workspace.rootPath]);
+  const headingDiagnostics = useMemo(
+    () => currentDocument ? scanHeadingAnchorDiagnostics(currentDocument.content) : [],
+    [currentDocument?.content],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentDocument) {
+      setImageDiagnostics([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void scanMarkdownImageDiagnostics(currentDocument.content, {
+      documentPath: currentDocument.path || undefined,
+      existsPath: fsExists,
+    }).then((diagnostics) => {
+      if (!cancelled) setImageDiagnostics(diagnostics);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDocument?.content, currentDocument?.path]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentDocument) {
+      setRenderDiagnostics([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const timer = window.setTimeout(() => {
+      void scanMarkdownRenderDiagnostics(currentDocument.content)
+        .then((diagnostics) => {
+          if (!cancelled) setRenderDiagnostics(diagnostics);
+        })
+        .catch(() => {
+          if (!cancelled) setRenderDiagnostics([]);
+        });
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [currentDocument?.content]);
 
   const documentLinks = useMemo(
     () => currentDocument ? extractDocumentLinks(currentDocument.content) : [],
@@ -394,20 +457,38 @@ function App() {
   );
 
   const handleLinkDiagnosticsClick = useCallback(() => {
-    if (linkDiagnostics.length === 0) return;
+    if (linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0) return;
     setLinkDiagnosticsVisible(true);
-  }, [linkDiagnostics.length]);
+  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, renderDiagnostics.length]);
 
-  const handleSelectLinkDiagnostic = useCallback((line: number) => {
+  const handleSelectDocumentDiagnostic = useCallback((line: number) => {
     setLinkDiagnosticsVisible(false);
+    setPreflightDiagnostics(null);
     editorRef.current?.jumpToLine(line);
   }, []);
 
   useEffect(() => {
-    if (linkDiagnostics.length === 0) {
+    const handleOpenDiagnostics = (event: Event) => {
+      const diagnostics = (event as CustomEvent<{ diagnostics?: PrismDiagnostic[] }>).detail?.diagnostics;
+      if (diagnostics) setPreflightDiagnostics(diagnostics);
+      setLinkDiagnosticsVisible(true);
+    };
+    window.addEventListener('prism-document-diagnostics-open', handleOpenDiagnostics);
+    return () => window.removeEventListener('prism-document-diagnostics-open', handleOpenDiagnostics);
+  }, []);
+
+  useEffect(() => {
+    if (
+      linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0
+      && !preflightDiagnostics
+    ) {
       setLinkDiagnosticsVisible(false);
     }
-  }, [linkDiagnostics.length]);
+  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, preflightDiagnostics, renderDiagnostics.length]);
+
+  useEffect(() => {
+    setPreflightDiagnostics(null);
+  }, [currentDocument?.content, currentDocument?.path]);
 
   useEffect(() => {
     if (!currentDocument?.path || !workspaceIndex) {
@@ -451,16 +532,25 @@ function App() {
     () => currentDocument ? scanChineseTypography(currentDocument.content) : [],
     [currentDocument?.content],
   );
+  const tableDiagnostics = useMemo(
+    () => currentDocument ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
+    [currentDocument?.content],
+  );
 
   const documentDiagnostics = useMemo(() => [
     ...linkDiagnosticsToPrismDiagnostics(linkDiagnostics),
+    ...headingDiagnosticsToPrismDiagnostics(headingDiagnostics),
+    ...imageDiagnosticsToPrismDiagnostics(imageDiagnostics),
+    ...renderDiagnostics,
+    ...tableDiagnosticsToPrismDiagnostics(tableDiagnostics),
     ...typographyDiagnosticsToPrismDiagnostics(typographyDiagnostics),
-  ], [linkDiagnostics, typographyDiagnostics]);
+  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics, typographyDiagnostics]);
   const actionableDiagnostics = useMemo(
     () => getActionableErrorDiagnostics(documentDiagnostics),
     [documentDiagnostics],
   );
   const firstActionableDiagnostic = actionableDiagnostics[0] ?? null;
+  const displayedDiagnostics = preflightDiagnostics ?? actionableDiagnostics;
 
   const firstTypographyDiagnostic = typographyDiagnostics[0] ?? null;
   const handleTypographyDiagnosticsClick = useCallback(() => {
@@ -532,7 +622,7 @@ function App() {
     options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
   ) => {
     if (!workspace.rootPath) {
-      showToast('请先打开一个工作区文件夹');
+      showToast(t('app.openWorkspaceFirst'));
       return;
     }
 
@@ -550,7 +640,7 @@ function App() {
     });
 
     if (!resolved) {
-      showToast(`没有找到链接文档：${target}`);
+      showToast(t('app.linkDocumentNotFound', { target }));
       return;
     }
 
@@ -667,7 +757,7 @@ function App() {
       if (!format) {
         setSaveDialog((dialog) => dialog ? {
           ...dialog,
-          error: '导出格式缺失',
+          error: t('app.missingExportFormat'),
           pendingOverwritePath: null,
         } : null);
         return;
@@ -679,7 +769,7 @@ function App() {
     if (/[\\/]/.test(filename)) {
       setSaveDialog((dialog) => dialog ? {
         ...dialog,
-        error: '文件名不能包含路径分隔符',
+        error: t('app.filenameCannotContainSeparator'),
         pendingOverwritePath: null,
       } : null);
       return;
@@ -705,7 +795,7 @@ function App() {
     if (saveDialog.kind === 'export') {
       const qualityScale = normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale);
       useSettingsStore.getState().setExportPngScale(qualityScale);
-      emitExportProgress('准备导出');
+      emitExportProgress(t('app.prepareExport'));
       closeSaveDialog({ path: targetPath, qualityScale });
       return;
     }
@@ -719,16 +809,16 @@ function App() {
       let result: { resolved: boolean; path?: string };
       if (action === 'reload') {
         result = await reloadConflictedDocument();
-        if (result.resolved) showToast('已重新加载磁盘版本');
+        if (result.resolved) showToast(t('app.reloadedDiskVersion'));
       } else if (action === 'saveAs') {
         result = await saveConflictedDocumentAs(requestMarkdownSavePath);
-        if (result.resolved) showToast('已保留当前版本并另存为');
+        if (result.resolved) showToast(t('app.savedCurrentVersionAs'));
       } else {
         result = await overwriteConflictedDocument();
-        if (result.resolved) showToast('已覆盖磁盘版本');
+        if (result.resolved) showToast(t('app.overwroteDiskVersion'));
       }
     } catch (error) {
-      showToast(`冲突处理失败: ${formatAppError(error)}`);
+      showToast(t('app.conflictActionFailed', { message: formatAppError(error) }));
     } finally {
       setConflictAction(null);
     }
@@ -763,7 +853,7 @@ function App() {
       openBacklinks: handleBacklinksClick,
       openRelationGraph: () => {
         if (!workspaceIndex || workspaceIndex.documents.length === 0) {
-          showToast('请先打开一个包含 Markdown 文件的工作区');
+          showToast(t('app.openMarkdownWorkspaceFirst'));
           return;
         }
         setRelationGraphVisible(true);
@@ -789,6 +879,9 @@ function App() {
     shortcutStyle,
     wordWrap,
     exportDefaults,
+    locale,
+    localePreference,
+    settingsLocale,
     recentFiles,
   ]);
 
@@ -821,7 +914,7 @@ function App() {
 
     if (!isCommandId(action)) {
       console.warn(`[Command] Unknown command id: ${action}`);
-      showToast(`未知命令: ${action}`);
+      showToast(t('app.unknownCommand', { action }));
       return;
     }
 
@@ -894,7 +987,7 @@ function App() {
     setGlobalContextMenu({ x: e.clientX, y: e.clientY, items, kind: 'menu' });
   };
 
-  const titleDocName = currentDocument?.name ?? '未命名';
+  const titleDocName = currentDocument?.name ?? t('common.untitled');
   const titleDirty = currentDocument?.isDirty ?? false;
   const hasSaveConflict = currentDocument?.saveStatus === 'conflict' && Boolean(currentDocument.path);
   const recoveryPromptVisible = shouldShowRecoveryPrompt({
@@ -1005,7 +1098,7 @@ function App() {
 
       <SaveConflictModal
         visible={Boolean(hasSaveConflict && !saveDialog)}
-        documentName={currentDocument?.name ?? '未命名'}
+        documentName={currentDocument?.name ?? t('common.untitled')}
         error={currentDocument?.saveError ?? null}
         busyAction={conflictAction}
         onReload={() => runConflictAction('reload')}
@@ -1013,11 +1106,14 @@ function App() {
         onOverwrite={() => runConflictAction('overwrite')}
       />
 
-      <LinkDiagnosticsPanel
+      <DocumentDiagnosticsPanel
         visible={linkDiagnosticsVisible}
-        diagnostics={linkDiagnostics}
-        onClose={() => setLinkDiagnosticsVisible(false)}
-        onSelect={handleSelectLinkDiagnostic}
+        diagnostics={displayedDiagnostics}
+        onClose={() => {
+          setLinkDiagnosticsVisible(false);
+          setPreflightDiagnostics(null);
+        }}
+        onSelect={handleSelectDocumentDiagnostic}
       />
 
       <BacklinksPanel
@@ -1066,11 +1162,11 @@ function App() {
           <div className="modal prism-export-save-modal" role="dialog" aria-label={getSaveDialogTitle(saveDialog)}>
             <div className="modal-header">
               <div className="modal-title">{getSaveDialogTitle(saveDialog)}</div>
-              <button className="modal-close" onClick={() => closeSaveDialog(null)} aria-label="关闭">×</button>
+              <button className="modal-close" onClick={() => closeSaveDialog(null)} aria-label={t('common.close')}>×</button>
             </div>
             <div className="modal-body prism-export-save-body">
               <label className="prism-export-save-field">
-                <span>文件名</span>
+                <span>{t('app.filename')}</span>
                 <input
                   autoFocus
                   value={saveDialog.filename}
@@ -1090,17 +1186,17 @@ function App() {
               </label>
 
               <div className="prism-export-save-field">
-                <span>位置</span>
+                <span>{t('app.location')}</span>
                 <div className="prism-export-save-location">
                   <div title={saveDialog.directory}>{saveDialog.directory}</div>
-                  <button type="button" onClick={chooseSaveDirectory}>更改</button>
+                  <button type="button" onClick={chooseSaveDirectory}>{t('common.change')}</button>
                 </div>
               </div>
 
               {saveDialog.kind === 'export' && (
                 <>
                   <label className="prism-export-save-field">
-                    <span>导出清晰度</span>
+                    <span>{t('app.exportQuality')}</span>
                     <select
                       value={normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale)}
                       onChange={(event) => setSaveDialog((dialog) => dialog ? {
@@ -1109,37 +1205,37 @@ function App() {
                         error: null,
                       } : null)}
                     >
-                      {EXPORT_QUALITY_PRESETS.map((preset) => (
+                      {getLocalizedExportQualityPresets().map((preset) => (
                         <option key={preset.scale} value={preset.scale}>
                           {preset.shortLabel}
                         </option>
                       ))}
                     </select>
                     <small>
-                      {getExportQualityPreset(
+                      {getLocalizedExportQualityPreset(
                         normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale),
                       ).description}
                     </small>
                   </label>
                   <div className="prism-export-quality-note">
-                    Prism 会按所选清晰度导出，不会自动降低质量。大文档可能需要数分钟；导出期间可转入后台继续编辑。
+                    {t('app.exportQualityNote')}
                   </div>
-                  <div className="prism-export-preflight" aria-label="导出预检">
+                  <div className="prism-export-preflight" aria-label={t('app.exportPreflight')}>
                     <div className="prism-export-preflight-row">
-                      <span>目标</span>
-                      <b>{saveDialog.format ? getExportFormatLabel(saveDialog.format) : '导出'} · {saveDialog.filename}</b>
+                      <span>{t('app.target')}</span>
+                      <b>{saveDialog.format ? getExportFormatLabel(saveDialog.format) : t('common.export')} · {saveDialog.filename}</b>
                     </div>
                     <div className="prism-export-preflight-row">
-                      <span>清晰度</span>
+                      <span>{t('app.quality')}</span>
                       <b>
-                        {getExportQualityPreset(
+                        {getLocalizedExportQualityPreset(
                           normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale),
                         ).shortLabel}
                       </b>
                     </div>
                     <div className="prism-export-preflight-row">
-                      <span>风险</span>
-                      <b>{linkDiagnostics.length > 0 ? `有 ${linkDiagnostics.length} 个 ERROR，建议先查看` : '未发现阻断性文档错误'}</b>
+                      <span>{t('app.risk')}</span>
+                      <b>{actionableDiagnostics.length > 0 ? t('app.errorRisk', { count: actionableDiagnostics.length }) : t('app.noBlockingDocumentErrors')}</b>
                     </div>
                   </div>
                 </>
@@ -1152,7 +1248,7 @@ function App() {
               {saveDialog.pendingOverwritePath && (
                 <div className="prism-export-overwrite">
                   <div className="prism-export-overwrite-title">
-                    “{basename(saveDialog.pendingOverwritePath)}” 已存在
+                    {t('app.fileAlreadyExists', { filename: basename(saveDialog.pendingOverwritePath) })}
                   </div>
                   <div className="prism-export-overwrite-text">
                     {getSaveDialogOverwriteText(saveDialog)}
@@ -1161,10 +1257,10 @@ function App() {
               )}
             </div>
             <div className="prism-export-save-footer">
-              <button type="button" onClick={() => closeSaveDialog(null)}>取消</button>
+              <button type="button" onClick={() => closeSaveDialog(null)}>{t('common.cancel')}</button>
               {saveDialog.pendingOverwritePath ? (
                 <button type="button" className="danger" onClick={() => confirmSaveDialog(true)}>
-                  替换并{getSaveDialogPrimaryLabel(saveDialog)}
+                  {t('app.replaceAndAction', { action: getSaveDialogPrimaryLabel(saveDialog) })}
                 </button>
               ) : (
                 <button type="button" className="primary" onClick={() => confirmSaveDialog(false)}>
@@ -1184,9 +1280,9 @@ function App() {
             <div role="status" aria-live="polite" className="prism-toast prism-toast--loading prism-export-progress">
               <span className="prism-toast-icon prism-export-spinner" aria-hidden="true" />
               <span className="prism-toast-copy">
-                <span className="prism-toast-title">正在导出 · 前台任务</span>
+                <span className="prism-toast-title">{t('app.exportingForeground')}</span>
                 <span className="prism-toast-message">{exportProgress}</span>
-                <span className="prism-toast-message prism-toast-message--secondary">耗时较长时可转入后台，清晰度不会降低。</span>
+                <span className="prism-toast-message prism-toast-message--secondary">{t('app.exportBackgroundHint')}</span>
               </span>
               <span className="prism-toast-actions">
                 <button
@@ -1194,7 +1290,7 @@ function App() {
                   className="prism-toast-action"
                   onClick={sendExportProgressToBackground}
                 >
-                  后台
+                  {t('app.background')}
                 </button>
               </span>
               <span className="prism-toast-progressbar" aria-hidden="true"><span /></span>
@@ -1209,22 +1305,22 @@ function App() {
           <div className="modal prism-export-failure-modal" role="dialog" aria-label={exportFailure.title}>
             <div className="modal-header">
               <div className="modal-title">{exportFailure.title}</div>
-              <button className="modal-close" onClick={dismissExportFailure} aria-label="关闭">×</button>
+              <button className="modal-close" onClick={dismissExportFailure} aria-label={t('common.close')}>×</button>
             </div>
             <div className="modal-body prism-export-failure-body">
               <div className="prism-export-failure-summary">
-                导出未完成。先检查输出位置、文件权限、文档 ERROR 和下方失败阶段；诊断文本可用于复现和定位问题。
+                {t('app.exportFailureSummary')}
               </div>
               <div className="prism-export-failure-actions">
-                <span>处理建议</span>
-                <b>修正后重新导出，或复制诊断文本继续排查。</b>
+                <span>{t('app.recoveryAdvice')}</span>
+                <b>{t('app.recoveryAdviceText')}</b>
               </div>
               <textarea readOnly value={exportFailure.diagnostic} />
             </div>
             <div className="prism-export-save-footer">
-              <button type="button" onClick={dismissExportFailure}>关闭</button>
+              <button type="button" onClick={dismissExportFailure}>{t('common.close')}</button>
               <button type="button" className="primary" onClick={copyExportFailureDiagnostic}>
-                复制诊断文本
+                {t('app.copyDiagnostic')}
               </button>
             </div>
           </div>

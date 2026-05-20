@@ -4,7 +4,7 @@ import { getEditorContextMenuItems } from './contextMenu';
 describe('editor context menu', () => {
   it('exposes source block operations from the right-click menu', () => {
     const items = getEditorContextMenuItems(true, 'mac');
-    const blockMenu = items.find((item) => item.label === '块级操作');
+    const blockMenu = items.find((item) => item.label === '块级源码操作');
 
     expect(blockMenu).toMatchObject({
       children: expect.arrayContaining([
@@ -19,6 +19,22 @@ describe('editor context menu', () => {
         expect.objectContaining({ action: 'selectionTaskList' }),
         expect.objectContaining({ action: 'duplicateSection' }),
         expect.objectContaining({ action: 'foldCurrentHeading' }),
+      ]),
+    });
+  });
+
+  it('adds table actions only when the context is inside a markdown table', () => {
+    const plainItems = getEditorContextMenuItems(false, 'mac');
+    const tableItems = getEditorContextMenuItems(false, 'mac', true);
+
+    expect(plainItems.find((item) => item.label === '表格')).toBeUndefined();
+    expect(tableItems.find((item) => item.label === '表格')).toMatchObject({
+      children: expect.arrayContaining([
+        expect.objectContaining({ action: 'insertTableRowAbove' }),
+        expect.objectContaining({ action: 'insertTableColumnRight' }),
+        expect.objectContaining({ action: 'moveTableRowUp' }),
+        expect.objectContaining({ action: 'sortTableAsc' }),
+        expect.objectContaining({ action: 'copyTableCsv' }),
       ]),
     });
   });

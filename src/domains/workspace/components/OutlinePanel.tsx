@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useI18n } from '../../i18n';
 
 interface HeadingItem {
   level: number;
@@ -30,6 +31,7 @@ function extractHeadings(content: string): HeadingItem[] {
 }
 
 export function OutlinePanel({ content, onHeadingClick }: OutlinePanelProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const headings = useMemo(() => extractHeadings(content), [content]);
   const normalizedQuery = query.trim().toLowerCase();
@@ -41,7 +43,7 @@ export function OutlinePanel({ content, onHeadingClick }: OutlinePanelProps) {
   if (headings.length === 0) {
     return (
       <div style={{ padding: '16px', fontSize: '13px', opacity: 0.6 }}>
-        暂无标题
+        {t('workspace.outline.empty')}
       </div>
     );
   }
@@ -51,10 +53,10 @@ export function OutlinePanel({ content, onHeadingClick }: OutlinePanelProps) {
       <div style={{ padding: '8px 12px 6px' }}>
         <input
           type="search"
-          aria-label="搜索大纲标题"
+          aria-label={t('workspace.outline.searchAria')}
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}
-          placeholder="搜索标题"
+          placeholder={t('workspace.outline.searchPlaceholder')}
           style={{
             width: '100%',
             height: '30px',
@@ -71,7 +73,7 @@ export function OutlinePanel({ content, onHeadingClick }: OutlinePanelProps) {
 
       {visibleHeadings.length === 0 ? (
         <div style={{ padding: '12px 16px', fontSize: '13px', opacity: 0.6 }}>
-          没有匹配标题
+          {t('workspace.outline.noMatches')}
         </div>
       ) : (
         <div style={{ padding: '0 0 8px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
