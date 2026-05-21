@@ -400,3 +400,52 @@ git diff --check
 
 - `App.tsx` 仍保留 shell 局部 UI 状态、恢复/冲突弹窗接线、平台 class/session persistence 等顶层装配逻辑，后续需要判断是否继续抽 hook，还是让 `App.tsx` 作为 composition root 保留这些接线。
 - `exportPipeline.ts`、`EditorPane.tsx`、`src-tauri/src/lib.rs` 尚未进入后续 phase。
+
+## Phase 3：Export strategy + pipeline 深化
+
+### Checkpoint 3A：导出 service 与本地 format strategy
+
+改动范围：
+
+- `src/domains/export/exportService.ts`
+- `src/domains/export/formats/localExportStrategies.ts`
+- `src/domains/export/localExport.ts`
+- `src/domains/export/localExport.test.ts`
+- `src/domains/export/index.ts`
+
+实现结果：
+
+- 从 `index.ts` 抽出 `exportService.ts`，让 `index.ts` 回到对外 barrel：
+  - 保持 `exportDocument()` 对外导出名和调用行为不变。
+  - 保持 Tauri 主窗口带 `outputPath` 时走 isolated WebView，export worker / browser runtime 走 local pipeline。
+- 从 `localExport.ts` 的 switch 抽出本地 format strategy registry：
+  - `html` -> `adapters/html`
+  - `pdf` -> `adapters/pdf`
+  - `docx` -> `adapters/docx`
+  - `png` -> `adapters/png`
+- 新增 `localExport.test.ts`，验证四种 format 会加载正确 adapter，并在 strategy 边界拒绝不支持的 format。
+- 本 checkpoint 不移动 `exportPipeline.ts` 内部算法，`exportHtml`、`exportPdf`、`exportPng`、`exportDocx` 仍由原 pipeline 导出，避免把 strategy 接线和渲染算法迁移混在一个 diff 中。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/index.test.ts src/domains/export/localExport.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、10 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只建立导出 service / strategy 接线，不改变导出渲染、PDF capture、PNG canvas、DOCX builder、真实文件写入或 Tauri/Rust/native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续移动 pipeline 内部实现和最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍为 3209 行，主要 HTML/PDF/PNG/DOCX 实现尚未拆分。
+- 下一步应先拆 `exportPipelineContext` / 渲染上下文中的纯工具，再逐步拆 HTML/PDF/PNG/DOCX 具体实现。
