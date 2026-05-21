@@ -449,3 +449,51 @@ git diff --check
 
 - `exportPipeline.ts` 仍为 3209 行，主要 HTML/PDF/PNG/DOCX 实现尚未拆分。
 - 下一步应先拆 `exportPipelineContext` / 渲染上下文中的纯工具，再逐步拆 HTML/PDF/PNG/DOCX 具体实现。
+
+### Checkpoint 3B：导出 pipeline 上下文工具分层
+
+改动范围：
+
+- `src/domains/export/pipeline/exportPipelineContext.ts`
+- `src/domains/export/pipeline/exportPipelineContext.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出上下文级公共工具：
+  - `exportProgressMessages`
+  - `normalizeExportRasterScale`
+  - `getPreviewBackgroundColor`
+  - `stripMarkdownExtension`
+  - `getExportTitle`
+  - `reportProgress`
+  - `reportWarning`
+  - `isTauriExportWorkerRuntime`
+  - `getErrorMessage`
+  - `getExportOutputPath`
+- 新增 `exportPipelineContext.test.ts`，覆盖 raster scale 边界、导出 title 推导、进度/警告 callback、Tauri export worker 判断、错误消息与输出路径 helper、预览背景色 fallback。
+- `exportPipeline.ts` 改为从 `pipeline/exportPipelineContext.ts` 导入这些工具，HTML/PDF/PNG/DOCX 导出算法未改变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/pipeline/exportPipelineContext.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/export/index.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：4 个测试文件、60 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动导出上下文工具，不改变渲染节点创建、Mermaid、图片、PDF capture/raster、DOCX builder、真实文件写入或 Rust/Tauri native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍承载主要实现，需要继续拆 render/html/pdf/png/docx 模块。
+- 本次新增的上下文工具是后续模块拆分的公共依赖，后续移动代码时必须继续保持导出 API 和错误文案不变。

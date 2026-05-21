@@ -29,6 +29,17 @@ import {
   type ExportTocItem,
 } from './toc';
 import {
+  exportProgressMessages,
+  getErrorMessage,
+  getExportOutputPath,
+  getExportTitle,
+  getPreviewBackgroundColor,
+  isTauriExportWorkerRuntime,
+  normalizeExportRasterScale,
+  reportProgress,
+  reportWarning,
+} from './pipeline/exportPipelineContext';
+import {
   blobToDataUrl,
   bytesToDataUrl,
   canvasToPngBytes,
@@ -72,7 +83,6 @@ type SvgDocxImage = {
 };
 type ExportDocxImage = RasterDocxImage | SvgDocxImage;
 type MermaidDocxImage = RasterDocxImage;
-type ExportFileLabel = 'HTML' | 'PDF' | 'PNG' | 'Word';
 interface PdfRenderedPage {
   data: Uint8Array;
   width: number;
@@ -99,21 +109,7 @@ type PandocCitationHtmlAttempt =
   | { attempted: false; html: null }
   | { attempted: true; html: string | null };
 
-const exportProgressMessages = {
-  parseMarkdown: () => t('export.progress.parseMarkdown'),
-  renderDiagrams: () => t('export.progress.renderDiagrams'),
-  applyTheme: () => t('export.progress.applyTheme'),
-  prepareNativePdf: () => t('export.progress.prepareNativePdf'),
-  printNativePdf: () => t('export.progress.printNativePdf'),
-  applyPdfChrome: () => t('export.progress.applyPdfChrome'),
-  generateFile: (label: ExportFileLabel) => t('export.progress.generateFile', { label }),
-  writeFile: (label: ExportFileLabel) => t('export.progress.writeFile', { label }),
-} as const;
 type CitationPlaceholderContext = 'html' | 'builtIn';
-type PrismRuntimeWindow = Window & {
-  __TAURI_INTERNALS__?: unknown;
-  __PRISM_EXPORT_WORKER__?: boolean;
-};
 interface WebkitPdfCaptureLayout {
   rect: { x: number; y: number; width: number; height: number };
   pageCssHeight: number;
@@ -143,15 +139,6 @@ const DOCX_VISUAL_BLOCK_WIDTH = 760;
 const DOCX_IMAGE_MAX_WIDTH = 500;
 const DOCX_MERMAID_IMAGE_MAX_WIDTH = 650;
 const EXPORT_LINK_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
-
-function normalizeExportRasterScale(scale: unknown, fallback = 2) {
-  if (typeof scale !== 'number' || !Number.isFinite(scale)) return fallback;
-  return Math.min(4, Math.max(1, Math.round(scale)));
-}
-
-function getPreviewBackgroundColor() {
-  return getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff';
-}
 
 function normalizeExportExternalLink(rawUrl: string, baseUri: string) {
   const trimmed = rawUrl.trim();
@@ -217,34 +204,6 @@ function isExportCanvasWithinLimits(width: number, height: number, scale: number
   return scaledWidth <= MAX_EXPORT_CANVAS_DIMENSION
     && scaledHeight <= MAX_EXPORT_CANVAS_DIMENSION
     && area <= MAX_EXPORT_CANVAS_AREA;
-}
-
-function stripMarkdownExtension(filename: string) {
-  return filename.replace(/\.(md|markdown|txt)$/i, '') || 'Untitled';
-}
-
-function getExportTitle(input: Pick<ExportDocumentInput, 'filename' | 'title'>) {
-  return input.title?.trim() || stripMarkdownExtension(input.filename);
-}
-
-function reportProgress(input: ExportDocumentInput, message: string) {
-  input.onProgress?.(message);
-}
-
-function reportWarning(input: ExportDocumentInput, message: string) {
-  input.onWarning?.(message);
-}
-
-function isTauriExportWorkerRuntime() {
-  if (typeof window === 'undefined') return false;
-  const runtimeWindow = window as PrismRuntimeWindow;
-  return Boolean(runtimeWindow.__TAURI_INTERNALS__ && runtimeWindow.__PRISM_EXPORT_WORKER__);
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message.trim();
-  if (typeof error === 'string' && error.trim()) return error.trim();
-  return t('export.error.unknown');
 }
 
 function hasCitationExportConfig(input: ExportDocumentInput) {
@@ -1513,11 +1472,6 @@ async function createStandaloneExportFrame(input: ExportDocumentInput) {
   }
   await nextFrame();
   return iframe;
-}
-
-async function getExportOutputPath(outputPath?: string) {
-  if (outputPath) return outputPath;
-  return null;
 }
 
 export async function exportHtml(input: ExportDocumentInput, outputPath?: string) {
