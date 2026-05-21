@@ -1445,3 +1445,62 @@ git diff --check
 剩余风险：
 
 - `trash`、`pandoc`、`pdf_capture`、`startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
+
+### Checkpoint 8C：拆分废纸篓 native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/trash.rs`
+- `src-tauri/src/lib.rs`
+
+实现结果：
+
+- 新增 `commands/trash.rs`，承接：
+  - `move_path_to_trash`
+  - `wait_for_child_output_with_timeout`
+  - macOS Finder 废纸篓 AppleScript
+  - macOS `~/.Trash` fallback
+  - non-macOS `trash::delete` fallback
+- `lib.rs` 不再直接持有废纸篓 command 实现，只在 `generate_handler!` 中注册 `commands::trash::move_path_to_trash`。
+- 原废纸篓相关单元测试迁入 `commands/trash.rs`，继续覆盖：
+  - 缺失路径先被拒绝。
+  - 子进程输出等待成功。
+  - 子进程等待超时会 kill。
+  - Finder AppleScript 仍使用 POSIX file as alias。
+  - macOS `~/.Trash` fallback 保留唯一命名逻辑。
+- 不改变前端调用 command 名称、废纸篓行为、错误文案或 fallback 顺序。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+node --check scripts/run-app-smoke.mjs
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：10 项 Rust 测试通过。
+- `node --check scripts/run-app-smoke.mjs` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+- `npm run build` 作为 app smoke 的 beforeBuildCommand 已通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+
+跳过项：
+
+- 未额外跑完整 `npm test -- --run`；本 checkpoint 只移动 Rust 废纸篓 command，真实打开/编辑/保存路径已由 app smoke 覆盖，Rust 行为由 `cargo test` 覆盖。
+- 未手工触发删除文件到废纸篓；本轮是行为保持型迁移，删除安全语义由迁移后的 Rust 单元测试覆盖。
+
+剩余风险：
+
+- `pandoc`、`pdf_capture`、`startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
+- app smoke 曾出现一次保存 marker 超时，重跑后通过；判断为 macOS 前台焦点偶发，不归因于本 checkpoint。
