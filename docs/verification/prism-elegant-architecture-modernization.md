@@ -1086,3 +1086,39 @@ git diff --check
 
 - link diagnostics 的当前文档 heading slug 校验仍有独立扫描；下一步可让它复用 document model headings。
 - image diagnostics 也尚未消费 document model 的 `images`。
+
+### Checkpoint 5C：链接诊断的标题锚点集合复用 Markdown document model
+
+改动范围：
+
+- `src/domains/editor/extensions/linkDiagnostics.ts`
+
+实现结果：
+
+- `scanMarkdownLinks()` 内部的当前文档 heading slug 集合改为来自 `extractMarkdownDocumentHeadings()`。
+- 链接目标解析、外链跳过、workspace file 校验、图片链接 `validateImageTargets` 行为保持原样，避免本 checkpoint 改变带 title 的链接或图片诊断语义。
+- `getMarkdownHeadingSlug` 的 re-export 仍保留，兼容 link completion 和旧测试入口。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/extensions/headingDiagnostics.test.ts src/domains/markdown/documentModel.test.ts src/domains/diagnostics/adapters.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：4 个测试文件、20 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只替换链接诊断的 heading slug 数据来源，不改变链接目标解析、workspace index、诊断 UI、图片诊断或导出预检。
+- 因此未跑真实 app smoke；Phase 6 诊断模型深化时补面板/状态栏相关测试。
+
+剩余风险：
+
+- image diagnostics 仍独立扫描 Markdown 图片；下一步可复用 document model 的 `images`。
+- link diagnostics 仍保留自身链接 target 解析，后续若要完全复用 `model.links`，需要先确认 title metadata、angle target、image validate 分支不会回退。

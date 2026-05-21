@@ -1,5 +1,6 @@
 import { getMarkdownHeadingSlug } from './headingSlug';
 import { t } from '../../i18n';
+import { extractMarkdownDocumentHeadings } from '../../markdown/documentModel';
 
 export type LinkDiagnosticKind = 'empty-target' | 'missing-heading' | 'missing-file';
 
@@ -49,14 +50,7 @@ function normalizePath(path: string): string {
 export { getMarkdownHeadingSlug };
 
 function collectHeadingSlugs(content: string): Set<string> {
-  const slugs = new Set<string>();
-  content.split('\n').forEach((line) => {
-    const match = line.match(/^(#{1,6})\s+(.+)$/);
-    if (!match) return;
-    const slug = getMarkdownHeadingSlug(match[2]);
-    if (slug) slugs.add(slug);
-  });
-  return slugs;
+  return new Set(extractMarkdownDocumentHeadings(content).map((heading) => heading.slug));
 }
 
 function extractTarget(rawTarget: string): string {
