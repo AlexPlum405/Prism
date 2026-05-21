@@ -310,3 +310,45 @@ git diff --check
 剩余风险：
 
 - `App.tsx` 仍包含保存/导出弹窗模型和文档链接/反链/图谱导航模型。
+
+### Checkpoint 2D：文档导航 model 分层
+
+改动范围：
+
+- `src/app/useDocumentNavigationModel.ts`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useDocumentNavigationModel()`，集中承载：
+  - 当前文档 links 提取。
+  - backlinks 计算、面板显示/关闭。
+  - backlink 选择后的打开文件与行号跳转。
+  - Markdown/wiki 文档链接解析与打开。
+  - 关系图谱打开条件与显示状态。
+- `App.tsx` 不再直接 import `extractDocumentLinks()`、`getWorkspaceIndexBacklinks()`、`getWorkspaceIndexLinkFiles()`、`resolveDocumentLinkTarget()`、`isSamePath()` 或链接/反链引用类型。
+- `App.tsx` 行数从 Checkpoint 2C 的 1115 行降到 1021 行。
+- 工作区索引、链接解析算法、BacklinksPanel、DocumentLinksPanel、RelationGraphPanel UI 行为保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/workspace/components/BacklinksPanel.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/components/shell/CommandPalette.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：4 个测试文件、14 项测试通过。
+- `npm run build` 通过；保留既有 Vite 大 chunk 和 KaTeX 动态导入警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移导航 model，不改工作区索引算法、不改文件打开实现、不触碰 Tauri/Rust/native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；最终真实 app smoke 覆盖链接跳转、反链跳转和关系图谱入口。
+
+剩余风险：
+
+- `App.tsx` 仍包含保存/导出弹窗 model 和部分 shell UI 局部状态。
