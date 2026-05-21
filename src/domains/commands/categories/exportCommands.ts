@@ -1,5 +1,3 @@
-import { invoke } from '@tauri-apps/api/core';
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { basename, flattenFiles } from '../../workspace/services';
 import {
   exportDocument,
@@ -15,6 +13,8 @@ import type { ExportHistoryEntry, ExportHistorySettings, SettingsState } from '.
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
+import { openPathWithSystemNative } from '../../../platform/tauri/nativeCommands';
+import { openPathWithDefaultApp, revealPathInFileManager } from '../../../platform/tauri/opener';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -115,10 +115,10 @@ function showExportPathActionError(context: CommandContext, title: string, error
 
 async function openExportedPath(path: string) {
   try {
-    await invoke('open_path_with_system', { path });
+    await openPathWithSystemNative(path);
   } catch (nativeError) {
     try {
-      await openPath(path);
+      await openPathWithDefaultApp(path);
     } catch (pluginError) {
       throw new Error(t('export.systemOpenFailed', {
         nativeError: formatError(nativeError),
@@ -272,7 +272,7 @@ async function handleExport(
             label: t('export.revealAction'),
             onClick: async () => {
               try {
-                await revealItemInDir(completedOutputPath);
+                await revealPathInFileManager(completedOutputPath);
               } catch (error) {
                 showExportPathActionError(context, t('export.revealFailed'), error);
               }

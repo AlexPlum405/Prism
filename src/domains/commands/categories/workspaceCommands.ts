@@ -1,15 +1,15 @@
-import { open } from '@tauri-apps/plugin-dialog';
 import { openPrismWindow } from '../../../lib/openWindow';
 import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import type { CommandContext, CommandDefinition } from '../types';
+import { openDialog } from '../../../platform/tauri/dialogs';
 
 function hasSavedDocumentPath(context: CommandContext): boolean {
   return Boolean(context.documentStore.currentDocument?.path);
 }
 
 async function handleOpenFolder(context: CommandContext): Promise<void> {
-  const selected = await open({ directory: true, multiple: false, recursive: true });
+  const selected = await openDialog({ directory: true, multiple: false, recursive: true });
   if (!selected || Array.isArray(selected)) return;
   await grantWorkspaceDirectoryScope(selected);
 

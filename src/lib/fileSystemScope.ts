@@ -1,9 +1,12 @@
-import { invoke } from '@tauri-apps/api/core';
+import {
+  grantMarkdownFileScopeNative,
+  grantWorkspaceDirectoryScopeNative,
+} from '../platform/tauri/nativeCommands';
 
 export async function grantMarkdownFileScope(path: string): Promise<void> {
-  await invoke('grant_markdown_file_scope', { path });
+  await grantMarkdownFileScopeNative(path);
 }
 
 export async function grantWorkspaceDirectoryScope(path: string): Promise<void> {
-  await invoke('grant_workspace_directory_scope', { path });
+  await grantWorkspaceDirectoryScopeNative(path);
 }

@@ -1,5 +1,4 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../domains/settings/store';
 import type {
   AutoSaveStrategy,
@@ -41,6 +40,7 @@ import {
 } from '../../domains/export/quality';
 import type { ToastInput } from '../../lib/toast';
 import { emitAppEvent } from '../../platform/events/appEvents';
+import { openDialog } from '../../platform/tauri/dialogs';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -258,7 +258,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const chooseThemePath = async () => {
     const source = await requestThemeImportSource();
     if (!source) return null;
-    const selected = await open({
+    const selected = await openDialog({
       multiple: false,
       directory: source === 'folder',
       recursive: false,
@@ -363,7 +363,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   };
 
   const chooseCustomExportDirectory = async () => {
-    const selected = await open({
+    const selected = await openDialog({
       directory: true,
       multiple: false,
       recursive: false,

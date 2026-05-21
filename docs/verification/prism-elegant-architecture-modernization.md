@@ -128,3 +128,50 @@ git diff --check
 
 - `src/platform/tauri/` adapter 尚未建立，下一 checkpoint 继续收敛低风险 Tauri 调用。
 - 测试代码仍保留少量原始 `prism-*` DOM event 派发，用于验证兼容性；production 事件入口已通过 typed interface 收敛。
+
+### Checkpoint 1B：第一批 Tauri platform adapter
+
+改动范围：
+
+- `src/platform/tauri/dialogs.ts`
+- `src/platform/tauri/nativeCommands.ts`
+- `src/platform/tauri/opener.ts`
+- `src/lib/fileSystemScope.ts`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/categories/exportCommands.ts`
+- `src/domains/commands/categories/workspaceCommands.ts`
+- `src/components/shell/SettingsModal.tsx`
+
+实现结果：
+
+- 建立第一批 Tauri adapter：
+  - `dialogs.ts`：`askDialog()`、`confirmDialog()`、`messageDialog()`、`openDialog()`。
+  - `nativeCommands.ts`：`invokeNativeCommand()`、`grantMarkdownFileScopeNative()`、`grantWorkspaceDirectoryScopeNative()`、`openPathWithSystemNative()`。
+  - `opener.ts`：`openPathWithDefaultApp`、`openExternalUrl`、`revealPathInFileManager`。
+- 迁移低风险调用点：设置中心路径选择、工作区打开文件夹、导出后打开/显示位置、帮助链接/检查更新跳转、DevTools native invoke、Markdown/workspace scope 授权。
+- `dialogs.ts` 使用惰性 wrapper，避免测试只 mock `open` 时因为未用到的 `ask/confirm/message` 顶层解构而失败。
+- 本 checkpoint 不迁移保存、删除、恢复、导出 pipeline 写文件、主题安装文件写入等高风险路径。
+
+验证：
+
+```bash
+npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts src/components/shell/SettingsModal.test.tsx src/domains/commands/platform.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 第一次聚焦测试暴露 `dialogs.ts` 顶层解构与旧测试 mock 不兼容；已改为惰性 wrapper。
+- 聚焦测试复跑通过：4 个测试文件、47 项测试通过。
+- `npm run build` 通过；保留既有 Vite 大 chunk 和 KaTeX 动态导入警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只改前端 Tauri adapter 和低风险调用点，不触及 Rust/native command 实现、不改真实文件写入算法、不改导出 pipeline 内部算法。
+- 因此未跑 `cargo test` 和 `npm run tauri:build:app-smoke`；Phase 8 和最终收口时补齐。
+
+剩余风险：
+
+- `App.tsx`、`fileActions.ts`、`useBootstrap.ts`、`settings/store.ts`、`fontService.ts`、`themeStorage.ts`、`exportPipeline.ts` 等仍有直接 Tauri import，后续 phase 按风险逐步迁移。

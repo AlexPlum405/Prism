@@ -1,8 +1,5 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { invoke } from '@tauri-apps/api/core';
-import { ask } from '@tauri-apps/plugin-dialog';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { checkForAppUpdate } from '../update/updateService';
 import type {
   CommandContext,
@@ -27,6 +24,9 @@ import { createWindowCommands } from './categories/windowCommands';
 import { t } from '../i18n';
 import { createWorkspaceCommands } from './categories/workspaceCommands';
 import { emitAppEvent } from '../../platform/events/appEvents';
+import { openExternalUrl } from '../../platform/tauri/opener';
+import { askDialog } from '../../platform/tauri/dialogs';
+import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -98,7 +98,7 @@ async function handleZoom(direction: 'in' | 'out' | 'reset', context: CommandCon
 
 async function handleDevTools(context: CommandContext): Promise<void> {
   try {
-    await invoke('plugin:webview|internal_toggle_devtools');
+    await invokeNativeCommand('plugin:webview|internal_toggle_devtools');
   } catch (error) {
     console.error('[Command] DevTools toggle failed', error);
     context.showToast?.(t('command.devToolsUnavailable'));
@@ -113,7 +113,7 @@ async function handleHelpLink(command: CommandId): Promise<void> {
   };
 
   const url = urls[command];
-  if (url) await openUrl(url);
+  if (url) await openExternalUrl(url);
 }
 
 async function handleCheckUpdate(context: CommandContext): Promise<void> {
@@ -130,12 +130,12 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       return;
     }
 
-    const shouldOpen = await ask(
+    const shouldOpen = await askDialog(
       t('command.updateAvailable', { version: result.version, currentVersion: result.currentVersion }),
       { title: t('command.checkUpdate'), kind: 'info' },
     );
     if (shouldOpen) {
-      await openUrl('https://github.com/AlexPlum405/Prism/releases/latest');
+      await openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest');
     }
   } catch (error) {
     context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
