@@ -33,15 +33,12 @@ import {
   getExportTemplateDescription,
   getExportTemplateLabel,
 } from '../../domains/export/templates';
-import {
-  getLocalizedExportQualityPreset,
-  getLocalizedExportQualityPresets,
-  normalizeExportQualityScale,
-} from '../../domains/export/quality';
+import { normalizeExportQualityScale } from '../../domains/export/quality';
 import type { ToastInput } from '../../lib/toast';
 import { emitAppEvent } from '../../platform/events/appEvents';
 import { openDialog } from '../../platform/tauri/dialogs';
 import { useCitationSettingsModel } from './settings/useCitationSettingsModel';
+import { useExportSettingsModel } from './settings/useExportSettingsModel';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -174,6 +171,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     cslStylePath: settings.citation.cslStylePath,
     pandocDetected: settings.pandoc.detected,
   });
+  const exportSettingsModel = useExportSettingsModel(settings.exportDefaults);
 
   const importFont = async () => {
     const result = await importCustomFont();
@@ -773,7 +771,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 aria-checked={settings.exportDefaults.pageHeaderFooter}
               />
             </div>
-            {settings.exportDefaults.pageHeaderFooter && (
+            {exportSettingsModel.showHeaderFooterFields && (
               <>
                 <div className="settings-row">
                   <div>
@@ -804,7 +802,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             <div className="settings-row">
               <div>
                 <div className="row-label">{t('settings.defaultExportLocation.label')}</div>
-                <div className="row-hint">{settings.exportDefaults.customDirectory || t('common.unspecified')}</div>
+                <div className="row-hint">{exportSettingsModel.defaultLocationHint}</div>
               </div>
               <select
                 value={settings.exportDefaults.defaultLocation}
@@ -820,7 +818,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             <div className="settings-row">
               <div>
                 <div className="row-label">{t('settings.customExportDirectory.label')}</div>
-                <div className="row-hint">{settings.exportDefaults.customDirectory || t('settings.customExportDirectory.hint')}</div>
+                <div className="row-hint">{exportSettingsModel.customDirectoryHint}</div>
               </div>
               <button type="button" style={buttonStyle} onClick={chooseCustomExportDirectory}>{t('settings.chooseDirectory')}</button>
             </div>
@@ -839,7 +837,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 <option value="custom">{t('settings.docxFont.custom')}</option>
               </select>
             </div>
-            {settings.exportDefaults.docxFontPolicy === 'custom' && (
+            {exportSettingsModel.showCustomDocxFont && (
               <div className="settings-row">
                 <div>
                   <div className="row-label">{t('settings.docxCustomFont.label')}</div>
@@ -873,15 +871,15 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               <div>
                 <div className="row-label">{t('settings.exportQuality.label')}</div>
                 <div className="row-hint">
-                  {getLocalizedExportQualityPreset(normalizeExportQualityScale(settings.exportDefaults.pngScale)).description}
+                  {exportSettingsModel.qualityDescription}
                 </div>
               </div>
               <select
-                value={normalizeExportQualityScale(settings.exportDefaults.pngScale)}
+                value={exportSettingsModel.qualityScale}
                 onChange={(e) => settings.setExportPngScale(normalizeExportQualityScale(Number(e.target.value)))}
                 style={selectStyle}
               >
-                {getLocalizedExportQualityPresets().map((preset) => (
+                {exportSettingsModel.qualityPresets.map((preset) => (
                   <option key={preset.scale} value={preset.scale}>
                     {preset.shortLabel}
                   </option>

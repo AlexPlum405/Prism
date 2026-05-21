@@ -1286,3 +1286,47 @@ git diff --check
 
 - `SettingsModal.tsx` 仍包含主题管理、导出设置、字体设置和 prompt 逻辑。
 - 后续可继续抽 theme settings model 或 export settings model；UI primitives 仍未建立。
+
+### Checkpoint 7B：导出设置展示 model 分层
+
+改动范围：
+
+- `src/components/shell/settings/useExportSettingsModel.ts`
+- `src/components/shell/settings/useExportSettingsModel.test.ts`
+- `src/components/shell/SettingsModal.tsx`
+
+实现结果：
+
+- 从 `SettingsModal.tsx` 抽出导出设置展示模型：
+  - 默认导出目录 hint。
+  - 自定义导出目录 hint。
+  - DOCX 自定义字体区是否显示。
+  - 页眉页脚字段是否显示。
+  - PNG 清晰度归一值、说明文案和预设列表。
+- `SettingsModal.tsx` 继续负责实际 select/input/button 渲染和 store setter 调用。
+- 不改变导出设置 UI、不改变清晰度预设、不改变默认导出目录或 DOCX 字体策略行为。
+
+验证：
+
+```bash
+npm test -- --run src/components/shell/settings/useExportSettingsModel.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/normalize.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 第一次新测试错误假设清晰度预设包含 1.5x，且 999 会归一到 2x；按现有实现修正为预设 1/2/3/4，999 归一到 4x。
+- 聚焦测试通过：3 个测试文件、28 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动导出设置展示判断，不改变导出流程、导出命令、文件选择、Tauri/Rust 或真实导出行为。
+- 因此未跑真实 app smoke；最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `SettingsModal.tsx` 仍包含主题管理、字体设置和 prompt 逻辑。
+- UI primitives 仍未建立；后续可先抽主题设置 model，再评估是否真的需要 Button/Dialog primitive，避免过度抽象。
