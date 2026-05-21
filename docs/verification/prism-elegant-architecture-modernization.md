@@ -352,3 +352,51 @@ git diff --check
 剩余风险：
 
 - `App.tsx` 仍包含保存/导出弹窗 model 和部分 shell UI 局部状态。
+
+### Checkpoint 2E：保存与导出弹窗 model 分层
+
+改动范围：
+
+- `src/app/useSaveExportDialogModel.ts`
+- `src/app/useSaveExportDialogModel.test.tsx`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useSaveExportDialogModel()`，集中承载：
+  - Markdown 另存弹窗状态、默认目录、文件名补 `.md`。
+  - 导出弹窗状态、默认导出目录、导出文件名补目标扩展名。
+  - 目录选择、覆盖确认、文件名分隔符校验。
+  - PNG 清晰度选择、导出清晰度持久化、导出准备进度事件。
+- `App.tsx` 不再直接维护 `SaveDialogState`、导出文件名推导、默认导出目录解析、覆盖路径 basename 或保存/导出确认逻辑。
+- 新增 hook 单测，锁定保存/导出弹窗最容易回退的行为：
+  - Markdown 另存补扩展名并解析到原文档目录。
+  - 导出覆盖确认不直接覆盖，用户确认覆盖后才 resolve。
+  - PNG 清晰度写回设置 store，并继续发出导出准备进度事件。
+  - 目录选择统一通过 Tauri dialog adapter。
+- `App.tsx` 行数从 Checkpoint 2D 的 1021 行降到 796 行。
+- 保存/导出弹窗 JSX、文案、覆盖确认 UI、清晰度下拉 UI 保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/app/useSaveExportDialogModel.test.tsx src/App.recovery.test.tsx src/domains/commands/exportCommand.integration.test.ts src/domains/commands/registry.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：4 个测试文件、37 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移保存/导出弹窗 model，不改变真实文件写入算法、导出 pipeline 渲染算法、Rust/native command、发布签名、公证、updater、安装器或 file association。
+- 因此未跑 `cargo test` 和 `npm run tauri:build:app-smoke`；最终收口会用真实 app smoke 覆盖保存、另存、导出入口和文件安全路径。
+
+剩余风险：
+
+- `App.tsx` 仍保留 shell 局部 UI 状态、恢复/冲突弹窗接线、平台 class/session persistence 等顶层装配逻辑，后续需要判断是否继续抽 hook，还是让 `App.tsx` 作为 composition root 保留这些接线。
+- `exportPipeline.ts`、`EditorPane.tsx`、`src-tauri/src/lib.rs` 尚未进入后续 phase。

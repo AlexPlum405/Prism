@@ -11,6 +11,12 @@ import { useAppCommandContext } from './app/useAppCommandContext';
 import { useAppShortcuts } from './app/useAppShortcuts';
 import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
+import {
+  getSaveDialogOverwriteText,
+  getSaveDialogPrimaryLabel,
+  getSaveDialogTitle,
+  useSaveExportDialogModel,
+} from './app/useSaveExportDialogModel';
 import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
@@ -30,14 +36,10 @@ import { RelationGraphPanel } from './domains/workspace/components/RelationGraph
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
-import { open } from '@tauri-apps/plugin-dialog';
-import { downloadDir, homeDir } from '@tauri-apps/api/path';
-import { emitAppEvent } from './platform/events/appEvents';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { DocumentPropertiesPanel } from './domains/editor/components/DocumentPropertiesPanel';
 import { DocumentDiagnosticsPanel } from './domains/editor/components/DocumentDiagnosticsPanel';
 import { TypographyDiagnosticsPanel } from './domains/editor/components/TypographyDiagnosticsPanel';
-import type { ExportFormat } from './domains/export';
 import { getExportFormatLabel } from './domains/export';
 import {
   getLocalizedExportQualityPreset,
@@ -48,7 +50,6 @@ import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
 import { executeFileAction, FileActionInput } from './lib/fileActions';
-import { grantWorkspaceDirectoryScope } from './lib/fileSystemScope';
 import { ContextMenu, type ContextMenuItem } from './components/shell/ContextMenu';
 import { ShortcutPanel } from './components/shell/ShortcutPanel';
 import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
@@ -59,96 +60,10 @@ import {
   getCommandMenuItems,
 } from './domains/commands';
 import {
-  basename,
   computeWritingStats,
-  dirname,
   getRuntimePlatform,
-  joinPath,
 } from './domains/workspace/services';
-import type { ExportDefaultLocation } from './domains/settings/types';
 import { t, useI18n } from './domains/i18n';
-
-const exportExtensionByFormat: Record<ExportFormat, string> = {
-  html: 'html',
-  pdf: 'pdf',
-  docx: 'docx',
-  png: 'png',
-};
-
-function stripMarkdownExtension(filename: string) {
-  return filename.replace(/\.(md|markdown|txt)$/i, '') || 'Untitled';
-}
-
-function ensureExportExtension(filename: string, format: ExportFormat) {
-  const extension = exportExtensionByFormat[format];
-  const trimmed = filename.trim();
-  if (!trimmed) return `Untitled.${extension}`;
-  return trimmed.toLowerCase().endsWith(`.${extension}`) ? trimmed : `${trimmed}.${extension}`;
-}
-
-function ensureMarkdownExtension(filename: string) {
-  const trimmed = filename.trim();
-  if (!trimmed) return 'Untitled.md';
-  return /\.(md|markdown)$/i.test(trimmed) ? trimmed : `${trimmed}.md`;
-}
-
-function defaultExportFilename(filename: string, format: ExportFormat) {
-  return ensureExportExtension(stripMarkdownExtension(filename), format);
-}
-
-function emitExportProgress(message: string | null) {
-  emitAppEvent('export.progress', message ? { visible: true, message } : { visible: false });
-}
-
-async function resolveDefaultExportDirectory(input: {
-  defaultLocation: ExportDefaultLocation;
-  customDirectory: string;
-  documentPath?: string;
-  rootPath?: string | null;
-  showToast?: (message: string) => void;
-}) {
-  const fallback = input.documentPath
-    ? dirname(input.documentPath)
-    : input.rootPath || await homeDir();
-
-  if (input.defaultLocation === 'ask' || input.defaultLocation === 'document') {
-    return fallback;
-  }
-
-  if (input.defaultLocation === 'downloads') {
-    try {
-      return await downloadDir();
-    } catch {
-      return fallback;
-    }
-  }
-
-  const customDirectory = input.customDirectory.trim();
-  if (customDirectory) {
-    try {
-      await grantWorkspaceDirectoryScope(customDirectory);
-      if (await fsExists(customDirectory)) return customDirectory;
-    } catch {
-      // Fall through to toast and fallback.
-    }
-  }
-
-  input.showToast?.(t('app.defaultExportDirectoryUnavailable'));
-  return fallback;
-}
-
-type SaveDialogKind = 'export' | 'markdown';
-
-interface SaveDialogState {
-  kind: SaveDialogKind;
-  format?: ExportFormat;
-  directory: string;
-  filename: string;
-  qualityScale?: number;
-  error: string | null;
-  pendingOverwritePath: string | null;
-  resolve: (result: string | { path: string; qualityScale?: number } | null) => void;
-}
 
 interface RecoveryPromptVisibilityInput {
   hasSnapshot: boolean;
@@ -162,23 +77,6 @@ export function shouldShowRecoveryPrompt({
   hasSaveConflict,
 }: RecoveryPromptVisibilityInput) {
   return hasSnapshot && !hasSaveDialog && !hasSaveConflict;
-}
-
-function getSaveDialogTitle(dialog: SaveDialogState) {
-  if (dialog.kind === 'export' && dialog.format) {
-    return t('app.exportTitle', { format: getExportFormatLabel(dialog.format) });
-  }
-  return t('app.saveMarkdown');
-}
-
-function getSaveDialogPrimaryLabel(dialog: SaveDialogState) {
-  return dialog.kind === 'export' ? t('common.export') : t('common.save');
-}
-
-function getSaveDialogOverwriteText(dialog: SaveDialogState) {
-  return dialog.kind === 'export'
-    ? t('app.exportOverwriteText')
-    : t('app.saveOverwriteText');
 }
 
 function formatAppError(error: unknown): string {
@@ -213,7 +111,6 @@ function App() {
     items: ContextMenuItem[];
     kind: 'file' | 'menu';
   } | null>(null);
-  const [saveDialog, setSaveDialog] = useState<SaveDialogState | null>(null);
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
   const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
   const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('files');
@@ -421,135 +318,22 @@ function App() {
     workspaceIndex,
   });
 
-  const requestExportPath = useCallback(async (input: {
-    format: ExportFormat;
-    filename: string;
-    documentPath?: string;
-    suggestedPath?: string;
-  }) => {
-    const initialDirectory = await resolveDefaultExportDirectory({
-      defaultLocation: exportDefaults.defaultLocation,
-      customDirectory: exportDefaults.customDirectory,
-      documentPath: input.documentPath,
-      rootPath: workspace.rootPath,
-      showToast,
-    });
-
-    return new Promise<string | { path: string; qualityScale?: number } | null>((resolve) => {
-      setSaveDialog({
-        kind: 'export',
-        format: input.format,
-        directory: input.suggestedPath ? dirname(input.suggestedPath) : initialDirectory,
-        filename: input.suggestedPath ? basename(input.suggestedPath) : defaultExportFilename(input.filename, input.format),
-        qualityScale: normalizeExportQualityScale(exportDefaults.pngScale),
-        error: null,
-        pendingOverwritePath: null,
-        resolve,
-      });
-    });
-  }, [
-    exportDefaults.customDirectory,
-    exportDefaults.defaultLocation,
-    exportDefaults.pngScale,
+  const {
+    chooseSaveDirectory,
+    closeSaveDialog,
+    confirmSaveDialog,
+    requestExportPath,
+    requestMarkdownSavePath,
+    saveDialog,
+    saveDialogOverwriteFilename,
+    updateSaveDialogFilename,
+    updateSaveDialogQualityScale,
+  } = useSaveExportDialogModel({
+    existsPath: fsExists,
+    exportDefaults,
+    rootPath: workspace.rootPath,
     showToast,
-    workspace.rootPath,
-  ]);
-
-  const requestMarkdownSavePath = useCallback(async (input: {
-    filename: string;
-    documentPath?: string;
-  }) => {
-    const initialDirectory = input.documentPath
-      ? dirname(input.documentPath)
-      : workspace.rootPath || await homeDir();
-
-    return new Promise<string | null>((resolve) => {
-      setSaveDialog({
-        kind: 'markdown',
-        directory: initialDirectory,
-        filename: ensureMarkdownExtension(input.filename),
-        error: null,
-        pendingOverwritePath: null,
-        resolve: (result) => resolve(typeof result === 'string' ? result : null),
-      });
-    });
-  }, [workspace.rootPath]);
-
-  const closeSaveDialog = useCallback((result: string | { path: string; qualityScale?: number } | null = null) => {
-    setSaveDialog((dialog) => {
-      dialog?.resolve(result);
-      return null;
-    });
-  }, []);
-
-  const chooseSaveDirectory = useCallback(async () => {
-    if (!saveDialog) return;
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      defaultPath: saveDialog.directory,
-    });
-    if (!selected || Array.isArray(selected)) return;
-    setSaveDialog((dialog) => dialog ? {
-      ...dialog,
-      directory: selected,
-      error: null,
-      pendingOverwritePath: null,
-    } : null);
-  }, [saveDialog]);
-
-  const confirmSaveDialog = useCallback(async (allowOverwrite = false) => {
-    if (!saveDialog) return;
-    let filename: string;
-    if (saveDialog.kind === 'export') {
-      const format = saveDialog.format;
-      if (!format) {
-        setSaveDialog((dialog) => dialog ? {
-          ...dialog,
-          error: t('app.missingExportFormat'),
-          pendingOverwritePath: null,
-        } : null);
-        return;
-      }
-      filename = ensureExportExtension(saveDialog.filename, format);
-    } else {
-      filename = ensureMarkdownExtension(saveDialog.filename);
-    }
-    if (/[\\/]/.test(filename)) {
-      setSaveDialog((dialog) => dialog ? {
-        ...dialog,
-        error: t('app.filenameCannotContainSeparator'),
-        pendingOverwritePath: null,
-      } : null);
-      return;
-    }
-
-    const targetPath = joinPath(saveDialog.directory, filename);
-    if (!allowOverwrite) {
-      try {
-        if (await fsExists(targetPath)) {
-          setSaveDialog((dialog) => dialog ? {
-            ...dialog,
-            filename,
-            error: null,
-            pendingOverwritePath: targetPath,
-          } : null);
-          return;
-        }
-      } catch {
-        // If existence check fails, let the actual write surface the error.
-      }
-    }
-
-    if (saveDialog.kind === 'export') {
-      const qualityScale = normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale);
-      useSettingsStore.getState().setExportPngScale(qualityScale);
-      emitExportProgress(t('app.prepareExport'));
-      closeSaveDialog({ path: targetPath, qualityScale });
-      return;
-    }
-    closeSaveDialog(targetPath);
-  }, [closeSaveDialog, exportDefaults.pngScale, saveDialog]);
+  });
 
   const runConflictAction = useCallback(async (action: SaveConflictAction) => {
     if (conflictAction) return;
@@ -834,12 +618,7 @@ function App() {
                 <input
                   autoFocus
                   value={saveDialog.filename}
-                  onChange={(event) => setSaveDialog((dialog) => dialog ? {
-                    ...dialog,
-                    filename: event.target.value,
-                    error: null,
-                    pendingOverwritePath: null,
-                  } : null)}
+                  onChange={(event) => updateSaveDialogFilename(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') {
                       event.preventDefault();
@@ -863,11 +642,7 @@ function App() {
                     <span>{t('app.exportQuality')}</span>
                     <select
                       value={normalizeExportQualityScale(saveDialog.qualityScale, exportDefaults.pngScale)}
-                      onChange={(event) => setSaveDialog((dialog) => dialog ? {
-                        ...dialog,
-                        qualityScale: normalizeExportQualityScale(Number(event.target.value), exportDefaults.pngScale),
-                        error: null,
-                      } : null)}
+                      onChange={(event) => updateSaveDialogQualityScale(Number(event.target.value))}
                     >
                       {getLocalizedExportQualityPresets().map((preset) => (
                         <option key={preset.scale} value={preset.scale}>
@@ -912,7 +687,7 @@ function App() {
               {saveDialog.pendingOverwritePath && (
                 <div className="prism-export-overwrite">
                   <div className="prism-export-overwrite-title">
-                    {t('app.fileAlreadyExists', { filename: basename(saveDialog.pendingOverwritePath) })}
+                    {t('app.fileAlreadyExists', { filename: saveDialogOverwriteFilename ?? saveDialog.filename })}
                   </div>
                   <div className="prism-export-overwrite-text">
                     {getSaveDialogOverwriteText(saveDialog)}
