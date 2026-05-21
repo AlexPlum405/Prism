@@ -1,5 +1,9 @@
 # Prism 架构优化续跑 `/goal` 入口
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件是旧 goal prompt，仅保留历史背景。当前 goal 以 `docs/prism-next-optimization-goal.md` 为准。
+
 > 更新日期：2026-05-20
 > 用途：把长任务细节留在本文件，`/goal` 只保留极短入口。
 

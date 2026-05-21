@@ -1,5 +1,9 @@
 # Prism 优雅架构现代化 `/goal`
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件是旧 goal prompt，仅保留历史背景。当前 goal 以 `docs/prism-next-optimization-goal.md` 为准。
+
 > 日期：2026-05-21
 > 计划文件：`docs/prism-elegant-architecture-modernization-plan.md`
 

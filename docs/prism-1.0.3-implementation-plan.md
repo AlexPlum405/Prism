@@ -1,5 +1,9 @@
 # Prism 1.0.3 详细优化实施方案
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件仅保留历史背景，不再作为后续 active plan 使用。当前待实施计划以 `docs/prism-next-optimization-implementation-plan.md` 为准。
+
 ## 1. 产品目标
 
 Prism 1.0.3 的目标不是成为 Typora 式所见即所得编辑器，也不在本阶段扩展插件、云同步或知识图谱，而是把定位收束为：

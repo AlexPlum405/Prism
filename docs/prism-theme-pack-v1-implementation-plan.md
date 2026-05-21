@@ -1,5 +1,9 @@
 # Prism Theme Pack v1 实现方案
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件仅保留历史背景，不再作为后续 active plan 使用。当前待实施计划以 `docs/prism-next-optimization-implementation-plan.md` 为准。
+
 本文档定义 Prism 可插拔主题包第一版的产品目标、实现边界、四阶段任务、验证策略和 Computer Use 手工测试方案。执行时以本文为准，不再重新讨论已确认的产品边界。
 
 ## 1. 预期目标

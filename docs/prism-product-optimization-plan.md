@@ -1,5 +1,9 @@
 # Prism 产品与工程优化方案
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件仅保留历史背景，不再作为后续 active plan 使用。当前待实施计划以 `docs/prism-next-optimization-implementation-plan.md` 为准。
+
 > 生成日期：2026-05-14  
 > 用途：作为 Prism 1.0.x 之后产品优化、工程重构、issue 拆分与 Codex `/goal` 长任务执行的本地依据。  
 > 当前定位：开源、跨 macOS / Windows、中文长文友好、导出可靠、本地优先的 Markdown 写作器。

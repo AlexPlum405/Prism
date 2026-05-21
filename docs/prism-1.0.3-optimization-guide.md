@@ -1,5 +1,9 @@
 # Prism 1.0.3 产品优化指导方案
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件仅保留历史背景，不再作为后续 active plan 使用。当前待实施计划以 `docs/prism-next-optimization-implementation-plan.md` 为准。
+
 日期：2026-05-14
 
 ## 1.0.3 核心定位

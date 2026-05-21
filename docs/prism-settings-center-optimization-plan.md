@@ -1,5 +1,9 @@
 # Prism 设置中心完整优化 Plan
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件仅保留历史背景，不再作为后续 active plan 使用。当前待实施计划以 `docs/prism-next-optimization-implementation-plan.md` 为准。
+
 > 版本：1.0.3 设置中心专项  
 > 目标文件：`docs/prism-settings-center-optimization-plan.md`  
 > 参考原型：`docs/prism-settings-center-prototype.html`  

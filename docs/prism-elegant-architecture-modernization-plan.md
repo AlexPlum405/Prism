@@ -1,5 +1,9 @@
 # Prism 优雅架构现代化实现计划
 
+> 状态：已完成 / 历史归档
+> 归档日期：2026-05-21
+> 说明：本文件仅保留历史背景，不再作为后续 active plan 使用。当前待实施计划以 `docs/prism-next-optimization-implementation-plan.md` 为准。
+
 > 日期：2026-05-21
 > 用途：作为长期架构升级 `/goal` 的详细执行计划。短 goal 应引用本文，不把所有细节塞进 prompt。
 
