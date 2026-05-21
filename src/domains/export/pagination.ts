@@ -4,6 +4,7 @@ export const EXPORT_PAGE_SPLIT_EPSILON = 2;
 export const EXPORT_ATOMIC_SPACER_CLASS = 'prism-export-page-spacer';
 export const EXPORT_ATOMIC_BLOCK_CLASS = 'prism-export-atomic';
 export const EXPORT_ATOMIC_GROUP_CLASS = 'prism-export-atomic-group';
+export const EXPORT_MIN_ATOMIC_SCALE = 0.05;
 export const EXPORT_ATOMIC_BLOCK_SELECTOR = [
   'img',
   'svg',
@@ -90,10 +91,11 @@ function scaleOversizedAtomicBlock(element: HTMLElement, pageCssHeight: number) 
   if (!isScalableAtomicBlock(element)) return false;
   const rect = element.getBoundingClientRect();
   if (rect.height <= pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) return false;
-  const scale = Math.max(0.2, Math.min(1, (pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) / rect.height));
+  const scale = Math.max(EXPORT_MIN_ATOMIC_SCALE, Math.min(1, (pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) / rect.height));
   element.style.transformOrigin = 'top center';
   element.style.transform = `scale(${Number(scale.toFixed(4))})`;
   element.style.width = `${Number((100 / scale).toFixed(4))}%`;
+  element.style.maxHeight = `${Math.max(1, Math.floor(pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON))}px`;
   element.style.marginLeft = 'auto';
   element.style.marginRight = 'auto';
   element.style.breakInside = 'avoid';

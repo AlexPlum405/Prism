@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   EXPORT_ATOMIC_BLOCK_CLASS,
   EXPORT_ATOMIC_GROUP_CLASS,
+  EXPORT_MIN_ATOMIC_SCALE,
   EXPORT_ATOMIC_SPACER_CLASS,
   markExportAtomicBlocks,
   prepareExportAtomicPagination,
@@ -174,5 +175,44 @@ describe('export pagination', () => {
     } finally {
       getBoundingClientRectSpy.mockRestore();
     }
+  });
+
+  it('scales very tall atomic blocks below 0.2 instead of letting one image split across pages', async () => {
+    const root = document.createElement('div');
+    const image = document.createElement('img');
+    image.className = EXPORT_ATOMIC_BLOCK_CLASS;
+    root.appendChild(image);
+    document.body.appendChild(root);
+
+    root.getBoundingClientRect = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 500,
+      bottom: 1200,
+      width: 500,
+      height: 1200,
+      toJSON: () => ({}),
+    } as DOMRect));
+    image.getBoundingClientRect = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 500,
+      bottom: 1200,
+      width: 500,
+      height: 1200,
+      toJSON: () => ({}),
+    } as DOMRect));
+
+    await prepareExportAtomicPagination(root, 100);
+
+    expect(image.style.transform).toBe('scale(0.0817)');
+    expect(image.style.width).toBe('1224.4898%');
+    expect(image.style.maxHeight).toBe('98px');
+    expect(Number(image.style.transform.match(/scale\(([^)]+)\)/)?.[1])).toBeGreaterThanOrEqual(EXPORT_MIN_ATOMIC_SCALE);
+    expect(root.querySelector(`.${EXPORT_ATOMIC_SPACER_CLASS}`)).toBeNull();
   });
 });
