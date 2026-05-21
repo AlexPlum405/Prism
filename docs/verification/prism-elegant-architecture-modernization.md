@@ -678,3 +678,48 @@ git diff --check
 
 - `exportPipeline.ts` 仍包含 rendered export node、standalone iframe 创建、Mermaid/图片渲染和各格式主体。
 - 下一步可拆 rendered export node 或开始把 HTML export facade 从 pipeline 中移出。
+
+### Checkpoint 3G：导出 canvas 限制工具分层
+
+改动范围：
+
+- `src/domains/export/render/canvasLimits.ts`
+- `src/domains/export/render/canvasLimits.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出 PDF raster、PNG、SVG raster、DOCX visual block 共用的 canvas 限制工具：
+  - `MAX_EXPORT_CANVAS_DIMENSION`
+  - `MAX_EXPORT_CANVAS_AREA`
+  - `assertExportCanvasWithinLimits()`
+  - `isExportCanvasWithinLimits()`
+- `exportPipeline.ts` 继续在原位置调用这些工具，错误文案和限制数值保持不变。
+- 新增 `canvasLimits.test.ts`，覆盖：
+  - 正常尺寸通过。
+  - 单轴超过 16000 时拒绝。
+  - 总面积超过 64000000 时拒绝。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/render/canvasLimits.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、53 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 canvas 限制工具，不改变 PDF/PNG/DOCX 渲染、html2canvas 参数、真实文件写入或 Rust/Tauri native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍包含大块渲染和格式主体逻辑。
+- 后续可以继续拆 standalone iframe、Mermaid render、图片内联，或者进入 EditorPane phase 前先确认 Phase 3 阶段性收益。

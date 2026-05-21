@@ -59,6 +59,10 @@ import {
 import { collectExportCss } from './render/exportCss';
 import { buildStandaloneHtml } from './render/standaloneHtml';
 import {
+  assertExportCanvasWithinLimits,
+  isExportCanvasWithinLimits,
+} from './render/canvasLimits';
+import {
   collectExportPdfLinkRects,
   type ExportPdfLinkRect,
 } from './pdf/pdfLinks';
@@ -123,8 +127,6 @@ interface WebkitPdfCaptureLayout {
   margins: typeof pdfPageMarginsPoints[keyof typeof pdfPageMarginsPoints];
 }
 
-const MAX_EXPORT_CANVAS_DIMENSION = 16_000;
-const MAX_EXPORT_CANVAS_AREA = 64_000_000;
 const PDF_EXPORT_RASTER_SCALE = 2;
 const PDF_EXPORT_MAX_PAGES = 500;
 const PDF_EXPORT_BATCH_RENDER_TIMEOUT_MS = 60_000;
@@ -139,30 +141,6 @@ const DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS = 60_000;
 const DOCX_VISUAL_BLOCK_WIDTH = 760;
 const DOCX_IMAGE_MAX_WIDTH = 500;
 const DOCX_MERMAID_IMAGE_MAX_WIDTH = 650;
-function assertExportCanvasWithinLimits(width: number, height: number, scale: number, label: string) {
-  const scaledWidth = Math.ceil(width * scale);
-  const scaledHeight = Math.ceil(height * scale);
-  const area = scaledWidth * scaledHeight;
-  if (
-    scaledWidth > MAX_EXPORT_CANVAS_DIMENSION
-    || scaledHeight > MAX_EXPORT_CANVAS_DIMENSION
-    || area > MAX_EXPORT_CANVAS_AREA
-  ) {
-    throw new Error(
-      t('export.error.canvasLimit', { label, width: scaledWidth, height: scaledHeight, scale }),
-    );
-  }
-}
-
-function isExportCanvasWithinLimits(width: number, height: number, scale: number) {
-  const scaledWidth = Math.ceil(width * scale);
-  const scaledHeight = Math.ceil(height * scale);
-  const area = scaledWidth * scaledHeight;
-  return scaledWidth <= MAX_EXPORT_CANVAS_DIMENSION
-    && scaledHeight <= MAX_EXPORT_CANVAS_DIMENSION
-    && area <= MAX_EXPORT_CANVAS_AREA;
-}
-
 function hasCitationExportConfig(input: ExportDocumentInput) {
   return Boolean(input.citation?.bibliographyPath || input.citation?.cslStylePath);
 }
