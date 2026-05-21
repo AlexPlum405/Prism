@@ -1558,3 +1558,56 @@ npm run tauri:build:app-smoke
 剩余风险：
 
 - `pdf_capture`、`startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
+
+### Checkpoint 8E：拆分 PDF capture native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/pdf_capture.rs`
+- `src-tauri/src/lib.rs`
+
+实现结果：
+
+- 新增 `commands/pdf_capture.rs`，承接：
+  - `capture_current_webview_pdf`
+  - PDF 输出路径校验
+  - PDF capture rect 校验
+  - macOS WebKit `WKWebView.createPDF` 调用
+  - non-macOS 不支持提示
+- `lib.rs` 不再直接持有 PDF capture command 实现，只在 `generate_handler!` 中注册 `commands::pdf_capture::capture_current_webview_pdf`。
+- 新增 Rust 单元测试覆盖：
+  - `.pdf` 输出路径通过。
+  - 空路径和非 `.pdf` 输出路径被拒绝。
+  - capture rect 接受正常尺寸，拒绝零尺寸、NaN 和超大尺寸。
+- 不改变前端调用 command 名称、WebKit capture 超时、输出覆盖逻辑、错误文案或非 macOS fallback。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：12 项 Rust 测试通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 通过，保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+
+跳过项：
+
+- 未额外跑完整 PDF 导出格式专项 smoke；本 checkpoint 是 Rust command 迁移，未改前端 PDF 导出策略。真实 app smoke 覆盖 Tauri command 注册和基础 app 生命周期，PDF 参数校验由 Rust 单元测试覆盖。
+
+剩余风险：
+
+- `startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
