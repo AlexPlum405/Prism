@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { ask, message, open } from '@tauri-apps/plugin-dialog';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../domains/settings/store';
 import type {
   AutoSaveStrategy,
@@ -39,6 +39,7 @@ import {
   getLocalizedExportQualityPresets,
   normalizeExportQualityScale,
 } from '../../domains/export/quality';
+import type { ToastInput } from '../../lib/toast';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -55,6 +56,22 @@ const SETTINGS_SECTIONS = [
 ] as const;
 
 type SettingsSectionId = typeof SETTINGS_SECTIONS[number]['id'];
+type ThemeImportSource = 'folder' | 'archive';
+type ThemePromptState =
+  | {
+    kind: 'import-source';
+    resolve: (value: ThemeImportSource | null) => void;
+  }
+  | {
+    kind: 'replace';
+    themeId: string;
+    resolve: (value: boolean) => void;
+  }
+  | {
+    kind: 'delete';
+    label: string;
+    resolve: (value: boolean) => void;
+  };
 
 const localeLabelKeys: Record<LocalePreference, I18nKey> = {
   auto: 'locale.auto',
@@ -132,21 +149,35 @@ function getCitationReadinessHint(input: {
   return translate('settings.citation.ready');
 }
 
+function showSettingsToast(input: ToastInput) {
+  window.dispatchEvent(new CustomEvent('prism-toast', { detail: input }));
+}
+
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const { t } = useI18n();
   const settings = useSettingsStore();
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('general');
   const [pandocChecking, setPandocChecking] = useState(false);
   const [themeBusy, setThemeBusy] = useState(false);
+  const [themePrompt, setThemePrompt] = useState<ThemePromptState | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (themePrompt) {
+          if (themePrompt.kind === 'import-source') themePrompt.resolve(null);
+          else themePrompt.resolve(false);
+          setThemePrompt(null);
+          return;
+        }
+        onClose();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [visible, onClose]);
+  }, [visible, onClose, themePrompt]);
 
   if (!visible) return null;
 
@@ -200,16 +231,37 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     if (result) settings.addCustomFont(result.font);
   };
 
+  const requestThemeImportSource = () => new Promise<ThemeImportSource | null>((resolve) => {
+    setThemePrompt({ kind: 'import-source', resolve });
+  });
+
+  const requestReplaceTheme = (themeId: string) => new Promise<boolean>((resolve) => {
+    setThemePrompt({ kind: 'replace', themeId, resolve });
+  });
+
+  const requestDeleteTheme = (label: string) => new Promise<boolean>((resolve) => {
+    setThemePrompt({ kind: 'delete', label, resolve });
+  });
+
+  const resolveThemePrompt = (value: ThemeImportSource | boolean | null) => {
+    const prompt = themePrompt;
+    if (!prompt) return;
+    setThemePrompt(null);
+    if (prompt.kind === 'import-source') {
+      prompt.resolve(value === 'folder' || value === 'archive' ? value : null);
+      return;
+    }
+    prompt.resolve(value === true);
+  };
+
   const chooseThemePath = async () => {
-    const chooseFolder = await ask(t('settings.importTheme.ask'), {
-      title: t('settings.importTheme.title'),
-      kind: 'info',
-    });
+    const source = await requestThemeImportSource();
+    if (!source) return null;
     const selected = await open({
       multiple: false,
-      directory: chooseFolder,
+      directory: source === 'folder',
       recursive: false,
-      filters: chooseFolder
+      filters: source === 'folder'
         ? undefined
         : [{ name: 'Prism Themes', extensions: ['zip', 'prism-theme'] }],
     });
@@ -228,10 +280,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
         result = await installThemeFromPath(selected);
       } catch (error) {
         if (error instanceof ThemeError && error.code === 'theme_exists' && error.themeId) {
-          const shouldReplace = await ask(t('settings.replaceTheme.ask', { themeId: error.themeId }), {
-            title: t('settings.replaceTheme.title'),
-            kind: 'warning',
-          });
+          const shouldReplace = await requestReplaceTheme(error.themeId);
           if (!shouldReplace) return;
           result = await installThemeFromPath(selected, { replace: true });
         } else {
@@ -243,16 +292,18 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
       if (applyAfterImport) {
         await settings.setContentTheme(result.id);
       }
-      await message(
-        applyAfterImport
+      showSettingsToast({
+        tone: 'success',
+        title: applyAfterImport
           ? t('settings.importTheme.applied', { name: result.name })
           : t('settings.importTheme.imported', { name: result.name }),
-        { title: t('settings.importTheme.title'), kind: 'info' },
-      );
+        message: applyAfterImport ? t('settings.importTheme.appliedHint') : t('settings.importTheme.importedHint'),
+      });
     } catch (error) {
-      await message(t('settings.importTheme.failed', { message: getThemeErrorMessage(error) }), {
+      showSettingsToast({
+        tone: 'error',
         title: t('settings.importTheme.title'),
-        kind: 'error',
+        message: t('settings.importTheme.failed', { message: getThemeErrorMessage(error) }),
       });
     } finally {
       setThemeBusy(false);
@@ -265,11 +316,16 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     try {
       await settings.reloadThemeRegistry();
       await settings.setContentTheme(settings.contentTheme);
-      await message(t('settings.themeReloaded'), { title: t('settings.theme.title'), kind: 'info' });
-    } catch (error) {
-      await message(t('settings.themeReloadFailed', { message: getThemeErrorMessage(error) }), {
+      showSettingsToast({
+        tone: 'success',
         title: t('settings.theme.title'),
-        kind: 'error',
+        message: t('settings.themeReloaded'),
+      });
+    } catch (error) {
+      showSettingsToast({
+        tone: 'error',
+        title: t('settings.theme.title'),
+        message: t('settings.themeReloadFailed', { message: getThemeErrorMessage(error) }),
       });
     } finally {
       setThemeBusy(false);
@@ -281,10 +337,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     const current = getThemeRegistrySnapshot().find((theme) => theme.id === settings.contentTheme)
       ?? settings.themeRegistry.find((theme) => theme.id === settings.contentTheme);
     if (!current || current.source !== 'user') return;
-    const confirmed = await ask(t('settings.deleteTheme.ask', { label: current.label }), {
-      title: t('settings.deleteTheme.title'),
-      kind: 'warning',
-    });
+    const confirmed = await requestDeleteTheme(current.label);
     if (!confirmed) return;
 
     setThemeBusy(true);
@@ -292,11 +345,16 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
       await settings.setContentTheme('miaoyan');
       await deleteInstalledUserTheme(current.id);
       await settings.reloadThemeRegistry();
-      await message(t('settings.themeDeleted'), { title: t('settings.theme.title'), kind: 'info' });
-    } catch (error) {
-      await message(t('settings.themeDeleteFailed', { message: getThemeErrorMessage(error) }), {
+      showSettingsToast({
+        tone: 'success',
         title: t('settings.theme.title'),
-        kind: 'error',
+        message: t('settings.themeDeleted'),
+      });
+    } catch (error) {
+      showSettingsToast({
+        tone: 'error',
+        title: t('settings.theme.title'),
+        message: t('settings.themeDeleteFailed', { message: getThemeErrorMessage(error) }),
       });
     } finally {
       setThemeBusy(false);
@@ -350,6 +408,23 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const availableThemes = themeRegistry.filter((theme) => theme.source !== 'invalid');
   const invalidThemes = themeRegistry.filter((theme) => theme.source === 'invalid');
   const currentTheme = themeRegistry.find((theme) => theme.id === settings.contentTheme);
+  const confirmationPrompt = themePrompt?.kind === 'replace'
+    ? {
+        title: t('settings.replaceTheme.title'),
+        message: t('settings.replaceTheme.message', { themeId: themePrompt.themeId }),
+        detail: t('settings.replaceTheme.detail'),
+        confirmLabel: t('settings.replaceTheme.confirm'),
+        danger: false,
+      }
+    : themePrompt?.kind === 'delete'
+      ? {
+          title: t('settings.deleteTheme.title'),
+          message: t('settings.deleteTheme.message', { label: themePrompt.label }),
+          detail: t('settings.deleteTheme.detail'),
+          confirmLabel: t('settings.deleteTheme.confirm'),
+          danger: true,
+        }
+      : null;
 
   return (
     <>
@@ -998,6 +1073,92 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
           </div>
         </div>
       </div>
+      {themePrompt && (
+        <>
+          <div
+            className="modal-overlay settings-prompt-overlay"
+            onClick={() => resolveThemePrompt(null)}
+          />
+          <div
+            className={`modal settings-prompt-modal ${confirmationPrompt?.danger ? 'settings-prompt-modal--danger' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={themePrompt.kind === 'import-source' ? t('settings.importTheme.sourceTitle') : confirmationPrompt?.title}
+          >
+            <div className="settings-prompt-header">
+              <div>
+                <div className="settings-prompt-title">
+                  {themePrompt.kind === 'import-source' ? t('settings.importTheme.sourceTitle') : confirmationPrompt?.title}
+                </div>
+                <div className="settings-prompt-subtitle">
+                  {themePrompt.kind === 'import-source' ? t('settings.importTheme.sourceSubtitle') : confirmationPrompt?.message}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => resolveThemePrompt(null)}
+                aria-label={t('common.close')}
+              >
+                ×
+              </button>
+            </div>
+            <div className="settings-prompt-body">
+              {themePrompt.kind === 'import-source' ? (
+                <div className="settings-theme-source-grid">
+                  <button
+                    type="button"
+                    className="settings-theme-source-card"
+                    onClick={() => resolveThemePrompt('folder')}
+                  >
+                    <span className="settings-theme-source-title">{t('settings.importTheme.folderOption')}</span>
+                    <span className="settings-theme-source-hint">{t('settings.importTheme.folderHint')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-theme-source-card"
+                    onClick={() => resolveThemePrompt('archive')}
+                  >
+                    <span className="settings-theme-source-title">{t('settings.importTheme.archiveOption')}</span>
+                    <span className="settings-theme-source-hint">{t('settings.importTheme.archiveHint')}</span>
+                  </button>
+                </div>
+              ) : (
+                <p className="settings-prompt-detail">{confirmationPrompt?.detail}</p>
+              )}
+            </div>
+            {themePrompt.kind === 'import-source' && (
+              <div className="settings-prompt-footer">
+                <button
+                  type="button"
+                  className="settings-action-button settings-action-button--quiet"
+                  onClick={() => resolveThemePrompt(null)}
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            )}
+            {themePrompt.kind !== 'import-source' && confirmationPrompt && (
+              <div className="settings-prompt-footer">
+                <button
+                  type="button"
+                  className="settings-action-button settings-action-button--quiet"
+                  onClick={() => resolveThemePrompt(false)}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="button"
+                  className={`settings-action-button ${confirmationPrompt.danger ? 'settings-action-button--danger-filled' : 'settings-action-button--primary'}`}
+                  onClick={() => resolveThemePrompt(true)}
+                >
+                  {confirmationPrompt.confirmLabel}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </>
   );
 }

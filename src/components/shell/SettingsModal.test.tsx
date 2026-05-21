@@ -1,12 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { open } from '@tauri-apps/plugin-dialog';
 import { DEFAULT_SETTINGS } from '../../domains/settings/types';
 import { useSettingsStore } from '../../domains/settings/store';
 import { SettingsModal } from './SettingsModal';
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
-  ask: vi.fn(),
-  message: vi.fn(),
   open: vi.fn(),
 }));
 
@@ -20,6 +19,7 @@ vi.mock('../../domains/settings/fontService', () => ({
 describe('SettingsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(open).mockResolvedValue(null);
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
       themeRegistry: [],
@@ -87,6 +87,46 @@ describe('SettingsModal', () => {
     expect(screen.getByRole('button', { name: '打开主题目录' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '重新加载用户主题' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '删除当前用户主题' })).not.toBeInTheDocument();
+  });
+
+  it('uses an in-app Prism prompt before opening the theme package picker', async () => {
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+    fireEvent.click(screen.getByRole('button', { name: '导入主题' }));
+
+    const prompt = await screen.findByRole('dialog', { name: '选择主题来源' });
+    expect(prompt).toBeInTheDocument();
+    expect(open).not.toHaveBeenCalled();
+
+    fireEvent.click(within(prompt).getByRole('button', { name: /主题包文件/ }));
+
+    await waitFor(() => {
+      expect(open).toHaveBeenCalledWith({
+        multiple: false,
+        directory: false,
+        recursive: false,
+        filters: [{ name: 'Prism Themes', extensions: ['zip', 'prism-theme'] }],
+      });
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: '选择主题来源' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('can cancel the in-app theme source prompt without opening a system picker', async () => {
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+    fireEvent.click(screen.getByRole('button', { name: '导入并应用主题' }));
+
+    const prompt = await screen.findByRole('dialog', { name: '选择主题来源' });
+    fireEvent.click(within(prompt).getByRole('button', { name: '取消' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: '选择主题来源' })).not.toBeInTheDocument();
+    });
+    expect(open).not.toHaveBeenCalled();
   });
 
   it('shows delete theme action only for the active user theme', () => {

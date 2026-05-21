@@ -1123,6 +1123,104 @@ svg.has-focus .prism-relation-graph-node.is-adjacent text {
   border-color: transparent;
   background: color-mix(in srgb, #b42318 6%, var(--c-canvas));
 }
+.settings-action-button--danger-filled {
+  border-color: color-mix(in srgb, #b42318 72%, var(--c-void));
+  background: color-mix(in srgb, #b42318 88%, var(--c-void));
+  color: #fff;
+  padding-inline: 13px;
+}
+.settings-action-button--danger-filled:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #b42318 82%, var(--c-void));
+  background: color-mix(in srgb, #b42318 78%, var(--c-void));
+}
+.settings-prompt-overlay {
+  z-index: 5100;
+  background: rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.settings-prompt-modal {
+  z-index: 5101;
+  width: min(420px, calc(100vw - 36px));
+  max-width: 420px;
+  max-height: none;
+  border-radius: 10px;
+}
+.settings-prompt-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--c-fog);
+}
+.settings-prompt-title {
+  color: var(--c-void);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+.settings-prompt-subtitle {
+  margin-top: 7px;
+  color: var(--c-graphite);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.settings-prompt-body {
+  padding: 14px 20px 18px;
+}
+.settings-theme-source-grid {
+  display: grid;
+  gap: 8px;
+}
+.settings-theme-source-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--c-fog);
+  border-radius: 9px;
+  padding: 12px 13px;
+  background: var(--c-canvas);
+  color: var(--c-void);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+.settings-theme-source-card:hover {
+  border-color: color-mix(in srgb, var(--c-void) 16%, var(--c-fog));
+  background: var(--c-chalk);
+  transform: translateY(-1px);
+}
+.settings-theme-source-card:focus-visible {
+  outline: 2px solid var(--c-void);
+  outline-offset: 2px;
+}
+.settings-theme-source-title {
+  font-size: 13px;
+  font-weight: 620;
+}
+.settings-theme-source-hint {
+  color: var(--c-ash);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.settings-prompt-detail {
+  margin: 0;
+  color: var(--c-ash);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.settings-prompt-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 20px 20px;
+}
 .settings-content select,
 .settings-content input:not([type='range']) {
   min-height: 30px;

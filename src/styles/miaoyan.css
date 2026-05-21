@@ -812,6 +812,49 @@ html[data-content-theme='miaoyan'] .settings-row {
   border-bottom-color: var(--miaoyan-divider);
 }
 
+html[data-content-theme='miaoyan'] .settings-prompt-overlay {
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+html[data-content-theme='miaoyan'] .settings-prompt-modal {
+  background: var(--miaoyan-main-bg);
+  border-color: var(--miaoyan-divider);
+  border-radius: 10px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.13), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+html[data-content-theme='miaoyan'] .settings-prompt-header {
+  border-bottom-color: var(--miaoyan-divider);
+}
+
+html[data-content-theme='miaoyan'] .settings-prompt-title,
+html[data-content-theme='miaoyan'] .settings-theme-source-title {
+  color: var(--miaoyan-text);
+  font-family: var(--miaoyan-font);
+  letter-spacing: 0.6px;
+}
+
+html[data-content-theme='miaoyan'] .settings-prompt-subtitle,
+html[data-content-theme='miaoyan'] .settings-prompt-detail,
+html[data-content-theme='miaoyan'] .settings-theme-source-hint {
+  color: var(--miaoyan-secondary-text);
+  font-family: var(--miaoyan-font);
+  letter-spacing: 0.6px;
+}
+
+html[data-content-theme='miaoyan'] .settings-theme-source-card {
+  border-color: var(--miaoyan-divider);
+  background: var(--miaoyan-main-bg);
+  border-radius: 8px;
+}
+
+html[data-content-theme='miaoyan'] .settings-theme-source-card:hover {
+  background: var(--miaoyan-panel-secondary);
+  border-color: color-mix(in srgb, var(--miaoyan-text) 14%, var(--miaoyan-divider));
+}
+
 html[data-content-theme='miaoyan'] .settings-content select,
 html[data-content-theme='miaoyan'] .settings-content input:not([type='range']) {
   border-color: var(--miaoyan-divider) !important;
