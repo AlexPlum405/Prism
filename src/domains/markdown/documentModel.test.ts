@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  extractMarkdownDocumentBlocks,
   extractMarkdownDocumentHeadings,
+  extractMarkdownDocumentImages,
   extractMarkdownDocumentLinks,
   parseMarkdownDocumentModel,
 } from './documentModel';
@@ -16,12 +18,28 @@ describe('markdown document model', () => {
       '# 开始',
       '阅读 [API](api.md) 和 [[index|首页]]。',
       '![图](image.png)',
+      '> [!TIP] 写作提示',
+      '<details>',
+      '```mermaid',
+      'graph TD',
+      '```',
+      '$$',
+      'x = y',
+      '$$',
     ].join('\n'));
 
     expect(model.body).toBe([
       '# 开始',
       '阅读 [API](api.md) 和 [[index|首页]]。',
       '![图](image.png)',
+      '> [!TIP] 写作提示',
+      '<details>',
+      '```mermaid',
+      'graph TD',
+      '```',
+      '$$',
+      'x = y',
+      '$$',
     ].join('\n'));
     expect(model.frontMatter).toMatchObject({
       hasFrontMatter: true,
@@ -46,6 +64,19 @@ describe('markdown document model', () => {
         label: '首页',
         line: 7,
       }),
+    ]);
+    expect(model.images).toEqual([
+      expect.objectContaining({
+        alt: '图',
+        target: 'image.png',
+        line: 8,
+      }),
+    ]);
+    expect(model.blocks).toEqual([
+      expect.objectContaining({ kind: 'callout', info: 'tip', line: 9, title: '写作提示' }),
+      expect.objectContaining({ kind: 'details', line: 10 }),
+      expect.objectContaining({ kind: 'mermaid', info: 'mermaid', line: 11 }),
+      expect.objectContaining({ kind: 'katex', info: 'math', line: 14 }),
     ]);
   });
 
@@ -96,6 +127,45 @@ describe('markdown document model', () => {
         line: 3,
         column: 1,
       }),
+    ]);
+  });
+
+  it('extracts markdown image references separately from document links', () => {
+    expect(extractMarkdownDocumentImages([
+      '[链接](docs/a.md)',
+      '![图片](docs/a.png "title")',
+      '![空图]()',
+    ].join('\n'))).toEqual([
+      expect.objectContaining({
+        alt: '图片',
+        target: 'docs/a.png "title"',
+        line: 2,
+        column: 1,
+      }),
+      expect.objectContaining({
+        alt: '空图',
+        target: '',
+        line: 3,
+        column: 1,
+      }),
+    ]);
+  });
+
+  it('extracts callout, details, mermaid, and katex block placeholders', () => {
+    expect(extractMarkdownDocumentBlocks([
+      '> [!WARNING] 发布前确认',
+      '<details><summary>更多</summary>',
+      '```mermaid',
+      'graph TD',
+      '```',
+      '$$',
+      'E = mc^2',
+      '$$',
+    ].join('\n'))).toEqual([
+      expect.objectContaining({ kind: 'callout', info: 'warning', title: '发布前确认', line: 1 }),
+      expect.objectContaining({ kind: 'details', line: 2 }),
+      expect.objectContaining({ kind: 'mermaid', info: 'mermaid', line: 3 }),
+      expect.objectContaining({ kind: 'katex', info: 'math', line: 6 }),
     ]);
   });
 });

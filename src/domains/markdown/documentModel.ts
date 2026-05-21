@@ -30,17 +30,39 @@ export interface MarkdownDocumentLinkReference {
   target: string;
 }
 
+export interface MarkdownDocumentImageReference {
+  alt: string;
+  column: number;
+  line: number;
+  target: string;
+}
+
+export type MarkdownDocumentBlockKind = 'callout' | 'details' | 'mermaid' | 'katex';
+
+export interface MarkdownDocumentBlockReference {
+  column: number;
+  info?: string;
+  kind: MarkdownDocumentBlockKind;
+  line: number;
+  title?: string;
+}
+
 export interface MarkdownDocumentModel {
   body: string;
+  blocks: MarkdownDocumentBlockReference[];
   content: string;
   frontMatter: MarkdownDocumentFrontMatter;
   frontMatterLineOffset: number;
   headings: MarkdownDocumentHeading[];
+  images: MarkdownDocumentImageReference[];
   links: MarkdownDocumentLinkReference[];
 }
 
 const MARKDOWN_LINK_RE = /!?\[([^\]\n]*)\]\(([^)\n]*)\)/g;
 const WIKI_LINK_RE = /\[\[([^\]\n|#]+)(?:#[^\]\n|]*)?(?:\|([^\]\n]*))?\]\]/g;
+const CALLOUT_RE = /^>\s*\[!(NOTE|TIP|WARNING|IMPORTANT)\](?:\s+(.+?))?\s*$/i;
+const DETAILS_RE = /^\s*<details\b/i;
+const FENCE_RE = /^```+\s*([^\s`]*)/;
 
 function splitTags(value: string) {
   return value
@@ -115,12 +137,101 @@ export function extractMarkdownDocumentLinks(content: string): MarkdownDocumentL
   return links.sort((a, b) => a.line - b.line || a.column - b.column);
 }
 
+export function extractMarkdownDocumentImages(content: string): MarkdownDocumentImageReference[] {
+  const images: MarkdownDocumentImageReference[] = [];
+
+  for (const match of content.matchAll(MARKDOWN_LINK_RE)) {
+    if (content[match.index ?? 0] !== '!') continue;
+    const target = match[2]?.trim() ?? '';
+    const { line, column } = lineColumnFromIndex(content, match.index ?? 0);
+    images.push({
+      alt: match[1]?.trim() ?? '',
+      column,
+      line,
+      target,
+    });
+  }
+
+  return images.sort((a, b) => a.line - b.line || a.column - b.column);
+}
+
+export function extractMarkdownDocumentBlocks(
+  content: string,
+  lineOffset = 0,
+): MarkdownDocumentBlockReference[] {
+  const blocks: MarkdownDocumentBlockReference[] = [];
+  let inMermaidFence = false;
+  let inKatexBlock = false;
+
+  content.split(/\r?\n/).forEach((lineText, index) => {
+    const line = lineOffset + index + 1;
+    const callout = lineText.match(CALLOUT_RE);
+    if (callout) {
+      blocks.push({
+        column: 1,
+        info: callout[1].toLowerCase(),
+        kind: 'callout',
+        line,
+        title: callout[2]?.trim() || callout[1].toUpperCase(),
+      });
+      return;
+    }
+
+    const details = lineText.match(DETAILS_RE);
+    if (details) {
+      blocks.push({
+        column: (details.index ?? 0) + 1,
+        kind: 'details',
+        line,
+      });
+      return;
+    }
+
+    const fence = lineText.match(FENCE_RE);
+    if (fence) {
+      const info = fence[1]?.trim().toLowerCase() ?? '';
+      if (!inMermaidFence && info === 'mermaid') {
+        blocks.push({
+          column: 1,
+          info,
+          kind: 'mermaid',
+          line,
+        });
+      }
+      inMermaidFence = !inMermaidFence && info === 'mermaid'
+        ? true
+        : inMermaidFence && !info
+          ? false
+          : inMermaidFence;
+      return;
+    }
+
+    const trimmed = lineText.trim();
+    if (trimmed.startsWith('$$')) {
+      if (!inKatexBlock) {
+        blocks.push({
+          column: lineText.indexOf('$$') + 1,
+          info: 'math',
+          kind: 'katex',
+          line,
+        });
+      }
+      if (trimmed === '$$' || !trimmed.endsWith('$$') || trimmed.length === 2) {
+        inKatexBlock = !inKatexBlock;
+      }
+    }
+  });
+
+  return blocks.sort((a, b) => a.line - b.line || a.column - b.column);
+}
+
 export function parseMarkdownDocumentModel(content: string): MarkdownDocumentModel {
   const parsed = parseDocumentFrontMatter(content);
   const frontMatterLineOffset = getFrontMatterLineOffset(content, parsed.body);
 
   return {
     body: parsed.body,
+    blocks: extractMarkdownDocumentBlocks(parsed.body, frontMatterLineOffset),
     content,
     frontMatter: {
       author: parsed.properties.author,
@@ -135,6 +246,7 @@ export function parseMarkdownDocumentModel(content: string): MarkdownDocumentMod
     },
     frontMatterLineOffset,
     headings: extractMarkdownDocumentHeadings(parsed.body, frontMatterLineOffset),
+    images: extractMarkdownDocumentImages(content),
     links: extractMarkdownDocumentLinks(content),
   };
 }

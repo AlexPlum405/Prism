@@ -1006,3 +1006,47 @@ git diff --check
 
 - `EditorPane.tsx` 仍包含表格 UI handlers、context menu handlers、rich copy command 分支和 CodeMirror extension 装配。
 - Phase 4 的主要 runtime seam 已建立；后续可选择再拆 editor command switch，或进入 Phase 5 做 Markdown core / workspace index 复用。
+
+## Phase 5：Markdown core、workspace index 与 preview/export 一致性
+
+### Checkpoint 5A：Markdown document model 扩展图片和特殊块
+
+改动范围：
+
+- `src/domains/markdown/documentModel.ts`
+- `src/domains/markdown/documentModel.test.ts`
+
+实现结果：
+
+- 在现有 `parseMarkdownDocumentModel()` 基础上新增结构化字段：
+  - `images`：Markdown 图片引用，包含 alt、target、line、column。
+  - `blocks`：特殊块占位，覆盖 Callout、`details` / Toggle、Mermaid fenced block、KaTeX block。
+- 新增导出函数：
+  - `extractMarkdownDocumentImages()`
+  - `extractMarkdownDocumentBlocks()`
+- 保留既有 front matter、heading、link 解析行为；图片仍不进入 `links`，避免 backlink 误判。
+- 本 checkpoint 只扩展 Markdown core 的表达能力，不改 workspace index、诊断、预览、导出或 UI 调用方。
+
+验证：
+
+```bash
+npm test -- --run src/domains/markdown/documentModel.test.ts src/domains/workspace/services/workspaceIndex.test.ts src/lib/markdownToHtml.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、33 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只增强 Markdown document model，不改变索引、诊断、预览渲染、导出渲染或真实 app 行为。
+- 因此未跑真实 app smoke；后续让诊断/导出预检消费该 model 时补对应测试。
+
+剩余风险：
+
+- workspace index 当前只消费 front matter、headings、links；`images` / `blocks` 尚未进入索引或诊断。
+- 下一步可让 image diagnostics 或 heading diagnostics 复用 document model，减少重复正则扫描。
