@@ -31,6 +31,10 @@ import {
   isSourceBlockOperation,
   type SourceBlockOperation,
 } from '../extensions/blockOperations';
+import {
+  applyBlockFormatCommand,
+  applyHeadingLevel,
+} from '../runtime/editorBlockCommands';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -834,115 +838,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         const view = viewRef.current;
         if (!view) return;
         const levelValue = typeof detail?.level === 'string' ? detail.level : '';
-        if (!/^h[1-6]$/.test(levelValue)) return;
-        const level = Number(levelValue.slice(1));
-        const prefix = '#'.repeat(level) + ' ';
-        const cursor = view.state.selection.main.head;
-        const line = view.state.doc.lineAt(cursor);
-        const lineText = view.state.doc.sliceString(line.from, line.to);
-        const stripped = lineText.replace(/^#{1,6}\s*/, '');
-        view.dispatch({
-          changes: { from: line.from, to: line.to, insert: prefix + stripped },
-        });
-        view.focus();
+        applyHeadingLevel(view, levelValue);
       };
       const onBlock = (detail: { format?: string } | null | undefined) => {
         const view = viewRef.current;
         if (!view) return;
         const fmt = typeof detail?.format === 'string' ? detail.format : '';
-        if (!fmt) return;
-        const cursor = view.state.selection.main.head;
-        const line = view.state.doc.lineAt(cursor);
-        const lineText = view.state.doc.sliceString(line.from, line.to);
-
-        if (fmt === 'paragraph') {
-          const stripped = lineText.replace(/^#{1,6}\s*/, '');
-          view.dispatch({ changes: { from: line.from, to: line.to, insert: stripped } });
-          view.focus();
-          return;
-        }
-
-        if (fmt === 'increaseHeading') {
-          const match = lineText.match(/^(#{1,6})\s/);
-          if (match && match[1].length < 6) {
-            view.dispatch({ changes: { from: line.from, to: line.to, insert: '#' + lineText } });
-          } else if (!match) {
-            view.dispatch({ changes: { from: line.from, insert: '# ' } });
-          }
-          view.focus();
-          return;
-        }
-
-        if (fmt === 'decreaseHeading') {
-          const match = lineText.match(/^(#{1,6})\s/);
-          if (match && match[1].length > 1) {
-            view.dispatch({ changes: { from: line.from, to: line.to, insert: lineText.slice(1) } });
-          } else if (match && match[1].length === 1) {
-            view.dispatch({ changes: { from: line.from, to: line.to, insert: lineText.replace(/^#\s*/, '') } });
-          }
-          view.focus();
-          return;
-        }
-
-        const selectionBlockOperationMap: Partial<Record<string, SourceBlockOperation>> = {
-          quote: 'selectionQuote',
-          orderedList: 'selectionOrderedList',
-          unorderedList: 'selectionUnorderedList',
-          taskList: 'selectionTaskList',
-        };
-        const selectionOperation = selectionBlockOperationMap[fmt];
-        if (selectionOperation) {
-          handleSourceBlockOperation(selectionOperation);
-          return;
-        }
-
-        if (fmt === 'insertAbove') {
-          view.dispatch({ changes: { from: line.from, insert: '\n' } });
-          view.dispatch({ selection: { anchor: line.from } });
-          view.focus();
-          return;
-        }
-        if (fmt === 'insertBelow') {
-          view.dispatch({ changes: { from: line.to, insert: '\n' } });
-          view.dispatch({ selection: { anchor: line.to + 1 } });
-          view.focus();
-          return;
-        }
-
-        const prefixMap: Record<string, string> = {
-          quote: '> ',
-          codeBlock: '```\n',
-          orderedList: '1. ',
-          unorderedList: '- ',
-          taskList: '- [ ] ',
-          hr: '\n---\n',
-          mathBlock: '$$\n',
-          toc: '[TOC]\n',
-          yaml: '---\n',
-          linkReference: '[text][ref]\n\n[ref]: url',
-          footnote: '[^1]\n\n[^1]: ',
-          comment: '<!-- ',
-        };
-
-        const suffixMap: Record<string, string> = {
-          codeBlock: '\n```',
-          mathBlock: '\n$$',
-          yaml: '\n---',
-          comment: ' -->',
-        };
-
-        const prefix = prefixMap[fmt] || '';
-        const suffix = suffixMap[fmt] || '';
-        view.dispatch({
-          changes: { from: line.from, insert: prefix },
-        });
-        if (suffix) {
-          const newLine = view.state.doc.lineAt(cursor + prefix.length);
-          view.dispatch({
-            changes: { from: newLine.to, insert: suffix },
-          });
-        }
-        view.focus();
+        applyBlockFormatCommand(view, fmt, handleSourceBlockOperation);
       };
 
       const onEditorCommand = (detail: ({ command?: string } & Record<string, unknown>) | null | undefined) => {

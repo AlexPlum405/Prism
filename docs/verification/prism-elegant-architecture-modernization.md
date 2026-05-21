@@ -771,3 +771,51 @@ git diff --check
 
 - `exportPipeline.ts` 仍包含 PDF overlay 主流程、PDF engines、Mermaid/图片渲染和 DOCX builder。
 - 后续可以把 PDF chrome overlay 主流程移动到 `pdf/pdfChrome.ts`，或先拆 Mermaid/image renderer。
+
+## Phase 4：Editor runtime 与 command adapter 拆分
+
+### Checkpoint 4A：编辑器标题与块格式命令 adapter
+
+改动范围：
+
+- `src/domains/editor/runtime/editorBlockCommands.ts`
+- `src/domains/editor/runtime/editorBlockCommands.test.ts`
+- `src/domains/editor/components/EditorPane.tsx`
+
+实现结果：
+
+- 从 `EditorPane.tsx` 的 app event effect 中抽出标题与块格式命令 adapter：
+  - `applyHeadingLevel()`
+  - `applyBlockFormatCommand()`
+- `EditorPane.tsx` 继续监听 `editor.heading` 和 `editor.blockFormat` typed app events，但事件回调只负责取当前 view 和 detail，然后委托 adapter。
+- 保留既有行为：
+  - `h1` 到 `h6` 当前行标题替换。
+  - paragraph / increaseHeading / decreaseHeading。
+  - quote / orderedList / unorderedList / taskList 仍委托 source block operation。
+  - insertAbove / insertBelow。
+  - codeBlock / mathBlock / yaml / comment 等 prefix/suffix 插入。
+- 新增 `editorBlockCommands.test.ts`，用真实 CodeMirror `EditorView` 验证标题、段落、标题升降级、source block 委托和 code block 包裹。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorBlockCommands.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/extensions/blockOperations.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、34 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动编辑器块命令 adapter，不改变 CodeMirror view 创建/销毁、history、search、table runtime、clipboard、图片粘贴或 DOM 事件协议。
+- 因此未跑真实 app smoke；后续触及编辑器 runtime 生命周期或最终收口时补 `npm run tauri:build:app-smoke`。
+
+剩余风险：
+
+- `EditorPane.tsx` 仍包含 table runtime、clipboard/search、imperative handle、CodeMirror extension 装配和大块 app event command switch。
+- 后续应继续拆 editor command switch 或 table runtime，避免一次性移动 CodeMirror 生命周期。
