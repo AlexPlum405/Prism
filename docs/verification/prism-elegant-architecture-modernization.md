@@ -819,3 +819,47 @@ git diff --check
 
 - `EditorPane.tsx` 仍包含 table runtime、clipboard/search、imperative handle、CodeMirror extension 装配和大块 app event command switch。
 - 后续应继续拆 editor command switch 或 table runtime，避免一次性移动 CodeMirror 生命周期。
+
+### Checkpoint 4B：编辑器表格 runtime 基础分层
+
+改动范围：
+
+- `src/domains/editor/runtime/editorTableRuntime.ts`
+- `src/domains/editor/runtime/editorTableRuntime.test.ts`
+- `src/domains/editor/components/EditorPane.tsx`
+
+实现结果：
+
+- 从 `EditorPane.tsx` 抽出表格 runtime 的基础公共层：
+  - `EDITOR_TABLE_COMMANDS`
+  - `applyMarkdownTableEdit()`
+  - `runMarkdownTableNavigation()`
+- `EditorPane.tsx` 继续保留 table toolbar / popover UI 状态和位置计算，只把底层表格编辑应用与键盘导航委托给 runtime。
+- 新增 `editorTableRuntime.test.ts`，覆盖：
+  - 命令 id 到 Markdown table command 的映射。
+  - 真实 CodeMirror `EditorView` 中执行 table lineBreak 导航。
+  - 非光标选区时 table navigation 不处理。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorTableRuntime.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/extensions/tables.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、42 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动表格 edit apply / navigation / command map，不改变 table toolbar UI、popover、表格算法、CodeMirror 生命周期、clipboard 或图片粘贴。
+- 因此未跑真实 app smoke；后续触及表格 UI 行为或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `EditorPane.tsx` 仍包含表格 command/copy/convert/paste UI handlers、clipboard/search 和 CodeMirror extension 装配。
+- 后续可以继续拆 editor command switch 或 clipboard/search runtime。

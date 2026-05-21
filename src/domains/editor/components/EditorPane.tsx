@@ -35,6 +35,11 @@ import {
   applyBlockFormatCommand,
   applyHeadingLevel,
 } from '../runtime/editorBlockCommands';
+import {
+  applyMarkdownTableEdit,
+  EDITOR_TABLE_COMMANDS,
+  runMarkdownTableNavigation,
+} from '../runtime/editorTableRuntime';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -49,15 +54,12 @@ import {
   findMarkdownTableBlock,
   getHtmlTableToMarkdownEdit,
   getMarkdownTableCommandEdit,
-  getMarkdownTableNavigationEdit,
   getMarkdownTablePasteEdit,
   getMarkdownTableSelection,
   getMarkdownTableSerialization,
   getMarkdownTableToHtmlEdit,
   type MarkdownTableCommand,
-  type MarkdownTableCommandEdit,
   type MarkdownTableInsertOptions,
-  type MarkdownTableNavigation,
 } from '../extensions/tables';
 import { markdownSelectionToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
 import {
@@ -222,32 +224,6 @@ function getSelectedText(view: EditorView) {
   return view.state.doc.sliceString(selection.from, selection.to);
 }
 
-function applyMarkdownTableEdit(view: EditorView, result: MarkdownTableCommandEdit) {
-  view.dispatch({
-    changes: {
-      from: result.from,
-      to: result.to,
-      insert: result.insert,
-    },
-    selection: { anchor: result.selectionFrom, head: result.selectionTo },
-    scrollIntoView: true,
-  });
-  view.focus();
-}
-
-function runMarkdownTableNavigation(view: EditorView, navigation: MarkdownTableNavigation) {
-  const selection = view.state.selection.main;
-  if (selection.from !== selection.to) return false;
-  const result = getMarkdownTableNavigationEdit(
-    view.state.doc.toString(),
-    selection.head,
-    navigation,
-  );
-  if (!result) return false;
-  applyMarkdownTableEdit(view, result);
-  return true;
-}
-
 function formatEditorError(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return String(error);
@@ -281,27 +257,6 @@ function getCurrentHeadingFoldRange(view: EditorView) {
 
   return null;
 }
-
-const EDITOR_TABLE_COMMANDS: Partial<Record<string, MarkdownTableCommand>> = {
-  addTableColumn: 'addColumn',
-  addTableRow: 'addRow',
-  alignTableColumnCenter: 'alignCenter',
-  alignTableColumnLeft: 'alignLeft',
-  alignTableColumnRight: 'alignRight',
-  deleteTableColumn: 'deleteColumn',
-  deleteTableRow: 'deleteRow',
-  formatTable: 'format',
-  insertTableColumnLeft: 'insertColumnLeft',
-  insertTableColumnRight: 'insertColumnRight',
-  insertTableRowAbove: 'insertRowAbove',
-  insertTableRowBelow: 'insertRowBelow',
-  moveTableColumnLeft: 'moveColumnLeft',
-  moveTableColumnRight: 'moveColumnRight',
-  moveTableRowDown: 'moveRowDown',
-  moveTableRowUp: 'moveRowUp',
-  sortTableAsc: 'sortAsc',
-  sortTableDesc: 'sortDesc',
-};
 
 export const __editorPaneTesting = {
   getMiaoyanCodeLanguage,
