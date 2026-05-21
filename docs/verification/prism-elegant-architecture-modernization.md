@@ -1158,3 +1158,49 @@ git diff --check
 
 - Markdown document model 已被 workspace index、heading diagnostics、link diagnostics heading slug、image diagnostics 复用，但预览和导出仍各自有渲染级解析。
 - 若继续深化 Phase 5，可让 workspace index 记录 `images` / `blocks`，或让导出预检读取 document model。
+
+## Phase 6：统一诊断模型深化
+
+### Checkpoint 6A：PrismDiagnostic 稳定 id 与 target 字段
+
+改动范围：
+
+- `src/domains/diagnostics/types.ts`
+- `src/domains/diagnostics/adapters.ts`
+- `src/domains/diagnostics/adapters.test.ts`
+- `src/domains/editor/components/DocumentDiagnosticsPanel.tsx`
+
+实现结果：
+
+- `PrismDiagnostic` 增加可选字段：
+  - `id`
+  - `detail`
+  - `target`
+- 新增 `createPrismDiagnosticId()`，根据 source、kind、line、column、target/message 生成稳定 id。
+- link/image/heading/table/typography adapters 生成稳定 id 和 target。
+- `DocumentDiagnosticsPanel` 优先使用 `diagnostic.id` 作为 React key，缺省时保留旧 key fallback。
+- ERROR 过滤仍由 `getActionableErrorDiagnostics()` 控制，规则不变：只有 `severity === 'error'` 进入状态栏 ERROR。
+
+验证：
+
+```bash
+npm test -- --run src/domains/diagnostics/adapters.test.ts src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/domains/export/preflight.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：4 个测试文件、19 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只稳定诊断模型字段和 key，不改变状态栏 ERROR 数量、诊断面板视觉、诊断扫描逻辑、导出预检或真实 app 行为。
+- 因此未跑真实 app smoke；最终收口时补真实 app smoke。
+
+剩余风险：
+
+- render/export preflight 中直接构造的 `PrismDiagnostic` 还没有统一 id；后续可接入同一 id helper。
+- `getActionableErrorDiagnostics()` 仍只是 severity 过滤，尚未显式编码 typography 严格模式、front matter 仅导出依赖时升级等策略。

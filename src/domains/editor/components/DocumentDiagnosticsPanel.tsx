@@ -56,7 +56,7 @@ export function DocumentDiagnosticsPanel({
               const hasLine = typeof diagnostic.line === 'number';
               return (
                 <button
-                  key={`${diagnostic.source}-${diagnostic.line ?? 'none'}-${diagnostic.column ?? 'none'}-${diagnostic.kind}-${index}`}
+                  key={diagnostic.id ?? `${diagnostic.source}-${diagnostic.line ?? 'none'}-${diagnostic.column ?? 'none'}-${diagnostic.kind}-${index}`}
                   type="button"
                   className="prism-link-diagnostic-item"
                   disabled={!hasLine}

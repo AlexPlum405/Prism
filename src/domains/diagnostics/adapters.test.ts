@@ -24,12 +24,14 @@ describe('diagnostic adapters', () => {
       expect.objectContaining({
         action: '定位后修正路径',
         column: 4,
+        id: 'link-diagnostics:link:2:4:docs/missing.md',
         kind: 'link',
         line: 2,
         message: '未找到链接文件 docs/missing.md',
         reason: '工作区里没有找到这个相对路径对应的 Markdown 文件。',
         severity: 'error',
         source: 'link-diagnostics',
+        target: 'docs/missing.md',
       }),
     ]);
     expect(getActionableErrorDiagnostics(diagnostics)).toHaveLength(1);
@@ -51,11 +53,13 @@ describe('diagnostic adapters', () => {
       expect.objectContaining({
         action: '修正路径或重新插入图片',
         column: 1,
+        id: 'image-diagnostics:image:3:1:/repo/assets/missing.png',
         kind: 'image',
         line: 3,
         reason: 'Prism 无法在当前文档附近找到这个本地图片文件。',
         severity: 'error',
         source: 'image-diagnostics',
+        target: '/repo/assets/missing.png',
       }),
     ]);
     expect(getActionableErrorDiagnostics(diagnostics)).toHaveLength(1);
@@ -76,11 +80,13 @@ describe('diagnostic adapters', () => {
     expect(diagnostics).toEqual([
       expect.objectContaining({
         action: '重命名其中一个标题',
+        id: 'heading-diagnostics:link:4:1:intro',
         kind: 'link',
         line: 4,
         reason: '重复标题会生成相同锚点，目录、跳转链接或导出书签可能定位到错误位置。',
         severity: 'error',
         source: 'heading-diagnostics',
+        target: 'intro',
       }),
     ]);
   });
@@ -99,11 +105,13 @@ describe('diagnostic adapters', () => {
     expect(diagnostics).toEqual([
       expect.objectContaining({
         action: '定位后调整空格',
+        id: 'typography-diagnostics:typography:1:3:cjk-latin-spacing',
         kind: 'typography',
         message: '中英文之间缺少空格',
         reason: '在中文与英文/数字之间补一个半角空格。',
         severity: 'info',
         source: 'typography-diagnostics',
+        target: 'cjk-latin-spacing',
       }),
     ]);
     expect(getActionableErrorDiagnostics(diagnostics)).toHaveLength(0);
@@ -126,12 +134,14 @@ describe('diagnostic adapters', () => {
       expect.objectContaining({
         action: '格式化表格',
         column: 1,
+        id: 'table-diagnostics:table:8:1:inconsistent-columns',
         kind: 'table',
         line: 8,
         message: '表格行列数不一致',
         reason: '部分行的单元格数量与表头不同。',
         severity: 'error',
         source: 'table-diagnostics',
+        target: 'inconsistent-columns',
       }),
     ]);
     expect(getActionableErrorDiagnostics(diagnostics)).toHaveLength(1);

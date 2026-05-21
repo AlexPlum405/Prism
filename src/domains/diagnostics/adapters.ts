@@ -4,7 +4,7 @@ import type { HeadingDiagnostic } from '../editor/extensions/headingDiagnostics'
 import type { TableDiagnostic } from '../editor/extensions/tables';
 import type { TypographyDiagnostic } from '../editor/extensions/typographyDiagnostics';
 import { t, type I18nKey } from '../i18n';
-import type { PrismDiagnostic } from './types';
+import { createPrismDiagnosticId, type PrismDiagnostic } from './types';
 
 const LINK_REASON_KEY: Record<LinkDiagnostic['kind'], I18nKey> = {
   'empty-target': 'editor.linkDiagnostics.reason.emptyTarget',
@@ -19,16 +19,23 @@ const LINK_ACTION_KEY: Record<LinkDiagnostic['kind'], I18nKey> = {
 };
 
 export function linkDiagnosticsToPrismDiagnostics(diagnostics: LinkDiagnostic[]): PrismDiagnostic[] {
-  return diagnostics.map((diagnostic) => ({
-    action: t(LINK_ACTION_KEY[diagnostic.kind]),
-    column: diagnostic.column,
-    kind: 'link',
-    line: diagnostic.line,
-    message: diagnostic.message,
-    reason: t(LINK_REASON_KEY[diagnostic.kind]),
-    severity: 'error',
-    source: 'link-diagnostics',
-  }));
+  return diagnostics.map((diagnostic) => {
+    const prismDiagnostic = {
+      action: t(LINK_ACTION_KEY[diagnostic.kind]),
+      column: diagnostic.column,
+      kind: 'link',
+      line: diagnostic.line,
+      message: diagnostic.message,
+      reason: t(LINK_REASON_KEY[diagnostic.kind]),
+      severity: 'error',
+      source: 'link-diagnostics',
+      target: diagnostic.target,
+    } satisfies PrismDiagnostic;
+    return {
+      ...prismDiagnostic,
+      id: createPrismDiagnosticId(prismDiagnostic),
+    };
+  });
 }
 
 const IMAGE_REASON_KEY: Record<ImageDiagnostic['kind'], I18nKey> = {
@@ -46,16 +53,23 @@ const IMAGE_ACTION_KEY: Record<ImageDiagnostic['kind'], I18nKey> = {
 };
 
 export function imageDiagnosticsToPrismDiagnostics(diagnostics: ImageDiagnostic[]): PrismDiagnostic[] {
-  return diagnostics.map((diagnostic) => ({
-    action: t(IMAGE_ACTION_KEY[diagnostic.kind]),
-    column: diagnostic.column,
-    kind: 'image',
-    line: diagnostic.line,
-    message: diagnostic.message,
-    reason: t(IMAGE_REASON_KEY[diagnostic.kind]),
-    severity: 'error',
-    source: 'image-diagnostics',
-  }));
+  return diagnostics.map((diagnostic) => {
+    const prismDiagnostic = {
+      action: t(IMAGE_ACTION_KEY[diagnostic.kind]),
+      column: diagnostic.column,
+      kind: 'image',
+      line: diagnostic.line,
+      message: diagnostic.message,
+      reason: t(IMAGE_REASON_KEY[diagnostic.kind]),
+      severity: 'error',
+      source: 'image-diagnostics',
+      target: diagnostic.resolvedPath ?? diagnostic.target,
+    } satisfies PrismDiagnostic;
+    return {
+      ...prismDiagnostic,
+      id: createPrismDiagnosticId(prismDiagnostic),
+    };
+  });
 }
 
 const HEADING_REASON_KEY: Record<HeadingDiagnostic['kind'], I18nKey> = {
@@ -67,16 +81,23 @@ const HEADING_ACTION_KEY: Record<HeadingDiagnostic['kind'], I18nKey> = {
 };
 
 export function headingDiagnosticsToPrismDiagnostics(diagnostics: HeadingDiagnostic[]): PrismDiagnostic[] {
-  return diagnostics.map((diagnostic) => ({
-    action: t(HEADING_ACTION_KEY[diagnostic.kind]),
-    column: diagnostic.column,
-    kind: 'link',
-    line: diagnostic.line,
-    message: diagnostic.message,
-    reason: t(HEADING_REASON_KEY[diagnostic.kind]),
-    severity: 'error',
-    source: 'heading-diagnostics',
-  }));
+  return diagnostics.map((diagnostic) => {
+    const prismDiagnostic = {
+      action: t(HEADING_ACTION_KEY[diagnostic.kind]),
+      column: diagnostic.column,
+      kind: 'link',
+      line: diagnostic.line,
+      message: diagnostic.message,
+      reason: t(HEADING_REASON_KEY[diagnostic.kind]),
+      severity: 'error',
+      source: 'heading-diagnostics',
+      target: diagnostic.slug,
+    } satisfies PrismDiagnostic;
+    return {
+      ...prismDiagnostic,
+      id: createPrismDiagnosticId(prismDiagnostic),
+    };
+  });
 }
 
 const TYPOGRAPHY_ACTION_KEY: Record<TypographyDiagnostic['kind'], I18nKey> = {
@@ -87,27 +108,41 @@ const TYPOGRAPHY_ACTION_KEY: Record<TypographyDiagnostic['kind'], I18nKey> = {
 };
 
 export function typographyDiagnosticsToPrismDiagnostics(diagnostics: TypographyDiagnostic[]): PrismDiagnostic[] {
-  return diagnostics.map((diagnostic) => ({
-    action: t(TYPOGRAPHY_ACTION_KEY[diagnostic.kind]),
-    column: diagnostic.column,
-    kind: 'typography',
-    line: diagnostic.line,
-    message: diagnostic.message,
-    reason: diagnostic.suggestion,
-    severity: 'info',
-    source: 'typography-diagnostics',
-  }));
+  return diagnostics.map((diagnostic) => {
+    const prismDiagnostic = {
+      action: t(TYPOGRAPHY_ACTION_KEY[diagnostic.kind]),
+      column: diagnostic.column,
+      kind: 'typography',
+      line: diagnostic.line,
+      message: diagnostic.message,
+      reason: diagnostic.suggestion,
+      severity: 'info',
+      source: 'typography-diagnostics',
+      target: diagnostic.kind,
+    } satisfies PrismDiagnostic;
+    return {
+      ...prismDiagnostic,
+      id: createPrismDiagnosticId(prismDiagnostic),
+    };
+  });
 }
 
 export function tableDiagnosticsToPrismDiagnostics(diagnostics: TableDiagnostic[]): PrismDiagnostic[] {
-  return diagnostics.map((diagnostic) => ({
-    action: diagnostic.action,
-    column: diagnostic.column,
-    kind: 'table',
-    line: diagnostic.line,
-    message: diagnostic.message,
-    reason: diagnostic.reason,
-    severity: diagnostic.severity,
-    source: 'table-diagnostics',
-  }));
+  return diagnostics.map((diagnostic) => {
+    const prismDiagnostic = {
+      action: diagnostic.action,
+      column: diagnostic.column,
+      kind: 'table',
+      line: diagnostic.line,
+      message: diagnostic.message,
+      reason: diagnostic.reason,
+      severity: diagnostic.severity,
+      source: 'table-diagnostics',
+      target: diagnostic.kind,
+    } satisfies PrismDiagnostic;
+    return {
+      ...prismDiagnostic,
+      id: createPrismDiagnosticId(prismDiagnostic),
+    };
+  });
 }
