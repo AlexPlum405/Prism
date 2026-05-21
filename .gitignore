@@ -9,6 +9,7 @@ Thumbs.db
 .claude/
 .codex-screens/
 .codex-smoke/
+.codex-output/
 .antigravitycli/
 .playwright-mcp/
 .tmp-icons/
