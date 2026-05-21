@@ -10,6 +10,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_fs::FsExt;
 
+mod commands;
+
 struct PendingFiles(Mutex<Vec<String>>);
 
 #[derive(Serialize)]
@@ -44,7 +46,7 @@ fn timestamp_millis() -> u64 {
         .unwrap_or(0)
 }
 
-fn first_non_empty_line(text: &[u8]) -> String {
+pub(crate) fn first_non_empty_line(text: &[u8]) -> String {
     String::from_utf8_lossy(text)
         .lines()
         .map(str::trim)
@@ -230,7 +232,7 @@ fn render_citations_with_pandoc(
     })
 }
 
-fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> {
+pub(crate) fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> {
     PathBuf::from(path)
         .canonicalize()
         .map_err(|err| format!("Failed to access path: {err}"))
@@ -478,49 +480,6 @@ fn grant_workspace_directory_scope(app: AppHandle, path: String) -> Result<(), S
 fn move_path_to_trash(path: String) -> Result<(), String> {
     let target_path = canonicalize_existing_path(&path)?;
     move_existing_path_to_trash(&target_path)
-}
-
-#[tauri::command]
-fn open_path_with_system(path: String) -> Result<(), String> {
-    let target_path = canonicalize_existing_path(&path)?;
-
-    #[cfg(target_os = "macos")]
-    let mut command = {
-        let mut command = Command::new("open");
-        command.arg(&target_path);
-        command
-    };
-
-    #[cfg(target_os = "windows")]
-    let mut command = {
-        let mut command = Command::new("cmd");
-        command.arg("/C").arg("start").arg("").arg(&target_path);
-        command
-    };
-
-    #[cfg(all(unix, not(target_os = "macos")))]
-    let mut command = {
-        let mut command = Command::new("xdg-open");
-        command.arg(&target_path);
-        command
-    };
-
-    let output = command
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .map_err(|err| format!("Failed to open export file: {err}"))?;
-
-    if output.status.success() {
-        return Ok(());
-    }
-
-    let stderr = first_non_empty_line(&output.stderr);
-    Err(if stderr.is_empty() {
-        format!("Failed to open export file: {}", output.status)
-    } else {
-        format!("Failed to open export file: {stderr}")
-    })
 }
 
 fn validate_pdf_output_path(path: &str) -> Result<PathBuf, String> {
@@ -935,7 +894,7 @@ pub fn run() {
             grant_markdown_file_scope,
             grant_workspace_directory_scope,
             move_path_to_trash,
-            open_path_with_system,
+            commands::system_open::open_path_with_system,
             capture_current_webview_pdf,
             read_legacy_settings_config
         ])

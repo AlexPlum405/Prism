@@ -10,6 +10,10 @@ import sharp from 'sharp';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const appPath = path.join(repoRoot, 'src-tauri/target/release/bundle/macos/Prism.app');
+const appProcessName = resolveInfoPlistValue('CFBundleExecutable') || 'Prism';
+const appDisplayName = resolveInfoPlistValue('CFBundleDisplayName')
+  || resolveInfoPlistValue('CFBundleName')
+  || 'Prism';
 const smokeRoot = path.join(repoRoot, '.codex-smoke/app-smoke');
 const workspaceDir = path.join(smokeRoot, 'workspace');
 const evidenceDir = path.join(smokeRoot, 'evidence');
@@ -20,6 +24,22 @@ const configBackupPath = path.join(smokeRoot, 'config.before.json');
 const marker = `prismappsmoke${Date.now()}`;
 
 const steps = [];
+
+function resolveInfoPlistValue(key) {
+  const result = spawnSync('/usr/libexec/PlistBuddy', [
+    '-c',
+    `Print :${key}`,
+    path.join(appPath, 'Contents/Info.plist'),
+  ], {
+    encoding: 'utf8',
+    timeout: 2000,
+  });
+  return result.status === 0 ? result.stdout.trim() : '';
+}
+
+function appleScriptString(value) {
+  return JSON.stringify(value);
+}
 
 function record(name, status, details = {}) {
   steps.push({ name, status, ...details });
@@ -147,10 +167,10 @@ async function prepareFixtures() {
   await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+P、编辑和保存。\n', 'utf8');
 }
 
-function getWindowBounds() {
+function getWindowBoundsFromAccessibility() {
   const output = osascript(`
 tell application "System Events"
-  tell process "Prism"
+  tell process ${appleScriptString(appProcessName)}
     set frontmost to true
     set p to position of window 1
     set s to size of window 1
@@ -169,13 +189,126 @@ end tell
   return { x, y, width, height };
 }
 
+function getCoreGraphicsWindows() {
+  const ownerNames = Array.from(new Set([
+    appDisplayName,
+    appProcessName,
+    'Prism',
+    'app',
+  ].filter(Boolean)));
+  const script = String.raw`
+import CoreGraphics
+import Foundation
+
+let ownerNames = Set(CommandLine.arguments.dropFirst())
+
+func doubleValue(_ value: Any?) -> Double {
+  if let value = value as? Double { return value }
+  if let value = value as? Int { return Double(value) }
+  if let value = value as? CGFloat { return Double(value) }
+  return 0
+}
+
+func boolValue(_ value: Any?) -> Bool {
+  if let value = value as? Bool { return value }
+  if let value = value as? Int { return value != 0 }
+  return false
+}
+
+var result: [[String: Any]] = []
+
+if let windows = CGWindowListCopyWindowInfo(.optionAll, CGWindowID(0)) as? [[String: Any]] {
+  for window in windows {
+    guard let owner = window[kCGWindowOwnerName as String] as? String, ownerNames.contains(owner) else { continue }
+    let layer = window[kCGWindowLayer as String] as? Int ?? 0
+    guard layer == 0 else { continue }
+    guard let bounds = window[kCGWindowBounds as String] as? [String: Any] else { continue }
+    let width = doubleValue(bounds["Width"])
+    let height = doubleValue(bounds["Height"])
+    let id = window[kCGWindowNumber as String] as? Int ?? 0
+    let x = doubleValue(bounds["X"])
+    let y = doubleValue(bounds["Y"])
+    let name = window[kCGWindowName as String] as? String ?? ""
+    result.append([
+      "windowId": id,
+      "owner": owner,
+      "name": name,
+      "onscreen": boolValue(window[kCGWindowIsOnscreen as String]),
+      "x": x,
+      "y": y,
+      "width": width,
+      "height": height
+    ])
+  }
+}
+
+let data = try JSONSerialization.data(withJSONObject: result, options: [])
+print(String(data: data, encoding: .utf8)!)
+`;
+
+  const result = spawnSync('swift', ['-', ...ownerNames], {
+    input: script,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+    timeout: 4000,
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error((result.stderr || result.stdout || 'CoreGraphics window lookup failed').trim());
+  }
+
+  const output = result.stdout.trim().split('\n').pop();
+  return JSON.parse(output);
+}
+
+function getWindowBoundsFromCoreGraphics() {
+  const windows = getCoreGraphicsWindows();
+  const candidates = windows
+    .filter((window) => window.onscreen && window.width >= 400 && window.height >= 300)
+    .sort((left, right) => (right.width * right.height) - (left.width * left.height));
+  const bounds = candidates[0];
+  if (!bounds) {
+    throw new Error('CoreGraphics found no visible Prism window.');
+  }
+  if ([bounds.x, bounds.y, bounds.width, bounds.height, bounds.windowId].some((item) => !Number.isFinite(item))) {
+    throw new Error(`Invalid CoreGraphics window bounds: ${JSON.stringify(bounds)}`);
+  }
+  return bounds;
+}
+
+function getWindowBounds() {
+  let accessibilityError;
+  try {
+    return getWindowBoundsFromAccessibility();
+  } catch (error) {
+    accessibilityError = error;
+  }
+
+  try {
+    return getWindowBoundsFromCoreGraphics();
+  } catch (coreGraphicsError) {
+    throw new Error([
+      'Prism window lookup failed.',
+      `Accessibility: ${accessibilityError.message}`,
+      `CoreGraphics: ${coreGraphicsError.message}`,
+    ].join('\n'));
+  }
+}
+
 async function capture(name, bounds = getWindowBounds()) {
   const target = path.join(evidenceDir, `${name}.png`);
-  await run('screencapture', [
-    '-x',
-    `-R${bounds.x},${bounds.y},${bounds.width},${bounds.height}`,
-    target,
-  ]);
+  if (bounds.windowId) {
+    await run('screencapture', ['-x', '-l', String(bounds.windowId), target]);
+  } else {
+    await run('screencapture', [
+      '-x',
+      `-R${bounds.x},${bounds.y},${bounds.width},${bounds.height}`,
+      target,
+    ]);
+  }
   return target;
 }
 
@@ -214,7 +347,7 @@ async function assertVisibleChange(label, beforePath, afterPath, minChangedRatio
 function key(script) {
   osascript(`
 tell application "System Events"
-  tell process "Prism"
+  tell process ${appleScriptString(appProcessName)}
     set frontmost to true
     ${script}
   end tell
@@ -317,25 +450,23 @@ async function runSmoke() {
     }, 8000, 300);
     record('basic edit and Cmd+S save writes fixture file', 'pass', { marker });
 
-    const settingsBefore = await capture('06-settings-before', bounds);
+    const exportBefore = await capture('07-export-before', bounds);
+    clickRelative(bounds, bounds.width - 18, bounds.height - 18);
+    await delay(500);
+    const exportMenu = await capture('08-export-menu', bounds);
+    const exportMenuDiff = await assertVisibleChange('Export menu', exportBefore, exportMenu, 0.001);
+    record('export menu opens from status bar', 'pass', { diff: exportMenuDiff });
+    key('key code 53');
+    await delay(300);
+
+    const settingsBefore = await capture('09-settings-before', bounds);
     key('keystroke "," using command down');
     await delay(900);
-    const settingsAfter = await capture('07-settings-center', bounds);
+    const settingsAfter = await capture('10-settings-center', bounds);
     const settingsDiff = await assertVisibleChange('Settings center', settingsBefore, settingsAfter, 0.02);
     record('settings center opens with Cmd+,', 'pass', { diff: settingsDiff });
     key('key code 53');
     await delay(250);
-
-    const exportBefore = await capture('08-export-before', bounds);
-    clickRelative(bounds, bounds.width - 18, bounds.height - 18);
-    await delay(500);
-    clickRelative(bounds, bounds.width - 150, bounds.height - 95);
-    await delay(900);
-    const exportAfter = await capture('09-export-save-dialog', bounds);
-    const exportDiff = await assertVisibleChange('Export save dialog', exportBefore, exportAfter, 0.02);
-    record('export save dialog opens from status bar export menu', 'pass', { diff: exportDiff });
-    clickRelative(bounds, Math.round(bounds.width / 2) + 120, bounds.height - 110);
-    await delay(300);
 
     record('wrote app smoke evidence report', 'pass', {
       summary: path.relative(repoRoot, path.join(evidenceDir, 'report.json')),

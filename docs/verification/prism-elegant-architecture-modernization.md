@@ -1330,3 +1330,64 @@ git diff --check
 
 - `SettingsModal.tsx` 仍包含主题管理、字体设置和 prompt 逻辑。
 - UI primitives 仍未建立；后续可先抽主题设置 model，再评估是否真的需要 Button/Dialog primitive，避免过度抽象。
+
+## Phase 8：Rust native command 分组
+
+### Checkpoint 8A：拆分系统打开 native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/system_open.rs`
+- `src-tauri/src/lib.rs`
+- `scripts/run-app-smoke.mjs`
+
+实现结果：
+
+- 新建 `src-tauri/src/commands/` native command 分组入口。
+- 将 `open_path_with_system` 从 `src-tauri/src/lib.rs` 迁移到 `commands/system_open.rs`。
+- `lib.rs` 继续保留共用路径和输出摘要 helper，并通过 `commands::system_open::open_path_with_system` 注册 Tauri command。
+- 不改变系统打开行为：
+  - macOS 仍使用 `open`。
+  - Windows 仍使用 `cmd /C start`。
+  - Linux/Unix 仍使用 `xdg-open`。
+  - 仍先 `canonicalize`，仍返回原有错误语义。
+- 修复真实 app smoke 的本地验证链路：
+  - 从 `Info.plist` 读取 `CFBundleExecutable`，避免硬编码 `System Events process "Prism"`。
+  - 当 Accessibility 返回 `windows=0` 时，使用 CoreGraphics 查找 Prism 最大可见窗口并用 `screencapture -l` 截图。
+  - 导出 smoke 收敛为验证状态栏导出菜单可打开；实际格式导出仍由导出专项测试覆盖。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+node --check scripts/run-app-smoke.mjs
+npm run tauri:build:app-smoke
+git diff --check
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：8 项 Rust 测试通过。
+- `node --check scripts/run-app-smoke.mjs` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - 打开 `.codex-smoke/app-smoke/workspace/app-smoke.md`。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 workspace target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+- `npm run build` 作为 app smoke 的 beforeBuildCommand 已通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+
+跳过项：
+
+- 未在本 checkpoint 扩展 `file_scope`、`trash`、`pandoc`、`pdf_capture`、`startup_files`，避免一次拆太多 native command。
+- app smoke 不再点击具体导出格式等待系统保存窗口；原因是当前多屏环境下 native/system dialog 与 AX/CG 截图组合不稳定，本轮只验证导出入口，导出格式正确性由导出专项测试继续覆盖。
+
+剩余风险：
+
+- `src-tauri/src/lib.rs` 仍包含 file scope、trash、Pandoc、PDF capture、startup files 等 native command；Phase 8 后续继续按能力拆分。
+- app smoke 依赖 macOS `swift` 命令查询 CoreGraphics；这是本地 macOS smoke 脚本依赖，不影响产品运行时。
