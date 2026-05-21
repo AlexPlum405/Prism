@@ -9,8 +9,10 @@ Thumbs.db
 .claude/
 .codex-screens/
 .codex-smoke/
+.antigravitycli/
 .playwright-mcp/
 .tmp-icons/
+temp_script_check.js
 release-latest/
 scripts/*
 !scripts/generate-updater-manifest.mjs
