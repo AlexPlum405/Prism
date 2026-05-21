@@ -1611,3 +1611,51 @@ npm run tauri:build:app-smoke
 剩余风险：
 
 - `startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
+
+### Checkpoint 8F：拆分启动文件 native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/startup_files.rs`
+- `src-tauri/src/lib.rs`
+
+实现结果：
+
+- 新增 `commands/startup_files.rs`，承接：
+  - `PendingFiles` state
+  - `get_pending_files`
+  - 非 macOS 命令行参数 Markdown 文件收集
+  - macOS `RunEvent::Opened` 文件打开事件处理
+- `lib.rs` 只保留 Tauri builder 装配，通过 `commands::startup_files::*` 注册 state、setup 启动文件和 run event 处理。
+- 不改变前端调用 command 名称、`file-opened` event 名称、pending files 一次读取后清空的行为、非 macOS 参数过滤规则或 macOS 双击打开路径收集逻辑。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：12 项 Rust 测试通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 通过，保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+
+跳过项：
+
+- 未额外手工双击 Finder 文件；本 checkpoint 的 macOS 打开路径在 app smoke 的 `open -a Prism.app <fixture>` 链路中覆盖，pending file 进入前端后通过 lastSession 和打开文档验证。
+
+剩余风险：
+
+- `read_legacy_settings_config` 仍在 `lib.rs` 中；虽然不在原 Phase 8 建议结构中，但它也是 native command，后续单独按 settings 能力拆分，避免 `lib.rs` 残留业务 command。
