@@ -1504,3 +1504,57 @@ npm run tauri:build:app-smoke
 
 - `pandoc`、`pdf_capture`、`startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
 - app smoke 曾出现一次保存 marker 超时，重跑后通过；判断为 macOS 前台焦点偶发，不归因于本 checkpoint。
+
+### Checkpoint 8D：拆分 Pandoc native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/pandoc.rs`
+- `src-tauri/src/lib.rs`
+
+实现结果：
+
+- 新增 `commands/pandoc.rs`，承接：
+  - `detect_pandoc`
+  - `render_citations_with_pandoc`
+  - Pandoc 检测结果与引用 HTML 结果结构
+  - 引用文件扩展名校验
+  - citeproc HTML 参数构造
+  - Pandoc stderr 摘要裁剪
+- `lib.rs` 不再直接持有 Pandoc command 实现，只在 `generate_handler!` 中注册 `commands::pandoc::*`。
+- 原 Pandoc 相关单元测试迁入 `commands/pandoc.rs`，继续覆盖：
+  - citeproc HTML 参数包含 bibliography、CSL、`--wrap=none`。
+  - `.bib` / `.csl` 文件校验通过。
+  - 非支持扩展名会被拒绝。
+- 不改变前端调用 command 名称、Pandoc 默认路径、错误文案、引用路径校验或 citeproc 参数语义。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：10 项 Rust 测试通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 通过，保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+
+跳过项：
+
+- 未额外跑完整 `npm test -- --run`；本 checkpoint 只移动 Rust Pandoc command，前端导出引用策略没有变，Rust 行为由 `cargo test` 覆盖，真实 app 启动和 command 注册由 app smoke 覆盖。
+
+剩余风险：
+
+- `pdf_capture`、`startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
