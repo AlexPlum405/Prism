@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useDocumentStore } from './domains/document/store';
 import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
@@ -32,7 +32,6 @@ import { StatusBar } from './domains/workspace/components/StatusBar';
 import { Sidebar } from './domains/workspace/components/Sidebar';
 import { BacklinksPanel } from './domains/workspace/components/BacklinksPanel';
 import { DocumentLinksPanel } from './domains/workspace/components/DocumentLinksPanel';
-import { RelationGraphPanel } from './domains/workspace/components/RelationGraphPanel';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
@@ -64,6 +63,9 @@ import {
   getRuntimePlatform,
 } from './domains/workspace/services';
 import { t, useI18n } from './domains/i18n';
+
+const RelationGraphPanel = lazy(() => import('./domains/workspace/components/RelationGraphPanel')
+  .then((module) => ({ default: module.RelationGraphPanel })));
 
 interface RecoveryPromptVisibilityInput {
   hasSnapshot: boolean;
@@ -578,16 +580,20 @@ function App() {
         onSelect={selectDocumentLink}
       />
 
-      <RelationGraphPanel
-        visible={relationGraphVisible}
-        index={workspaceIndex}
-        currentPath={currentDocument?.path}
-        onClose={() => setRelationGraphVisible(false)}
-        onSelect={(path) => {
-          setRelationGraphVisible(false);
-          void handleFileAction({ action: 'openFile', path });
-        }}
-      />
+      {relationGraphVisible && (
+        <Suspense fallback={null}>
+          <RelationGraphPanel
+            visible={relationGraphVisible}
+            index={workspaceIndex}
+            currentPath={currentDocument?.path}
+            onClose={() => setRelationGraphVisible(false)}
+            onSelect={(path) => {
+              setRelationGraphVisible(false);
+              void handleFileAction({ action: 'openFile', path });
+            }}
+          />
+        </Suspense>
+      )}
 
       <DocumentPropertiesPanel
         visible={documentPropertiesVisible}

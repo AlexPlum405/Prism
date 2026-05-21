@@ -1704,3 +1704,73 @@ npm run tauri:build:app-smoke
 剩余风险：
 
 - Phase 8 Rust command 拆分已收口；后续风险转移到 Phase 9 主包性能与依赖边界审计。
+
+## Phase 9：主包性能与依赖边界
+
+### Checkpoint 9A：关系图谱按需加载与构建 chunk 边界
+
+改动范围：
+
+- `src/App.tsx`
+- `vite.config.ts`
+- `scripts/run-app-smoke.mjs`
+
+实现结果：
+
+- `RelationGraphPanel` 从 `App.tsx` 静态 import 改为 `React.lazy` + `Suspense`，只有打开关系图谱时才加载。
+- Vite manual chunk 增加：
+  - `relation-graph`：关系图谱面板独立 chunk。
+  - `vendor-markdown`：Markdown 渲染、remark/rehype/micromark/KaTeX 等重依赖独立 chunk。
+- 保留 PreviewPane 同步 Markdown 渲染语义，不做真异步渲染，避免首个预览、滚动同步、预览复制 HTML 的时序回归。
+- 曾尝试拆 `vendor-highlight`，但 Vite 产生 `vendor-highlight -> vendor-markdown -> vendor-highlight` circular chunk 警告；已撤回该拆分，避免带循环的构建拓扑。
+- app smoke 的 Quick Open 步骤加固：
+  - AppleScript key 默认 timeout 从 8s 增至 12s。
+  - Quick Open 打开后等待更久。
+  - 输入前点击搜索框热区。
+  - 回车确认使用 20s timeout。
+  目的：适配拆包后首次打开命令面板的 chunk 加载和 macOS WebView 焦点抖动，不改变产品运行时。
+
+构建结果对比：
+
+| chunk | 优化前 | 优化后 | 说明 |
+| --- | ---: | ---: | --- |
+| `main` | 1,058.92 kB / gzip 339.00 kB | 1,017.95 kB / gzip 327.57 kB | 小幅下降，主要来自关系图谱拆出 |
+| `export-pipeline` | 1,060.26 kB / gzip 321.67 kB | 110.28 kB / gzip 34.31 kB | 大幅下降，导出重依赖进入独立 vendor chunk |
+| `vendor-markdown` | 无独立 chunk | 950.08 kB / gzip 286.32 kB | Markdown/KaTeX/remark/rehype 渲染边界显式化 |
+| `relation-graph` | 并入 `main` | 41.79 kB / gzip 12.92 kB | 打开关系图谱时按需加载 |
+| `mermaid.core` | 610.65 kB / gzip 147.62 kB | 610.92 kB / gzip 147.68 kB | 基本持平，仍由 Mermaid 动态链路承担 |
+| `vendor-docx` | 407.22 kB / gzip 119.22 kB | 407.22 kB / gzip 119.22 kB | 持平 |
+| `vendor-pdf` | 440.07 kB / gzip 181.75 kB | 440.07 kB / gzip 181.75 kB | 持平 |
+
+验证：
+
+```bash
+npm test -- --run src/App.recovery.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx
+npm run build
+node --check scripts/run-app-smoke.mjs
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- 相关测试通过：2 files / 10 tests。
+- `npm run build` 通过，无 circular chunk 警告；保留既有大 chunk 警告。
+- `node --check scripts/run-app-smoke.mjs` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 通过。
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+
+跳过项：
+
+- 未把 PreviewPane 的 `markdownToHtml` 改成真正异步 lazy import；原因是当前预览滚动同步、Mermaid/KaTeX增强、预览复制 HTML 都依赖同步 HTML，可单独设计更稳的“异步预览渲染状态机”后再做。
+- 未拆 `highlight.js` 独立 chunk；原因是当前编辑器 Miaoyan 代码块高亮仍是同步 CodeMirror decoration 路径，强行拆分会引入首帧无高亮和重新装饰时序风险。
+
+剩余风险：
+
+- `vendor-markdown` 仍是 950 kB 级别的大 chunk；后续若继续优化，需要把预览渲染改成异步任务模型，并把编辑器高亮改成 async cache + decoration invalidation。

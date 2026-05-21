@@ -344,7 +344,7 @@ async function assertVisibleChange(label, beforePath, afterPath, minChangedRatio
   return diff;
 }
 
-function key(script) {
+function key(script, timeoutMs = 12000) {
   osascript(`
 tell application ${appleScriptString(appDisplayName)} to activate
 delay 0.05
@@ -354,7 +354,7 @@ tell application "System Events"
     ${script}
   end tell
 end tell
-`);
+`, timeoutMs);
 }
 
 function clickRelative(bounds, relX, relY) {
@@ -424,12 +424,14 @@ async function runSmoke() {
 
     const quickOpenBefore = await capture('04-quick-open-before', bounds);
     key('keystroke "p" using command down');
-    await delay(700);
+    await delay(1000);
     const quickOpenAfter = await capture('05-quick-open-opened', bounds);
     const quickOpenDiff = await assertVisibleChange('Cmd+P quick open', quickOpenBefore, quickOpenAfter, 0.006);
-    key('keystroke "target"');
+    clickRelative(bounds, bounds.width / 2, Math.max(115, Math.round(bounds.height * 0.12 + 45)));
     await delay(250);
-    key('key code 36');
+    key('keystroke "target"');
+    await delay(900);
+    key('key code 36', 20000);
     const targetConfig = await waitForLastSession(targetFile);
     record('Cmd+P opens workspace target file', 'pass', {
       diff: quickOpenDiff,
