@@ -633,3 +633,48 @@ git diff --check
 
 - `exportPipeline.ts` 仍包含 PDF capture/raster 主流程和 PDF chrome overlay。
 - 后续可继续拆 `renderedExportNode` / `standaloneHtml`，然后再拆 PDF engine。
+
+### Checkpoint 3F：Standalone HTML 生成模块分层
+
+改动范围：
+
+- `src/domains/export/render/standaloneHtml.ts`
+- `src/domains/export/render/standaloneHtml.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出 `buildStandaloneHtml()`：
+  - 继续复用 `collectExportCss()`、`escapeHtml()`、`getExportTitle()`、`markdownToHtml()` 和内容主题 write class。
+  - HTML 导出仍用同一 builder 生成最终 `.html`。
+  - PDF/PNG iframe 渲染仍用同一 builder 生成 raster-safe HTML。
+- 新增 `standaloneHtml.test.ts`，覆盖：
+  - title/author metadata HTML escaping。
+  - `includeTheme: false` 时不内联 style。
+  - 未传 renderedRoot 时从 Markdown 生成正文。
+  - 传入 renderedRoot 时 clone 后移除 fixed-position inline style，并保留 dark body class。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/render/standaloneHtml.test.ts src/domains/export/exportPipeline.test.ts src/domains/export/render/exportCss.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 第一次测试断言过于精确，未考虑既有 `markdownToHtml()` 会保留 `data-source-line` / `data-line`；已改为检查 `h1` 标签与文本。
+- 聚焦测试复跑通过：4 个测试文件、54 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 standalone HTML builder，不改变 rendered node 创建、Mermaid、图片、PDF/PNG/DOCX 渲染、真实文件写入或 Rust/Tauri native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍包含 rendered export node、standalone iframe 创建、Mermaid/图片渲染和各格式主体。
+- 下一步可拆 rendered export node 或开始把 HTML export facade 从 pipeline 中移出。
