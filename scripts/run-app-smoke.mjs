@@ -346,6 +346,8 @@ async function assertVisibleChange(label, beforePath, afterPath, minChangedRatio
 
 function key(script) {
   osascript(`
+tell application ${appleScriptString(appDisplayName)} to activate
+delay 0.05
 tell application "System Events"
   tell process ${appleScriptString(appProcessName)}
     set frontmost to true

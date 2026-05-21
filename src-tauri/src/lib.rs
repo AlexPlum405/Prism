@@ -8,7 +8,6 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
-use tauri_plugin_fs::FsExt;
 
 mod commands;
 
@@ -238,66 +237,6 @@ pub(crate) fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> 
         .map_err(|err| format!("Failed to access path: {err}"))
 }
 
-fn is_supported_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| {
-            matches!(
-                extension.to_ascii_lowercase().as_str(),
-                "md" | "markdown" | "txt"
-            )
-        })
-        .unwrap_or(false)
-}
-
-fn is_sensitive_directory(app: &AppHandle, path: &Path) -> bool {
-    if path.parent().is_none() {
-        return true;
-    }
-
-    if let Ok(home_path) = app.path().home_dir() {
-        if let Ok(home) = home_path.canonicalize() {
-            if path == home {
-                return true;
-            }
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        [
-            "/System",
-            "/Library",
-            "/Applications",
-            "/bin",
-            "/sbin",
-            "/usr",
-            "/private",
-        ]
-        .iter()
-        .any(|prefix| path.starts_with(prefix))
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        let path_text = path.to_string_lossy().to_ascii_lowercase();
-        path.parent().and_then(|parent| parent.parent()).is_none()
-            || path_text.contains("\\windows")
-            || path_text.contains("\\program files")
-            || path_text.contains("\\program files (x86)")
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        [
-            "/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys",
-            "/usr",
-        ]
-        .iter()
-        .any(|prefix| path.starts_with(prefix))
-    }
-}
-
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn wait_for_child_output_with_timeout(
     mut child: Child,
@@ -430,50 +369,6 @@ fn unique_user_trash_path(trash_dir: &Path, file_name: &str) -> Result<PathBuf, 
 #[cfg(not(target_os = "macos"))]
 fn move_existing_path_to_trash(target_path: &Path) -> Result<(), String> {
     trash::delete(target_path).map_err(|err| format!("Failed to move to system trash: {err}"))
-}
-
-#[tauri::command]
-fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), String> {
-    let file_path = canonicalize_existing_path(&path)?;
-    if !file_path.is_file() {
-        return Err("Path is not a file".to_string());
-    }
-    if !is_supported_markdown_path(&file_path) {
-        return Err("Only Markdown / Text documents can be authorized".to_string());
-    }
-
-    let scope = app.fs_scope();
-    scope
-        .allow_file(&file_path)
-        .map_err(|err| err.to_string())?;
-
-    if let Some(parent) = file_path.parent() {
-        if !is_sensitive_directory(&app, parent) {
-            scope
-                .allow_directory(parent, true)
-                .map_err(|err| err.to_string())?;
-        }
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-fn grant_workspace_directory_scope(app: AppHandle, path: String) -> Result<(), String> {
-    let directory_path = canonicalize_existing_path(&path)?;
-    if !directory_path.is_dir() {
-        return Err("Path is not a folder".to_string());
-    }
-    if is_sensitive_directory(&app, &directory_path) {
-        return Err(
-            "System directories and the user home directory cannot be authorized as a workspace"
-                .to_string(),
-        );
-    }
-
-    app.fs_scope()
-        .allow_directory(&directory_path, true)
-        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -891,8 +786,8 @@ pub fn run() {
             get_pending_files,
             detect_pandoc,
             render_citations_with_pandoc,
-            grant_markdown_file_scope,
-            grant_workspace_directory_scope,
+            commands::file_scope::grant_markdown_file_scope,
+            commands::file_scope::grant_workspace_directory_scope,
             move_path_to_trash,
             commands::system_open::open_path_with_system,
             capture_current_webview_pdf,

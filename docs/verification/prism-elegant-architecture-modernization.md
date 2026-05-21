@@ -1391,3 +1391,57 @@ git diff --check
 
 - `src-tauri/src/lib.rs` 仍包含 file scope、trash、Pandoc、PDF capture、startup files 等 native command；Phase 8 后续继续按能力拆分。
 - app smoke 依赖 macOS `swift` 命令查询 CoreGraphics；这是本地 macOS smoke 脚本依赖，不影响产品运行时。
+
+### Checkpoint 8B：拆分文件授权 native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/file_scope.rs`
+- `src-tauri/src/lib.rs`
+- `scripts/run-app-smoke.mjs`
+
+实现结果：
+
+- 新增 `commands/file_scope.rs`，承接：
+  - `grant_markdown_file_scope`
+  - `grant_workspace_directory_scope`
+  - Markdown / Text 扩展名判断
+  - 敏感目录保护判断
+- `lib.rs` 不再直接持有文件授权 command 实现，只在 `generate_handler!` 中注册 `commands::file_scope::*`。
+- 新增 file scope 单元测试覆盖 `.md` / `.markdown` / `.TXT` 支持，以及无扩展名、非 Markdown 图片扩展名拒绝。
+- 强化 app smoke 按键焦点：每次 key/click 前先 `activate Prism`，降低多屏和 Accessibility 环境下 `Cmd+P` 偶发无 diff。
+- 不改变授权规则、错误文案、fs scope allow 行为或前端调用 command 名称。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+node --check scripts/run-app-smoke.mjs
+npm run tauri:build:app-smoke
+git diff --check
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：10 项 Rust 测试通过。
+- `node --check scripts/run-app-smoke.mjs` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+- `npm run build` 作为 app smoke 的 beforeBuildCommand 已通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+
+跳过项：
+
+- 未额外跑完整 `npm test -- --run`；本 checkpoint 只移动 Rust 文件授权 command，真实打开/授权路径已由 app smoke 覆盖，Rust 行为由 `cargo test` 覆盖。
+
+剩余风险：
+
+- `trash`、`pandoc`、`pdf_capture`、`startup_files` 仍在 `lib.rs` 中，Phase 8 后续继续拆分。
