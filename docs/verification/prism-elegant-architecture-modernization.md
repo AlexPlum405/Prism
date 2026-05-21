@@ -543,3 +543,48 @@ git diff --check
 
 - `exportPipeline.ts` 仍包含渲染节点创建、Mermaid/图片渲染、HTML/PDF/PNG/DOCX 具体实现。
 - 下一步继续拆 render node / HTML format，避免一次性移动 PDF 或 DOCX 大块逻辑。
+
+### Checkpoint 3D：HTML fragment 安全渲染工具分层
+
+改动范围：
+
+- `src/domains/export/render/htmlFragmentRenderer.ts`
+- `src/domains/export/render/htmlFragmentRenderer.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出 HTML fragment 安全渲染工具：
+  - `escapeHtml()`
+  - `isUnsafeExportUrl()`
+  - `sanitizeExportHtmlFragment()`
+- `exportPipeline.ts` 继续在 Mermaid fallback、Pandoc citation HTML、standalone HTML metadata、DOCX visual HTML block 中复用这些工具，调用行为不变。
+- 新增 `htmlFragmentRenderer.test.ts`，覆盖：
+  - HTML metadata/fallback 文本转义。
+  - `javascript:` / `data:` 协议识别为不安全。
+  - hash、相对路径、站内绝对路径仍视为安全本地链接。
+  - fragment sanitizer 移除 script、事件属性、危险 href/src，同时保留 `mark`、`kbd`、HTTPS 链接等受支持 inline HTML。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/render/htmlFragmentRenderer.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、53 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 HTML fragment 工具，不改变 Markdown 转 HTML、PDF 链接矩形、Mermaid、图片、PDF/PNG/DOCX 渲染或真实文件写入。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍包含渲染节点创建、Mermaid/图片渲染和各导出格式主体。
+- 后续可继续将 PDF link rect 单独拆到 `pdf/pdfLinks.ts`，再拆 `createRenderedExportNode()` 和 standalone HTML 生成。
