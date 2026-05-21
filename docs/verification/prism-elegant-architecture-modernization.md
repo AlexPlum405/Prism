@@ -1204,3 +1204,42 @@ git diff --check
 
 - render/export preflight 中直接构造的 `PrismDiagnostic` 还没有统一 id；后续可接入同一 id helper。
 - `getActionableErrorDiagnostics()` 仍只是 severity 过滤，尚未显式编码 typography 严格模式、front matter 仅导出依赖时升级等策略。
+
+### Checkpoint 6B：渲染预检诊断接入统一 id
+
+改动范围：
+
+- `src/domains/export/preflight.ts`
+
+实现结果：
+
+- 新增内部 `createRenderDiagnostic()`，让 KaTeX、Mermaid、preview render failure 诊断统一通过 `createPrismDiagnosticId()` 生成稳定 id。
+- render diagnostics 增加 `target`：
+  - `katex`
+  - `mermaid`
+  - `preview`
+- 诊断 message、reason、action、line、severity、source 保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/preflight.test.ts src/domains/diagnostics/adapters.test.ts src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：4 个测试文件、13 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只稳定 render diagnostics 的 id/target，不改变 Mermaid/KaTeX 扫描算法、导出流程、诊断 UI 或状态栏 ERROR 过滤。
+- 因此未跑真实 app smoke；最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `getActionableErrorDiagnostics()` 仍只是 severity 过滤，未增加更复杂策略；当前符合既有状态栏语义。
+- Export failure diagnostics 文本仍是独立诊断文本，不属于 `PrismDiagnostic` 面板模型。

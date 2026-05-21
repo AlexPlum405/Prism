@@ -6,7 +6,7 @@ import {
   linkDiagnosticsToPrismDiagnostics,
   tableDiagnosticsToPrismDiagnostics,
 } from '../diagnostics/adapters';
-import type { PrismDiagnostic } from '../diagnostics/types';
+import { createPrismDiagnosticId, type PrismDiagnostic } from '../diagnostics/types';
 import { scanHeadingAnchorDiagnostics } from '../editor/extensions/headingDiagnostics';
 import { scanMarkdownImageDiagnostics } from '../editor/extensions/imageDiagnostics';
 import { scanMarkdownLinks } from '../editor/extensions/linkDiagnostics';
@@ -41,16 +41,27 @@ function lineAtOffset(source: string, offset: number) {
   return source.slice(0, offset).split('\n').length;
 }
 
-function createKatexDiagnostic(error: unknown, line: number): PrismDiagnostic {
-  return {
-    action: t('diagnostics.render.katex.action'),
+function createRenderDiagnostic(input: Omit<PrismDiagnostic, 'id' | 'kind' | 'severity' | 'source'>) {
+  const diagnostic = {
+    ...input,
     kind: 'render',
+    severity: 'error',
+    source: 'render-diagnostics',
+  } satisfies PrismDiagnostic;
+  return {
+    ...diagnostic,
+    id: createPrismDiagnosticId(diagnostic),
+  };
+}
+
+function createKatexDiagnostic(error: unknown, line: number): PrismDiagnostic {
+  return createRenderDiagnostic({
+    action: t('diagnostics.render.katex.action'),
     line,
     message: t('diagnostics.render.katex.messageWithReason', { message: formatError(error) }),
     reason: t('diagnostics.render.katex.reason'),
-    severity: 'error',
-    source: 'render-diagnostics',
-  };
+    target: 'katex',
+  });
 }
 
 function scanKatexSourceDiagnostics(content: string): PrismDiagnostic[] {
@@ -103,26 +114,22 @@ export function scanMarkdownKatexDiagnostics(content: string): PrismDiagnostic[]
         ?? '';
       const line = Number.parseInt(lineValue, 10);
       const message = element.getAttribute('title') || element.textContent || t('diagnostics.render.katex.message');
-      return {
+      return createRenderDiagnostic({
         action: t('diagnostics.render.katex.action'),
-        kind: 'render',
         line: Number.isFinite(line) ? line : undefined,
         message: t('diagnostics.render.katex.messageWithReason', { message }),
         reason: t('diagnostics.render.katex.reason'),
-        severity: 'error',
-        source: 'render-diagnostics',
-      } satisfies PrismDiagnostic;
+        target: 'katex',
+      });
     });
   } catch (error) {
-    return [{
+    return [createRenderDiagnostic({
       action: t('diagnostics.render.preview.action'),
-      kind: 'render',
       line: 1,
       message: t('diagnostics.render.preview.message', { message: formatError(error) }),
       reason: t('diagnostics.render.preview.reason'),
-      severity: 'error',
-      source: 'render-diagnostics',
-    }];
+      target: 'preview',
+    })];
   }
 }
 
@@ -166,15 +173,13 @@ async function scanMarkdownMermaidDiagnostics(content: string): Promise<PrismDia
 
   for (const [index, fence] of fences.entries()) {
     if (!fence.code.trim()) {
-      diagnostics.push({
+      diagnostics.push(createRenderDiagnostic({
         action: t('diagnostics.render.mermaid.action'),
-        kind: 'render',
         line: fence.line,
         message: t('diagnostics.render.mermaid.empty'),
         reason: t('diagnostics.render.mermaid.reason'),
-        severity: 'error',
-        source: 'render-diagnostics',
-      });
+        target: 'mermaid',
+      }));
       continue;
     }
 
@@ -182,15 +187,13 @@ async function scanMarkdownMermaidDiagnostics(content: string): Promise<PrismDia
     try {
       await mermaid.render(`prism-preflight-${Date.now()}-${index}`, fence.code, sandbox);
     } catch (error) {
-      diagnostics.push({
+      diagnostics.push(createRenderDiagnostic({
         action: t('diagnostics.render.mermaid.action'),
-        kind: 'render',
         line: fence.line,
         message: t('diagnostics.render.mermaid.message', { message: formatError(error) }),
         reason: t('diagnostics.render.mermaid.reason'),
-        severity: 'error',
-        source: 'render-diagnostics',
-      });
+        target: 'mermaid',
+      }));
     } finally {
       sandbox.remove();
     }
