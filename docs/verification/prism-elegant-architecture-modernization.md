@@ -497,3 +497,49 @@ git diff --check
 
 - `exportPipeline.ts` 仍承载主要实现，需要继续拆 render/html/pdf/png/docx 模块。
 - 本次新增的上下文工具是后续模块拆分的公共依赖，后续移动代码时必须继续保持导出 API 和错误文案不变。
+
+### Checkpoint 3C：导出 CSS 渲染模块分层
+
+改动范围：
+
+- `src/domains/export/render/exportCss.ts`
+- `src/domains/export/render/exportCss.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出导出 CSS 渲染支撑模块：
+  - `inlineCssUrls()`：内联 CSS 中的外部 URL 资源，保留 data/hash/about URL。
+  - `collectExportCss()`：收集当前样式表、补导出文档 CSS、TOC CSS、atomic pagination CSS、模板 CSS、`@page` 纸张与边距、print CSS，并在 raster safe 模式下复用现有颜色清理。
+- 新增 `exportCss.test.ts`，覆盖：
+  - 纸张和页边距 CSS 仍按输入生成。
+  - atomic block / page spacer class 仍来自分页常量。
+  - 外部 CSS URL 会被 fetch 后内联为 data URL。
+  - data/hash/about URL 不触发 fetch，保持原样。
+- `exportPipeline.ts` 改为从 `render/exportCss.ts` 导入 `collectExportCss()`，HTML/PDF/raster 的导出算法和调用位置保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/render/exportCss.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 第一次测试发现新增测试断言写成了不存在的 atomic class 名；代码迁移保留的是既有常量 `prism-export-atomic` / `prism-export-page-spacer`，已修正测试。
+- 聚焦测试复跑通过：3 个测试文件、52 项测试通过。
+- `npm run build` 第一次发现 `exportPipeline.ts` 遗留未用导入，已清理。
+- `npm run build` 复跑通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 CSS 收集/内联模块，不改变 Mermaid、图片、PDF capture/raster、PNG canvas、DOCX builder、真实文件写入或 Rust/Tauri native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍包含渲染节点创建、Mermaid/图片渲染、HTML/PDF/PNG/DOCX 具体实现。
+- 下一步继续拆 render node / HTML format，避免一次性移动 PDF 或 DOCX 大块逻辑。
