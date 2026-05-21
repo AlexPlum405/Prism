@@ -723,3 +723,51 @@ git diff --check
 
 - `exportPipeline.ts` 仍包含大块渲染和格式主体逻辑。
 - 后续可以继续拆 standalone iframe、Mermaid render、图片内联，或者进入 EditorPane phase 前先确认 Phase 3 阶段性收益。
+
+### Checkpoint 3H：PDF chrome 文本工具分层
+
+改动范围：
+
+- `src/domains/export/pdf/pdfChromeText.ts`
+- `src/domains/export/pdf/pdfChromeText.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出 PDF/DOCX 页眉页脚与页码文本工具：
+  - `getPdfPageNumberLabel()`
+  - `getPdfPageNumberY()`
+  - `getPdfHeaderY()`
+  - `getPdfFooterY()`
+  - `normalizePdfChromeText()`
+  - `formatPdfHeaderFooterText()`
+  - `buildHeaderFooterTextParts()`
+  - `hasHeaderFooterPageToken()`
+  - `createPdfChromeTextImage()`
+  - `HeaderFooterTextPart`
+- PDF chrome overlay 和 DOCX header/footer 继续复用同一模块，页眉页脚 token 行为保持一致。
+- 新增 `pdfChromeText.test.ts`，覆盖页码文本、坐标、模板 token 替换、160 字符截断和 DOCX page/pages field 分段。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/pdf/pdfChromeText.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、53 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 PDF/DOCX chrome 文本工具，不改变 PDF 页面渲染、PDF link annotation、DOCX 文档结构、真实文件写入或 Rust/Tauri native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍包含 PDF overlay 主流程、PDF engines、Mermaid/图片渲染和 DOCX builder。
+- 后续可以把 PDF chrome overlay 主流程移动到 `pdf/pdfChrome.ts`，或先拆 Mermaid/image renderer。
