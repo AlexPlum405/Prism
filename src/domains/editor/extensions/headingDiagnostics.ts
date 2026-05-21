@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import { getMarkdownHeadingSlug } from './linkDiagnostics';
+import { extractMarkdownDocumentHeadings } from '../../markdown/documentModel';
 
 export type HeadingDiagnosticKind = 'duplicate-anchor';
 
@@ -16,14 +16,8 @@ export function scanHeadingAnchorDiagnostics(content: string): HeadingDiagnostic
   const seen = new Map<string, number>();
   const diagnostics: HeadingDiagnostic[] = [];
 
-  content.split('\n').forEach((lineText, lineIndex) => {
-    const match = lineText.match(/^(#{1,6})\s+(.+)$/);
-    if (!match) return;
-
-    const slug = getMarkdownHeadingSlug(match[2]);
-    if (!slug) return;
-
-    const line = lineIndex + 1;
+  extractMarkdownDocumentHeadings(content).forEach((heading) => {
+    const { line, slug } = heading;
     const firstLine = seen.get(slug);
     if (firstLine) {
       diagnostics.push({

@@ -1050,3 +1050,39 @@ git diff --check
 
 - workspace index 当前只消费 front matter、headings、links；`images` / `blocks` 尚未进入索引或诊断。
 - 下一步可让 image diagnostics 或 heading diagnostics 复用 document model，减少重复正则扫描。
+
+### Checkpoint 5B：标题锚点诊断复用 Markdown document model
+
+改动范围：
+
+- `src/domains/editor/extensions/headingDiagnostics.ts`
+
+实现结果：
+
+- `scanHeadingAnchorDiagnostics()` 不再自行用正则扫描标题和重新计算 slug，改为消费 `extractMarkdownDocumentHeadings()`。
+- 标题行号、slug 生成、inline code 清理和末尾符号处理统一走 Markdown document model。
+- 用户可见诊断类型、消息、严重级别和重复锚点判断规则保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/extensions/headingDiagnostics.test.ts src/domains/markdown/documentModel.test.ts src/domains/diagnostics/adapters.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、13 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只替换标题诊断的数据来源，不改变诊断 UI、状态栏 ERROR 过滤、链接诊断、图片诊断、workspace index 或导出。
+- 因此未跑真实 app smoke；Phase 6 统一诊断模型深化时补更完整诊断面板相关测试。
+
+剩余风险：
+
+- link diagnostics 的当前文档 heading slug 校验仍有独立扫描；下一步可让它复用 document model headings。
+- image diagnostics 也尚未消费 document model 的 `images`。
