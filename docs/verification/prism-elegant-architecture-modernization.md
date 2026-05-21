@@ -1122,3 +1122,39 @@ git diff --check
 
 - image diagnostics 仍独立扫描 Markdown 图片；下一步可复用 document model 的 `images`。
 - link diagnostics 仍保留自身链接 target 解析，后续若要完全复用 `model.links`，需要先确认 title metadata、angle target、image validate 分支不会回退。
+
+### Checkpoint 5D：图片诊断复用 Markdown document model 图片引用
+
+改动范围：
+
+- `src/domains/editor/extensions/imageDiagnostics.ts`
+
+实现结果：
+
+- `scanMarkdownImageDiagnostics()` 不再自行用图片正则扫描 Markdown，改为消费 `extractMarkdownDocumentImages()`。
+- 原有图片 target 清洗、title metadata 拆分、`file://` / 绝对路径 / 相对路径解析、外链跳过、unsupported protocol 和 exists 检查逻辑保持不变。
+- 图片诊断 line/column 统一来自 Markdown document model。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/extensions/imageDiagnostics.test.ts src/domains/markdown/documentModel.test.ts src/domains/diagnostics/adapters.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、14 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只替换图片诊断的数据来源，不改变诊断 UI、状态栏 ERROR、导出预检、workspace index 或真实文件系统写入。
+- 因此未跑真实 app smoke；Phase 6 诊断模型深化和最终收口时补更完整验证。
+
+剩余风险：
+
+- Markdown document model 已被 workspace index、heading diagnostics、link diagnostics heading slug、image diagnostics 复用，但预览和导出仍各自有渲染级解析。
+- 若继续深化 Phase 5，可让 workspace index 记录 `images` / `blocks`，或让导出预检读取 document model。

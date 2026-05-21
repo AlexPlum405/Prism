@@ -1,5 +1,6 @@
 import { t } from '../../i18n';
 import type { I18nKey } from '../../i18n';
+import { extractMarkdownDocumentImages } from '../../markdown/documentModel';
 import { dirname, joinPath } from '../../workspace/services/path';
 
 export type ImageDiagnosticKind =
@@ -22,7 +23,6 @@ interface ImageScanContext {
   existsPath?: (path: string) => Promise<boolean>;
 }
 
-const MARKDOWN_IMAGE_RE = /!\[[^\]\n]*\]\(([^)\n]*)\)/g;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 const IMAGE_MESSAGE_KEY: Record<ImageDiagnosticKind, I18nKey> = {
   'empty-target': 'diagnostics.image.empty-target.message',
@@ -123,52 +123,49 @@ export async function scanMarkdownImageDiagnostics(
   const diagnostics: ImageDiagnostic[] = [];
   const existsPath = context.existsPath ?? defaultExistsPath;
 
-  for (const [lineIndex, lineText] of content.split('\n').entries()) {
-    for (const match of lineText.matchAll(MARKDOWN_IMAGE_RE)) {
-      const target = extractTarget(match[1]);
-      const column = (match.index ?? 0) + 1;
+  for (const image of extractMarkdownDocumentImages(content)) {
+    const target = extractTarget(image.target);
 
-      if (!target) {
-        diagnostics.push(createDiagnostic({
-          column,
-          kind: 'empty-target',
-          line: lineIndex + 1,
-          target,
-        }));
-        continue;
-      }
+    if (!target) {
+      diagnostics.push(createDiagnostic({
+        column: image.column,
+        kind: 'empty-target',
+        line: image.line,
+        target,
+      }));
+      continue;
+    }
 
-      if (isExternalImageTarget(target)) continue;
-      if (isUnsupportedImageProtocol(target)) {
-        diagnostics.push(createDiagnostic({
-          column,
-          kind: 'unsupported-protocol',
-          line: lineIndex + 1,
-          target,
-        }));
-        continue;
-      }
+    if (isExternalImageTarget(target)) continue;
+    if (isUnsupportedImageProtocol(target)) {
+      diagnostics.push(createDiagnostic({
+        column: image.column,
+        kind: 'unsupported-protocol',
+        line: image.line,
+        target,
+      }));
+      continue;
+    }
 
-      const resolvedPath = resolveMarkdownImagePath(target, context.documentPath);
-      if (!resolvedPath) {
-        diagnostics.push(createDiagnostic({
-          column,
-          kind: 'unresolved-relative',
-          line: lineIndex + 1,
-          target,
-        }));
-        continue;
-      }
+    const resolvedPath = resolveMarkdownImagePath(target, context.documentPath);
+    if (!resolvedPath) {
+      diagnostics.push(createDiagnostic({
+        column: image.column,
+        kind: 'unresolved-relative',
+        line: image.line,
+        target,
+      }));
+      continue;
+    }
 
-      if (!(await existsPath(resolvedPath))) {
-        diagnostics.push(createDiagnostic({
-          column,
-          kind: 'missing-file',
-          line: lineIndex + 1,
-          resolvedPath,
-          target,
-        }));
-      }
+    if (!(await existsPath(resolvedPath))) {
+      diagnostics.push(createDiagnostic({
+        column: image.column,
+        kind: 'missing-file',
+        line: image.line,
+        resolvedPath,
+        target,
+      }));
     }
   }
 
