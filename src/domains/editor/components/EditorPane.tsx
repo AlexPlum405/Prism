@@ -49,15 +49,13 @@ import {
   scrollEditorToLine,
   setEditorScrollRatio,
 } from '../runtime/editorScrollRuntime';
+import {
+  handleEditorClipboardImagePaste,
+  handleEditorImageDrop,
+} from '../runtime/editorClipboardRuntime';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
-import {
-  getMarkdownImageForPath,
-  getNativeImageFilePath,
-  isSupportedImageFile,
-  saveClipboardImage,
-} from '../extensions/imagePaste';
 import { markdownListKeymap } from '../extensions/markdownLists';
 import {
   findMarkdownTableBlock,
@@ -623,96 +621,34 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       return true;
     }, []);
 
-    const handleClipboardImagePaste = useCallback(async (event: ClipboardEvent, view: EditorView) => {
-      const imageItem = Array.from(event.clipboardData?.items ?? []).find((item) => item.type.startsWith('image/'));
-      if (!imageItem) return false;
+    const imageClipboardMessages = useMemo(() => ({
+      clipboardUnreadable: t('editor.image.clipboardUnreadable'),
+      saveBeforePaste: t('editor.image.saveBeforePaste'),
+      nativePathUnavailable: t('editor.image.nativePathUnavailable'),
+      saveBeforeDrop: t('editor.image.saveBeforeDrop'),
+      pasteFailed: (message: string) => t('editor.image.pasteFailed', { message }),
+      dropFailed: (message: string) => t('editor.image.dropFailed', { message }),
+    }), [t]);
 
-      event.preventDefault();
-      event.stopPropagation();
+    const handleClipboardImagePaste = useCallback(
+      (event: ClipboardEvent, view: EditorView) => handleEditorClipboardImagePaste(event, view, {
+        getCurrentDocument: () => useDocumentStore.getState().currentDocument,
+        messages: imageClipboardMessages,
+        notice: (message) => onNoticeRef.current?.(message),
+        formatError: formatEditorError,
+      }),
+      [imageClipboardMessages],
+    );
 
-      const imageFile = imageItem.getAsFile();
-      const document = useDocumentStore.getState().currentDocument;
-      if (!imageFile) {
-        onNoticeRef.current?.(t('editor.image.clipboardUnreadable'));
-        return true;
-      }
-      if (!document?.path) {
-        onNoticeRef.current?.(t('editor.image.saveBeforePaste'));
-        return true;
-      }
-
-      try {
-        const markdownImage = await saveClipboardImage({
-          documentName: document.name,
-          documentPath: document.path,
-          file: imageFile,
-        });
-        const selection = view.state.selection.main;
-        view.dispatch({
-          changes: { from: selection.from, to: selection.to, insert: markdownImage },
-          selection: { anchor: selection.from + markdownImage.length },
-          scrollIntoView: true,
-        });
-      } catch (error) {
-        onNoticeRef.current?.(t('editor.image.pasteFailed', { message: formatEditorError(error) }));
-      }
-      return true;
-    }, [t]);
-
-    const insertAtSelection = useCallback((view: EditorView, text: string) => {
-      const selection = view.state.selection.main;
-      view.dispatch({
-        changes: { from: selection.from, to: selection.to, insert: text },
-        selection: { anchor: selection.from + text.length },
-        scrollIntoView: true,
-      });
-      view.focus();
-    }, []);
-
-    const handleImageDrop = useCallback(async (event: DragEvent, view: EditorView) => {
-      const imageFiles = Array.from(event.dataTransfer?.files ?? []).filter(isSupportedImageFile);
-      if (imageFiles.length === 0) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (event.altKey) {
-        const markdownLinks = imageFiles
-          .map((file) => {
-            const nativePath = getNativeImageFilePath(file);
-            return nativePath ? getMarkdownImageForPath(nativePath, file.name) : null;
-          })
-          .filter((link): link is string => Boolean(link));
-
-        if (markdownLinks.length === 0) {
-          onNoticeRef.current?.(t('editor.image.nativePathUnavailable'));
-          return;
-        }
-
-        insertAtSelection(view, markdownLinks.join('\n'));
-        return;
-      }
-
-      const document = useDocumentStore.getState().currentDocument;
-      if (!document?.path) {
-        onNoticeRef.current?.(t('editor.image.saveBeforeDrop'));
-        return;
-      }
-
-      try {
-        const markdownImages: string[] = [];
-        for (const file of imageFiles) {
-          markdownImages.push(await saveClipboardImage({
-            documentName: document.name,
-            documentPath: document.path,
-            file,
-          }));
-        }
-        insertAtSelection(view, markdownImages.join('\n'));
-      } catch (error) {
-        onNoticeRef.current?.(t('editor.image.dropFailed', { message: formatEditorError(error) }));
-      }
-    }, [insertAtSelection, t]);
+    const handleImageDrop = useCallback(
+      (event: DragEvent, view: EditorView) => handleEditorImageDrop(event, view, {
+        getCurrentDocument: () => useDocumentStore.getState().currentDocument,
+        messages: imageClipboardMessages,
+        notice: (message) => onNoticeRef.current?.(message),
+        formatError: formatEditorError,
+      }),
+      [imageClipboardMessages],
+    );
 
     // 监听菜单格式化事件
     useEffect(() => {

@@ -957,3 +957,52 @@ git diff --check
 
 - `EditorPane.tsx` 仍包含 clipboard/image paste、table UI handlers、context menu handlers 和 CodeMirror extension 装配。
 - Phase 4 若继续深化，下一步优先拆 clipboard/image paste runtime；否则可进入 Phase 5，把 Markdown core 与 workspace index 复用做深。
+
+### Checkpoint 4E：编辑器剪贴板图片 runtime 分层
+
+改动范围：
+
+- `src/domains/editor/runtime/editorClipboardRuntime.ts`
+- `src/domains/editor/runtime/editorClipboardRuntime.test.ts`
+- `src/domains/editor/components/EditorPane.tsx`
+
+实现结果：
+
+- 从 `EditorPane.tsx` 抽出 clipboard/image runtime：
+  - `insertTextAtSelection()`
+  - `handleEditorClipboardImagePaste()`
+  - `handleEditorImageDrop()`
+- runtime 通过依赖注入读取当前文档、toast 文案、错误格式化和图片保存函数；不直接耦合 React store 或 i18n。
+- `EditorPane.tsx` 继续负责事件监听和当前文档/i18n 接线，用户可见行为保持不变：
+  - 粘贴图片前仍要求当前文档已保存。
+  - 图片保存仍使用原有 `saveClipboardImage()` 和 assets 路径规则。
+  - 拖拽图片按原逻辑保存到文档 assets。
+  - Alt 拖拽仍优先插入原生文件路径 markdown 图片链接。
+  - 粘贴/拖拽失败仍通过原 toast 文案提示。
+- 新增 `editorClipboardRuntime.test.ts`，覆盖文本插入、剪贴板图片保存并插入 markdown、未保存文档提示、Alt 拖拽原生路径插入。
+- `EditorPane.tsx` 行数降到 1144 行；clipboard/image paste 逻辑不再散落在组件内。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorClipboardRuntime.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：2 个测试文件、27 项测试通过。
+- 第一次 `npm run build` 暴露抽离后残留的未使用 `insertAtSelection` wrapper；已删除。
+- `npm run build` 复跑通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动前端 clipboard/image paste runtime，不改变图片保存算法、Tauri 文件系统写入、表格粘贴、rich copy、CodeMirror view 生命周期或真实 app 拖拽验证。
+- 因此未跑 `npm run tauri:build:app-smoke`；最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `EditorPane.tsx` 仍包含表格 UI handlers、context menu handlers、rich copy command 分支和 CodeMirror extension 装配。
+- Phase 4 的主要 runtime seam 已建立；后续可选择再拆 editor command switch，或进入 Phase 5 做 Markdown core / workspace index 复用。
