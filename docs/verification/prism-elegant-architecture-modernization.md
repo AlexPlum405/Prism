@@ -1659,3 +1659,48 @@ npm run tauri:build:app-smoke
 剩余风险：
 
 - `read_legacy_settings_config` 仍在 `lib.rs` 中；虽然不在原 Phase 8 建议结构中，但它也是 native command，后续单独按 settings 能力拆分，避免 `lib.rs` 残留业务 command。
+
+### Checkpoint 8G：拆分设置兼容 native command
+
+改动范围：
+
+- `src-tauri/src/commands/mod.rs`
+- `src-tauri/src/commands/settings.rs`
+- `src-tauri/src/lib.rs`
+
+实现结果：
+
+- 新增 `commands/settings.rs`，承接 `read_legacy_settings_config`。
+- `lib.rs` 不再直接持有业务 command 实现，只保留 Tauri builder、plugin、state、command 注册和 run event 装配。
+- 新增 Rust 单元测试锁住旧设置兼容路径：`<app_data>config.json`，避免误改迁移兼容逻辑。
+- 不改变前端调用 command 名称、设置读取返回语义、错误文案或旧配置迁移兼容路径。
+
+验证：
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cd src-tauri && cargo test
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 通过。
+- `cd src-tauri && cargo test` 通过：13 项 Rust 测试通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 通过，保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+  - 打开 Markdown fixture 并恢复 lastSession。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+
+跳过项：
+
+- 未额外构造真实旧配置文件迁移 smoke；本 checkpoint 只迁移 command 位置，兼容路径由新增 Rust 单元测试锁住，设置中心真实打开由 app smoke 覆盖。
+
+剩余风险：
+
+- Phase 8 Rust command 拆分已收口；后续风险转移到 Phase 9 主包性能与依赖边界审计。
