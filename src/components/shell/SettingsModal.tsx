@@ -41,6 +41,7 @@ import {
 import type { ToastInput } from '../../lib/toast';
 import { emitAppEvent } from '../../platform/events/appEvents';
 import { openDialog } from '../../platform/tauri/dialogs';
+import { useCitationSettingsModel } from './settings/useCitationSettingsModel';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -102,52 +103,6 @@ function getPandocHint(settings: ReturnType<typeof useSettingsStore.getState>['p
   if (settings.detected && settings.version) return translate('settings.pandoc.detected', { version: settings.version });
   if (settings.lastError) return settings.lastError;
   return translate('settings.pandoc.hint');
-}
-
-function hasSupportedPathExtension(path: string, extensions: string[]) {
-  const normalized = path.trim().toLowerCase();
-  return normalized.length === 0 || extensions.some((extension) => normalized.endsWith(extension));
-}
-
-function getBibliographyHint(path: string) {
-  if (!path.trim()) return translate('settings.bibliography.emptyHint');
-  if (!hasSupportedPathExtension(path, ['.bib', '.bibtex', '.json'])) {
-    return translate('settings.bibliography.invalidHint');
-  }
-  return translate('settings.bibliography.readyHint');
-}
-
-function getCslStyleHint(path: string) {
-  if (!path.trim()) return translate('settings.csl.emptyHint');
-  if (!hasSupportedPathExtension(path, ['.csl'])) {
-    return translate('settings.csl.invalidHint');
-  }
-  return translate('settings.csl.readyHint');
-}
-
-function getCitationReadinessHint(input: {
-  bibliographyPath: string;
-  bibliographyPathIsSupported: boolean;
-  cslStylePath: string;
-  cslStylePathIsSupported: boolean;
-  pandocDetected: boolean;
-}) {
-  const hasBibliography = input.bibliographyPath.trim().length > 0;
-  const hasCslStyle = input.cslStylePath.trim().length > 0;
-
-  if (!input.bibliographyPathIsSupported || !input.cslStylePathIsSupported) {
-    return translate('settings.citation.invalid');
-  }
-  if (!hasBibliography && hasCslStyle) {
-    return translate('settings.citation.cslNeedsBibliography');
-  }
-  if (!hasBibliography) {
-    return translate('settings.citation.noBibliography');
-  }
-  if (!input.pandocDetected) {
-    return translate('settings.citation.noPandoc');
-  }
-  return translate('settings.citation.ready');
 }
 
 function showSettingsToast(input: ToastInput) {
@@ -214,16 +169,9 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     width: 260,
     maxWidth: 320,
   };
-  const bibliographyPathIsSupported = hasSupportedPathExtension(
-    settings.citation.bibliographyPath,
-    ['.bib', '.bibtex', '.json'],
-  );
-  const cslStylePathIsSupported = hasSupportedPathExtension(settings.citation.cslStylePath, ['.csl']);
-  const citationReadinessHint = getCitationReadinessHint({
+  const citationSettingsModel = useCitationSettingsModel({
     bibliographyPath: settings.citation.bibliographyPath,
-    bibliographyPathIsSupported,
     cslStylePath: settings.citation.cslStylePath,
-    cslStylePathIsSupported,
     pandocDetected: settings.pandoc.detected,
   });
 
@@ -972,12 +920,12 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             <div className="settings-row">
               <div>
                 <div className="row-label">{t('settings.bibliography.label')}</div>
-                <div className="row-hint">{getBibliographyHint(settings.citation.bibliographyPath)}</div>
+                <div className="row-hint">{citationSettingsModel.bibliographyHint}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   aria-label={t('settings.bibliography.aria')}
-                  aria-invalid={!bibliographyPathIsSupported}
+                  aria-invalid={!citationSettingsModel.bibliographyPathIsSupported}
                   value={settings.citation.bibliographyPath}
                   onChange={(e) => settings.setCitationBibliographyPath(e.target.value)}
                   placeholder={t('settings.bibliography.placeholder')}
@@ -998,12 +946,12 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             <div className="settings-row">
               <div>
                 <div className="row-label">{t('settings.csl.label')}</div>
-                <div className="row-hint">{getCslStyleHint(settings.citation.cslStylePath)}</div>
+                <div className="row-hint">{citationSettingsModel.cslStyleHint}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   aria-label={t('settings.csl.aria')}
-                  aria-invalid={!cslStylePathIsSupported}
+                  aria-invalid={!citationSettingsModel.cslStylePathIsSupported}
                   value={settings.citation.cslStylePath}
                   onChange={(e) => settings.setCitationCslStylePath(e.target.value)}
                   placeholder={t('settings.csl.placeholder')}
@@ -1024,7 +972,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             <div className="settings-row">
               <div>
                 <div className="row-label">{t('settings.citationStatus.label')}</div>
-                <div className="row-hint" aria-live="polite">{citationReadinessHint}</div>
+                <div className="row-hint" aria-live="polite">{citationSettingsModel.citationReadinessHint}</div>
               </div>
             </div>
           </div>

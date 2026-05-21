@@ -1243,3 +1243,46 @@ git diff --check
 
 - `getActionableErrorDiagnostics()` 仍只是 severity 过滤，未增加更复杂策略；当前符合既有状态栏语义。
 - Export failure diagnostics 文本仍是独立诊断文本，不属于 `PrismDiagnostic` 面板模型。
+
+## Phase 7：Settings 和 UI primitives 瘦身
+
+### Checkpoint 7A：引用设置 model 分层
+
+改动范围：
+
+- `src/components/shell/settings/useCitationSettingsModel.ts`
+- `src/components/shell/settings/useCitationSettingsModel.test.ts`
+- `src/components/shell/SettingsModal.tsx`
+
+实现结果：
+
+- 从 `SettingsModal.tsx` 抽出引用设置判断：
+  - bibliography / CSL 后缀支持。
+  - bibliography / CSL hint。
+  - citation readiness hint。
+- `SettingsModal.tsx` 继续渲染原有 Citation 设置 UI，只消费 `useCitationSettingsModel()` 的输出。
+- 不改变设置中心视觉、不改变输入框、按钮、Pandoc 检测、路径清空或保存行为。
+
+验证：
+
+```bash
+npm test -- --run src/components/shell/settings/useCitationSettingsModel.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、20 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动引用设置业务判断，不改变 SettingsModal 视觉、不改变主题导入 prompt、不触及 Tauri/Rust 或真实文件选择。
+- 因此未跑真实 app smoke；最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `SettingsModal.tsx` 仍包含主题管理、导出设置、字体设置和 prompt 逻辑。
+- 后续可继续抽 theme settings model 或 export settings model；UI primitives 仍未建立。
