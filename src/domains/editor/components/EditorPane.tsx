@@ -44,6 +44,11 @@ import {
   execEditorSearch,
   restoreEditorSearch,
 } from '../runtime/editorSearchRuntime';
+import {
+  jumpToEditorLine,
+  scrollEditorToLine,
+  setEditorScrollRatio,
+} from '../runtime/editorScrollRuntime';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -79,7 +84,7 @@ import {
   shouldHighlightCompatibilityCodeTheme,
 } from '../extensions/markdownHighlight';
 import { createHiddenSearchPanel } from '../extensions/search';
-import { addLineFlash, editorSelectionPlugin, lineFlashField, removeLineFlash } from '../extensions/selection';
+import { editorSelectionPlugin, lineFlashField } from '../extensions/selection';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
@@ -380,46 +385,17 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       jumpToLine: (lineNumber: number) => {
         const view = viewRef.current;
         if (!view) return;
-
-        const targetLine = Math.max(1, Math.min(lineNumber, view.state.doc.lines));
-        const line = view.state.doc.line(targetLine);
-
-        view.dispatch({
-          selection: { anchor: line.from },
-          effects: [
-            EditorView.scrollIntoView(line.from, { y: 'center' }),
-            addLineFlash.of(line.from)
-          ],
-        });
-
-        // 2秒后清除闪烁样式
-        setTimeout(() => {
-          if (viewRef.current) {
-            viewRef.current.dispatch({
-              effects: removeLineFlash.of(line.from)
-            });
-          }
-        }, 2000);
-
-        view.focus();
+        jumpToEditorLine(view, lineNumber);
       },
       setScrollRatio: (ratio: number) => {
         const view = viewRef.current;
         if (!view) return;
-        const scroller = view.scrollDOM;
-        const maxScroll = scroller.scrollHeight - scroller.clientHeight;
-        const targetScroll = Math.max(0, ratio) * maxScroll;
-        scroller.scrollTop = targetScroll;
+        setEditorScrollRatio(view, ratio);
       },
       scrollToLine: (lineNumber: number) => {
         const view = viewRef.current;
         if (!view) return;
-        const targetLine = Math.max(1, Math.min(lineNumber, view.state.doc.lines));
-        const line = view.state.doc.line(targetLine);
-        // 使用 CodeMirror 自身的 scrollIntoView，正确处理视口虚拟化
-        view.dispatch({
-          effects: EditorView.scrollIntoView(line.from, { y: 'start' }),
-        });
+        scrollEditorToLine(view, lineNumber);
       },
       execSearch: (action, params) => {
         const view = viewRef.current;

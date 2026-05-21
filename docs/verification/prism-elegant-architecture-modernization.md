@@ -910,3 +910,50 @@ git diff --check
 
 - `EditorPane.tsx` 仍包含 clipboard/image paste、scroll/typewriter、table UI handlers 和 CodeMirror extension 装配。
 - 后续可继续拆 clipboard runtime 或 scroll runtime，再进入 Markdown core / workspace index 复用阶段。
+
+### Checkpoint 4D：编辑器滚动跳转 runtime 分层
+
+改动范围：
+
+- `src/domains/editor/runtime/editorScrollRuntime.ts`
+- `src/domains/editor/runtime/editorScrollRuntime.test.ts`
+- `src/domains/editor/components/EditorPane.tsx`
+
+实现结果：
+
+- 从 `EditorPane.tsx` 的 imperative handle 中抽出滚动/跳转 runtime：
+  - `jumpToEditorLine()`
+  - `setEditorScrollRatio()`
+  - `scrollEditorToLine()`
+- `EditorPane.tsx` 继续暴露原有 `jumpToLine`、`setScrollRatio`、`scrollToLine`，但只负责取当前 CodeMirror view 后委托 runtime。
+- 保留既有行为：
+  - `jumpToLine` 仍 clamp 行号、移动光标、居中滚动、触发行闪烁，并在 2 秒后清除闪烁。
+  - `setScrollRatio` 仍按 `scrollTop / maxScroll` 设置编辑器滚动位置。
+  - `scrollToLine` 仍使用 CodeMirror 自身 `scrollIntoView(..., { y: 'start' })`，不移动光标。
+- 新增 `editorScrollRuntime.test.ts`，覆盖行号 clamp 和闪烁清理调度、滚动比例计算、只滚动不移动选区。
+- `EditorPane.tsx` 行数降到 1208 行；滚动跳转操作不再散落在组件 imperative handle 内。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorScrollRuntime.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：2 个测试文件、26 项测试通过。
+- 第一次 `npm run build` 暴露测试注入的 `setTimeout` 类型过宽；已收窄为 runtime 实际需要的调度器接口。
+- `npm run build` 复跑通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 imperative 滚动/跳转 runtime，不改变 scroll listener、横向滚动条、typewriter mode、table toolbar、clipboard、导出或文件系统行为。
+- 因此未跑真实 app smoke；后续触及编辑器 runtime 生命周期或最终收口时补 `npm run tauri:build:app-smoke`。
+
+剩余风险：
+
+- `EditorPane.tsx` 仍包含 clipboard/image paste、table UI handlers、context menu handlers 和 CodeMirror extension 装配。
+- Phase 4 若继续深化，下一步优先拆 clipboard/image paste runtime；否则可进入 Phase 5，把 Markdown core 与 workspace index 复用做深。
