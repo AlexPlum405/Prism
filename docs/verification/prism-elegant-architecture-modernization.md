@@ -588,3 +588,48 @@ git diff --check
 
 - `exportPipeline.ts` 仍包含渲染节点创建、Mermaid/图片渲染和各导出格式主体。
 - 后续可继续将 PDF link rect 单独拆到 `pdf/pdfLinks.ts`，再拆 `createRenderedExportNode()` 和 standalone HTML 生成。
+
+### Checkpoint 3E：PDF 链接矩形收集模块分层
+
+改动范围：
+
+- `src/domains/export/pdf/pdfLinks.ts`
+- `src/domains/export/pdf/pdfLinks.test.ts`
+- `src/domains/export/exportPipeline.ts`
+
+实现结果：
+
+- 从 `exportPipeline.ts` 抽出 PDF link annotation 前置数据收集：
+  - `ExportPdfLinkRect`
+  - `normalizeExportExternalLink()`
+  - `collectExportPdfLinkRects()`
+- `exportPipeline.ts` 继续在 WebKit PDF capture 和 raster PDF 渲染后复用该模块，PDF overlay/link annotation 计算入口保持不变。
+- 新增 `pdfLinks.test.ts`，覆盖：
+  - HTTPS、mailto、protocol-relative URL 的归一化。
+  - 本地绝对路径按 base URI 解析为可链接 URL。
+  - hash-only、`javascript:`、`data:` 链接不进入 PDF annotation。
+  - link rect 会相对导出 root 计算，并过滤过小 rect。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/pdf/pdfLinks.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、52 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动 PDF 链接收集，不改变 PDF 页面渲染、PDF chrome overlay、PDF 写文件、PNG/DOCX/HTML 导出或 Rust/Tauri native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；后续触及真实导出 worker 或最终收口时补真实 app smoke。
+
+剩余风险：
+
+- `exportPipeline.ts` 仍包含 PDF capture/raster 主流程和 PDF chrome overlay。
+- 后续可继续拆 `renderedExportNode` / `standaloneHtml`，然后再拆 PDF engine。
