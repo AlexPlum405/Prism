@@ -7,6 +7,8 @@ import { useAutoSave } from './domains/document/hooks/useAutoSave';
 import { useExternalFileChangeMonitor } from './domains/document/hooks/useExternalFileChangeMonitor';
 import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
+import { useAppCommandContext } from './app/useAppCommandContext';
+import { useAppShortcuts } from './app/useAppShortcuts';
 import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
@@ -66,12 +68,7 @@ import { AboutModal } from './components/shell/AboutModal';
 import { SettingsModal } from './components/shell/SettingsModal';
 import { Toast } from './components/shell/Toast';
 import {
-  findCommandByKeyboardEvent,
   getCommandMenuItems,
-  getMenuSections,
-  isCommandId,
-  runCommand,
-  type CommandContext,
 } from './domains/commands';
 import {
   basename,
@@ -791,135 +788,69 @@ function App() {
     }
   }, [conflictAction, currentDocument?.saveStatus]);
 
-  const createCommandContext = useCallback((): CommandContext => ({
-      documentStore: useDocumentStore.getState(),
-      settingsStore: useSettingsStore.getState(),
-      workspaceStore: useWorkspaceStore.getState(),
-      showToast,
-      requestExportPath,
-      requestSavePath: requestMarkdownSavePath,
-      openAbout: () => setAboutVisible(true),
-      openSettings: () => setSettingsVisible(true),
-      openShortcuts: () => setShortcutPanelVisible(true),
-      openQuickOpen: () => {
-        setCommandPaletteMode('files');
-        setCommandPaletteVisible(true);
-      },
-      openWorkspaceSearch: () => {
-        setCommandPaletteMode('search');
-        setCommandPaletteVisible(true);
-      },
-      openDocumentProperties: () => setDocumentPropertiesVisible(true),
-      openDocumentLinks: () => setDocumentLinksVisible(true),
-      openBacklinks: handleBacklinksClick,
-      openRelationGraph: () => {
-        if (!workspaceIndex || workspaceIndex.documents.length === 0) {
-          showToast(t('app.openMarkdownWorkspaceFirst'));
-          return;
-        }
-        setRelationGraphVisible(true);
-      },
-  }), [handleBacklinksClick, requestExportPath, requestMarkdownSavePath, showToast, workspaceIndex]);
+  const openAbout = useCallback(() => setAboutVisible(true), []);
+  const openSettings = useCallback(() => setSettingsVisible(true), []);
+  const openShortcuts = useCallback(() => setShortcutPanelVisible(true), []);
+  const openQuickOpen = useCallback(() => {
+    setCommandPaletteMode('files');
+    setCommandPaletteVisible(true);
+  }, []);
+  const openWorkspaceSearch = useCallback(() => {
+    setCommandPaletteMode('search');
+    setCommandPaletteVisible(true);
+  }, []);
+  const openDocumentProperties = useCallback(() => setDocumentPropertiesVisible(true), []);
+  const openDocumentLinks = useCallback(() => setDocumentLinksVisible(true), []);
+  const openRelationGraph = useCallback(() => {
+    if (!workspaceIndex || workspaceIndex.documents.length === 0) {
+      showToast(t('app.openMarkdownWorkspaceFirst'));
+      return;
+    }
+    setRelationGraphVisible(true);
+  }, [showToast, workspaceIndex]);
 
-  const commandContext = useMemo(() => createCommandContext(), [
+  const {
     createCommandContext,
-    currentDocument?.path,
-    currentDocument?.isDirty,
-    currentDocument?.viewMode,
-    workspace.rootPath,
-    workspace.fileTree,
-    workspace.sidebarVisible,
-    workspace.sidebarTab,
-    workspace.statusBarVisible,
-    workspace.focusMode,
-    workspace.typewriterMode,
-    workspace.isFullscreen,
-    workspace.isAlwaysOnTop,
+    handleCommandAction,
+    menuSections,
+  } = useAppCommandContext({
     contentTheme,
-    themeRegistryVersion,
-    shortcutStyle,
-    wordWrap,
+    currentDocument,
     exportDefaults,
+    handleFileAction,
     locale,
     localePreference,
-    settingsLocale,
+    openAbout,
+    openBacklinks: handleBacklinksClick,
+    openDocumentLinks,
+    openDocumentProperties,
+    openQuickOpen,
+    openRelationGraph,
+    openSettings,
+    openShortcuts,
+    openWorkspaceSearch,
     recentFiles,
-  ]);
-
-  const menuSections = useMemo(
-    () => getMenuSections(commandContext),
-    [commandContext],
-  );
-
-  const handleCommandAction = useCallback(async (action: string) => {
-    if (action.startsWith('setTheme:')) {
-      await useSettingsStore.getState().setContentTheme(decodeURIComponent(action.slice('setTheme:'.length)));
-      return;
-    }
-
-    if (action.startsWith('openRecentFile:')) {
-      await handleFileAction({
-        action: 'openFile',
-        path: decodeURIComponent(action.slice('openRecentFile:'.length)),
-      });
-      return;
-    }
-
-    if (action.startsWith('openWorkspaceFile:')) {
-      await handleFileAction({
-        action: 'openFile',
-        path: decodeURIComponent(action.slice('openWorkspaceFile:'.length)),
-      });
-      return;
-    }
-
-    if (!isCommandId(action)) {
-      console.warn(`[Command] Unknown command id: ${action}`);
-      showToast(t('app.unknownCommand', { action }));
-      return;
-    }
-
-    await runCommand(action, createCommandContext());
-  }, [createCommandContext, handleFileAction, showToast]);
+    requestExportPath,
+    requestSavePath: requestMarkdownSavePath,
+    settingsLocale,
+    shortcutStyle,
+    showToast,
+    themeRegistryVersion,
+    wordWrap,
+    workspace,
+    workspaceIndex,
+  });
 
   const handleAboutCheckUpdate = useCallback(() => {
     setAboutVisible(false);
     void handleCommandAction('checkUpdate');
   }, [handleCommandAction]);
 
-  useEffect(() => {
-    return onAppEvent('command.run', ({ action }) => {
-      if (action) handleCommandAction(action);
-    });
-  }, [handleCommandAction]);
-
-  useEffect(() => {
-    return onAppEvent('file.action', (detail) => {
-      handleFileAction(detail);
-    });
-  }, [handleFileAction]);
-
-  useEffect(() => {
-    return onAppEvent('settings.open', () => setSettingsVisible(true));
-  }, []);
-
-  const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && workspace.focusMode) {
-      workspace.toggleFocusMode();
-      return;
-    }
-
-    const command = findCommandByKeyboardEvent(e);
-    if (command) {
-      e.preventDefault();
-      await runCommand(command.id, createCommandContext());
-    }
-  }, [createCommandContext, workspace]);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  useAppShortcuts({
+    createCommandContext,
+    focusMode: workspace.focusMode,
+    toggleFocusMode: workspace.toggleFocusMode,
+  });
 
   const handleFolderContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();

@@ -220,3 +220,50 @@ git diff --check
 剩余风险：
 
 - `App.tsx` 仍包含命令上下文、保存/导出弹窗、诊断、链接/反链/图谱等多块 model，需要继续拆分。
+
+### Checkpoint 2B：命令上下文与快捷键接线分层
+
+改动范围：
+
+- `src/app/useAppCommandContext.ts`
+- `src/app/useAppShortcuts.ts`
+- `src/app/useAppShortcuts.test.tsx`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useAppCommandContext()`，集中承载：
+  - `CommandContext` 创建。
+  - menu sections 计算。
+  - `setTheme:` / `openRecentFile:` / `openWorkspaceFile:` 特殊 action。
+  - unknown command toast。
+  - `command.run`、`file.action`、`settings.open` typed app event 接线。
+- 从 `App.tsx` 抽出 `useAppShortcuts()`，集中承载：
+  - `Escape` 退出专注模式。
+  - 全局快捷键匹配与 `runCommand()` 调用。
+- `App.tsx` 不再直接处理全局命令 bus 和 keydown 注册。
+- `App.tsx` 行数从 Checkpoint 2A 的 1310 行降到 1241 行。
+- 命令定义、菜单结构、快捷键、命令 id 和用户可见行为保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/app/useAppShortcuts.test.tsx src/domains/commands/registry.test.ts src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：3 个测试文件、35 项测试通过。
+- `npm run build` 通过；保留既有 Vite 大 chunk 和 KaTeX 动态导入警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移 App 命令接线，不改命令定义、不改保存/导出算法、不触碰 Tauri/Rust/native command。
+- 因此未跑 `npm run tauri:build:app-smoke`；最终真实 app smoke 覆盖菜单、快捷键和导出入口。
+
+剩余风险：
+
+- `App.tsx` 仍包含保存/导出弹窗模型、诊断模型、文档链接/反链/图谱导航模型，后续继续拆分。
