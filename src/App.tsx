@@ -1,6 +1,4 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import { useDocumentStore } from './domains/document/store';
 import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
@@ -9,6 +7,7 @@ import { useAutoSave } from './domains/document/hooks/useAutoSave';
 import { useExternalFileChangeMonitor } from './domains/document/hooks/useExternalFileChangeMonitor';
 import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
+import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
@@ -120,10 +119,6 @@ function ensureMarkdownExtension(filename: string) {
 
 function defaultExportFilename(filename: string, format: ExportFormat) {
   return ensureExportExtension(stripMarkdownExtension(filename), format);
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function emitExportProgress(message: string | null) {
@@ -573,41 +568,11 @@ function App() {
     });
   }, [showToast]);
 
-  useEffect(() => {
-    let mounted = true;
-    const openPendingFiles = async () => {
-      try {
-        const paths = await invoke<string[]>('get_pending_files');
-        if (paths.length > 0 && mounted) {
-          await handleFileAction({ action: 'openFile', path: paths[0] });
-          return true;
-        }
-      } catch {
-        // Pending file integration is best effort.
-      }
-      return false;
-    };
-
-    const unlisten = listen<string[]>('file-opened', (event) => {
-      const paths = event.payload;
-      if (paths.length > 0 && mounted) {
-        handleFileAction({ action: 'openFile', path: paths[0] });
-      }
-    });
-
-    void (async () => {
-      for (const waitMs of [200, 800]) {
-        await delay(waitMs);
-        if (!mounted) return;
-        if (await openPendingFiles()) return;
-      }
-    })();
-
-    return () => {
-      mounted = false;
-      unlisten.then(fn => fn());
-    };
+  const handleStartupFileOpen = useCallback((path: string) => {
+    return handleFileAction({ action: 'openFile', path });
   }, [handleFileAction]);
+
+  useStartupFileOpen({ onOpenFilePath: handleStartupFileOpen });
 
   const handleFileClick = useCallback(async (path: string) => {
     await handleFileAction({ action: 'openFile', path });

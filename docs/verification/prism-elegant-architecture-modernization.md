@@ -175,3 +175,48 @@ git diff --check
 剩余风险：
 
 - `App.tsx`、`fileActions.ts`、`useBootstrap.ts`、`settings/store.ts`、`fontService.ts`、`themeStorage.ts`、`exportPipeline.ts` 等仍有直接 Tauri import，后续 phase 按风险逐步迁移。
+
+## Phase 2：App.tsx 瘦身为 composition root
+
+### Checkpoint 2A：启动文件打开 hook 分层
+
+改动范围：
+
+- `src/app/useStartupFileOpen.ts`
+- `src/app/useStartupFileOpen.test.tsx`
+- `src/platform/tauri/startupFiles.ts`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useStartupFileOpen()`，集中处理：
+  - 启动后延迟读取 native pending files。
+  - 监听 Tauri `file-opened` 事件。
+  - 组件卸载时取消 native listener。
+- 新增 `src/platform/tauri/startupFiles.ts`，把 `get_pending_files` 和 `file-opened` 事件接到 platform adapter。
+- `App.tsx` 不再直接 import `@tauri-apps/api/core` 和 `@tauri-apps/api/event`。
+- `App.tsx` 行数从基线 1357 行降到 1310 行。
+- 行为保持不变：仍只打开 native 传入的第一个文件，pending files 仍是 best-effort。
+
+验证：
+
+```bash
+npm test -- --run src/app/useStartupFileOpen.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：2 个测试文件、11 项测试通过。
+- `npm run build` 通过；保留既有 Vite 大 chunk 和 KaTeX 动态导入警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移启动文件事件和 pending file 读取，不改变保存、导出、工作区索引、文件树或真实文件写入行为。
+- 因此未跑 `npm run tauri:build:app-smoke`；最终真实 app smoke 会覆盖 Finder/启动打开链路。
+
+剩余风险：
+
+- `App.tsx` 仍包含命令上下文、保存/导出弹窗、诊断、链接/反链/图谱等多块 model，需要继续拆分。
