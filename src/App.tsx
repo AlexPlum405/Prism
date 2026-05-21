@@ -29,6 +29,7 @@ import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 import { downloadDir, homeDir } from '@tauri-apps/api/path';
+import { emitAppEvent, onAppEvent } from './platform/events/appEvents';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { DocumentPropertiesPanel } from './domains/editor/components/DocumentPropertiesPanel';
 import { DocumentDiagnosticsPanel } from './domains/editor/components/DocumentDiagnosticsPanel';
@@ -126,9 +127,7 @@ function delay(ms: number) {
 }
 
 function emitExportProgress(message: string | null) {
-  window.dispatchEvent(new CustomEvent('prism-export-progress', {
-    detail: message ? { visible: true, message } : { visible: false },
-  }));
+  emitAppEvent('export.progress', message ? { visible: true, message } : { visible: false });
 }
 
 async function resolveDefaultExportDirectory(input: {
@@ -468,13 +467,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const handleOpenDiagnostics = (event: Event) => {
-      const diagnostics = (event as CustomEvent<{ diagnostics?: PrismDiagnostic[] }>).detail?.diagnostics;
+    return onAppEvent('diagnostics.open', ({ diagnostics }) => {
       if (diagnostics) setPreflightDiagnostics(diagnostics);
       setLinkDiagnosticsVisible(true);
-    };
-    window.addEventListener('prism-document-diagnostics-open', handleOpenDiagnostics);
-    return () => window.removeEventListener('prism-document-diagnostics-open', handleOpenDiagnostics);
+    });
   }, []);
 
   useEffect(() => {
@@ -927,27 +923,19 @@ function App() {
   }, [handleCommandAction]);
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      const action = (event as CustomEvent<{ action?: string }>).detail?.action;
+    return onAppEvent('command.run', ({ action }) => {
       if (action) handleCommandAction(action);
-    };
-    window.addEventListener('prism-command', handler);
-    return () => window.removeEventListener('prism-command', handler);
+    });
   }, [handleCommandAction]);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<FileActionInput>).detail;
+    return onAppEvent('file.action', (detail) => {
       handleFileAction(detail);
-    };
-    window.addEventListener('prism-file-action' as any, handler);
-    return () => window.removeEventListener('prism-file-action' as any, handler);
+    });
   }, [handleFileAction]);
 
   useEffect(() => {
-    const handler = () => setSettingsVisible(true);
-    window.addEventListener('prism-open-settings', handler);
-    return () => window.removeEventListener('prism-open-settings', handler);
+    return onAppEvent('settings.open', () => setSettingsVisible(true));
   }, []);
 
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {

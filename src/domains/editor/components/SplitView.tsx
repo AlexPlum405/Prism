@@ -13,6 +13,7 @@ import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { getCommandMenuItems, type CommandContext } from '../../commands';
 import { t } from '../../i18n';
 import { previewHtmlToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
+import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 
 interface SplitViewProps {
   content: string;
@@ -62,7 +63,7 @@ function getSerializedSelectionHtml(preview: HTMLElement | null) {
 }
 
 function dispatchCommand(action: string) {
-  window.dispatchEvent(new CustomEvent('prism-command', { detail: { action } }));
+  emitAppEvent('command.run', { action });
 }
 
 function createReadonlyCommandContext(): CommandContext {
@@ -665,15 +666,13 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           activateSearch('replace');
         }
       };
-      const handlePrismSearch = (event: Event) => {
-        const detail = (event as CustomEvent<{ action?: string }>).detail;
-        activateSearch(detail?.action === 'replace' ? 'replace' : 'find');
-      };
       window.addEventListener('keydown', handleGlobalKeyDown, true);
-      window.addEventListener('prism-search', handlePrismSearch);
+      const unsubscribeSearch = onAppEvent('search.open', ({ action }) => {
+        activateSearch(action === 'replace' ? 'replace' : 'find');
+      });
       return () => {
         window.removeEventListener('keydown', handleGlobalKeyDown, true);
-        window.removeEventListener('prism-search', handlePrismSearch);
+        unsubscribeSearch();
       };
     }, [activateSearch]);
 

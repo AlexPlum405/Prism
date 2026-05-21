@@ -74,6 +74,7 @@ import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
 import { TableInsertPopover } from './TableInsertPopover';
+import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 
 const editorLineNumbersCompartment = new Compartment();
 const editorLineWrappingCompartment = new Compartment();
@@ -555,7 +556,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       if (!view) return;
 
       if (isCommandId(action)) {
-        window.dispatchEvent(new CustomEvent('prism-command', { detail: { action } }));
+        emitAppEvent('command.run', { action });
       }
 
       view.focus();
@@ -826,14 +827,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
 
     // 监听菜单格式化事件
     useEffect(() => {
-      const onFormat = (e: Event) => {
-        const detail = (e as CustomEvent).detail;
-        if (detail?.format) handleFormat(detail.format);
+      const onFormat = (detail: { format?: string } | null | undefined) => {
+        if (detail?.format) handleFormat(detail.format as EditorFormat);
       };
-      const onHeading = (e: Event) => {
+      const onHeading = (detail: { level?: string } | null | undefined) => {
         const view = viewRef.current;
         if (!view) return;
-        const detail = (e as CustomEvent).detail;
         const levelValue = typeof detail?.level === 'string' ? detail.level : '';
         if (!/^h[1-6]$/.test(levelValue)) return;
         const level = Number(levelValue.slice(1));
@@ -847,10 +846,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         });
         view.focus();
       };
-      const onBlock = (e: Event) => {
+      const onBlock = (detail: { format?: string } | null | undefined) => {
         const view = viewRef.current;
         if (!view) return;
-        const detail = (e as CustomEvent).detail;
         const fmt = typeof detail?.format === 'string' ? detail.format : '';
         if (!fmt) return;
         const cursor = view.state.selection.main.head;
@@ -947,10 +945,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         view.focus();
       };
 
-      const onEditorCommand = (e: Event) => {
+      const onEditorCommand = (detail: ({ command?: string } & Record<string, unknown>) | null | undefined) => {
         const view = viewRef.current;
         if (!view) return;
-        const detail = (e as CustomEvent).detail;
         const command = typeof detail?.command === 'string' ? detail.command : '';
         if (!command) return;
 
@@ -1037,7 +1034,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
             handleTableConvert('markdown');
             break;
           case 'insertTemplate':
-            handleTemplateInsert(detail.templateId);
+            handleTemplateInsert(detail?.templateId);
             break;
           case 'foldCurrentHeading':
             handleFoldCurrentHeading();
@@ -1051,16 +1048,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         }
       };
 
-      window.addEventListener('prism-format', onFormat);
-      window.addEventListener('prism-heading', onHeading);
-      window.addEventListener('prism-block-format', onBlock);
-      window.addEventListener('prism-editor-command', onEditorCommand);
+      const unsubscribeFormat = onAppEvent('editor.format', onFormat);
+      const unsubscribeHeading = onAppEvent('editor.heading', onHeading);
+      const unsubscribeBlock = onAppEvent('editor.blockFormat', onBlock);
+      const unsubscribeEditorCommand = onAppEvent('editor.command', onEditorCommand);
 
       return () => {
-        window.removeEventListener('prism-format', onFormat);
-        window.removeEventListener('prism-heading', onHeading);
-        window.removeEventListener('prism-block-format', onBlock);
-        window.removeEventListener('prism-editor-command', onEditorCommand);
+        unsubscribeFormat();
+        unsubscribeHeading();
+        unsubscribeBlock();
+        unsubscribeEditorCommand();
       };
     }, [
       handleFoldCurrentHeading,
@@ -1124,14 +1121,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
             {
               key: 'Mod-f',
               run: () => {
-                window.dispatchEvent(new CustomEvent('prism-search', { detail: { action: 'open' } }));
+                emitAppEvent('search.open', { action: 'open' });
                 return true;
               }
             },
             {
               key: 'Mod-h',
               run: () => {
-                window.dispatchEvent(new CustomEvent('prism-search', { detail: { action: 'replace' } }));
+                emitAppEvent('search.open', { action: 'replace' });
                 return true;
               }
             }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createToastState, type ToastInput, type ToastState } from '../lib/toast';
+import { onAppEvent } from '../platform/events/appEvents';
 
 export function useAppToast() {
   const toastTimerRef = useRef<number | null>(null);
@@ -35,12 +36,9 @@ export function useAppToast() {
   }, []);
 
   useEffect(() => {
-    const handleToast = (event: Event) => {
-      const detail = (event as CustomEvent<ToastInput>).detail;
+    return onAppEvent('toast.show', (detail) => {
       if (detail) showToast(detail);
-    };
-    window.addEventListener('prism-toast', handleToast);
-    return () => window.removeEventListener('prism-toast', handleToast);
+    });
   }, [showToast]);
 
   return {

@@ -10,6 +10,7 @@ import {
 } from '../services';
 import { createFileTreeContextMenuItems } from './fileTreeContextMenu';
 import { useI18n } from '../../i18n';
+import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 
 interface FileTreeProps {
   nodes: FileNode[];
@@ -30,7 +31,7 @@ function stripExtension(name: string): { stem: string; ext: string } {
 }
 
 function dispatchFileAction(action: string, detail?: { path?: string; name?: string }): void {
-  window.dispatchEvent(new CustomEvent('prism-file-action', { detail: { action, ...detail } }));
+  emitAppEvent('file.action', { action, ...detail });
 }
 
 function RenameField({ value, onCommit, onCancel }: RenameFieldProps) {
@@ -94,16 +95,12 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
   }, [nodes]);
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      const path = (event as CustomEvent<{ path?: string }>).detail?.path;
+    return onAppEvent('file.renameRequest', ({ path }) => {
       if (!path) return;
       setExpandedPaths(collectDirectoryPaths(nodes));
       setRenamingPath(path);
       setContextMenu(null);
-    };
-
-    window.addEventListener('prism-file-rename-request', handler as EventListener);
-    return () => window.removeEventListener('prism-file-rename-request', handler as EventListener);
+    });
   }, [nodes]);
 
   // F2 快捷键重命名

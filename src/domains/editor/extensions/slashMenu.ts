@@ -1,6 +1,7 @@
 import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { MARKDOWN_TEMPLATES, resolveMarkdownTemplateContent, type MarkdownTemplateId } from './templates';
 import { t, type I18nKey } from '../../i18n';
+import { emitAppEvent } from '../../../platform/events/appEvents';
 
 const TABLE_COMMAND_SENTINEL = '__PRISM_OPEN_TABLE_INSERT_POPOVER__';
 
@@ -204,7 +205,7 @@ export function createSlashMenuCompletionSource() {
               selection: { anchor: replaceFrom },
               scrollIntoView: true,
             });
-            window.dispatchEvent(new CustomEvent('prism-editor-command', { detail: { command: 'insertTable' } }));
+            emitAppEvent('editor.command', { command: 'insertTable' });
             return;
           }
           view.dispatch({

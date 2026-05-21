@@ -40,6 +40,7 @@ import {
   normalizeExportQualityScale,
 } from '../../domains/export/quality';
 import type { ToastInput } from '../../lib/toast';
+import { emitAppEvent } from '../../platform/events/appEvents';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -150,7 +151,7 @@ function getCitationReadinessHint(input: {
 }
 
 function showSettingsToast(input: ToastInput) {
-  window.dispatchEvent(new CustomEvent('prism-toast', { detail: input }));
+  emitAppEvent('toast.show', input);
 }
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {

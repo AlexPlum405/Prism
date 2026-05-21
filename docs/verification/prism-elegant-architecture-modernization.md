@@ -72,3 +72,59 @@ git diff --check --cached
 
 - 后续 Phase 1 到 Phase 10 尚未实现。
 - `App.tsx`、`exportPipeline.ts`、`EditorPane.tsx`、`src-tauri/src/lib.rs` 仍是主要重构对象。
+
+## Phase 1：Typed app events 与 platform adapters
+
+### Checkpoint 1A：类型化应用事件接口
+
+改动范围：
+
+- `src/platform/events/eventTypes.ts`
+- `src/platform/events/appEvents.ts`
+- `src/platform/events/appEvents.test.ts`
+- `src/hooks/useAppToast.ts`
+- `src/hooks/useExportTaskUi.ts`
+- `src/App.tsx`
+- `src/components/shell/SettingsModal.tsx`
+- `src/domains/commands/registry.ts`
+- `src/domains/commands/categories/editorCommands.ts`
+- `src/domains/commands/categories/exportCommands.ts`
+- `src/domains/commands/categories/fileCommands.ts`
+- `src/domains/editor/components/EditorPane.tsx`
+- `src/domains/editor/components/SplitView.tsx`
+- `src/domains/editor/extensions/slashMenu.ts`
+- `src/domains/workspace/components/FileTree.tsx`
+- `src/lib/fileActions.ts`
+
+实现结果：
+
+- 新增 `APP_EVENT_NAMES`、`emitAppEvent()`、`onAppEvent()`，把内部 `prism-*` DOM event 名收敛到一个 typed interface。
+- 新增 `AppEventMap`，覆盖 `editor.command`、`editor.format`、`editor.heading`、`editor.blockFormat`、`command.run`、`search.open`、`file.action`、`file.renameRequest`、`toast.show`、`export.progress`、`export.failed`、`diagnostics.open`、`settings.open`。
+- 迁移 production 代码中高频 `window.dispatchEvent(new CustomEvent('prism-*'))` 与 `window.addEventListener('prism-*')` 入口，外部 DOM event 名保持不变，旧测试和旧调用仍可兼容。
+- `EditorPane` 的 typed listener 保留空 payload 容错，避免旧事件或测试派发空 detail 时抛错。
+- 本 checkpoint 只建立 app event seam，不改变命令、搜索、导出、toast、诊断、文件树的用户可见行为。
+
+验证：
+
+```bash
+npm test -- --run src/platform/events/appEvents.test.ts src/hooks/useAppToast.test.tsx src/hooks/useExportTaskUi.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx src/domains/commands/registry.test.ts src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 第一次聚焦测试发现旧测试会派发空 payload，`EditorPane` typed listener 已补容错。
+- 聚焦测试复跑通过：6 个测试文件、62 项测试通过。
+- `npm run build` 通过；保留既有 Vite 大 chunk 和 KaTeX 动态导入警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 不触及 Tauri/Rust/native command、真实文件写入算法、导出 pipeline 算法、发布签名、公证、updater、安装器或 file association。
+- 因此未跑 `cargo test` 和 `npm run tauri:build:app-smoke`；后续触及 platform adapter / native command / 最终收口时补齐。
+
+剩余风险：
+
+- `src/platform/tauri/` adapter 尚未建立，下一 checkpoint 继续收敛低风险 Tauri 调用。
+- 测试代码仍保留少量原始 `prism-*` DOM event 派发，用于验证兼容性；production 事件入口已通过 typed interface 收敛。

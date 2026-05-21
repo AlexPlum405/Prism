@@ -14,6 +14,7 @@ import { getActionableErrorDiagnostics } from '../../diagnostics/types';
 import type { ExportHistoryEntry, ExportHistorySettings, SettingsState } from '../../settings/types';
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
+import { emitAppEvent } from '../../../platform/events/appEvents';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -93,18 +94,14 @@ function emitExportFailure(input: {
   format: ExportFormat;
   diagnostic: string;
 }) {
-  window.dispatchEvent(new CustomEvent('prism-export-failure', {
-    detail: {
-      title: t('export.failedTitle', { format: getExportFormatLabel(input.format) }),
-      diagnostic: input.diagnostic,
-    },
-  }));
+  emitAppEvent('export.failed', {
+    title: t('export.failedTitle', { format: getExportFormatLabel(input.format) }),
+    diagnostic: input.diagnostic,
+  });
 }
 
 function emitDocumentDiagnosticsOpen(diagnostics: ReturnType<typeof getActionableErrorDiagnostics>) {
-  window.dispatchEvent(new CustomEvent('prism-document-diagnostics-open', {
-    detail: { diagnostics },
-  }));
+  emitAppEvent('diagnostics.open', { diagnostics });
 }
 
 function showExportPathActionError(context: CommandContext, title: string, error: unknown) {
@@ -165,9 +162,7 @@ async function handleExport(
   }
 
   const setExportProgress = (message: string | null) => {
-    window.dispatchEvent(new CustomEvent('prism-export-progress', {
-      detail: message ? { visible: true, message } : { visible: false },
-    }));
+    emitAppEvent('export.progress', message ? { visible: true, message } : { visible: false });
   };
   let outputPath: string | null | undefined;
   let lastProgress = t('app.prepareExport');

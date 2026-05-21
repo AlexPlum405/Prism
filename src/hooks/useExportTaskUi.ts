@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ToastInput } from '../lib/toast';
 import { t } from '../domains/i18n';
+import { onAppEvent } from '../platform/events/appEvents';
 
 export interface ExportFailureState {
   title: string;
@@ -13,8 +14,7 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
   const [exportFailure, setExportFailure] = useState<ExportFailureState | null>(null);
 
   useEffect(() => {
-    const handleExportProgress = (event: Event) => {
-      const detail = (event as CustomEvent<{ visible?: boolean; message?: string }>).detail;
+    return onAppEvent('export.progress', (detail) => {
       if (detail?.visible) {
         setExportFailure(null);
         setExportProgress(detail.message ?? t('export.progressDefault'));
@@ -22,22 +22,17 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
       }
       setExportProgress(null);
       setExportProgressInBackground(false);
-    };
-    window.addEventListener('prism-export-progress', handleExportProgress);
-    return () => window.removeEventListener('prism-export-progress', handleExportProgress);
+    });
   }, []);
 
   useEffect(() => {
-    const handleExportFailure = (event: Event) => {
-      const detail = (event as CustomEvent<ExportFailureState>).detail;
+    return onAppEvent('export.failed', (detail) => {
       if (!detail?.diagnostic) return;
       setExportFailure({
         title: detail.title || t('export.failed'),
         diagnostic: detail.diagnostic,
       });
-    };
-    window.addEventListener('prism-export-failure', handleExportFailure);
-    return () => window.removeEventListener('prism-export-failure', handleExportFailure);
+    });
   }, []);
 
   const sendExportProgressToBackground = useCallback(() => {

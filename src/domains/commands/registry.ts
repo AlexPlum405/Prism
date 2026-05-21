@@ -26,6 +26,7 @@ import { createViewCommands } from './categories/viewCommands';
 import { createWindowCommands } from './categories/windowCommands';
 import { t } from '../i18n';
 import { createWorkspaceCommands } from './categories/workspaceCommands';
+import { emitAppEvent } from '../../platform/events/appEvents';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -38,19 +39,19 @@ function hasDocument(context: CommandContext): boolean {
 }
 
 function emitEditorCommand(command: string, detail: Record<string, unknown> = {}): void {
-  window.dispatchEvent(new CustomEvent('prism-editor-command', { detail: { command, ...detail } }));
+  emitAppEvent('editor.command', { command, ...detail });
 }
 
 function emitInlineFormat(format: string): void {
-  window.dispatchEvent(new CustomEvent('prism-format', { detail: { format } }));
+  emitAppEvent('editor.format', { format });
 }
 
 function emitHeading(level: string): void {
-  window.dispatchEvent(new CustomEvent('prism-heading', { detail: { level } }));
+  emitAppEvent('editor.heading', { level });
 }
 
 function emitBlockFormat(format: string): void {
-  window.dispatchEvent(new CustomEvent('prism-block-format', { detail: { format } }));
+  emitAppEvent('editor.blockFormat', { format });
 }
 
 async function handleFullscreen(context: CommandContext): Promise<void> {

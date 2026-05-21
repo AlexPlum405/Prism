@@ -20,6 +20,7 @@ import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import { MARKDOWN_FILE_FILTERS, addRecentFile, basename, dirname } from '../../workspace/services';
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
+import { emitAppEvent } from '../../../platform/events/appEvents';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -50,7 +51,7 @@ async function ensureDocumentNotChangedOnDisk(context: CommandContext, path: str
 }
 
 function emitEditorCommand(command: string, detail: Record<string, unknown> = {}): void {
-  window.dispatchEvent(new CustomEvent('prism-editor-command', { detail: { command, ...detail } }));
+  emitAppEvent('editor.command', { command, ...detail });
 }
 
 async function handleNew(context: CommandContext): Promise<void> {

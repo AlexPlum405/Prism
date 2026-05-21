@@ -31,6 +31,7 @@ import {
   type FileActionInput,
 } from './fileActionCommands';
 import { t } from '../domains/i18n';
+import { emitAppEvent } from '../platform/events/appEvents';
 
 export type { FileActionInput } from './fileActionCommands';
 
@@ -134,7 +135,7 @@ function formatDate(date: Date | null): string {
 }
 
 function requestInlineRename(path: string): void {
-  window.dispatchEvent(new CustomEvent('prism-file-rename-request', { detail: { path } }));
+  emitAppEvent('file.renameRequest', { path });
 }
 
 async function copyText(text: string): Promise<void> {
@@ -473,9 +474,7 @@ export async function executeFileAction(
 
       case 'searchInFolder':
         if (!context.workspaceStore.rootPath) throw new Error(t('file.noWorkspace'));
-        window.dispatchEvent(new CustomEvent('prism-search', {
-          detail: { action: 'open', rootPath: context.workspaceStore.rootPath },
-        }));
+        emitAppEvent('search.open', { action: 'open', rootPath: context.workspaceStore.rootPath });
         return;
 
       default:

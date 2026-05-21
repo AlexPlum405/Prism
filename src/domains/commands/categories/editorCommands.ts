@@ -1,4 +1,5 @@
 import type { CommandContext, CommandDefinition, CommandId } from '../types';
+import { emitAppEvent } from '../../../platform/events/appEvents';
 
 interface EditorCommandDeps {
   hasDocument: (context: CommandContext) => boolean;
@@ -82,7 +83,7 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       shortcuts: [{ code: 'KeyF', mod: true }],
       enabled: hasDocument,
       run: () => {
-        window.dispatchEvent(new CustomEvent('prism-search', { detail: { action: 'open' } }));
+        emitAppEvent('search.open', { action: 'open' });
       },
     },
     {
@@ -100,7 +101,7 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       shortcuts: [{ code: 'KeyH', mod: true }],
       enabled: hasDocument,
       run: () => {
-        window.dispatchEvent(new CustomEvent('prism-search', { detail: { action: 'replace' } }));
+        emitAppEvent('search.open', { action: 'replace' });
       },
     },
     {
