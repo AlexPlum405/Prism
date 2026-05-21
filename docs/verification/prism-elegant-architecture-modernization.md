@@ -1774,3 +1774,71 @@ npm run tauri:build:app-smoke
 剩余风险：
 
 - `vendor-markdown` 仍是 950 kB 级别的大 chunk；后续若继续优化，需要把预览渲染改成异步任务模型，并把编辑器高亮改成 async cache + decoration invalidation。
+
+## Phase 10：最终真实 App smoke 和完成审计
+
+### Checkpoint 10A：最终 gate 与 completion audit
+
+验证命令：
+
+```bash
+npm test -- --run
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run` 通过：115 files / 592 tests。
+  - 保留 Node `--localstorage-file` warning；这是 Vitest/jsdom 本地 warning，不是测试失败。
+- `npm run build` 通过：
+  - `main-DYQ-sc7s.js`：1,017.95 kB / gzip 327.57 kB。
+  - `export-pipeline-BF62AtGI.js`：110.28 kB / gzip 34.31 kB。
+  - `vendor-markdown-BTpc1Y_7.js`：950.08 kB / gzip 286.32 kB。
+  - `relation-graph-Btdhq_Sb.js`：41.79 kB / gzip 12.92 kB。
+  - `mermaid.core-CCWdsgGS.js`：610.92 kB / gzip 147.68 kB。
+  - `vendor-docx-LHXn8vCj.js`：407.22 kB / gzip 119.22 kB。
+  - `vendor-pdf-BSjEmztv.js`：440.07 kB / gzip 181.75 kB。
+  - 保留既有 Vite 大 chunk 警告；无 circular chunk 警告。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过：
+  - `npm run build` 作为 beforeBuildCommand 通过。
+  - Tauri release app bundle 构建通过。
+  - 打开 `.codex-smoke/app-smoke/workspace/app-smoke.md`。
+  - 状态栏 ERROR 诊断入口可打开。
+  - `Cmd+P` 可打开 workspace target 文件。
+  - 基础编辑和 `Cmd+S` 保存写入 fixture。
+  - 状态栏导出菜单可打开。
+  - `Cmd+,` 设置中心可打开。
+  - evidence 写入 `.codex-smoke/app-smoke/evidence/report.json`。
+
+完成审计：
+
+- Phase 0 到 Phase 7：上一阶段已按 checkpoint 提交并推送，verification 文档已有对应证据。
+- Phase 8：Rust native commands 已按能力拆分完成：
+  - `system_open.rs`
+  - `file_scope.rs`
+  - `trash.rs`
+  - `pandoc.rs`
+  - `pdf_capture.rs`
+  - `startup_files.rs`
+  - `settings.rs`
+  - `lib.rs` 只保留 Tauri builder、plugin、state、command 注册和 run event 装配。
+- Phase 9：完成低风险 chunk 边界优化：
+  - 关系图谱按需加载。
+  - Markdown 渲染重依赖显式进入 `vendor-markdown`。
+  - 导出 pipeline 主体 chunk 大幅下降。
+  - 未引入新依赖，未改变预览/导出同步语义。
+- Phase 10：最终 gate 通过，真实 `.app` smoke 可启动、打开、编辑、保存、Quick Open、ERROR 入口、导出入口、设置中心。
+
+跳过或未重复项：
+
+- Computer Use 仍不可用，错误为 `codex app-server exited before returning a response`；最终真实 app 验证使用 `npm run tauri:build:app-smoke` 作为 fallback。
+- 未在最终 smoke 中实际执行主题包导入和后台导出任务；这些路径本轮未改产品逻辑，仍由既有主题/导出测试和设置中心入口 smoke 覆盖。若后续改主题导入或后台导出状态，应补专门 app smoke。
+- 未执行发布级 DMG、签名、公证、updater、Windows installer/file association；本 goal 明确不是生产发布。
+
+剩余风险：
+
+- `vendor-markdown` 和 `main` 仍偏大；真正继续下降需要异步预览渲染与异步编辑器高亮，不适合混入本轮行为保持型架构重构。
+- app smoke 依赖 macOS Accessibility、CoreGraphics、`swift`、`screencapture` 和 AppleScript；脚本已加固 Quick Open 焦点，但多屏/前台焦点仍可能偶发，需要看 evidence 而不是直接归因产品失败。
