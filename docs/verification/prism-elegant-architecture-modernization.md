@@ -267,3 +267,46 @@ git diff --check
 剩余风险：
 
 - `App.tsx` 仍包含保存/导出弹窗模型、诊断模型、文档链接/反链/图谱导航模型，后续继续拆分。
+
+### Checkpoint 2C：文档诊断 model 分层
+
+改动范围：
+
+- `src/app/useDocumentDiagnosticsModel.ts`
+- `src/App.tsx`
+
+实现结果：
+
+- 从 `App.tsx` 抽出 `useDocumentDiagnosticsModel()`，集中承载：
+  - 链接、图片、标题、渲染、表格、中文排版诊断扫描。
+  - `diagnostics.open` typed app event 接线。
+  - `ERROR n` actionable diagnostics 聚合。
+  - 诊断面板显示/关闭、preflight diagnostics 清理、点击跳转。
+  - 排版建议面板显示/关闭、点击跳转。
+- `App.tsx` 不再直接 import 诊断扫描器、diagnostics adapters、`PrismDiagnostic` 或 `ImageDiagnostic`。
+- `App.tsx` 行数从 Checkpoint 2B 的 1241 行降到 1115 行。
+- 诊断算法、状态栏 `ERROR n` 筛选规则、诊断面板 UI、排版建议 UI 保持不变。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx src/domains/editor/components/TypographyDiagnosticsPanel.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 第一次聚焦测试发现 `StatusBar` 仍引用 `actionableDiagnostics`，App 解构遗漏；已补齐。
+- 聚焦测试复跑通过：4 个测试文件、20 项测试通过。
+- `npm run build` 通过；保留既有 Vite 大 chunk 和 KaTeX 动态导入警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只迁移诊断 model，不改变诊断算法、Tauri/Rust/native command、保存/导出写文件行为。
+- 因此未跑 `npm run tauri:build:app-smoke`；最终真实 app smoke 覆盖状态栏 `ERROR n` 和诊断面板入口。
+
+剩余风险：
+
+- `App.tsx` 仍包含保存/导出弹窗模型和文档链接/反链/图谱导航模型。

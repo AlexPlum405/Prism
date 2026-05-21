@@ -9,6 +9,7 @@ import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppCommandContext } from './app/useAppCommandContext';
 import { useAppShortcuts } from './app/useAppShortcuts';
+import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
@@ -30,27 +31,13 @@ import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 import { downloadDir, homeDir } from '@tauri-apps/api/path';
-import { emitAppEvent, onAppEvent } from './platform/events/appEvents';
+import { emitAppEvent } from './platform/events/appEvents';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { DocumentPropertiesPanel } from './domains/editor/components/DocumentPropertiesPanel';
 import { DocumentDiagnosticsPanel } from './domains/editor/components/DocumentDiagnosticsPanel';
 import { TypographyDiagnosticsPanel } from './domains/editor/components/TypographyDiagnosticsPanel';
-import { scanMarkdownLinks } from './domains/editor/extensions/linkDiagnostics';
-import { scanMarkdownImageDiagnostics, type ImageDiagnostic } from './domains/editor/extensions/imageDiagnostics';
-import { scanHeadingAnchorDiagnostics } from './domains/editor/extensions/headingDiagnostics';
-import { scanMarkdownTableDiagnostics } from './domains/editor/extensions/tables';
-import { scanChineseTypography } from './domains/editor/extensions/typographyDiagnostics';
-import {
-  headingDiagnosticsToPrismDiagnostics,
-  imageDiagnosticsToPrismDiagnostics,
-  linkDiagnosticsToPrismDiagnostics,
-  tableDiagnosticsToPrismDiagnostics,
-  typographyDiagnosticsToPrismDiagnostics,
-} from './domains/diagnostics/adapters';
-import { getActionableErrorDiagnostics, type PrismDiagnostic } from './domains/diagnostics/types';
 import type { ExportFormat } from './domains/export';
 import { getExportFormatLabel } from './domains/export';
-import { scanMarkdownRenderDiagnostics } from './domains/export/preflight';
 import {
   getLocalizedExportQualityPreset,
   getLocalizedExportQualityPresets,
@@ -241,10 +228,6 @@ function App() {
   const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('files');
   const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
-  const [imageDiagnostics, setImageDiagnostics] = useState<ImageDiagnostic[]>([]);
-  const [renderDiagnostics, setRenderDiagnostics] = useState<PrismDiagnostic[]>([]);
-  const [preflightDiagnostics, setPreflightDiagnostics] = useState<PrismDiagnostic[] | null>(null);
   const [documentLinksVisible, setDocumentLinksVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
   const [relationGraphVisible, setRelationGraphVisible] = useState(false);
@@ -254,7 +237,6 @@ function App() {
     path: string;
   } | null>(null);
   const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
-  const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
   useBootstrap(settingsReady);
@@ -383,100 +365,36 @@ function App() {
     handleDiscardRecovery,
   } = useRecoveryQueue({ showToast });
 
-  const linkDiagnostics = useMemo(() => {
-    if (!currentDocument) return [];
-    return scanMarkdownLinks(currentDocument.content, {
-      currentPath: currentDocument.path || undefined,
-      workspaceFiles: flattenFiles(workspace.fileTree, workspace.rootPath).map(({ node }) => node.path),
-      workspaceRoot: workspace.rootPath,
-    });
-  }, [currentDocument, workspace.fileTree, workspace.rootPath]);
-  const headingDiagnostics = useMemo(
-    () => currentDocument ? scanHeadingAnchorDiagnostics(currentDocument.content) : [],
-    [currentDocument?.content],
-  );
+  const jumpToEditorLine = useCallback((line: number) => {
+    editorRef.current?.jumpToLine(line);
+  }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!currentDocument) {
-      setImageDiagnostics([]);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    void scanMarkdownImageDiagnostics(currentDocument.content, {
-      documentPath: currentDocument.path || undefined,
-      existsPath: fsExists,
-    }).then((diagnostics) => {
-      if (!cancelled) setImageDiagnostics(diagnostics);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentDocument?.content, currentDocument?.path]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!currentDocument) {
-      setRenderDiagnostics([]);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const timer = window.setTimeout(() => {
-      void scanMarkdownRenderDiagnostics(currentDocument.content)
-        .then((diagnostics) => {
-          if (!cancelled) setRenderDiagnostics(diagnostics);
-        })
-        .catch(() => {
-          if (!cancelled) setRenderDiagnostics([]);
-        });
-    }, 350);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [currentDocument?.content]);
+  const {
+    actionableDiagnostics,
+    closeDocumentDiagnostics,
+    displayedDiagnostics,
+    firstActionableDiagnostic,
+    firstTypographyDiagnostic,
+    handleLinkDiagnosticsClick,
+    handleSelectDocumentDiagnostic,
+    handleSelectTypographyDiagnostic,
+    handleTypographyDiagnosticsClick,
+    linkDiagnosticsVisible,
+    setTypographyDiagnosticsVisible,
+    typographyDiagnostics,
+    typographyDiagnosticsVisible,
+  } = useDocumentDiagnosticsModel({
+    currentDocument,
+    existsPath: fsExists,
+    fileTree: workspace.fileTree,
+    jumpToLine: jumpToEditorLine,
+    rootPath: workspace.rootPath,
+  });
 
   const documentLinks = useMemo(
     () => currentDocument ? extractDocumentLinks(currentDocument.content) : [],
     [currentDocument?.content],
   );
-
-  const handleLinkDiagnosticsClick = useCallback(() => {
-    if (linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0) return;
-    setLinkDiagnosticsVisible(true);
-  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, renderDiagnostics.length]);
-
-  const handleSelectDocumentDiagnostic = useCallback((line: number) => {
-    setLinkDiagnosticsVisible(false);
-    setPreflightDiagnostics(null);
-    editorRef.current?.jumpToLine(line);
-  }, []);
-
-  useEffect(() => {
-    return onAppEvent('diagnostics.open', ({ diagnostics }) => {
-      if (diagnostics) setPreflightDiagnostics(diagnostics);
-      setLinkDiagnosticsVisible(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (
-      linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0
-      && !preflightDiagnostics
-    ) {
-      setLinkDiagnosticsVisible(false);
-    }
-  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, preflightDiagnostics, renderDiagnostics.length]);
-
-  useEffect(() => {
-    setPreflightDiagnostics(null);
-  }, [currentDocument?.content, currentDocument?.path]);
 
   useEffect(() => {
     if (!currentDocument?.path || !workspaceIndex) {
@@ -515,47 +433,6 @@ function App() {
   const handleApplyDocumentProperties = useCallback((content: string) => {
     useDocumentStore.getState().updateContent(content);
   }, []);
-
-  const typographyDiagnostics = useMemo(
-    () => currentDocument ? scanChineseTypography(currentDocument.content) : [],
-    [currentDocument?.content],
-  );
-  const tableDiagnostics = useMemo(
-    () => currentDocument ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
-    [currentDocument?.content],
-  );
-
-  const documentDiagnostics = useMemo(() => [
-    ...linkDiagnosticsToPrismDiagnostics(linkDiagnostics),
-    ...headingDiagnosticsToPrismDiagnostics(headingDiagnostics),
-    ...imageDiagnosticsToPrismDiagnostics(imageDiagnostics),
-    ...renderDiagnostics,
-    ...tableDiagnosticsToPrismDiagnostics(tableDiagnostics),
-    ...typographyDiagnosticsToPrismDiagnostics(typographyDiagnostics),
-  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics, typographyDiagnostics]);
-  const actionableDiagnostics = useMemo(
-    () => getActionableErrorDiagnostics(documentDiagnostics),
-    [documentDiagnostics],
-  );
-  const firstActionableDiagnostic = actionableDiagnostics[0] ?? null;
-  const displayedDiagnostics = preflightDiagnostics ?? actionableDiagnostics;
-
-  const firstTypographyDiagnostic = typographyDiagnostics[0] ?? null;
-  const handleTypographyDiagnosticsClick = useCallback(() => {
-    if (typographyDiagnostics.length === 0) return;
-    setTypographyDiagnosticsVisible(true);
-  }, [typographyDiagnostics.length]);
-
-  const handleSelectTypographyDiagnostic = useCallback((line: number) => {
-    setTypographyDiagnosticsVisible(false);
-    editorRef.current?.jumpToLine(line);
-  }, []);
-
-  useEffect(() => {
-    if (typographyDiagnostics.length === 0) {
-      setTypographyDiagnosticsVisible(false);
-    }
-  }, [typographyDiagnostics.length]);
 
   const handleFileAction = useCallback(async (input: FileActionInput) => {
     await executeFileAction(input, {
@@ -993,10 +870,7 @@ function App() {
       <DocumentDiagnosticsPanel
         visible={linkDiagnosticsVisible}
         diagnostics={displayedDiagnostics}
-        onClose={() => {
-          setLinkDiagnosticsVisible(false);
-          setPreflightDiagnostics(null);
-        }}
+        onClose={closeDocumentDiagnostics}
         onSelect={handleSelectDocumentDiagnostic}
       />
 
