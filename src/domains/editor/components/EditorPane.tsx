@@ -15,7 +15,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { history, historyKeymap, defaultKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
 import { indentOnInput, bracketMatching, foldGutter, foldKeymap, foldable, foldEffect } from '@codemirror/language';
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
-import { SearchQuery, setSearchQuery, findNext, findPrevious, replaceNext, replaceAll, search, selectMatches } from '@codemirror/search';
+import { search } from '@codemirror/search';
 import { useDocumentStore } from '../../document/store';
 import { useSettingsStore } from '../../settings/store';
 import type { ContentTheme } from '../../settings/types';
@@ -40,6 +40,10 @@ import {
   EDITOR_TABLE_COMMANDS,
   runMarkdownTableNavigation,
 } from '../runtime/editorTableRuntime';
+import {
+  execEditorSearch,
+  restoreEditorSearch,
+} from '../runtime/editorSearchRuntime';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -74,7 +78,7 @@ import {
   getMiaoyanCodeLanguage,
   shouldHighlightCompatibilityCodeTheme,
 } from '../extensions/markdownHighlight';
-import { createHiddenSearchPanel, ensureSearchHighlighterEnabled } from '../extensions/search';
+import { createHiddenSearchPanel } from '../extensions/search';
 import { addLineFlash, editorSelectionPlugin, lineFlashField, removeLineFlash } from '../extensions/selection';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import { useI18n } from '../../i18n';
@@ -420,62 +424,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       execSearch: (action, params) => {
         const view = viewRef.current;
         if (!view) return;
-
-        ensureSearchHighlighterEnabled(view);
-
-        view.dispatch({
-          effects: setSearchQuery.of(new SearchQuery({
-            search: params.query,
-            caseSensitive: params.matchCase,
-            regexp: params.regexp,
-            wholeWord: params.wholeWord,
-            replace: params.replaceWith
-          }))
-        });
-
-        switch (action) {
-          case 'input':
-            if (params.query) {
-              view.dispatch({ selection: { anchor: 0 } });
-              findNext(view);
-            }
-            break;
-          case 'next': findNext(view); break;
-          case 'prev': findPrevious(view); break;
-          case 'all': selectMatches(view); break;
-          case 'replace': {
-            const beforeDoc = view.state.doc.toString();
-            const handled = replaceNext(view);
-            if (handled && params.query && view.state.doc.toString() !== beforeDoc) {
-              findNext(view);
-            }
-            break;
-          }
-          case 'replaceAll': replaceAll(view); break;
-        }
+        execEditorSearch(view, action, params);
       },
       restoreSearch: (params, currentMatch) => {
         const view = viewRef.current;
         if (!view) return;
-
-        ensureSearchHighlighterEnabled(view);
-
-        view.dispatch({
-          selection: { anchor: 0 },
-          effects: setSearchQuery.of(new SearchQuery({
-            search: params.query,
-            caseSensitive: params.matchCase,
-            regexp: params.regexp,
-            wholeWord: params.wholeWord,
-            replace: params.replaceWith
-          }))
-        });
-
-        if (!params.query || currentMatch <= 0) return;
-
-        for (let index = 0; index < currentMatch; index += 1) {
-          findNext(view);
-        }
+        restoreEditorSearch(view, params, currentMatch);
       },
       getSelectedText: () => {
         const view = viewRef.current;

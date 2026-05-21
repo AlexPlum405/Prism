@@ -863,3 +863,50 @@ git diff --check
 
 - `EditorPane.tsx` 仍包含表格 command/copy/convert/paste UI handlers、clipboard/search 和 CodeMirror extension 装配。
 - 后续可以继续拆 editor command switch 或 clipboard/search runtime。
+
+### Checkpoint 4C：编辑器搜索 runtime 分层
+
+改动范围：
+
+- `src/domains/editor/runtime/editorSearchRuntime.ts`
+- `src/domains/editor/runtime/editorSearchRuntime.test.ts`
+- `src/domains/editor/components/EditorPane.tsx`
+
+实现结果：
+
+- 从 `EditorPane.tsx` 的 imperative handle 中抽出搜索 runtime：
+  - `execEditorSearch()`
+  - `restoreEditorSearch()`
+- `EditorPane.tsx` 继续暴露 `execSearch` / `restoreSearch` 给 `SplitView`，但只负责获取当前 CodeMirror view 后委托 runtime。
+- 保留既有行为：
+  - 输入搜索时启用隐藏 search highlighter、重置到文档起点并跳到首个匹配。
+  - next / prev / all 继续使用 CodeMirror search command。
+  - replace 成功且文档变化后继续跳到下一个匹配。
+  - replaceAll 继续复用 CodeMirror replaceAll。
+  - restoreSearch 继续按 `currentMatch` 重放 `findNext()`，恢复搜索面板重新打开后的匹配位置。
+- 新增 `editorSearchRuntime.test.ts`，用真实 CodeMirror `EditorView` 覆盖 input/next、replace、replaceAll 和 restoreSearch。
+- `EditorPane.tsx` 行数降到 1232 行；搜索命令操作不再散落在组件内部。
+
+验证：
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorSearchRuntime.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 聚焦测试通过：2 个测试文件、27 项测试通过。
+- `npm run build` 通过；保留既有 KaTeX 动态导入和 Vite 大 chunk 警告。
+- `git diff --check` 通过。
+
+跳过项：
+
+- 本 checkpoint 只移动搜索 runtime，不改变搜索 UI、SplitView 搜索状态、CodeMirror view 生命周期、编辑器滚动、表格、clipboard、导出或文件系统行为。
+- 因此未跑真实 app smoke；后续触及编辑器 runtime 生命周期或最终收口时补 `npm run tauri:build:app-smoke`。
+
+剩余风险：
+
+- `EditorPane.tsx` 仍包含 clipboard/image paste、scroll/typewriter、table UI handlers 和 CodeMirror extension 装配。
+- 后续可继续拆 clipboard runtime 或 scroll runtime，再进入 Markdown core / workspace index 复用阶段。
