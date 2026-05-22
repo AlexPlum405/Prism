@@ -386,3 +386,63 @@ git diff --check
 - `npm run build` 通过。仅保留既有 Vite large chunk warning。
 - `npm exec vite build -- --sourcemap` 通过。`main`、`vendor-markdown`、`mermaid.core` 等大 chunk 仍为既有体积风险，本 checkpoint 没有新增阻断。
 - `git diff --check` 通过。
+
+## 8. Phase 4：文件安全与 Finder 打开同步
+
+### Checkpoint 4A：dirty 文档切换保护
+
+目标：
+
+- 从文件树、快速打开、链接、反链、图谱或 Finder/open-file 链路打开另一个文件前，如果当前文稿有未保存改动，必须先让用户选择保存、另存为、放弃或取消。
+- 点击当前已打开的同一个文件时，不再重新从磁盘读取并覆盖当前未保存内容。
+
+影响文件：
+
+- `src/lib/fileActions.ts`
+- `src/lib/fileActions.test.ts`
+- `src/App.tsx`
+- `src/domains/document/components/DirtyDocumentSwitchModal.tsx`
+- `src/domains/document/components/DirtyDocumentSwitchModal.test.tsx`
+- `src/domains/i18n/resources.ts`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等。触及所有 `openFile` 文件切换入口；不改变文件树视觉、不移动现有入口、不引入新依赖。
+
+实现结果：
+
+- `executeFileAction(openFile)` 在读取目标文件前先检查当前文档是否 dirty。
+- 如果目标路径就是当前文档：只同步文件树，不重新 `readTextFile`，避免覆盖未保存内容。
+- 如果目标路径不同且当前文档 dirty：通过 Prism 风格弹窗让用户选择 `保存`、`另存为`、`放弃改动`、`取消`。
+- 选择 `保存`：先写回当前文档，再打开目标文件；保存失败则保持当前文档，不切换。
+- 选择 `另存为`：复用 Prism 自有保存面板，不走 macOS 原生提示；保存取消时不切换。
+- 选择 `放弃改动`：明确丢弃当前未保存内容并打开目标文件。
+- 选择 `取消`：不读取目标文件，当前文档保持不变。
+
+if-else 覆盖：
+
+- 如果当前文档干净：按原链路打开目标文件并同步工作区树。
+- 如果当前文档 dirty 且目标是同一路径：不重载、不覆盖、不刷新文稿内容。
+- 如果当前文档 dirty 且用户取消：不打开目标文件。
+- 如果当前文档 dirty 且用户保存：保存成功后再打开目标文件。
+- 如果没有 dirty 切换确认入口：文件动作服务会阻止切换并提示，不静默覆盖。
+
+验证：
+
+```bash
+npm test -- --run src/lib/fileActions.test.ts src/domains/document/components/DirtyDocumentSwitchModal.test.tsx src/domains/document/components/SaveConflictModal.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useRecoveryQueue.test.tsx
+npm test -- --run src/domains/document src/domains/workspace src/lib/fileActions.test.ts src/app/useStartupFileOpen.test.tsx
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run src/lib/fileActions.test.ts src/domains/document/components/DirtyDocumentSwitchModal.test.tsx src/domains/document/components/SaveConflictModal.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useRecoveryQueue.test.tsx` 通过。6 个测试文件、31 项测试通过。
+- `npm test -- --run src/domains/document src/domains/workspace src/lib/fileActions.test.ts src/app/useStartupFileOpen.test.tsx` 通过。29 个测试文件、115 项测试通过。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+- smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:09:24.728Z`，`steps` 共 8 项。

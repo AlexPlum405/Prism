@@ -23,7 +23,7 @@ import {
   joinPath,
   replacePathPrefix,
 } from '../domains/workspace/services';
-import { getFileSnapshotOrNull } from '../domains/document/fileSnapshot';
+import { getFileSnapshotOrNull, hasFileSnapshotChanged } from '../domains/document/fileSnapshot';
 import { openPrismWindow } from './openWindow';
 import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from './fileSystemScope';
 import {
@@ -33,11 +33,20 @@ import {
 } from './fileActionCommands';
 import { t } from '../domains/i18n';
 import { emitAppEvent } from '../platform/events/appEvents';
+import type { OpenDocument } from '../domains/document/types';
 
 export type { FileActionInput } from './fileActionCommands';
 
+export type DirtyDocumentSwitchAction = 'save' | 'saveAs' | 'discard' | 'cancel';
+
 interface FileActionContext {
   documentStore: ReturnType<typeof useDocumentStore.getState>;
+  requestDirtyDocumentAction?: (input: {
+    currentName: string;
+    targetName: string;
+    targetPath: string;
+  }) => Promise<DirtyDocumentSwitchAction>;
+  requestSavePath?: (input: { filename: string; documentPath?: string }) => Promise<string | null>;
   workspaceStore: ReturnType<typeof useWorkspaceStore.getState>;
   showToast?: (message: string) => void;
 }
@@ -172,6 +181,91 @@ function fileTreeContainsPath(context: FileActionContext, path: string): boolean
     .some(({ node }) => isSamePath(node.path, path));
 }
 
+async function syncWorkspaceForOpenedFile(path: string, context: FileActionContext): Promise<void> {
+  const rootPath = context.workspaceStore.rootPath;
+  if (!rootPath || !isPathInside(path, rootPath)) {
+    const parentDir = dirname(path);
+    context.workspaceStore.setRootPath(parentDir);
+    await refreshWorkspace(context, parentDir);
+    return;
+  }
+
+  if (!fileTreeContainsPath(context, path)) {
+    await refreshWorkspace(context, rootPath);
+  }
+}
+
+async function saveDirtyDocumentBeforeSwitch(
+  document: OpenDocument,
+  action: Extract<DirtyDocumentSwitchAction, 'save' | 'saveAs'>,
+  context: FileActionContext,
+): Promise<boolean> {
+  let targetPath = action === 'save' ? document.path : '';
+
+  if (!targetPath) {
+    if (!context.requestSavePath) {
+      context.showToast?.(t('command.savePanelUnavailable'));
+      return false;
+    }
+    const chosen = await context.requestSavePath({
+      filename: document.name,
+      documentPath: document.path,
+    });
+    if (!chosen) return false;
+    targetPath = chosen;
+  }
+
+  context.documentStore.markSaving(document.path || undefined);
+  try {
+    if (document.path && action === 'save') {
+      const currentSnapshot = await getFileSnapshotOrNull(document.path);
+      if (currentSnapshot && hasFileSnapshotChanged({
+        mtimeMs: document.lastKnownMtime,
+        size: document.lastKnownSize,
+      }, currentSnapshot)) {
+        const message = t('conflict.externalChangeMessage');
+        context.documentStore.markSaveConflict(message, document.path);
+        context.showToast?.(message);
+        return false;
+      }
+    }
+
+    await writeTextFile(targetPath, document.content);
+    const snapshot = await getFileSnapshotOrNull(targetPath);
+    if (!document.path || !isSamePath(document.path, targetPath)) {
+      context.documentStore.openDocument(targetPath, basename(targetPath), document.content, snapshot);
+    }
+    addRecentFile(targetPath, basename(targetPath));
+    context.documentStore.markSaved(targetPath, snapshot);
+    return true;
+  } catch (error) {
+    context.documentStore.markSaveFailed(error, document.path || undefined);
+    context.showToast?.(formatError(error));
+    return false;
+  }
+}
+
+async function ensureCanSwitchDocument(path: string, context: FileActionContext): Promise<boolean> {
+  const document = context.documentStore.currentDocument;
+  if (!document?.isDirty) return true;
+  if (document.path && isSamePath(document.path, path)) return false;
+
+  if (!context.requestDirtyDocumentAction) {
+    context.showToast?.(t('file.unsavedSwitchBlocked'));
+    return false;
+  }
+
+  const action = await context.requestDirtyDocumentAction({
+    currentName: document.name,
+    targetName: basename(path),
+    targetPath: path,
+  });
+
+  if (action === 'cancel') return false;
+  if (action === 'discard') return true;
+  return saveDirtyDocumentBeforeSwitch(document, action, context);
+}
+
 async function getUniquePath(parentDir: string, stem: string, ext = ''): Promise<string> {
   for (let index = 0; index < 1000; index += 1) {
     const suffix = index === 0 ? '' : ` (${index})`;
@@ -205,22 +299,20 @@ function getWorkspaceTargetDir(context: FileActionContext, requestedPath?: strin
 
 async function handleOpenFile(path: string, context: FileActionContext): Promise<void> {
   await grantMarkdownFileScope(path);
+
+  const currentDocument = context.documentStore.currentDocument;
+  if (currentDocument?.path && isSamePath(currentDocument.path, path)) {
+    await syncWorkspaceForOpenedFile(path, context);
+    return;
+  }
+
+  if (!(await ensureCanSwitchDocument(path, context))) return;
+
   const snapshot = await getFileSnapshotOrNull(path);
   const content = await readTextFile(path);
   context.documentStore.openDocument(path, basename(path), content, snapshot);
   addRecentFile(path, basename(path));
-
-  const rootPath = context.workspaceStore.rootPath;
-  if (!rootPath || !isPathInside(path, rootPath)) {
-    const parentDir = dirname(path);
-    context.workspaceStore.setRootPath(parentDir);
-    await refreshWorkspace(context, parentDir);
-    return;
-  }
-
-  if (!fileTreeContainsPath(context, path)) {
-    await refreshWorkspace(context, rootPath);
-  }
+  await syncWorkspaceForOpenedFile(path, context);
 }
 
 async function handleOpenNewWindow(path: string | undefined, context: FileActionContext): Promise<void> {

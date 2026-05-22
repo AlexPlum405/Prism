@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readTextFile, stat } from '@tauri-apps/plugin-fs';
+import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
@@ -60,11 +60,12 @@ beforeEach(() => {
   ]);
 });
 
-function fileActionContext() {
+function fileActionContext(overrides = {}) {
   return {
     documentStore: useDocumentStore.getState(),
     workspaceStore: useWorkspaceStore.getState(),
     showToast: vi.fn(),
+    ...overrides,
   };
 }
 
@@ -252,5 +253,94 @@ describe('executeFileAction openFile workspace sync', () => {
         children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
       },
     ]);
+  });
+
+  it('does not reload the current dirty document when the same file is selected again', async () => {
+    useDocumentStore.getState().openDocument('/repo/docs/opened.md', 'opened.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+    useWorkspaceStore.setState({
+      fileTree: [{
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
+      }],
+      mode: 'folder',
+      rootPath: '/repo',
+    });
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/docs/opened.md' },
+      fileActionContext(),
+    );
+
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Unsaved edit',
+      isDirty: true,
+      path: '/repo/docs/opened.md',
+    });
+  });
+
+  it('cancels opening a different file when dirty-document switch is cancelled', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('cancel');
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction }),
+    );
+
+    expect(requestDirtyDocumentAction).toHaveBeenCalledWith({
+      currentName: 'current.md',
+      targetName: 'next.md',
+      targetPath: '/repo/next.md',
+    });
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/current.md');
+  });
+
+  it('saves the dirty current document before opening a different file', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('save');
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 10, mtime: new Date(1000) });
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValueOnce('# Next file');
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction }),
+    );
+
+    expect(writeTextFile).toHaveBeenCalledWith('/repo/current.md', '# Unsaved edit');
+    expect(readTextFile).toHaveBeenCalledWith('/repo/next.md');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Next file',
+      isDirty: false,
+      path: '/repo/next.md',
+    });
+  });
+
+  it('keeps the current document when saving before switch detects an external disk change', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('save');
+    const showToast = vi.fn();
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 99, mtime: new Date(2000) });
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction, showToast }),
+    );
+
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('文件已在磁盘上被外部修改，请先重新加载或另存为。');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      isDirty: true,
+      path: '/repo/current.md',
+      saveStatus: 'conflict',
+    });
   });
 });

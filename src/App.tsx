@@ -21,6 +21,7 @@ import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
+import { DirtyDocumentSwitchModal } from './domains/document/components/DirtyDocumentSwitchModal';
 import { RecoveryModal } from './domains/document/components/RecoveryModal';
 import { SaveConflictModal, type SaveConflictAction } from './domains/document/components/SaveConflictModal';
 import {
@@ -48,7 +49,7 @@ import {
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
-import { executeFileAction, FileActionInput } from './lib/fileActions';
+import { executeFileAction, FileActionInput, type DirtyDocumentSwitchAction } from './lib/fileActions';
 import { ContextMenu, type ContextMenuItem } from './components/shell/ContextMenu';
 import { ShortcutPanel } from './components/shell/ShortcutPanel';
 import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
@@ -120,6 +121,11 @@ function App() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
+  const [dirtySwitchPrompt, setDirtySwitchPrompt] = useState<{
+    currentName: string;
+    resolve: (action: DirtyDocumentSwitchAction) => void;
+    targetName: string;
+  } | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
   useBootstrap(settingsReady);
   useAutoSave(autoSaveInterval, autoSaveEnabled);
@@ -277,13 +283,52 @@ function App() {
     useDocumentStore.getState().updateContent(content);
   }, []);
 
+  const {
+    chooseSaveDirectory,
+    closeSaveDialog,
+    confirmSaveDialog,
+    requestExportPath,
+    requestMarkdownSavePath,
+    saveDialog,
+    saveDialogOverwriteFilename,
+    updateSaveDialogFilename,
+    updateSaveDialogQualityScale,
+  } = useSaveExportDialogModel({
+    existsPath: fsExists,
+    exportDefaults,
+    rootPath: workspace.rootPath,
+    showToast,
+  });
+
+  const requestDirtyDocumentAction = useCallback((input: {
+    currentName: string;
+    targetName: string;
+  }) => (
+    new Promise<DirtyDocumentSwitchAction>((resolve) => {
+      setDirtySwitchPrompt({
+        currentName: input.currentName,
+        targetName: input.targetName,
+        resolve,
+      });
+    })
+  ), []);
+
+  const resolveDirtySwitchPrompt = useCallback((action: DirtyDocumentSwitchAction) => {
+    setDirtySwitchPrompt((prompt) => {
+      prompt?.resolve(action);
+      return null;
+    });
+  }, []);
+
   const handleFileAction = useCallback(async (input: FileActionInput) => {
     await executeFileAction(input, {
       documentStore: useDocumentStore.getState(),
+      requestDirtyDocumentAction,
+      requestSavePath: requestMarkdownSavePath,
       workspaceStore: useWorkspaceStore.getState(),
       showToast,
     });
-  }, [showToast]);
+  }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
 
   const handleStartupFileOpen = useCallback((path: string) => {
     return handleFileAction({ action: 'openFile', path });
@@ -318,23 +363,6 @@ function App() {
     rootPath: workspace.rootPath,
     showToast,
     workspaceIndex,
-  });
-
-  const {
-    chooseSaveDirectory,
-    closeSaveDialog,
-    confirmSaveDialog,
-    requestExportPath,
-    requestMarkdownSavePath,
-    saveDialog,
-    saveDialogOverwriteFilename,
-    updateSaveDialogFilename,
-    updateSaveDialogQualityScale,
-  } = useSaveExportDialogModel({
-    existsPath: fsExists,
-    exportDefaults,
-    rootPath: workspace.rootPath,
-    showToast,
   });
 
   const runConflictAction = useCallback(async (action: SaveConflictAction) => {
@@ -540,6 +568,13 @@ function App() {
           onClose={() => setGlobalContextMenu(null)}
         />
       )}
+
+      <DirtyDocumentSwitchModal
+        visible={Boolean(dirtySwitchPrompt)}
+        currentName={dirtySwitchPrompt?.currentName ?? ''}
+        targetName={dirtySwitchPrompt?.targetName ?? ''}
+        onAction={resolveDirtySwitchPrompt}
+      />
 
       <RecoveryModal
         visible={recoveryPromptVisible}
