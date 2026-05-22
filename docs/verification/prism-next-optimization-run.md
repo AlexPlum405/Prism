@@ -159,3 +159,66 @@ npm run tauri:build:app-smoke
 - Phase 8：发布可信链路。
 
 每个 checkpoint 完成后必须继续追加本文件。
+
+## 6. Phase 2：真实 app smoke 扩展
+
+### Checkpoint 2A：四格式导出产物证据写入 app smoke
+
+目标：
+
+- 扩展 `npm run tauri:build:app-smoke`，让真实 app smoke 报告不仅证明 Prism.app 能启动、编辑和打开基础入口，也能包含 HTML / PDF / PNG / DOCX 四格式导出产物检查证据。
+
+影响文件：
+
+- `scripts/run-app-smoke.mjs`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等。只改 smoke 自动化脚本和验证记录，不改用户运行时代码；但 `npm run tauri:build:app-smoke` 会额外运行一次聚焦复杂导出产物测试。
+
+实现结果：
+
+- `scripts/run-app-smoke.mjs` 新增 `generateAndValidateComplexExportArtifacts()`。
+- app smoke 会调用现有复杂导出产物测试生成 `.codex-smoke/complex-export/out/complex-export.{html,pdf,png,docx}`。
+- app smoke 自己读取并检查产物：
+  - HTML：标题、TOC、表格、Mermaid、KaTeX、本地图片路径、引用占位。
+  - PDF：非空、页数至少 1、第一页 A4 尺寸。
+  - PNG：非空、PNG signature、可由 `sharp` 读取宽高。
+  - DOCX：zip 内存在 `word/document.xml`、中文标题、代码文本、表格文本、媒体文件，且 Mermaid 源码 `graph TD` 不泄漏。
+- `.codex-smoke/app-smoke/evidence/report.json` 新增 `exportArtifacts` 字段，同时在 `steps` 里记录 `complex export artifacts generated and validated`。
+
+if-else 覆盖：
+
+- 如果复杂导出 focused test 失败：app smoke 失败，不写通过报告。
+- 如果某个导出产物不存在或为空：app smoke 失败。
+- 如果 HTML / PDF / PNG / DOCX 结构检查不满足：app smoke 失败。
+- 如果真实 app 基础链路失败：仍按原 smoke 失败路径写入 `failure.log`。
+
+验证：
+
+```bash
+node --check scripts/run-app-smoke.mjs
+npm test -- --run src/domains/commands/exportCommand.integration.test.ts
+npm test -- --run src/domains/export/exportPipeline.test.ts -t "writes complex export smoke artifacts for all supported formats"
+npm run tauri:build:app-smoke
+git diff --check
+```
+
+结果：
+
+- `node --check scripts/run-app-smoke.mjs` 通过。
+- `npm test -- --run src/domains/commands/exportCommand.integration.test.ts` 通过。1 个测试文件、1 项测试通过。
+- `npm test -- --run src/domains/export/exportPipeline.test.ts -t "writes complex export smoke artifacts for all supported formats"` 通过。1 个测试文件、1 项测试通过、48 项跳过。
+- `npm run tauri:build:app-smoke` 通过。Tauri release app bundle 构建成功；真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+- smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T02:13:07.683Z`。
+- 导出产物证据目录：`.codex-smoke/complex-export/out`。
+- 产物检查摘要：
+  - HTML：`complex-export.html`，11911 bytes。
+  - PDF：`complex-export.pdf`，1549 bytes，1 页，第一页 `595.28 x 841.89`。
+  - PNG：`complex-export.png`，68 bytes，`1 x 1`，PNG。该尺寸来自当前 focused test 的 `html2canvas` mock，本 checkpoint 只把产物存在性和结构检查纳入 app smoke；真实视觉尺寸与保真度仍由 Phase 1 / Phase 6 的导出专项继续覆盖。
+  - DOCX：`complex-export.docx`，12809 bytes，2 个媒体文件。
+
+剩余风险：
+
+- 这一步没有自动操作 macOS 保存面板逐一点击四个真实导出菜单项，避免把 smoke 变成脆弱的系统 UI 自动化；它补齐的是 app smoke 报告中的导出产物证据。后续 Phase 2 仍需继续覆盖主题切换 / 主题导入、Finder 双击同步、后台导出、链接跳转、反链、关系图谱等真实链路。

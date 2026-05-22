@@ -6,6 +6,8 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { unzipSync, strFromU8 } from 'fflate';
+import { PDFDocument } from 'pdf-lib';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
@@ -19,9 +21,19 @@ const workspaceDir = path.join(smokeRoot, 'workspace');
 const evidenceDir = path.join(smokeRoot, 'evidence');
 const sourceFile = path.join(workspaceDir, 'app-smoke.md');
 const targetFile = path.join(workspaceDir, 'target.md');
+const complexExportRoot = path.join(repoRoot, '.codex-smoke/complex-export');
+const complexExportOutDir = path.join(complexExportRoot, 'out');
+const complexExportPaths = {
+  html: path.join(complexExportOutDir, 'complex-export.html'),
+  pdf: path.join(complexExportOutDir, 'complex-export.pdf'),
+  png: path.join(complexExportOutDir, 'complex-export.png'),
+  docx: path.join(complexExportOutDir, 'complex-export.docx'),
+};
 const configPath = path.join(os.homedir(), 'Library/Application Support/com.prism.editor.v1/config.json');
 const configBackupPath = path.join(smokeRoot, 'config.before.json');
 const marker = `prismappsmoke${Date.now()}`;
+const complexExportSmokeTestName = 'writes complex export smoke artifacts for all supported formats';
+const complexExportSmokeCommand = `npm test -- --run src/domains/export/exportPipeline.test.ts -t "${complexExportSmokeTestName}"`;
 
 const steps = [];
 
@@ -98,6 +110,141 @@ async function pathExists(filePath) {
 
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, 'utf8'));
+}
+
+function relativePath(filePath) {
+  return path.relative(repoRoot, filePath);
+}
+
+async function requireNonEmptyFile(filePath) {
+  const fileStat = await fs.stat(filePath);
+  if (fileStat.size <= 0) {
+    throw new Error(`Expected non-empty export artifact: ${filePath}`);
+  }
+  return fileStat.size;
+}
+
+function requireTextIncludes(label, text, expected) {
+  for (const token of expected) {
+    if (!text.includes(token)) {
+      throw new Error(`${label} missing expected token: ${token}`);
+    }
+  }
+}
+
+function requireTextExcludes(label, text, forbidden) {
+  for (const token of forbidden) {
+    if (text.includes(token)) {
+      throw new Error(`${label} contains forbidden token: ${token}`);
+    }
+  }
+}
+
+async function validateComplexExportArtifacts() {
+  const htmlSize = await requireNonEmptyFile(complexExportPaths.html);
+  const html = await fs.readFile(complexExportPaths.html, 'utf8');
+  requireTextIncludes('HTML export artifact', html, [
+    '<title>导出 Smoke 验收文档</title>',
+    'prism-export-toc',
+    '<table',
+    'Golden Mermaid',
+    'class="katex',
+    'assets/prism-export-figure.png',
+    '[@doe2024]',
+  ]);
+
+  const pdfSize = await requireNonEmptyFile(complexExportPaths.pdf);
+  const pdfBytes = await fs.readFile(complexExportPaths.pdf);
+  const pdf = await PDFDocument.load(new Uint8Array(pdfBytes));
+  if (pdf.getPageCount() < 1) {
+    throw new Error('PDF export artifact has no pages.');
+  }
+  const firstPage = pdf.getPage(0);
+  const pdfWidth = firstPage.getWidth();
+  const pdfHeight = firstPage.getHeight();
+  if (Math.abs(pdfWidth - 595.28) > 2 || Math.abs(pdfHeight - 841.89) > 2) {
+    throw new Error(`PDF export artifact is not A4: ${pdfWidth}x${pdfHeight}`);
+  }
+
+  const pngSize = await requireNonEmptyFile(complexExportPaths.png);
+  const pngBytes = await fs.readFile(complexExportPaths.png);
+  const pngSignature = Array.from(pngBytes.slice(0, 8));
+  const expectedPngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (!pngSignature.every((value, index) => value === expectedPngSignature[index])) {
+    throw new Error(`PNG export artifact has invalid signature: ${pngSignature.join(',')}`);
+  }
+  const pngMetadata = await sharp(pngBytes).metadata();
+  if (!pngMetadata.width || !pngMetadata.height) {
+    throw new Error('PNG export artifact has invalid dimensions.');
+  }
+
+  const docxSize = await requireNonEmptyFile(complexExportPaths.docx);
+  const docxBytes = await fs.readFile(complexExportPaths.docx);
+  const docxEntries = unzipSync(new Uint8Array(docxBytes));
+  const documentXmlBytes = docxEntries['word/document.xml'];
+  if (!documentXmlBytes) {
+    throw new Error('DOCX export artifact missing word/document.xml.');
+  }
+  const documentXml = strFromU8(documentXmlBytes);
+  requireTextIncludes('DOCX export artifact', documentXml, [
+    '导出 Smoke 验收文档',
+    'Prism Export Smoke',
+    '项目',
+  ]);
+  requireTextExcludes('DOCX export artifact', documentXml, [
+    'graph TD',
+  ]);
+  const mediaFiles = Object.keys(docxEntries).filter((filePath) => filePath.startsWith('word/media/'));
+  if (!mediaFiles.some((filePath) => /\.(png|jpe?g|svg)$/.test(filePath))) {
+    throw new Error('DOCX export artifact missing image media.');
+  }
+
+  return {
+    command: complexExportSmokeCommand,
+    outputDir: relativePath(complexExportOutDir),
+    html: {
+      path: relativePath(complexExportPaths.html),
+      size: htmlSize,
+      checks: ['title', 'toc', 'table', 'mermaid', 'katex', 'image', 'citation-placeholder'],
+    },
+    pdf: {
+      path: relativePath(complexExportPaths.pdf),
+      size: pdfSize,
+      pageCount: pdf.getPageCount(),
+      firstPage: {
+        width: Number(pdfWidth.toFixed(2)),
+        height: Number(pdfHeight.toFixed(2)),
+      },
+    },
+    png: {
+      path: relativePath(complexExportPaths.png),
+      size: pngSize,
+      width: pngMetadata.width,
+      height: pngMetadata.height,
+      format: pngMetadata.format,
+    },
+    docx: {
+      path: relativePath(complexExportPaths.docx),
+      size: docxSize,
+      mediaFileCount: mediaFiles.length,
+      checks: ['document.xml', 'chinese-title', 'code-text', 'table-text', 'no-mermaid-source-leak', 'image-media'],
+    },
+  };
+}
+
+async function generateAndValidateComplexExportArtifacts() {
+  await fs.rm(complexExportRoot, { recursive: true, force: true });
+  await run('npm', [
+    'test',
+    '--',
+    '--run',
+    'src/domains/export/exportPipeline.test.ts',
+    '-t',
+    complexExportSmokeTestName,
+  ], {
+    timeout: 120000,
+  });
+  return validateComplexExportArtifacts();
 }
 
 async function waitFor(label, predicate, timeoutMs = 12000, intervalMs = 350) {
@@ -381,6 +528,7 @@ async function runSmoke() {
 
   await prepareFixtures();
   const hadConfig = await backupConfig();
+  let exportArtifacts = null;
 
   try {
     await quitPrism();
@@ -472,6 +620,12 @@ async function runSmoke() {
     key('key code 53');
     await delay(250);
 
+    exportArtifacts = await generateAndValidateComplexExportArtifacts();
+    record('complex export artifacts generated and validated', 'pass', {
+      summary: 'HTML/PDF/PNG/DOCX',
+      artifacts: exportArtifacts,
+    });
+
     record('wrote app smoke evidence report', 'pass', {
       summary: path.relative(repoRoot, path.join(evidenceDir, 'report.json')),
     });
@@ -483,6 +637,7 @@ async function runSmoke() {
       targetFile,
       marker,
       configRestoredAfterRun: true,
+      exportArtifacts,
       steps,
     };
     await fs.writeFile(path.join(evidenceDir, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
