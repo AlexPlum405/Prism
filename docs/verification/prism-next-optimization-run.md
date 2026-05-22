@@ -279,3 +279,61 @@ git diff --check
 剩余风险：
 
 - 这一步用单元测试覆盖 Finder/openFile 的工作区树同步分支，用 app smoke 覆盖真实启动和快速打开链路；尚未把 Finder 双击事件本身做成可复现系统级自动点击，因为 macOS Launch Services 与默认应用绑定会让 smoke 变脆。后续 Phase 4 文件安全专项还需要继续覆盖 dirty 切换、外部修改冲突和恢复快照。
+
+## 7. Phase 3：大文档性能专项
+
+### Checkpoint 3A：预览渲染按文档大小分层降频
+
+目标：
+
+- 降低长文连续输入时 `markdownToHtml` 反复运行的频率，保证编辑器输入优先。
+- 对超大文档给出轻量“预览更新中”状态，避免用户误以为预览卡死。
+
+影响文件：
+
+- `src/domains/editor/components/PreviewPane.tsx`
+- `src/domains/editor/components/PreviewPane.test.tsx`
+- `src/styles/preview.css`
+- `src/domains/i18n/resources.ts`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等。触及预览渲染节流和一个轻量状态提示，不改变 Markdown 渲染语义、不改编辑器主体、不引入新依赖。
+
+实现结果：
+
+- 小文档 `<= 30KB`：继续使用 `120ms` debounce，保持即时感。
+- 中等文档 `> 30KB 且 <= 300KB`：使用 `220ms` debounce，减少连续输入时预览重算。
+- 大文档 `> 300KB`：使用 `600ms` debounce，并在预览区显示轻量 `预览更新中` 状态。
+- 状态提示采用当前妙言风格的低对比小浮层，不改变标题栏、状态栏、左侧文件树或导出按钮。
+- 新增单元测试覆盖：
+  - size-aware debounce 阈值。
+  - 大文档 pending 状态显示。
+  - 600ms 之前不 rerun `markdownToHtml`，到点后只跑一次最新内容。
+
+if-else 覆盖：
+
+- 如果文档小于等于 30KB：使用原有 120ms 节流。
+- 如果文档介于 30KB 到 300KB：中等节流，不显示状态提示。
+- 如果文档超过 300KB：更强节流并显示 pending 状态。
+- 如果内容已同步到 `renderContent`：清除 pending 状态。
+
+验证：
+
+```bash
+npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx
+npm run build
+npm exec vite build -- --sourcemap
+git diff --check
+```
+
+结果：
+
+- `npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx` 通过。3 个测试文件、51 项测试通过。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `npm exec vite build -- --sourcemap` 通过。主要大 chunk 仍为既有 `main`、`vendor-markdown`、`mermaid.core` 等；本 checkpoint 未新增阻断。
+
+剩余风险：
+
+- 这一步先完成无新依赖、低风险的 size-aware render queue；尚未把 Markdown -> HTML 主流程迁到 Web Worker。Phase 3 后续仍应继续评估 worker 渲染、preview-only 立即补齐、Mermaid 分批上限和更真实的大文档输入性能 smoke。

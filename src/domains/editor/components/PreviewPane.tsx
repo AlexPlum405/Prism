@@ -18,8 +18,22 @@ interface PreviewPaneProps {
   ) => void | Promise<void>;
 }
 
-const PREVIEW_RENDER_DEBOUNCE_MS = 120;
+const PREVIEW_RENDER_SMALL_DOC_LIMIT = 30 * 1024;
+const PREVIEW_RENDER_LARGE_DOC_LIMIT = 300 * 1024;
+const PREVIEW_RENDER_SMALL_DEBOUNCE_MS = 120;
+const PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS = 220;
+const PREVIEW_RENDER_LARGE_DEBOUNCE_MS = 600;
 const mermaidSvgCache = new Map<string, string>();
+
+function getPreviewRenderDebounceMs(contentLength: number) {
+  if (contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT) return PREVIEW_RENDER_LARGE_DEBOUNCE_MS;
+  if (contentLength > PREVIEW_RENDER_SMALL_DOC_LIMIT) return PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS;
+  return PREVIEW_RENDER_SMALL_DEBOUNCE_MS;
+}
+
+function shouldShowPreviewUpdatingStatus(contentLength: number) {
+  return contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT;
+}
 
 function getCurrentContentTheme(): ContentTheme {
   const theme = document.documentElement.getAttribute('data-content-theme');
@@ -173,6 +187,8 @@ function renderMermaidError(container: HTMLElement, error: unknown) {
 
 export const __previewPaneTesting = {
   clearMermaidCache: () => mermaidSvgCache.clear(),
+  getPreviewRenderDebounceMs,
+  shouldShowPreviewUpdatingStatus,
 };
 
 function readClosestSourceLine(element: Element) {
@@ -270,14 +286,20 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
   const containerRef = useRef<HTMLDivElement>(null);
   const [contentTheme, setContentTheme] = useState<ContentTheme>(getCurrentContentTheme);
   const [renderContent, setRenderContent] = useState(content);
+  const [renderPending, setRenderPending] = useState(false);
   const previewFontFamily = useSettingsStore((s) => s.previewFontFamily);
   const previewFontSize = useSettingsStore((s) => s.previewFontSize);
 
   useEffect(() => {
-    if (content === renderContent) return;
+    if (content === renderContent) {
+      setRenderPending(false);
+      return;
+    }
+    setRenderPending(true);
     const timer = window.setTimeout(() => {
       setRenderContent(content);
-    }, PREVIEW_RENDER_DEBOUNCE_MS);
+      setRenderPending(false);
+    }, getPreviewRenderDebounceMs(content.length));
     return () => window.clearTimeout(timer);
   }, [content, renderContent]);
 
@@ -448,11 +470,23 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
     };
   }, [html, contentTheme]);
 
+  const showRenderPendingStatus = renderPending && shouldShowPreviewUpdatingStatus(content.length);
+
   return (
-    <div ref={containerRef} className={`preview-compat preview-compat--${contentTheme}`}>
+    <div
+      ref={containerRef}
+      className={`preview-compat preview-compat--${contentTheme}`}
+      data-preview-render-pending={renderPending ? 'true' : undefined}
+    >
+      {showRenderPendingStatus && (
+        <div className="preview-render-status" role="status">
+          {t('editor.preview.updating')}
+        </div>
+      )}
       <div
         id="write"
         className={getThemeContract(contentTheme).preview.writeClass}
+        aria-busy={showRenderPendingStatus ? 'true' : undefined}
         style={{
           fontFamily: previewFontFamily === 'inherit' ? undefined : previewFontFamily,
           fontSize: `${previewFontSize}px`,

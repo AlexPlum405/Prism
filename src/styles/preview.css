@@ -5,6 +5,7 @@
   --preview-search-current-bg: var(--c-void, #1c5d33);
   --preview-search-current-ring: color-mix(in srgb, var(--c-void, #1c5d33) 46%, transparent);
   --preview-search-current-text: var(--c-canvas, #ffffff);
+  position: relative;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat {
@@ -26,6 +27,37 @@ html[data-content-theme='nocturne'] .preview-compat {
   --preview-search-current-bg: var(--nocturne-accent);
   --preview-search-current-ring: color-mix(in srgb, var(--nocturne-accent) 64%, transparent);
   --preview-search-current-text: var(--nocturne-main-bg);
+}
+
+.preview-render-status {
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin: 10px 16px -32px auto;
+  padding: 3px 9px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-link);
+  background: color-mix(in srgb, var(--c-canvas) 88%, transparent);
+  color: var(--c-graphite);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--c-void) 8%, transparent);
+  font-size: 12px;
+  line-height: 18px;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+html[data-content-theme='miaoyan'] .preview-render-status {
+  border-color: var(--miaoyan-hairline);
+  background: color-mix(in srgb, var(--miaoyan-panel) 90%, transparent);
+  color: var(--miaoyan-secondary-text);
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .preview-render-status {
+  border-color: var(--theme-hairline);
+  background: color-mix(in srgb, var(--theme-main-bg) 90%, transparent);
+  color: var(--theme-secondary-text);
 }
 
 .preview-search-match {

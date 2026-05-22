@@ -128,6 +128,40 @@ describe('PreviewPane theme switching', () => {
     expect(markdownToHtml).toHaveBeenLastCalledWith('# Third', { frontMatterMode: 'metadata' });
   });
 
+  it('uses size-aware preview render scheduling for medium and large documents', () => {
+    expect(__previewPaneTesting.getPreviewRenderDebounceMs(8 * 1024)).toBe(120);
+    expect(__previewPaneTesting.getPreviewRenderDebounceMs(80 * 1024)).toBe(220);
+    expect(__previewPaneTesting.getPreviewRenderDebounceMs(360 * 1024)).toBe(600);
+    expect(__previewPaneTesting.shouldShowPreviewUpdatingStatus(360 * 1024)).toBe(true);
+  });
+
+  it('throttles large-document preview updates and shows a lightweight pending status', () => {
+    vi.useFakeTimers();
+    const first = `# First\n${'一'.repeat(310 * 1024)}`;
+    const second = `# Second\n${'二'.repeat(310 * 1024)}`;
+    const { rerender } = render(<PreviewPane content={first} />);
+
+    expect(markdownToHtml).toHaveBeenCalledTimes(1);
+
+    rerender(<PreviewPane content={second} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('预览更新中');
+    expect(markdownToHtml).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(599);
+    });
+    expect(markdownToHtml).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    expect(markdownToHtml).toHaveBeenCalledTimes(2);
+    expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('refreshes source-line anchors after debounced content changes', () => {
     vi.useFakeTimers();
     vi.mocked(markdownToHtml).mockImplementation((content) => (
