@@ -96,3 +96,7 @@
 :global(html[data-content-theme='nocturne']) .btn.active {
   color: var(--theme-accent);
 }
+
+:global(html[data-platform='windows']) .container.flushStart {
+  margin-left: 0;
+}

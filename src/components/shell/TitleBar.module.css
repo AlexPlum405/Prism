@@ -326,3 +326,11 @@
   height: 11px;
   stroke-width: 1.3;
 }
+
+:global(html[data-platform='windows']) .titlebar.windows {
+  padding-left: 6px;
+}
+
+:global(html[data-platform='windows']) .windowsTitleCluster {
+  gap: 16px;
+}

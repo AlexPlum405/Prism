@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.4.0"
+version = "1.0.5"
 description = "A local-first Markdown editor for writing, preview typography, and reliable export"
 authors = ["Prism contributors"]
 license = "MIT"
