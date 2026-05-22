@@ -658,3 +658,54 @@ git diff --check
 - `npm test -- --run src/domains/export/adapters/docx.ts src/domains/export/exportPipeline.test.ts src/domains/export/assets.test.ts` 通过。2 个测试文件、54 项测试通过；测试环境仅输出既有 `--localstorage-file` warning。
 - `npm run build` 通过。仅保留既有 Vite large chunk warning。
 - `git diff --check` 通过。
+
+## 11. Phase 7：主题、模板、中文写作检查
+
+### Checkpoint 7A：体验增强链路验证收口
+
+目标：
+
+- 确认主题导入、模板插入、中文写作检查已按当前计划实现，并且没有把 Prism 扩张成平台型产品。
+- 不重复改动已实现逻辑，只补当前计划的验证证据。
+
+影响文件：
+
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 低。文档验证收口，不改运行时代码。
+
+现有实现确认：
+
+- 主题包系统禁止覆盖内置主题；同 id 用户主题走确认替换，失败保留旧主题。
+- 异常用户主题会保留在设置中心并标明异常，菜单/可选列表只暴露可用主题。
+- 主题导入使用 Prism 风格的内置提示入口，支持文件夹或压缩包来源，不再直接弹 macOS 原生确认窗。
+- 模板命令可在空文档创建整篇模板，也可在已有文稿中通过编辑器命令插入模板。
+- 中文写作检查只作为诊断提示，映射为非 error 的 typography diagnostics，不静默修改正文。
+- 写作检查问题通过诊断面板和 `ERROR n` 聚合入口进入，不塞满状态栏。
+
+if-else 覆盖：
+
+- 如果导入主题 id 是内置主题：失败，不允许覆盖。
+- 如果导入主题 id 与用户主题重复：确认后替换；失败保留旧主题。
+- 如果用户主题异常：设置中心显示异常，菜单不显示为可选主题。
+- 如果模板插入空文档：创建整篇模板。
+- 如果模板插入已有文档：派发 `insertTemplate` 到当前编辑器。
+- 如果中文写作检查命中很多项：保持可折叠诊断入口，不直接改正文。
+
+验证：
+
+```bash
+npm test -- --run src/domains/themes src/domains/editor/extensions/templates.test.ts src/domains/editor/extensions/typographyDiagnostics.test.ts
+npm test -- --run src/components/shell/SettingsModal.test.tsx src/domains/commands/registry.test.ts src/domains/diagnostics/adapters.test.ts src/domains/editor/extensions/slashMenu.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- `npm test -- --run src/domains/themes src/domains/editor/extensions/templates.test.ts src/domains/editor/extensions/typographyDiagnostics.test.ts` 通过。7 个测试文件、28 项测试通过。
+- `npm test -- --run src/components/shell/SettingsModal.test.tsx src/domains/commands/registry.test.ts src/domains/diagnostics/adapters.test.ts src/domains/editor/extensions/slashMenu.test.ts` 通过。4 个测试文件、48 项测试通过；测试环境仅输出既有 `--localstorage-file` warning。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
