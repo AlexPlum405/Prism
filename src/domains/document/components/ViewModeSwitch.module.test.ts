@@ -16,4 +16,12 @@ describe('ViewModeSwitch titlebar placement', () => {
     expect(windowsReset).toBeGreaterThan(miaoyanOffset);
     expect(css.slice(windowsReset)).toContain('transform: none');
   });
+
+  it('defines an internal flush-start variant for titlebar layouts that start with the switch', () => {
+    const container = css.indexOf('.container');
+    const flushStart = css.indexOf('.flushStart');
+
+    expect(flushStart).toBeGreaterThan(container);
+    expect(css.slice(flushStart)).toContain('margin-left: 0');
+  });
 });

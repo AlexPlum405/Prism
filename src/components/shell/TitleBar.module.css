@@ -18,6 +18,11 @@
   padding-right: 16px;
 }
 
+.titlebar.windows {
+  gap: 10px;
+  padding-left: 10px;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -94,6 +99,33 @@
 }
 
 .app { color: var(--c-graphite); }
+
+.windowsTitleCluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: min(460px, calc(100% - 156px));
+  height: 100%;
+  flex: 0 1 auto;
+}
+
+.windowsTitleGroup {
+  flex: 0 1 auto;
+  max-width: min(360px, 44vw);
+}
+
+.windowsTitle {
+  color: var(--c-graphite);
+  font-size: 12px;
+  font-weight: 520;
+}
+
+.windowsDragSpacer {
+  min-width: 48px;
+  height: 100%;
+  flex: 1 1 auto;
+}
 
 .controls {
   display: flex;

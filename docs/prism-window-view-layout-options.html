@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prism Window Controls + View Switch Layout Options</title>
+  <style>
+    :root {
+      --paper: #f6f5f1;
+      --ink: #24231f;
+      --muted: #77756d;
+      --line: rgba(28, 27, 23, 0.11);
+      --line-strong: rgba(28, 27, 23, 0.18);
+      --panel: rgba(255, 255, 252, 0.88);
+      --window: #fffefa;
+      --sidebar: #f1f0eb;
+      --editor: #fffdf8;
+      --blue: #6c87a1;
+      --green: #6f8b79;
+      --gold: #b7a06a;
+      --red: #c56b5f;
+      --shadow: 0 18px 42px rgba(31, 30, 26, 0.10);
+      color: var(--ink);
+      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0) 360px),
+        var(--paper);
+    }
+
+    button { font: inherit; }
+
+    .page {
+      width: min(1280px, calc(100vw - 44px));
+      margin: 0 auto;
+      padding: 34px 0 56px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.22;
+      font-weight: 680;
+      letter-spacing: 0;
+    }
+
+    .brief {
+      max-width: 870px;
+      margin: 0;
+      color: #65635b;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 360px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,252,0.68);
+      color: #67655e;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .option {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+    }
+
+    .optionHead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      padding: 14px 15px 11px;
+      border-bottom: 1px solid rgba(28,27,23,0.06);
+    }
+
+    .optionTitle {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 670;
+      letter-spacing: 0;
+    }
+
+    .index {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 22px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.54);
+      color: #626057;
+      font-size: 11px;
+      font-weight: 600;
+      flex: 0 0 auto;
+    }
+
+    .optionMeta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+      max-width: 270px;
+    }
+
+    .score {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border: 1px solid rgba(28,27,23,0.09);
+      border-radius: 999px;
+      color: #66645d;
+      background: rgba(255,255,252,0.7);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .score.good { color: #365f49; background: rgba(111,139,121,0.13); }
+    .score.warn { color: #7a6230; background: rgba(183,160,106,0.16); }
+    .score.risk { color: #7f4b43; background: rgba(197,107,95,0.13); }
+
+    .note {
+      grid-column: 1 / -1;
+      margin: 4px 0 0 33px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.62;
+    }
+
+    .stage {
+      padding: 12px 14px 15px;
+    }
+
+    .mock {
+      --control-space: 104px;
+      --view-width: 96px;
+      --titlebar: 34px;
+      position: relative;
+      overflow: hidden;
+      height: 224px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--window);
+      box-shadow: 0 10px 24px rgba(28, 27, 23, 0.08);
+    }
+
+    .titlebar {
+      height: var(--titlebar);
+      display: grid;
+      align-items: center;
+      grid-template-columns: 220px minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 0 10px;
+      border-bottom: 1px solid rgba(28,27,23,0.07);
+      background: rgba(251,250,246,0.96);
+      user-select: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .logo {
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border: 1px solid rgba(28,27,23,0.12);
+      border-radius: 6px;
+      background: #f7f7f4;
+      color: #6e7478;
+      font-size: 11px;
+      font-weight: 650;
+      flex: 0 0 auto;
+    }
+
+    .doc {
+      min-width: 0;
+      overflow: hidden;
+      color: #34332e;
+      font-size: 12px;
+      font-weight: 520;
+      line-height: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .centerTitle {
+      min-width: 0;
+      color: #8a877d;
+      font-size: 11px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      height: calc(100% - var(--titlebar));
+    }
+
+    .sidebar {
+      border-right: 1px solid rgba(28,27,23,0.07);
+      background: var(--sidebar);
+      padding: 14px 11px;
+    }
+
+    .treeLine,
+    .textLine {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(28,27,23,0.11);
+    }
+
+    .treeLine { margin-bottom: 11px; }
+    .treeLine:nth-child(1) { width: 72%; }
+    .treeLine:nth-child(2) { width: 52%; }
+    .treeLine:nth-child(3) { width: 82%; background: rgba(108,135,161,0.18); }
+    .treeLine:nth-child(4) { width: 60%; }
+    .treeLine:nth-child(5) { width: 76%; }
+
+    .editor {
+      position: relative;
+      padding: 19px 25px;
+      background:
+        linear-gradient(90deg, rgba(108,135,161,0.06), transparent 160px),
+        var(--editor);
+    }
+
+    .textLine {
+      height: 8px;
+      margin-bottom: 13px;
+      background: rgba(28,27,23,0.12);
+    }
+    .textLine:nth-child(1) { width: 56%; height: 10px; background: rgba(28,27,23,0.18); }
+    .textLine:nth-child(2) { width: 88%; }
+    .textLine:nth-child(3) { width: 80%; }
+    .textLine:nth-child(4) { width: 91%; }
+    .textLine:nth-child(5) { width: 68%; }
+
+    .viewSwitch,
+    .winControls,
+    .traffic,
+    .floatingModes,
+    .sideModes,
+    .bottomModes,
+    .logoMenu,
+    .cornerHandle {
+      display: flex;
+      align-items: center;
+    }
+
+    .viewSwitch {
+      height: 26px;
+      gap: 4px;
+      padding: 2px;
+      border: 1px solid rgba(28,27,23,0.09);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.74);
+    }
+
+    .viewSwitch button,
+    .floatingModes button,
+    .sideModes button,
+    .bottomModes button,
+    .winControls button,
+    .traffic button,
+    .logoMenu button,
+    .cornerHandle button {
+      display: grid;
+      place-items: center;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: #77746d;
+    }
+
+    .viewSwitch button {
+      width: 24px;
+      height: 22px;
+      border-radius: 6px;
+    }
+
+    .viewSwitch .active,
+    .floatingModes .active,
+    .sideModes .active,
+    .bottomModes .active {
+      color: #39434a;
+      background: rgba(108,135,161,0.15);
+      box-shadow: inset 0 0 0 1px rgba(108,135,161,0.11);
+    }
+
+    .winControls {
+      height: 34px;
+      gap: 1px;
+      align-self: stretch;
+      margin-right: -10px;
+    }
+
+    .winControls button {
+      width: 37px;
+      height: 34px;
+      color: #5e5d57;
+    }
+
+    .winControls .close:hover {
+      color: #fff;
+      background: #c95c51;
+    }
+
+    .traffic {
+      gap: 6px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    .traffic button {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .traffic .red { background: #ff5f57; }
+    .traffic .yellow { background: #ffbd2e; }
+    .traffic .green { background: #28c840; }
+
+    svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .rightStack {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      justify-self: end;
+      min-width: 0;
+    }
+
+    .variant-1 .titlebar {
+      grid-template-columns: 230px minmax(0, 1fr) auto;
+    }
+
+    .variant-2 .titlebar {
+      grid-template-columns: 220px minmax(0, 1fr) auto;
+      padding-right: 10px;
+    }
+
+    .variant-3 .titlebar {
+      grid-template-columns: 182px minmax(0, 1fr) auto;
+      padding-right: 0;
+    }
+    .variant-3 .viewSwitch {
+      justify-self: center;
+      transform: translateX(26px);
+    }
+
+    .variant-4 .titlebar {
+      grid-template-columns: auto 220px minmax(0, 1fr) auto;
+      padding-left: 10px;
+    }
+    .variant-4 .brand { grid-column: 2; }
+
+    .variant-5 .titlebar {
+      grid-template-columns: 230px minmax(0, 1fr) auto;
+      padding-right: 0;
+    }
+    .variant-5 .floatingModes {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      z-index: 2;
+      transform: translateX(-50%);
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(28,27,23,0.09);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.84);
+      box-shadow: 0 8px 24px rgba(28,27,23,0.11);
+    }
+    .variant-5 .floatingModes button {
+      width: 27px;
+      height: 25px;
+      border-radius: 6px;
+    }
+
+    .variant-6 .titlebar {
+      grid-template-columns: 230px minmax(0, 1fr) auto;
+      padding-right: 10px;
+    }
+    .variant-6 .logoMenu {
+      height: 26px;
+      gap: 4px;
+      padding: 2px 5px;
+      border: 1px solid rgba(28,27,23,0.08);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.66);
+    }
+    .variant-6 .logoMenu button {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      font-size: 11px;
+    }
+
+    .variant-7 .titlebar {
+      grid-template-columns: 220px minmax(0, 1fr) auto;
+      padding-right: 0;
+    }
+    .variant-7 .bottomModes {
+      position: absolute;
+      right: 22px;
+      bottom: 12px;
+      z-index: 2;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid rgba(28,27,23,0.09);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.82);
+      box-shadow: 0 8px 22px rgba(28,27,23,0.10);
+    }
+    .variant-7 .bottomModes button {
+      width: 25px;
+      height: 23px;
+      border-radius: 6px;
+    }
+
+    .variant-8 .titlebar {
+      grid-template-columns: 220px minmax(0, 1fr) auto;
+      padding-right: 0;
+    }
+    .variant-8 .sideModes {
+      position: absolute;
+      top: 56px;
+      right: 11px;
+      z-index: 2;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(28,27,23,0.09);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.84);
+      box-shadow: 0 8px 22px rgba(28,27,23,0.10);
+    }
+    .variant-8 .sideModes button {
+      width: 26px;
+      height: 25px;
+      border-radius: 6px;
+    }
+
+    .variant-9 .titlebar {
+      grid-template-columns: 220px minmax(0, 1fr) auto;
+      padding-right: 0;
+    }
+    .variant-9 .topDock {
+      position: absolute;
+      top: 46px;
+      right: 17px;
+      left: 168px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      height: 34px;
+      padding: 0 7px 0 12px;
+      border: 1px solid rgba(28,27,23,0.08);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.82);
+      box-shadow: 0 8px 22px rgba(28,27,23,0.09);
+    }
+    .variant-9 .dockTitle {
+      color: #77756d;
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .variant-10 .titlebar {
+      grid-template-columns: 230px minmax(0, 1fr) auto;
+      padding-right: 10px;
+    }
+    .variant-10 .cornerHandle {
+      position: absolute;
+      top: 9px;
+      left: 50%;
+      z-index: 2;
+      transform: translateX(-50%);
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid rgba(28,27,23,0.08);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.76);
+    }
+    .variant-10 .cornerHandle button {
+      width: 22px;
+      height: 20px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #74726a;
+    }
+
+    .bodyLabel {
+      position: absolute;
+      right: 24px;
+      top: 100px;
+      color: rgba(28,27,23,0.25);
+      font-size: 11px;
+      letter-spacing: 0;
+    }
+
+    .pick {
+      margin-top: 18px;
+      border: 1px solid rgba(111,139,121,0.24);
+      border-radius: 8px;
+      background: rgba(255,255,252,0.78);
+      padding: 14px 16px;
+      color: #4d4b44;
+      line-height: 1.75;
+      font-size: 13px;
+    }
+
+    .pick strong { color: #2f4339; }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+      .legend { justify-content: flex-start; max-width: none; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100vw - 24px, 1280px); padding-top: 24px; }
+      .mock { height: 214px; }
+      .titlebar { grid-template-columns: 150px minmax(0, 1fr) auto; }
+      .content { grid-template-columns: 112px minmax(0, 1fr); }
+      .sidebar { padding: 12px 8px; }
+      .editor { padding: 17px 16px; }
+      .optionHead { grid-template-columns: 1fr; }
+      .optionMeta { justify-content: flex-start; max-width: none; margin-left: 33px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>Prism 窗口控制与视图切换布局 10 案</h1>
+        <p class="brief">目标不是把 Windows 做成 macOS，也不是牺牲 Prism 现在右上角的干净感，而是在窗口控制、文档标题、视图切换之间找到最像 Prism 的平衡。每个方案都保留当前妙言式浅色写作器气质。</p>
+      </div>
+      <div class="legend" aria-label="评分说明">
+        <span class="pill">右上角干净度</span>
+        <span class="pill">Windows 习惯</span>
+        <span class="pill">误触风险</span>
+        <span class="pill">实现成本</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">01</span>右上角只放视图切换</h2>
+          <div class="optionMeta"><span class="score good">干净度 10</span><span class="score warn">习惯 6</span><span class="score good">推荐</span></div>
+          <p class="note">窗口控制进入左上角 logo 菜单和系统快捷键；最符合你想要的右上角秩序。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-1">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="viewSwitch" aria-label="视图切换">
+                <button title="编辑"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button>
+                <button class="active" title="分栏"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button>
+                <button title="预览"><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+              </div>
+            </div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="bodyLabel">logo menu handles window actions</div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">02</span>经典 Windows 右上角分组</h2>
+          <div class="optionMeta"><span class="score warn">干净度 5</span><span class="score good">习惯 10</span><span class="score risk">拥挤</span></div>
+          <p class="note">视图切换与窗口控制都在右侧，用间隔隔开；最符合 Windows，但你担心的冲突最明显。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-2">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="rightStack">
+                <div class="viewSwitch"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+                <div class="winControls"><button>—</button><button>□</button><button class="close">×</button></div>
+              </div>
+            </div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">03</span>视图切换居中偏右</h2>
+          <div class="optionMeta"><span class="score warn">干净度 7</span><span class="score good">习惯 9</span><span class="score good">稳妥</span></div>
+          <p class="note">窗口控制仍在最右，视图切换从右上角撤离；系统习惯好，但 Prism 的视觉重心会变化。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-3">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="viewSwitch"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+              <div class="winControls"><button>—</button><button>□</button><button class="close">×</button></div>
+            </div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">04</span>左侧窗口控制，右侧视图切换</h2>
+          <div class="optionMeta"><span class="score good">干净度 9</span><span class="score warn">习惯 5</span><span class="score warn">类 mac</span></div>
+          <p class="note">Windows 也用左侧小控制点，右上角留给视图；很干净，但会被认为太像 macOS。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-4">
+            <div class="titlebar">
+              <div class="traffic"><button class="red"></button><button class="yellow"></button><button class="green"></button></div>
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="viewSwitch"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+            </div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">05</span>视图切换悬浮在正文上方</h2>
+          <div class="optionMeta"><span class="score warn">干净度 8</span><span class="score good">习惯 9</span><span class="score warn">遮挡</span></div>
+          <p class="note">标题栏只处理窗口与标题，视图切换变成内容工具；容易显得工具感强，不够安静。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-5">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="winControls"><button>—</button><button>□</button><button class="close">×</button></div>
+            </div>
+            <div class="floatingModes"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">06</span>logo 旁微型窗口控制</h2>
+          <div class="optionMeta"><span class="score good">干净度 9</span><span class="score warn">习惯 6</span><span class="score good">可试</span></div>
+          <p class="note">右上角只放视图，窗口控制收进左侧品牌区；比菜单更显性，但仍不打扰主操作。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-6">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div><div class="logoMenu"><button>—</button><button>□</button><button>×</button></div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="viewSwitch"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+            </div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">07</span>视图切换放到底部状态区</h2>
+          <div class="optionMeta"><span class="score warn">干净度 7</span><span class="score good">习惯 9</span><span class="score risk">违背既定</span></div>
+          <p class="note">释放标题栏右侧给窗口控制；但 Prism 已确认视图切换不放状态栏，这案只做边界参考。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-7">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="winControls"><button>—</button><button>□</button><button class="close">×</button></div>
+            </div>
+            <div class="bottomModes"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">08</span>右侧轻量竖向视图条</h2>
+          <div class="optionMeta"><span class="score warn">干净度 6</span><span class="score good">习惯 9</span><span class="score warn">存在感强</span></div>
+          <p class="note">窗口控制保留右上角，视图切换从标题栏移出；适合工具型产品，但写作器会略显重。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-8">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="winControls"><button>—</button><button>□</button><button class="close">×</button></div>
+            </div>
+            <div class="sideModes"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">09</span>内容顶部迷你 dock</h2>
+          <div class="optionMeta"><span class="score warn">干净度 7</span><span class="score good">习惯 9</span><span class="score warn">新结构</span></div>
+          <p class="note">视图切换作为编辑器上方 dock，标题栏保留窗口控制；视觉清楚，但会新增一条工具层。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-9">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle">Prism</div>
+              <div class="winControls"><button>—</button><button>□</button><button class="close">×</button></div>
+            </div>
+            <div class="topDock"><div class="dockTitle">Writing layout</div><div class="viewSwitch"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div></div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="option">
+        <header class="optionHead">
+          <h2 class="optionTitle"><span class="index">10</span>窗口控制居中极小化</h2>
+          <div class="optionMeta"><span class="score good">干净度 8</span><span class="score risk">习惯 4</span><span class="score warn">概念案</span></div>
+          <p class="note">右上角仍只给视图切换，窗口控制变成标题栏中央的低存在感胶囊；美观但学习成本最高。</p>
+        </header>
+        <div class="stage">
+          <div class="mock variant-10">
+            <div class="titlebar">
+              <div class="brand"><div class="logo">P</div><div class="doc">proposal.md</div></div>
+              <div class="centerTitle"></div>
+              <div class="viewSwitch"><button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button><button class="active"><svg viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></button><button><svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div>
+            </div>
+            <div class="cornerHandle"><button>—</button><button>□</button><button>×</button></div>
+            <div class="content"><div class="sidebar"><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div><div class="treeLine"></div></div><div class="editor"><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div><div class="textLine"></div></div></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="pick">
+      <strong>设计判断：</strong>如果坚持“右上角只保留视图切换”，优先看 01 和 06。01 最干净，窗口控制转入 logo 菜单；06 多了一点显性控制，学习成本比 01 低。02、03 是 Windows 习惯最强的方向，但会牺牲你想要的右上角纯净感。
+    </section>
+  </main>
+</body>
+</html>

@@ -29,7 +29,12 @@ const VIEW_MODES: Array<{ key: ViewMode; labelKey: I18nKey; icon: () => JSX.Elem
   { key: 'preview', labelKey: 'document.view.preview', icon: IconPreview },
 ];
 
-export function ViewModeSwitch() {
+interface ViewModeSwitchProps {
+  className?: string;
+  flushStart?: boolean;
+}
+
+export function ViewModeSwitch({ className = '', flushStart = false }: ViewModeSwitchProps = {}) {
   const { t } = useI18n();
   const viewMode = useDocumentStore((s) => s.currentDocument?.viewMode);
   const setViewMode = useDocumentStore((s) => s.setViewMode);
@@ -37,7 +42,7 @@ export function ViewModeSwitch() {
   if (!viewMode) return null;
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${flushStart ? styles.flushStart : ''} ${className}`.trim()}>
       {VIEW_MODES.map((m) => {
         const Icon = m.icon;
         const label = t(m.labelKey);

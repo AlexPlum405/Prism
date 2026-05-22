@@ -31,6 +31,7 @@ const IconClose = () => (
 export function TitleBar({ docName, isDirty = false }: TitleBarProps) {
   const { t } = useI18n();
   const [window] = useState(() => getCurrentWindow());
+  const displayDocName = docName.replace(/\.md$/i, '');
 
   const handleMinimize = async () => {
     try { await window.minimize(); } catch (e) { console.error('minimize failed', e); }
@@ -44,27 +45,50 @@ export function TitleBar({ docName, isDirty = false }: TitleBarProps) {
 
   return (
     <div
-      className={`${styles.titlebar} ${IS_MACOS ? styles.macos : ''} app-titlebar`}
+      className={`${styles.titlebar} ${IS_MACOS ? styles.macos : styles.windows} app-titlebar`}
       data-tauri-drag-region
     >
-      <div className={styles.brand}>
-        <div className={styles.logo}>P</div>
-        <div className={styles.titleGroup}>
-          <div className={styles.title}>
-            <span className={styles.docName}>{docName.replace(/\.md$/, '')}</span>
-            {isDirty && (
-              <span
-                className={styles.dirtyRing}
-                title={t('titlebar.dirty')}
-                aria-label={t('titlebar.dirty')}
-              />
-            )}
-            <span className={styles.sep}>—</span>
-            <span className={styles.app}>Prism</span>
+      {IS_MACOS ? (
+        <>
+          <div className={styles.brand}>
+            <div className={styles.logo}>P</div>
+            <div className={styles.titleGroup}>
+              <div className={styles.title}>
+                <span className={styles.docName}>{displayDocName}</span>
+                {isDirty && (
+                  <span
+                    className={styles.dirtyRing}
+                    title={t('titlebar.dirty')}
+                    aria-label={t('titlebar.dirty')}
+                  />
+                )}
+                <span className={styles.sep}>—</span>
+                <span className={styles.app}>Prism</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <ViewModeSwitch />
+          <ViewModeSwitch />
+        </>
+      ) : (
+        <>
+          <div className={styles.windowsTitleCluster} data-titlebar-section="windows-title-cluster">
+            <ViewModeSwitch flushStart />
+            <div className={`${styles.titleGroup} ${styles.windowsTitleGroup}`}>
+              <div className={`${styles.title} ${styles.windowsTitle}`}>
+                <span className={styles.docName}>{displayDocName}</span>
+                {isDirty && (
+                  <span
+                    className={styles.dirtyRing}
+                    title={t('titlebar.dirty')}
+                    aria-label={t('titlebar.dirty')}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+          <div className={styles.windowsDragSpacer} data-tauri-drag-region />
+        </>
+      )}
       {!IS_MACOS && (
         <div className={styles.controls}>
           <button className={styles.btn} onClick={handleMinimize} title={t('titlebar.minimize')} aria-label={t('titlebar.minimize')}>
