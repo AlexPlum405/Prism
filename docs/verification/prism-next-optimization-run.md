@@ -709,3 +709,112 @@ git diff --check
 - `npm test -- --run src/components/shell/SettingsModal.test.tsx src/domains/commands/registry.test.ts src/domains/diagnostics/adapters.test.ts src/domains/editor/extensions/slashMenu.test.ts` 通过。4 个测试文件、48 项测试通过；测试环境仅输出既有 `--localstorage-file` warning。
 - `npm run build` 通过。仅保留既有 Vite large chunk warning。
 - `git diff --check` 通过。
+
+## 12. Phase 8：发布可信链路
+
+### Checkpoint 8A：发布可信链路本机审计
+
+目标：
+
+- 审计 Prism 1.4.0 发布前的版本一致性、updater manifest、DMG 产物、签名、公证与平台验证状态。
+- 只把本机可验证部分标为通过；缺少开发者凭据或目标平台时明确记录外部阻塞，不把 dev/nightly 产物误标为 stable。
+
+影响文件：
+
+- `docs/prism-next-optimization-implementation-plan.md`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等偏高。发布链路会运行 release 构建、DMG 打包和签名/Gatekeeper 检查；本 checkpoint 不改运行时代码，但会暴露本机发布阻塞。
+
+版本与配置审计：
+
+- `package.json`：`1.4.0`。
+- `package-lock.json`：`1.4.0`。
+- `src-tauri/tauri.conf.json`：`1.4.0`。
+- `src-tauri/Cargo.toml`：`1.4.0`。
+- `src-tauri/Cargo.lock` app entry：`1.4.0`。
+- `src-tauri/tauri.conf.json` 已开启 `bundle.createUpdaterArtifacts = true`。
+- updater endpoint 指向 `https://github.com/AlexPlum405/Prism/releases/latest/download/latest.json`。
+
+本机凭据状态：
+
+- `TAURI_SIGNING_PRIVATE_KEY`：缺失。
+- `APPLE_SIGNING_IDENTITY`：缺失。
+- `APPLE_ID`：缺失。
+- `APPLE_PASSWORD`：缺失。
+- `APPLE_TEAM_ID`：缺失。
+
+验证：
+
+```bash
+npm test -- --run scripts/generate-updater-manifest.test.ts
+npm run release:manifest:check
+hdiutil verify src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg
+codesign --verify --deep --strict --verbose=2 src-tauri/target/release/bundle/macos/Prism.app
+spctl --assess --type execute --verbose src-tauri/target/release/bundle/macos/Prism.app
+npm run tauri:build
+npm run release:mac-dmg:skip-finder
+hdiutil verify src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg
+```
+
+结果：
+
+- `npm test -- --run scripts/generate-updater-manifest.test.ts` 通过。1 个测试文件、2 项测试通过。
+- `npm run release:manifest:check` 通过，输出 `OK: /Users/Alex/AI/project/Prism/src-tauri/target/release/bundle/macos/latest.json`。
+- 既有 `src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg` 首次 `hdiutil verify` 通过。
+- `codesign --verify --deep --strict --verbose=2 src-tauri/target/release/bundle/macos/Prism.app` 失败：`code has no resources but signature indicates they must be present`。
+- `spctl --assess --type execute --verbose src-tauri/target/release/bundle/macos/Prism.app` 失败：`code has no resources but signature indicates they must be present`。
+- `npm run tauri:build` 前端 build 和 Rust release 编译通过，但默认 DMG Finder 美化脚本 `bundle_dmg.sh` 阶段失败，属于计划中允许 fallback 的分支。
+- `npm run release:mac-dmg:skip-finder` 通过，重新生成 `src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg`。
+- fallback DMG 再次 `hdiutil verify` 通过，校验结果为 `VALID`。
+
+if-else 覆盖：
+
+- 如果版本号不一致：发布前阻塞。本机审计未发现版本不一致。
+- 如果 updater manifest 缺失或不匹配：发布前阻塞。本机 manifest check 通过。
+- 如果 DMG Finder 美化失败：允许 fallback DMG，但正式 release note 必须说明没有自定义背景和图标位置。本机 default `tauri build` 在 `bundle_dmg.sh` 失败，fallback DMG 已通过校验。
+- 如果没有 Apple Developer ID / notarization 凭据：不能标 macOS stable。本机缺少签名和公证凭据，且 `.app` codesign / Gatekeeper 检查失败，因此 macOS stable 发布仍阻塞。
+- 如果 Windows installer / updater / file association 未在 Windows 或 CI 验证：不能标 Windows stable。本机 macOS 环境无法闭环 Windows stable。
+
+剩余外部阻塞：
+
+- 需要 Apple Developer ID、notarization 凭据和可通过 Gatekeeper 的签名产物，才能把 macOS 产物标记为 stable。
+- 需要 Windows 机器或 CI 跑 `docs/verification/prism-windows-release-smoke.md` 中的安装器、更新器、文件关联和卸载验证，才能把 Windows 产物标记为 stable。
+
+## 13. 最终 completion audit
+
+目标对照：
+
+- Phase 0：已完成并推送。计划归档、当前计划建立、图标和计划分开提交。
+- Phase 1：已完成并推送。导出原子块分页缩放与四格式导出产物证据已验证。
+- Phase 2：已完成并推送。真实 app smoke 扩展，导出产物检查、Finder/open-file 树同步和 `Cmd+P` 加固已验证。
+- Phase 3：已完成并推送。大文档预览分层降频、preview-only 立即补齐、Mermaid 分批渲染已验证。
+- Phase 4：已完成并推送。dirty 文稿切换保护、clean 文稿外部修改自动刷新已验证。
+- Phase 5：已完成并推送。workspace index 大目录分批读取、同文档标题链接跳转已验证。
+- Phase 6：已完成并推送。DOCX 富内容链路按现有实现完成验证收口。
+- Phase 7：已完成并推送。主题、模板、中文写作检查按现有实现完成验证收口。
+- Phase 8：本机可验证部分已完成；macOS stable 签名/公证与 Windows stable 验证为外部阻塞。
+
+最终门禁：
+
+```bash
+npm test -- --run
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run` 通过。117 个测试文件、612 项测试通过；测试环境仅输出既有 `--localstorage-file` warning。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过。Tauri release app bundle 构建成功；真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+
+完成判定：
+
+- Phase 0 到 Phase 8 已完成本机可验证部分。
+- 发布签名、公证和 Windows stable 验证属于外部凭据 / 平台阻塞，已在 Phase 8 明确记录。
+- 本文档提交推送并重启本地 Prism.app 后，本轮 goal 可以标为完成。
