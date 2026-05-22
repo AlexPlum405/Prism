@@ -191,9 +191,47 @@ describe('executeFileAction openFile workspace sync', () => {
     ]);
   });
 
-  it('keeps the current workspace when the opened file is already inside it', async () => {
+  it('refreshes the current workspace when the Finder-opened file is missing from the tree', async () => {
     useWorkspaceStore.setState({
       fileTree: [{ kind: 'file', name: 'index.md', path: '/repo/index.md' }],
+      mode: 'folder',
+      rootPath: '/repo',
+    });
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      {
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
+      },
+    ]);
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/docs/opened.md' },
+      fileActionContext(),
+    );
+
+    expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/docs/opened.md');
+    expect(useWorkspaceStore.getState().rootPath).toBe('/repo');
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo');
+    expect(useWorkspaceStore.getState().fileTree).toEqual([
+      {
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
+      },
+    ]);
+  });
+
+  it('keeps the current workspace without refreshing when the opened file is already visible', async () => {
+    useWorkspaceStore.setState({
+      fileTree: [{
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
+      }],
       mode: 'folder',
       rootPath: '/repo',
     });
@@ -207,7 +245,12 @@ describe('executeFileAction openFile workspace sync', () => {
     expect(useWorkspaceStore.getState().rootPath).toBe('/repo');
     expect(loadFolderTree).not.toHaveBeenCalled();
     expect(useWorkspaceStore.getState().fileTree).toEqual([
-      { kind: 'file', name: 'index.md', path: '/repo/index.md' },
+      {
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
+      },
     ]);
   });
 });

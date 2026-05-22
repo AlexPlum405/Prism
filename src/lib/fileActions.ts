@@ -17,6 +17,7 @@ import {
   addRecentFile,
   basename,
   dirname,
+  flattenFiles,
   isPathInside,
   isSamePath,
   joinPath,
@@ -166,6 +167,11 @@ async function refreshWorkspace(context: FileActionContext, rootPath = context.w
   context.workspaceStore.setFileTree(tree);
 }
 
+function fileTreeContainsPath(context: FileActionContext, path: string): boolean {
+  return flattenFiles(context.workspaceStore.fileTree, context.workspaceStore.rootPath)
+    .some(({ node }) => isSamePath(node.path, path));
+}
+
 async function getUniquePath(parentDir: string, stem: string, ext = ''): Promise<string> {
   for (let index = 0; index < 1000; index += 1) {
     const suffix = index === 0 ? '' : ` (${index})`;
@@ -209,6 +215,11 @@ async function handleOpenFile(path: string, context: FileActionContext): Promise
     const parentDir = dirname(path);
     context.workspaceStore.setRootPath(parentDir);
     await refreshWorkspace(context, parentDir);
+    return;
+  }
+
+  if (!fileTreeContainsPath(context, path)) {
+    await refreshWorkspace(context, rootPath);
   }
 }
 

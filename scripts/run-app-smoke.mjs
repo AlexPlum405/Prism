@@ -571,12 +571,12 @@ async function runSmoke() {
     await delay(250);
 
     const quickOpenBefore = await capture('04-quick-open-before', bounds);
-    key('keystroke "p" using command down');
+    clickRelative(bounds, 315, 83);
+    await delay(150);
+    key('key code 35 using command down');
     await delay(1000);
     const quickOpenAfter = await capture('05-quick-open-opened', bounds);
-    const quickOpenDiff = await assertVisibleChange('Cmd+P quick open', quickOpenBefore, quickOpenAfter, 0.006);
-    clickRelative(bounds, bounds.width / 2, Math.max(115, Math.round(bounds.height * 0.12 + 45)));
-    await delay(250);
+    const quickOpenDiff = await assertVisibleChange('Cmd+P quick open', quickOpenBefore, quickOpenAfter, 0.025);
     key('keystroke "target"');
     await delay(900);
     key('key code 36', 20000);

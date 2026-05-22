@@ -222,3 +222,60 @@ git diff --check
 剩余风险：
 
 - 这一步没有自动操作 macOS 保存面板逐一点击四个真实导出菜单项，避免把 smoke 变成脆弱的系统 UI 自动化；它补齐的是 app smoke 报告中的导出产物证据。后续 Phase 2 仍需继续覆盖主题切换 / 主题导入、Finder 双击同步、后台导出、链接跳转、反链、关系图谱等真实链路。
+
+### Checkpoint 2B：Finder/openFile 后文件树同步补丁
+
+目标：
+
+- 修复从 Finder / OS open-file 事件打开当前工作区内新文件时，正文已打开但左侧文件树仍停留在旧树的问题。
+- 加固 `Cmd+P` app smoke，避免把光标闪烁或背景窗口变化误判为快速打开面板已出现。
+
+影响文件：
+
+- `src/lib/fileActions.ts`
+- `src/lib/fileActions.test.ts`
+- `scripts/run-app-smoke.mjs`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等。涉及真实打开文件链路和 app smoke 自动化；不改 UI 结构，不改变左侧边栏、标题栏、导出按钮或专注模式按钮。
+
+实现结果：
+
+- `handleOpenFile()` 在打开文件后分三种情况处理文件树：
+  - 当前没有工作区：使用文件父目录作为工作区并刷新树。
+  - 文件不在当前工作区内：切到文件父目录并刷新树。
+  - 文件在当前工作区内但现有 `fileTree` 找不到该路径：刷新当前工作区树。
+- 如果文件已经在当前树里，不做额外刷新，避免普通文件树点击/快速打开时重复扫描。
+- `run-app-smoke.mjs` 的 `Cmd+P` 步骤改为物理 `key code 35 using command down`，更接近真实 `KeyP`；同时将快速打开面板截图变化阈值从 `0.006` 提高到 `0.025`，避免光标闪烁导致误判。
+
+if-else 覆盖：
+
+- 如果 Finder 打开的文件在当前工作区外：切换 `rootPath` 到父目录，刷新树。
+- 如果 Finder 打开的文件在当前工作区内但树里没有：保留 `rootPath`，刷新树。
+- 如果打开的文件已经在树里：不刷新树。
+- 如果 `Cmd+P` 没有真的打开快速打开面板：app smoke 会在截图变化阶段失败，而不是继续等待 `target.md`。
+
+验证：
+
+```bash
+node --check scripts/run-app-smoke.mjs
+npm test -- --run src/lib/fileActions.test.ts src/app/useStartupFileOpen.test.tsx
+npm run build
+npm run tauri:build:app-smoke
+git diff --check
+```
+
+结果：
+
+- `node --check scripts/run-app-smoke.mjs` 通过。
+- `npm test -- --run src/lib/fileActions.test.ts src/app/useStartupFileOpen.test.tsx` 通过。2 个测试文件、10 项测试通过。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- 第一次 `npm run tauri:build:app-smoke` 在 `Cmd+P` 打开 target 文件处失败，失败原因是 smoke 脚本把非面板变化误判成快速打开已出现；据此加固了快捷键触发和截图阈值。
+- 重跑 `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+- smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T02:26:37.735Z`；`Cmd+P` 步骤的 `lastSession.filePath` 为 `.codex-smoke/app-smoke/workspace/target.md`。
+
+剩余风险：
+
+- 这一步用单元测试覆盖 Finder/openFile 的工作区树同步分支，用 app smoke 覆盖真实启动和快速打开链路；尚未把 Finder 双击事件本身做成可复现系统级自动点击，因为 macOS Launch Services 与默认应用绑定会让 smoke 变脆。后续 Phase 4 文件安全专项还需要继续覆盖 dirty 切换、外部修改冲突和恢复快照。
