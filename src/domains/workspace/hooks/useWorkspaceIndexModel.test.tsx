@@ -1,7 +1,10 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpenDocument } from '../../document/types';
-import { useWorkspaceIndexModel } from './useWorkspaceIndexModel';
+import {
+  readWorkspaceIndexSources,
+  useWorkspaceIndexModel,
+} from './useWorkspaceIndexModel';
 
 const fsMock = vi.hoisted(() => ({
   readTextFile: vi.fn(),
@@ -73,5 +76,35 @@ describe('useWorkspaceIndexModel', () => {
     await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
     expect(result.current.workspaceIndex).toBeNull();
     expect(fsMock.readTextFile).not.toHaveBeenCalled();
+  });
+
+  it('reads large workspace indexes in bounded batches and skips unreadable files', async () => {
+    const files = Array.from({ length: 5 }, (_, index) => ({
+      path: `/workspace/doc-${index + 1}.md`,
+    }));
+    const batchBreaks: string[][] = [];
+    fsMock.readTextFile.mockImplementation(async (path: string) => {
+      if (path.endsWith('doc-3.md')) throw new Error('permission denied');
+      return `# ${path}`;
+    });
+
+    const sources = await readWorkspaceIndexSources(files, {
+      batchSize: 2,
+      batchThreshold: 2,
+      yieldBetweenBatches: async () => {
+        batchBreaks.push(fsMock.readTextFile.mock.calls.map(([path]) => path));
+      },
+    });
+
+    expect(batchBreaks).toEqual([
+      ['/workspace/doc-1.md', '/workspace/doc-2.md'],
+      ['/workspace/doc-1.md', '/workspace/doc-2.md', '/workspace/doc-3.md', '/workspace/doc-4.md'],
+    ]);
+    expect(sources.map((source) => source.path)).toEqual([
+      '/workspace/doc-1.md',
+      '/workspace/doc-2.md',
+      '/workspace/doc-4.md',
+      '/workspace/doc-5.md',
+    ]);
   });
 });

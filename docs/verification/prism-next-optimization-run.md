@@ -501,3 +501,58 @@ npm run tauri:build:app-smoke
 - `git diff --check` 通过。
 - `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
 - smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:18:05.841Z`，`steps` 共 8 项。
+
+## 9. Phase 5：工作区索引、搜索、链接、反链
+
+### Checkpoint 5A：工作区索引大目录分批读取
+
+目标：
+
+- `Cmd+P`、全文搜索、`[[ ]]`、反链和关系图谱继续共用同一套 `workspaceIndex`。
+- 大工作区索引不再一次性并发读取所有 Markdown 文件，降低打开大目录时的 I/O 峰值和前台卡顿风险。
+- 单个文件读取失败时跳过该文件，不阻塞整套索引。
+
+影响文件：
+
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.ts`
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中低。只调整 workspace index 的读取调度，不改变索引结构、链接解析语义、命令面板 UI 或现有文件树入口。
+
+实现结果：
+
+- 少量文件 `<= 40`：保持原来的并发读取，保证小工作区即时感。
+- 大目录 `> 40`：按 `20` 个文件一批读取，批次之间让出一次事件循环。
+- 不可读取文件继续被过滤，不影响可读取文档进入索引。
+- 当前未保存文稿仍覆盖磁盘旧内容进入索引，反链和搜索不会因为未保存编辑变旧。
+
+if-else 覆盖：
+
+- 如果没有 workspace root：清空索引状态。
+- 如果没有 Markdown 文件：清空索引来源并停止 indexing。
+- 如果文件数量少：一次并发读取。
+- 如果文件数量多：分批读取并保持 `workspaceIndexing` 状态。
+- 如果某个文件读取失败：跳过该文件，其余文档继续索引。
+- 如果当前文稿有未保存改动：用当前内存正文覆盖磁盘读取结果。
+
+验证：
+
+```bash
+npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/components/shell/CommandPalette.test.tsx src/domains/editor/extensions/linkCompletion.test.ts
+npm test -- --run src/domains/workspace src/domains/editor/extensions/linkCompletion.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/components/shell/CommandPalette.test.tsx src/domains/editor/extensions/linkCompletion.test.ts` 通过。4 个测试文件、14 项测试通过。
+- `npm test -- --run src/domains/workspace src/domains/editor/extensions/linkCompletion.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts` 通过。18 个测试文件、66 项测试通过。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+- smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:28:13.290Z`，`steps` 共 8 项。

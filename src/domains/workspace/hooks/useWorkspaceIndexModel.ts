@@ -12,6 +12,61 @@ import {
 } from '../services';
 
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
+const INDEX_BATCH_THRESHOLD = 40;
+const INDEX_BATCH_SIZE = 20;
+
+type WorkspaceIndexFile = Pick<FileNode, 'path'>;
+
+interface ReadWorkspaceIndexSourcesOptions {
+  batchSize?: number;
+  batchThreshold?: number;
+  yieldBetweenBatches?: () => Promise<void>;
+}
+
+function nextIndexBatchFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 0);
+  });
+}
+
+async function readWorkspaceIndexSource(
+  node: WorkspaceIndexFile,
+): Promise<WorkspaceIndexSourceDocument | null> {
+  try {
+    return {
+      path: node.path,
+      content: await readTextFile(node.path),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function readWorkspaceIndexSources(
+  files: WorkspaceIndexFile[],
+  options: ReadWorkspaceIndexSourcesOptions = {},
+): Promise<WorkspaceIndexSourceDocument[]> {
+  const batchThreshold = options.batchThreshold ?? INDEX_BATCH_THRESHOLD;
+  const batchSize = options.batchSize ?? INDEX_BATCH_SIZE;
+  const yieldBetweenBatches = options.yieldBetweenBatches ?? nextIndexBatchFrame;
+
+  if (files.length <= batchThreshold) {
+    return (await Promise.all(files.map(readWorkspaceIndexSource)))
+      .filter((item): item is WorkspaceIndexSourceDocument => Boolean(item));
+  }
+
+  const documents: WorkspaceIndexSourceDocument[] = [];
+  for (let start = 0; start < files.length; start += batchSize) {
+    const batch = files.slice(start, start + batchSize);
+    const batchDocuments = await Promise.all(batch.map(readWorkspaceIndexSource));
+    documents.push(...batchDocuments.filter((item): item is WorkspaceIndexSourceDocument => Boolean(item)));
+    if (start + batchSize < files.length) {
+      await yieldBetweenBatches();
+    }
+  }
+
+  return documents;
+}
 
 export function useWorkspaceIndexModel(input: {
   currentDocument: OpenDocument | null;
@@ -52,16 +107,7 @@ export function useWorkspaceIndexModel(input: {
       }
 
       setWorkspaceIndexing(true);
-      const documents = (await Promise.all(files.map(async (node) => {
-        try {
-          return {
-            path: node.path,
-            content: await readTextFile(node.path),
-          };
-        } catch {
-          return null;
-        }
-      }))).filter((item): item is WorkspaceIndexSourceDocument => Boolean(item));
+      const documents = await readWorkspaceIndexSources(files);
 
       if (!cancelled) {
         setWorkspaceIndexSources(documents);
