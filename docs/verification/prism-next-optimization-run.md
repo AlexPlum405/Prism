@@ -556,3 +556,54 @@ npm run tauri:build:app-smoke
 - `git diff --check` 通过。
 - `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
 - smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:28:13.290Z`，`steps` 共 8 项。
+
+### Checkpoint 5B：同文档标题链接直接跳转
+
+目标：
+
+- 文档链接面板和预览转发的 Markdown 同文档标题链接 `#anchor` 不再被当成“打开另一个文件”。
+- 即使当前没有 workspace root，同文档标题链接也能直接跳到当前文稿标题行。
+- 缺失标题仍给出明确提示，不静默失败、不创建文件。
+
+影响文件：
+
+- `src/app/useDocumentNavigationModel.ts`
+- `src/app/useDocumentNavigationModel.test.tsx`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中低。只扩展文档导航模型里的同文档锚点分支，不改变跨文档链接、反链、图谱、文件树或命令面板行为。
+
+实现结果：
+
+- `openDocumentLink('#标题')` 会先解析当前文稿标题 slug。
+- 找到标题时直接 `jumpToLine`，不要求 workspace root，不调用 `openFile`。
+- 找不到标题时显示现有链接未找到提示。
+- 文档链接面板选择 `[跳转](#标题)` 时复用同一跳转分支。
+
+if-else 覆盖：
+
+- 如果是 Markdown 同文档标题链接且标题存在：跳到当前文稿标题行。
+- 如果是 Markdown 同文档标题链接但标题不存在：提示链接目标未找到。
+- 如果是普通相对 Markdown 链接：继续用 workspace index / file tree 解析目标文件。
+- 如果是 Wiki 链接：保持原有 workspace 文档解析逻辑。
+
+验证：
+
+```bash
+npm test -- --run src/app/useDocumentNavigationModel.test.tsx src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/SplitView.test.tsx
+npm test -- --run src/domains/workspace src/app/useDocumentNavigationModel.test.tsx src/domains/editor/extensions/linkCompletion.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run src/app/useDocumentNavigationModel.test.tsx src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/SplitView.test.tsx` 通过。3 个测试文件、19 项测试通过。
+- `npm test -- --run src/domains/workspace src/app/useDocumentNavigationModel.test.tsx src/domains/editor/extensions/linkCompletion.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts` 通过。19 个测试文件、69 项测试通过。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+- smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:35:47.875Z`，`steps` 共 8 项。

@@ -16,8 +16,33 @@ import type { FileNode } from '../domains/workspace/types';
 import type { FileActionInput } from '../lib/fileActions';
 import type { ToastInput } from '../lib/toast';
 import { t } from '../domains/i18n';
+import { extractMarkdownDocumentHeadings } from '../domains/markdown/documentModel';
 
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
+
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function getSameDocumentHeadingTarget(target: string): string | null {
+  const trimmed = target.trim();
+  const normalized = trimmed.startsWith('<') && trimmed.endsWith('>')
+    ? trimmed.slice(1, -1).trim()
+    : trimmed;
+  if (!normalized.startsWith('#')) return null;
+  const slug = safeDecodeURIComponent(normalized.slice(1)).trim();
+  return slug || null;
+}
+
+function findSameDocumentHeadingLine(content: string, target: string): number | null {
+  const slug = getSameDocumentHeadingTarget(target);
+  if (!slug) return null;
+  return extractMarkdownDocumentHeadings(content).find((heading) => heading.slug === slug)?.line ?? null;
+}
 
 type CurrentDocument = ReturnType<typeof useDocumentStore.getState>['currentDocument'];
 
@@ -96,6 +121,19 @@ export function useDocumentNavigationModel({
     target: string,
     options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
   ) => {
+    if (options.kind === 'markdown' && currentDocument) {
+      const headingSlug = getSameDocumentHeadingTarget(target);
+      if (headingSlug) {
+        const line = findSameDocumentHeadingLine(currentDocument.content, target);
+        if (line) {
+          jumpToLine(line);
+        } else {
+          showToast(t('app.linkDocumentNotFound', { target }));
+        }
+        return;
+      }
+    }
+
     if (!rootPath) {
       showToast(t('app.openWorkspaceFirst'));
       return;
@@ -122,8 +160,10 @@ export function useDocumentNavigationModel({
     await handleFileAction({ action: 'openFile', path: resolved.path });
   }, [
     currentDocument?.path,
+    currentDocument?.content,
     fileTree,
     handleFileAction,
+    jumpToLine,
     rootPath,
     showToast,
     workspaceIndex,
