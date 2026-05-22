@@ -446,3 +446,58 @@ npm run tauri:build:app-smoke
 - `git diff --check` 通过。
 - `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
 - smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:09:24.728Z`，`steps` 共 8 项。
+
+### Checkpoint 4B：干净文稿外部修改自动刷新
+
+目标：
+
+- 当前文稿没有未保存改动时，如果磁盘文件被外部修改，Prism 自动刷新为磁盘最新内容。
+- 当前文稿有未保存改动时，继续保留冲突保护，不自动覆盖用户正在编辑的内容。
+- 刷新过程中如果用户开始编辑或切换到其他文稿，不应用过期读取结果。
+
+影响文件：
+
+- `src/domains/document/hooks/useExternalFileChangeMonitor.ts`
+- `src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等。触及外部文件变化监控和当前文稿状态刷新；不改变文件树视觉、不移动现有入口、不引入新依赖。
+
+实现结果：
+
+- 外部变化监控不再只检查 dirty 文稿，clean 文稿也会在 focus 和低频 timer 中做 `stat`。
+- 如果磁盘快照未变化：不读取文件，不改变当前文稿。
+- 如果磁盘快照变化且当前文稿 dirty：沿用原冲突链路，标记 `saveStatus: conflict`。
+- 如果磁盘快照变化且当前文稿 clean：读取磁盘最新内容并重新 `openDocument`，同步 `lastKnownMtime` 与 `lastKnownSize`。
+- 读取完成前再次检查当前文稿路径和 dirty 状态，避免异步读取覆盖用户新编辑或新切换的文稿。
+
+if-else 覆盖：
+
+- 如果当前没有打开文稿：不检查。
+- 如果当前文稿正在保存或已经处于冲突：不重复检查。
+- 如果磁盘版本未变化：不刷新，不触发 `readTextFile`。
+- 如果磁盘版本变化且文稿是 dirty：只标冲突，不读取覆盖。
+- 如果磁盘版本变化且文稿是 clean：自动刷新为磁盘最新内容。
+- 如果读取期间文稿变 dirty：保留用户本地编辑，不应用磁盘内容。
+- 如果读取期间切换到其他文稿：不把旧文稿读取结果写到新文稿。
+
+验证：
+
+```bash
+npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx
+npm test -- --run src/domains/document src/domains/workspace src/lib/fileActions.test.ts src/app/useStartupFileOpen.test.tsx
+npm run build
+git diff --check
+npm run tauri:build:app-smoke
+```
+
+结果：
+
+- `npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx` 通过。1 个测试文件、7 项测试通过。
+- `npm test -- --run src/domains/document src/domains/workspace src/lib/fileActions.test.ts src/app/useStartupFileOpen.test.tsx` 通过。29 个测试文件、118 项测试通过；测试环境仅输出既有 `--localstorage-file` warning。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
+- `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
+- smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:18:05.841Z`，`steps` 共 8 项。
