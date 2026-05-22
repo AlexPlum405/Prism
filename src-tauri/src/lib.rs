@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+#[cfg(target_os = "macos")]
+use tauri::Manager;
+
 mod commands;
 
 pub(crate) fn first_non_empty_line(text: &[u8]) -> String {
@@ -17,6 +20,42 @@ pub(crate) fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> 
     PathBuf::from(path)
         .canonicalize()
         .map_err(|err| format!("Failed to access path: {err}"))
+}
+
+#[cfg(target_os = "macos")]
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn handle_macos_window_lifecycle(app: &tauri::AppHandle, event: &tauri::RunEvent) {
+    match event {
+        tauri::RunEvent::WindowEvent {
+            label,
+            event: tauri::WindowEvent::CloseRequested { api, .. },
+            ..
+        } if label == "main" => {
+            api.prevent_close();
+            if let Some(window) = app.get_webview_window(label) {
+                let _ = window.hide();
+            }
+        }
+        tauri::RunEvent::Reopen {
+            has_visible_windows,
+            ..
+        } => {
+            if !has_visible_windows {
+                show_main_window(app);
+            }
+        }
+        tauri::RunEvent::Opened { .. } => {
+            show_main_window(app);
+        }
+        _ => {}
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -57,5 +96,8 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app, event| {
             commands::startup_files::handle_opened_event(app, &event);
+
+            #[cfg(target_os = "macos")]
+            handle_macos_window_lifecycle(app, &event);
         });
 }
