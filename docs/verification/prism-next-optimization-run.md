@@ -607,3 +607,54 @@ npm run tauri:build:app-smoke
 - `git diff --check` 通过。
 - `npm run tauri:build:app-smoke` 通过。真实 app smoke 通过启动打开 Markdown、`ERROR` 诊断入口、`Cmd+P` 快速打开 target 文件、基础编辑保存、导出菜单入口、设置中心入口、四格式导出产物生成与检查。
 - smoke 证据报告：`.codex-smoke/app-smoke/evidence/report.json`，生成时间 `2026-05-22T03:35:47.875Z`，`steps` 共 8 项。
+
+## 10. Phase 6：DOCX / 图片 / HTML 富内容增强
+
+### Checkpoint 6A：DOCX 富内容链路验证收口
+
+目标：
+
+- 确认 DOCX 导出已覆盖计划中的正文、链接、图片、Mermaid、KaTeX、Callout、Toggle、行内 HTML 和复杂视觉块 fallback。
+- 不重复改动已实现的 DOCX 适配逻辑，只补当前计划的验证证据。
+
+影响文件：
+
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 低。文档验证收口，不改运行时代码。
+
+现有实现确认：
+
+- 图片包裹链接会写入 DOCX hyperlink relationship。
+- 普通 SVG 图片保留 SVG + PNG fallback；Mermaid 走 PNG-first，不把 SVG 作为首选显示资源。
+- `<mark>`、`<kbd>`、`<abbr>` 等安全行内 HTML 不再以源码标签形式泄漏到 DOCX 正文。
+- Callout / Toggle 导出为可读结构，不泄漏 `<details>` 源标签。
+- Mermaid、KaTeX、复杂 HTML block 可走高保真图片 fallback。
+- DOCX 图片 drawing id 有稳定规范化，降低 WPS/Word 兼容问题。
+
+if-else 覆盖：
+
+- 如果是 `<mark>`：映射为高亮 run。
+- 如果是 `<kbd>`：映射为等宽键帽文本。
+- 如果是 `<abbr title>`：正文保留缩写文字，不泄漏原始 HTML。
+- 如果是 `<details>`：导出为 summary + 展开内容。
+- 如果是 Callout：导出为可读块引用样式。
+- 如果是 Mermaid：PNG-first 嵌入。
+- 如果是复杂 HTML / KaTeX：结构化不足时图片化 fallback。
+- 如果图片有链接：写入 hyperlink relationship。
+
+验证：
+
+```bash
+npm test -- --run src/domains/export/adapters/docx.ts src/domains/export/exportPipeline.test.ts src/domains/export/assets.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- `npm test -- --run src/domains/export/adapters/docx.ts src/domains/export/exportPipeline.test.ts src/domains/export/assets.test.ts` 通过。2 个测试文件、54 项测试通过；测试环境仅输出既有 `--localstorage-file` warning。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `git diff --check` 通过。
