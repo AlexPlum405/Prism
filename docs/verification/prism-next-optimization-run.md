@@ -337,3 +337,52 @@ git diff --check
 剩余风险：
 
 - 这一步先完成无新依赖、低风险的 size-aware render queue；尚未把 Markdown -> HTML 主流程迁到 Web Worker。Phase 3 后续仍应继续评估 worker 渲染、preview-only 立即补齐、Mermaid 分批上限和更真实的大文档输入性能 smoke。
+
+### Checkpoint 3B：预览独占立即补齐与 Mermaid 分批渲染
+
+目标：
+
+- 用户从分栏切到预览独占时，立即补齐最新 Markdown 渲染结果，不继续等待大文档 debounce。
+- Mermaid 图表数量较多时按小批次渲染并让出浏览器帧，避免一次性占满预览主链路。
+
+影响文件：
+
+- `src/domains/editor/components/PreviewPane.tsx`
+- `src/domains/editor/components/PreviewPane.test.tsx`
+- `src/domains/editor/components/SplitView.tsx`
+- `src/domains/editor/components/SplitView.test.tsx`
+- `docs/verification/prism-next-optimization-run.md`
+
+风险等级：
+
+- 中等。触及预览调度和 Mermaid hydrate 队列；不改变 Markdown 解析语义、不改变现有 UI 入口、不引入新依赖。
+
+实现结果：
+
+- `PreviewPane` 新增 `renderStrategy`，默认 `deferred`；当 `SplitView` 处于 `preview` 独占模式时传入 `immediate`。
+- 大文档在分栏连续输入时仍按 600ms 合并渲染；一旦切到预览独占，立即把最新 `content` 写入 `renderContent` 并清除 `预览更新中`。
+- Mermaid 预览 hydrate 新增分批策略：10 个以内保持逐个让出；超过 10 个时每 3 个图表为一批，批次之间让出一帧。
+- 新增测试覆盖 preview-only 立即补齐、`SplitView` 策略传递，以及 11 个 Mermaid 图表时按 3 个一批让出。
+
+if-else 覆盖：
+
+- 如果当前是编辑/分栏：预览继续走 size-aware debounce。
+- 如果当前是预览独占：立即渲染最终内容，不显示过期预览。
+- 如果 Mermaid 数量不超过 10：保持原有逐个让出节奏。
+- 如果 Mermaid 数量超过 10：按 3 个一批渲染，批次间让出一帧。
+
+验证：
+
+```bash
+npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx
+npm run build
+npm exec vite build -- --sourcemap
+git diff --check
+```
+
+结果：
+
+- `npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx` 通过。3 个测试文件、54 项测试通过。
+- `npm run build` 通过。仅保留既有 Vite large chunk warning。
+- `npm exec vite build -- --sourcemap` 通过。`main`、`vendor-markdown`、`mermaid.core` 等大 chunk 仍为既有体积风险，本 checkpoint 没有新增阻断。
+- `git diff --check` 通过。

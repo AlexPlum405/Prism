@@ -860,6 +860,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
               <PreviewPane
                 content={content}
                 documentPath={documentPath}
+                renderStrategy={isPreviewOnly ? 'immediate' : 'deferred'}
                 onNotice={onNotice}
                 onOpenDocumentLink={onOpenDocumentLink}
               />

@@ -11,6 +11,7 @@ import { t, useI18n } from '../../i18n';
 interface PreviewPaneProps {
   content: string;
   documentPath?: string;
+  renderStrategy?: 'deferred' | 'immediate';
   onNotice?: (message: string) => void;
   onOpenDocumentLink?: (
     target: string,
@@ -23,6 +24,8 @@ const PREVIEW_RENDER_LARGE_DOC_LIMIT = 300 * 1024;
 const PREVIEW_RENDER_SMALL_DEBOUNCE_MS = 120;
 const PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS = 220;
 const PREVIEW_RENDER_LARGE_DEBOUNCE_MS = 600;
+const PREVIEW_MERMAID_BATCH_THRESHOLD = 10;
+const PREVIEW_MERMAID_BATCH_SIZE = 3;
 const mermaidSvgCache = new Map<string, string>();
 
 function getPreviewRenderDebounceMs(contentLength: number) {
@@ -33,6 +36,10 @@ function getPreviewRenderDebounceMs(contentLength: number) {
 
 function shouldShowPreviewUpdatingStatus(contentLength: number) {
   return contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT;
+}
+
+function getMermaidPreviewBatchSize(placeholderCount: number) {
+  return placeholderCount > PREVIEW_MERMAID_BATCH_THRESHOLD ? PREVIEW_MERMAID_BATCH_SIZE : 1;
 }
 
 function getCurrentContentTheme(): ContentTheme {
@@ -187,6 +194,7 @@ function renderMermaidError(container: HTMLElement, error: unknown) {
 
 export const __previewPaneTesting = {
   clearMermaidCache: () => mermaidSvgCache.clear(),
+  getMermaidPreviewBatchSize,
   getPreviewRenderDebounceMs,
   shouldShowPreviewUpdatingStatus,
 };
@@ -233,12 +241,8 @@ async function waitForDiagramFont(contentTheme: ContentTheme) {
 
 function waitForPreviewRenderSlot() {
   return new Promise<void>((resolve) => {
-    const idleWindow = window as Window & typeof globalThis & {
-      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
-    };
-
-    if (typeof idleWindow.requestIdleCallback === 'function') {
-      idleWindow.requestIdleCallback(() => resolve(), { timeout: 300 });
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(() => resolve());
       return;
     }
 
@@ -281,7 +285,13 @@ function normalizeMermaidSvg(svg: SVGSVGElement) {
   }
 }
 
-export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLink }: PreviewPaneProps) {
+export function PreviewPane({
+  content,
+  documentPath,
+  renderStrategy = 'deferred',
+  onNotice,
+  onOpenDocumentLink,
+}: PreviewPaneProps) {
   const { locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [contentTheme, setContentTheme] = useState<ContentTheme>(getCurrentContentTheme);
@@ -295,13 +305,18 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
       setRenderPending(false);
       return;
     }
+    if (renderStrategy === 'immediate') {
+      setRenderContent(content);
+      setRenderPending(false);
+      return;
+    }
     setRenderPending(true);
     const timer = window.setTimeout(() => {
       setRenderContent(content);
       setRenderPending(false);
     }, getPreviewRenderDebounceMs(content.length));
     return () => window.clearTimeout(timer);
-  }, [content, renderContent]);
+  }, [content, renderContent, renderStrategy]);
 
   const html = useMemo(() => {
     try {
@@ -425,6 +440,16 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
         });
 
         const placeholderList = Array.from(placeholders);
+        const batchSize = getMermaidPreviewBatchSize(placeholderList.length);
+        let renderedInBatch = 0;
+
+        const yieldAfterBatch = async (index: number) => {
+          renderedInBatch += 1;
+          if (renderedInBatch < batchSize || index >= placeholderList.length - 1) return;
+          renderedInBatch = 0;
+          await waitForPreviewRenderSlot();
+        };
+
         void (async () => {
           await waitForDiagramFont(contentTheme);
 
@@ -439,7 +464,7 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
             const cachedSvg = mermaidSvgCache.get(cacheKey);
             if (cachedSvg) {
               renderMermaidSvg(el, cachedSvg);
-              await waitForPreviewRenderSlot();
+              await yieldAfterBatch(i);
               continue;
             }
 
@@ -458,7 +483,7 @@ export function PreviewPane({ content, documentPath, onNotice, onOpenDocumentLin
               renderSandbox.remove();
             }
 
-            await waitForPreviewRenderSlot();
+            await yieldAfterBatch(i);
           }
         })();
       });

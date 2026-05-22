@@ -65,12 +65,14 @@ vi.mock('./EditorPane', async () => {
 vi.mock('./PreviewPane', () => ({
   PreviewPane: ({
     content,
+    renderStrategy,
     onOpenDocumentLink,
   }: {
     content: string;
+    renderStrategy?: 'deferred' | 'immediate';
     onOpenDocumentLink?: (target: string, options: { kind: 'markdown' | 'wiki'; sourcePath?: string }) => void;
   }) => (
-    <div data-testid="preview-pane">
+    <div data-testid="preview-pane" data-render-strategy={renderStrategy}>
       <p data-source-line="6">{content}</p>
       <button type="button" data-preview-source-line="9">跳到源码</button>
       <button
@@ -115,6 +117,21 @@ describe('SplitView editor lifecycle', () => {
     expect(screen.getByTestId('editor-pane')).toBeTruthy();
     expect(mockState.mounts).toBe(1);
     expect(mockState.unmounts).toBe(0);
+  });
+
+  it('asks the preview pane to flush rendering immediately in preview-only mode', () => {
+    const props = {
+      content: 'large preview content',
+      onChange: vi.fn(),
+      onCursorChange: vi.fn(),
+    };
+    const { rerender } = render(<SplitView {...props} viewMode="split" />);
+
+    expect(screen.getByTestId('preview-pane')).toHaveAttribute('data-render-strategy', 'deferred');
+
+    rerender(<SplitView {...props} viewMode="preview" />);
+
+    expect(screen.getByTestId('preview-pane')).toHaveAttribute('data-render-strategy', 'immediate');
   });
 
   it('jumps to the source line when a preview block is clicked', () => {

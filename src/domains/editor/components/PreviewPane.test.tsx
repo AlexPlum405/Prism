@@ -133,6 +133,8 @@ describe('PreviewPane theme switching', () => {
     expect(__previewPaneTesting.getPreviewRenderDebounceMs(80 * 1024)).toBe(220);
     expect(__previewPaneTesting.getPreviewRenderDebounceMs(360 * 1024)).toBe(600);
     expect(__previewPaneTesting.shouldShowPreviewUpdatingStatus(360 * 1024)).toBe(true);
+    expect(__previewPaneTesting.getMermaidPreviewBatchSize(10)).toBe(1);
+    expect(__previewPaneTesting.getMermaidPreviewBatchSize(11)).toBe(3);
   });
 
   it('throttles large-document preview updates and shows a lightweight pending status', () => {
@@ -160,6 +162,29 @@ describe('PreviewPane theme switching', () => {
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
     expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('flushes pending preview work immediately when preview-only mode needs the final render', () => {
+    vi.useFakeTimers();
+    const first = `# First\n${'一'.repeat(310 * 1024)}`;
+    const second = `# Second\n${'二'.repeat(310 * 1024)}`;
+    const { rerender } = render(<PreviewPane content={first} />);
+
+    rerender(<PreviewPane content={second} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('预览更新中');
+    expect(markdownToHtml).toHaveBeenCalledTimes(1);
+
+    rerender(<PreviewPane content={second} renderStrategy="immediate" />);
+
+    expect(markdownToHtml).toHaveBeenCalledTimes(2);
+    expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(markdownToHtml).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes source-line anchors after debounced content changes', () => {
@@ -314,6 +339,51 @@ describe('PreviewPane theme switching', () => {
     await waitFor(() => {
       expect(document.querySelectorAll('.mermaid-placeholder svg')).toHaveLength(2);
     });
+  });
+
+  it('yields a frame between Mermaid batches for diagram-heavy previews', async () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const frameCallbacks: FrameRequestCallback[] = [];
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: vi.fn((callback: FrameRequestCallback) => {
+        frameCallbacks.push(callback);
+        return frameCallbacks.length;
+      }),
+    });
+    vi.mocked(markdownToHtml).mockReturnValue(
+      Array.from({ length: 11 }, (_, index) => (
+        `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(`graph TD; A${index}-->B${index}`)}" data-source-line="${index + 1}"></div>`
+      )).join(''),
+    );
+    mermaidMock.render.mockResolvedValue({ svg: '<div data-testid="rendered-mermaid"></div>' });
+
+    try {
+      render(<PreviewPane content="many diagrams" />);
+
+      await waitFor(() => {
+        expect(mermaidMock.render).toHaveBeenCalledTimes(3);
+      });
+      expect(frameCallbacks).toHaveLength(1);
+
+      await act(async () => {
+        frameCallbacks.shift()?.(performance.now());
+        await Promise.resolve();
+      });
+
+      await waitFor(() => {
+        expect(mermaidMock.render).toHaveBeenCalledTimes(6);
+      });
+    } finally {
+      if (originalRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+    }
   });
 
   it('enhances KaTeX errors with source navigation actions', () => {
