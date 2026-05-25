@@ -60,7 +60,7 @@ async function handleNew(context: CommandContext): Promise<void> {
     return;
   }
 
-  await openPrismWindow({});
+  await openPrismWindow({ newDocument: true });
 }
 
 function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: CommandContext): void {
@@ -283,7 +283,7 @@ export function createFileCommands(): CommandDefinition[] {
       id: 'newWindow',
       category: 'file',
       shortcuts: [{ code: 'KeyN', mod: true, shift: true }],
-      run: () => openPrismWindow({}),
+      run: () => openPrismWindow({ newDocument: true }),
     },
     {
       id: 'open',

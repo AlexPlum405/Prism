@@ -11,6 +11,7 @@ import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from '../lib/fil
 
 export function useBootstrap(enabled = true) {
   const currentDocument = useDocumentStore((s) => s.currentDocument);
+  const createNewDocument = useDocumentStore((s) => s.createNewDocument);
   const openDocument = useDocumentStore((s) => s.openDocument);
   const setViewMode = useDocumentStore((s) => s.setViewMode);
   const updateScrollState = useDocumentStore((s) => s.updateScrollState);
@@ -26,6 +27,7 @@ export function useBootstrap(enabled = true) {
     const params = new URLSearchParams(window.location.search);
     const filePath = params.get('file');
     const folderPath = params.get('folder');
+    const shouldCreateNewDocument = params.get('new') === '1';
 
     const openFile = async (
       path: string,
@@ -78,6 +80,11 @@ export function useBootstrap(enabled = true) {
         return;
       }
 
+      if (shouldCreateNewDocument) {
+        createNewDocument();
+        return;
+      }
+
       try {
         const pendingFiles = await invoke<string[]>('get_pending_files');
         if (cancelled || useDocumentStore.getState().currentDocument) return;
@@ -107,6 +114,7 @@ export function useBootstrap(enabled = true) {
     };
   }, [
     enabled,
+    createNewDocument,
     lastSession,
     openDocument,
     restoreLastSession,

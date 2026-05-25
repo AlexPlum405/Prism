@@ -6,10 +6,14 @@ let windowCounter = 0;
 export async function openPrismWindow(params: {
   filePath?: string;
   folderPath?: string;
+  newDocument?: boolean;
 }): Promise<void> {
   const label = `prism-${Date.now()}-${windowCounter++}`;
   const searchParams = new URLSearchParams();
 
+  if (params.newDocument) {
+    searchParams.set('new', '1');
+  }
   if (params.filePath) {
     searchParams.set('file', params.filePath);
   }
