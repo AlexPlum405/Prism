@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 import {
+  FileAccessIssueError,
   FileConflictError,
   createDocumentFileSession,
   createKnownFileSnapshot,
   createWorkspaceFileSession,
   fileConflictDetector,
+  isFileAccessIssueError,
   isFileConflictError,
   readDocumentFileSession,
   recoverySnapshotStore,
@@ -84,6 +86,29 @@ describe('fileSafety', () => {
       await fileConflictDetector.ensureUnchanged('/tmp/a.md', createKnownFileSnapshot(1000, 3));
     } catch (error) {
       expect(isFileConflictError(error)).toBe(true);
+    }
+  });
+
+  it('classifies missing files before writes can recreate them implicitly', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('No such file or directory (os error 2)'),
+    );
+
+    await expect(
+      fileConflictDetector.inspect('/tmp/missing.md', createKnownFileSnapshot(1000, 3)),
+    ).resolves.toEqual({
+      kind: 'missing',
+      message: '原文件不存在：/tmp/missing.md',
+    });
+
+    await expect(
+      fileConflictDetector.ensureUnchanged('/tmp/missing.md', createKnownFileSnapshot(1000, 3)),
+    ).rejects.toBeInstanceOf(FileAccessIssueError);
+
+    try {
+      await fileConflictDetector.ensureUnchanged('/tmp/missing.md', createKnownFileSnapshot(1000, 3));
+    } catch (error) {
+      expect(isFileAccessIssueError(error)).toBe(true);
     }
   });
 

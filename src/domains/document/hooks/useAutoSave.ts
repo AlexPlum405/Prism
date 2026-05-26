@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   createKnownFileSnapshot,
   fileConflictDetector,
+  isFileAccessIssueError,
   isFileConflictError,
   recoverySnapshotStore,
   writeDocumentFileSession,
@@ -56,6 +57,10 @@ export function useAutoSave(interval = 2000, enabled = true) {
       } catch (err) {
         if (isFileConflictError(err)) {
           markSaveConflict(err.message, documentPath);
+          return;
+        }
+        if (isFileAccessIssueError(err)) {
+          markSaveConflict(err.message, documentPath, err.issueKind);
           return;
         }
         markSaveFailed(err, documentPath);

@@ -343,4 +343,29 @@ describe('executeFileAction openFile workspace sync', () => {
       saveStatus: 'conflict',
     });
   });
+
+  it('does not recreate a missing current file while saving before switching documents', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('save');
+    const showToast = vi.fn();
+    useDocumentStore.getState().openDocument('/repo/missing.md', 'missing.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+    (stat as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('No such file or directory (os error 2)'),
+    );
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction, showToast }),
+    );
+
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('原文件不存在：/repo/missing.md');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      isDirty: true,
+      path: '/repo/missing.md',
+      saveStatus: 'conflict',
+      saveIssue: 'missing',
+    });
+  });
 });

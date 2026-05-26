@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DocumentScrollState, DocumentState } from './types';
+import { DocumentSaveIssue, DocumentScrollState, DocumentState } from './types';
 import type { FileSnapshot } from './fileSnapshot';
 import { useSettingsStore } from '../settings/store';
 import { t } from '../i18n';
@@ -16,7 +16,7 @@ interface DocumentStore extends DocumentState {
   markSaving: (path?: string) => void;
   markSaved: (path?: string, snapshot?: FileSnapshot | null) => void;
   markSaveFailed: (error: unknown, path?: string) => void;
-  markSaveConflict: (error: unknown, path?: string) => void;
+  markSaveConflict: (error: unknown, path?: string, issue?: DocumentSaveIssue) => void;
 }
 
 function formatSaveError(error: unknown) {
@@ -45,6 +45,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
         lastKnownSize: snapshot?.size ?? null,
         saveStatus: 'saved',
         saveError: null,
+        saveIssue: null,
         viewMode: useSettingsStore.getState().defaultViewMode,
         scrollState: { ...DEFAULT_SCROLL_STATE },
       },
@@ -68,6 +69,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
         lastKnownSize: null,
         saveStatus: hasInitialContent ? 'dirty' : 'saved',
         saveError: null,
+        saveIssue: null,
         viewMode: useSettingsStore.getState().defaultViewMode,
         scrollState: { ...DEFAULT_SCROLL_STATE },
       },
@@ -84,6 +86,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
           isDirty: true,
           saveStatus: 'dirty',
           saveError: null,
+          saveIssue: null,
         },
       };
     });
@@ -151,6 +154,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
           ...state.currentDocument,
           saveStatus: 'saving',
           saveError: null,
+          saveIssue: null,
         },
       };
     });
@@ -169,6 +173,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
           lastKnownSize: snapshot ? snapshot.size : state.currentDocument.lastKnownSize,
           saveStatus: 'saved',
           saveError: null,
+          saveIssue: null,
         },
       };
     });
@@ -184,12 +189,13 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
           isDirty: true,
           saveStatus: 'failed',
           saveError: formatSaveError(error),
+          saveIssue: null,
         },
       };
     });
   },
 
-  markSaveConflict: (error, path) => {
+  markSaveConflict: (error, path, issue = 'external-modified') => {
     set((state) => {
       if (!state.currentDocument) return state;
       if (path !== undefined && state.currentDocument.path !== path) return state;
@@ -199,6 +205,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
           isDirty: true,
           saveStatus: 'conflict',
           saveError: formatSaveError(error),
+          saveIssue: issue,
         },
       };
     });

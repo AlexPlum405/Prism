@@ -23,7 +23,7 @@ import {
   joinPath,
   replacePathPrefix,
 } from '../domains/workspace/services';
-import { getFileSnapshotOrNull, hasFileSnapshotChanged } from '../domains/document/fileSnapshot';
+import { getFileSnapshotOrNull } from '../domains/document/fileSnapshot';
 import { openPrismWindow } from './openWindow';
 import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from './fileSystemScope';
 import {
@@ -34,6 +34,7 @@ import {
 import { t } from '../domains/i18n';
 import { emitAppEvent } from '../platform/events/appEvents';
 import type { OpenDocument } from '../domains/document/types';
+import { createKnownFileSnapshot, fileConflictDetector } from '../domains/document/services/fileSafety';
 
 export type { FileActionInput } from './fileActionCommands';
 
@@ -218,14 +219,18 @@ async function saveDirtyDocumentBeforeSwitch(
   context.documentStore.markSaving(document.path || undefined);
   try {
     if (document.path && action === 'save') {
-      const currentSnapshot = await getFileSnapshotOrNull(document.path);
-      if (currentSnapshot && hasFileSnapshotChanged({
-        mtimeMs: document.lastKnownMtime,
-        size: document.lastKnownSize,
-      }, currentSnapshot)) {
-        const message = t('conflict.externalChangeMessage');
-        context.documentStore.markSaveConflict(message, document.path);
-        context.showToast?.(message);
+      const result = await fileConflictDetector.inspect(
+        document.path,
+        createKnownFileSnapshot(document.lastKnownMtime, document.lastKnownSize),
+      );
+      if (result.kind !== 'ok') {
+        context.documentStore.markSaveConflict(result.message, document.path, result.kind);
+        context.showToast?.(result.message);
+        return false;
+      }
+      if (result.changed) {
+        context.documentStore.markSaveConflict(fileConflictDetector.message, document.path);
+        context.showToast?.(fileConflictDetector.message);
         return false;
       }
     }

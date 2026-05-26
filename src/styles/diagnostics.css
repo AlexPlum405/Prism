@@ -869,6 +869,8 @@ svg.has-focus .prism-relation-graph-node.is-adjacent text {
   background: color-mix(in srgb, #f7c948 16%, var(--c-canvas));
   font-size: 13px;
   line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .prism-conflict-actions {

@@ -49,6 +49,36 @@ describe('SaveConflictModal', () => {
     expect(onOverwrite).toHaveBeenCalledTimes(1);
   });
 
+  it('shows missing-file actions without offering reload', () => {
+    const onReload = vi.fn();
+    const onSaveAs = vi.fn();
+    const onOverwrite = vi.fn();
+
+    render(
+      <SaveConflictModal
+        visible
+        documentName="missing.md"
+        error="原文件不存在：/tmp/missing.md"
+        issueKind="missing"
+        busyAction={null}
+        onReload={onReload}
+        onSaveAs={onSaveAs}
+        onOverwrite={onOverwrite}
+      />,
+    );
+
+    expect(screen.getByRole('dialog', { name: '原文件已移动或删除' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '重新加载磁盘版本' })).not.toBeInTheDocument();
+    expect(screen.getByText('原文件不存在：/tmp/missing.md')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '保留我的版本并另存为' }));
+    fireEvent.click(screen.getByRole('button', { name: '在原路径重新创建' }));
+
+    expect(onReload).not.toHaveBeenCalled();
+    expect(onSaveAs).toHaveBeenCalledTimes(1);
+    expect(onOverwrite).toHaveBeenCalledTimes(1);
+  });
+
   it('locks the actions while a resolution is running', () => {
     render(
       <SaveConflictModal

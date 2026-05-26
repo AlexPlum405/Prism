@@ -370,6 +370,7 @@ function App() {
     setConflictAction(action);
     try {
       let result: { resolved: boolean; path?: string };
+      const issueKind = useDocumentStore.getState().currentDocument?.saveIssue ?? null;
       if (action === 'reload') {
         result = await reloadConflictedDocument();
         if (result.resolved) showToast(t('app.reloadedDiskVersion'));
@@ -378,7 +379,9 @@ function App() {
         if (result.resolved) showToast(t('app.savedCurrentVersionAs'));
       } else {
         result = await overwriteConflictedDocument();
-        if (result.resolved) showToast(t('app.overwroteDiskVersion'));
+        if (result.resolved) {
+          showToast(issueKind === 'missing' ? t('app.recreatedMissingFile') : t('app.overwroteDiskVersion'));
+        }
       }
     } catch (error) {
       showToast(t('app.conflictActionFailed', { message: formatAppError(error) }));
@@ -588,6 +591,7 @@ function App() {
         visible={Boolean(hasSaveConflict && !saveDialog)}
         documentName={currentDocument?.name ?? t('common.untitled')}
         error={currentDocument?.saveError ?? null}
+        issueKind={currentDocument?.saveIssue ?? null}
         busyAction={conflictAction}
         onReload={() => runConflictAction('reload')}
         onSaveAs={() => runConflictAction('saveAs')}

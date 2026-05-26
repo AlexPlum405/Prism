@@ -134,6 +134,34 @@ describe('useAutoSave', () => {
     });
   });
 
+  it('marks missing files without recreating them during auto-save', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('failed to open file: No such file or directory (os error 2)'),
+    );
+    useDocumentStore.getState().openDocument('/tmp/missing.md', 'missing.md', '# A', { size: 3, mtimeMs: 1000 });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useAutoSave(100, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(createRecoverySnapshot).toHaveBeenCalledWith({
+      documentPath: '/tmp/missing.md',
+      documentName: 'missing.md',
+      content: '# B',
+      reason: 'autosave',
+    });
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      isDirty: true,
+      saveStatus: 'conflict',
+      saveIssue: 'missing',
+      saveError: '原文件不存在：/tmp/missing.md',
+    });
+  });
+
   it('pauses auto-save while a conflict is waiting for user action', async () => {
     useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
     useDocumentStore.getState().updateContent('# B');

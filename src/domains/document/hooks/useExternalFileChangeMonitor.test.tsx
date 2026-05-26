@@ -42,6 +42,28 @@ describe('useExternalFileChangeMonitor', () => {
     });
   });
 
+  it('marks missing files with a dedicated issue instead of reloading or overwriting', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('No such file or directory (os error 2)'),
+    );
+    useDocumentStore.getState().openDocument('/tmp/missing.md', 'missing.md', '# A', { size: 3, mtimeMs: 1000 });
+
+    renderHook(() => useExternalFileChangeMonitor(1000, true));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      isDirty: true,
+      saveStatus: 'conflict',
+      saveIssue: 'missing',
+      saveError: '原文件不存在：/tmp/missing.md',
+    });
+  });
+
   it('checks dirty documents on the low-frequency timer', async () => {
     (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 9, mtime: new Date(2000) });
     useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });

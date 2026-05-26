@@ -529,8 +529,6 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
 
     const handlePreviewClick = useCallback((event: React.MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return;
-      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-
       const target = event.target instanceof Element ? event.target : null;
       const explicitSourceLine = findPreviewSourceAction(target);
       if (explicitSourceLine !== null) {
@@ -555,6 +553,8 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
 
       const sourceLine = findSourceLineElement(target);
       if (!sourceLine) return;
+      if (!event.metaKey && !event.ctrlKey && !event.altKey) return;
+      event.preventDefault();
       jumpToSourceLine(sourceLine.line);
     }, [jumpToSourceLine]);
 

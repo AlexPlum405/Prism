@@ -1,4 +1,5 @@
 export type DocumentSaveStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict';
+export type DocumentSaveIssue = 'external-modified' | 'missing' | 'permission-denied' | 'unavailable';
 
 export interface OpenDocument {
   path: string;
@@ -10,6 +11,7 @@ export interface OpenDocument {
   lastKnownSize: number | null;
   saveStatus: DocumentSaveStatus;
   saveError: string | null;
+  saveIssue?: DocumentSaveIssue | null;
   viewMode: 'edit' | 'split' | 'preview';
   scrollState: DocumentScrollState;
   cursor?: { line: number; column: number };

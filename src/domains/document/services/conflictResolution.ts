@@ -28,7 +28,7 @@ function getCurrentConflictDocument(): OpenDocument | null {
 }
 
 function markConflictFailure(doc: OpenDocument, error: unknown) {
-  useDocumentStore.getState().markSaveConflict(error, doc.path);
+  useDocumentStore.getState().markSaveConflict(error, doc.path, doc.saveIssue ?? 'external-modified');
 }
 
 export function getConflictCopyFilename(filename: string): string {

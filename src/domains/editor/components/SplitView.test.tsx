@@ -134,7 +134,7 @@ describe('SplitView editor lifecycle', () => {
     expect(screen.getByTestId('preview-pane')).toHaveAttribute('data-render-strategy', 'immediate');
   });
 
-  it('jumps to the source line when a preview block is clicked', () => {
+  it('keeps plain preview clicks in reading mode', () => {
     render(
       <SplitView
         content="Preview block"
@@ -146,6 +146,22 @@ describe('SplitView editor lifecycle', () => {
 
     const preview = screen.getByTestId('preview-pane');
     fireEvent.click(preview.querySelector('[data-source-line="6"]') as HTMLElement);
+
+    expect(mockState.jumpToLine).not.toHaveBeenCalled();
+  });
+
+  it('jumps to the source line when a preview block is clicked with a source modifier', () => {
+    render(
+      <SplitView
+        content="Preview block"
+        viewMode="split"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    const preview = screen.getByTestId('preview-pane');
+    fireEvent.click(preview.querySelector('[data-source-line="6"]') as HTMLElement, { metaKey: true });
 
     expect(mockState.jumpToLine).toHaveBeenCalledWith(6);
   });

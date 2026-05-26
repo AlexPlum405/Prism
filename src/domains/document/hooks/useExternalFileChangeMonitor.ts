@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import {
+  classifyFileAccessIssue,
   createKnownFileSnapshot,
   fileConflictDetector,
   getFileSafetyConflictMessage,
@@ -24,6 +25,11 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
       const knownSnapshot = createKnownFileSnapshot(lastKnownMtime, lastKnownSize);
       const result = await fileConflictDetector.inspect(documentPath, knownSnapshot);
 
+      if (result.kind !== 'ok') {
+        markSaveConflict(result.message, documentPath, result.kind);
+        return;
+      }
+
       if (!result.changed) return;
 
       const activeDocument = useDocumentStore.getState().currentDocument;
@@ -38,8 +44,13 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
       const latestDocument = useDocumentStore.getState().currentDocument;
       if (!latestDocument?.path || latestDocument.path !== documentPath || latestDocument.isDirty) return;
       useDocumentStore.getState().openDocument(session.path, session.name, session.content, session.knownSnapshot);
-    } catch {
-      markSaveConflict(getFileSafetyConflictMessage(), documentPath);
+    } catch (error) {
+      const issueKind = classifyFileAccessIssue(error);
+      markSaveConflict(
+        getFileSafetyConflictMessage(error, documentPath),
+        documentPath,
+        issueKind === 'unavailable' ? 'external-modified' : issueKind,
+      );
     }
   }, [
     documentPath,
