@@ -792,3 +792,57 @@ git diff --check
 - `App.tsx` 仍有 686 行，文档诊断、属性、链接、反链、图谱、侧栏和状态栏 wiring 仍待拆分。
 - Phase 10 的 App 层瘦身还未完成到 350 行以内。
 - 后续若继续拆 `DocumentPanelsController` 或 `WorkspaceController`，仍需保持 props-driven 搬迁，避免同时重构状态归属。
+
+### Checkpoint 10.3：文档面板 Controller
+
+### 目标
+
+继续缩小 `App.tsx` 的渲染职责，把文档诊断、反链、当前文档链接、关系图谱、文档属性和中文排版诊断面板集中到独立 controller。该 checkpoint 仍只搬迁 JSX 归属，不改变面板交互、样式、快捷键关闭、图谱懒加载或跳转逻辑。
+
+### 改动范围
+
+- 新增 `src/app/controllers/DocumentPanelsController.tsx`：
+  - `DocumentDiagnosticsPanel`
+  - `BacklinksPanel`
+  - `DocumentLinksPanel`
+  - lazy `RelationGraphPanel`
+  - `DocumentPropertiesPanel`
+  - `TypographyDiagnosticsPanel`
+- 新增 `src/app/controllers/DocumentPanelsController.test.tsx`：
+  - 覆盖诊断跳转和反链选择委托。
+  - 覆盖关系图谱节点双击时先关闭面板再打开目标文档。
+- `src/App.tsx`：
+  - 移除上述面板组件和 `lazy` / `Suspense` 直接 import。
+  - 保留 `useDocumentDiagnosticsModel`、`useDocumentNavigationModel`、文档属性状态和 handler 归属。
+  - 改为渲染 `DocumentPanelsController`。
+- 本 checkpoint 未触碰 `EditorPane.tsx`，也不提交当前工作树中已有的 SettingsModal 初始分区未提交改动。
+
+### 风险等级
+
+中低。该 checkpoint 移动多个面板渲染位置，但不改变面板内部实现、状态来源、回调语义、CSS 类名或可见文案。
+
+### 验证
+
+```bash
+npm test -- --run src/app/controllers/DocumentPanelsController.test.tsx src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx src/domains/editor/components/DocumentPropertiesPanel.test.tsx src/domains/editor/components/TypographyDiagnosticsPanel.test.tsx src/domains/workspace/components/BacklinksPanel.test.tsx src/domains/workspace/components/DocumentLinksPanel.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 文档面板 controller 与各面板聚焦测试：通过，7 个测试文件、16 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 checkpoint 的风险面集中在文档面板组合和回调转发，已由 controller 新测试和各面板既有测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 只移动 React JSX 归属，不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+- 未继续拆 `EditorPane.tsx`：当前工作树已有与插入图片、Callout、Toggle、斜杠菜单相关的未提交编辑器改动，继续拆会增加混入无关改动的风险。
+
+### 剩余风险
+
+- `App.tsx` 仍承担侧栏、状态栏、全局 context menu、命令面板、关于/设置等 wiring。
+- Phase 10 的 App 层瘦身仍未完成到 350 行以内。
+- `DocumentPanelsController` 仍是 props-driven 组合层，后续如要进一步收敛，可在不改行为的前提下把文档面板状态聚合到专门 hook。

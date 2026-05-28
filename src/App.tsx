@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useDocumentStore } from './domains/document/store';
 import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
@@ -14,6 +14,7 @@ import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
+import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
 import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
@@ -26,15 +27,10 @@ import {
 } from './domains/document/services/conflictResolution';
 import { StatusBar } from './domains/workspace/components/StatusBar';
 import { Sidebar } from './domains/workspace/components/Sidebar';
-import { BacklinksPanel } from './domains/workspace/components/BacklinksPanel';
-import { DocumentLinksPanel } from './domains/workspace/components/DocumentLinksPanel';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
-import { DocumentPropertiesPanel } from './domains/editor/components/DocumentPropertiesPanel';
-import { DocumentDiagnosticsPanel } from './domains/editor/components/DocumentDiagnosticsPanel';
-import { TypographyDiagnosticsPanel } from './domains/editor/components/TypographyDiagnosticsPanel';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
@@ -52,9 +48,6 @@ import {
   getRuntimePlatform,
 } from './domains/workspace/services';
 import { t, useI18n } from './domains/i18n';
-
-const RelationGraphPanel = lazy(() => import('./domains/workspace/components/RelationGraphPanel')
-  .then((module) => ({ default: module.RelationGraphPanel })));
 
 interface RecoveryPromptVisibilityInput {
   hasSnapshot: boolean;
@@ -577,55 +570,35 @@ function App() {
         onRunConflictAction={runConflictAction}
       />
 
-      <DocumentDiagnosticsPanel
-        visible={linkDiagnosticsVisible}
-        diagnostics={displayedDiagnostics}
-        onClose={closeDocumentDiagnostics}
-        onSelect={handleSelectDocumentDiagnostic}
-      />
-
-      <BacklinksPanel
-        visible={backlinksVisible}
+      <DocumentPanelsController
         backlinks={backlinks}
-        onClose={() => setBacklinksVisible(false)}
-        onSelect={selectBacklink}
-      />
-
-      <DocumentLinksPanel
-        visible={documentLinksVisible}
-        links={documentLinks}
-        onClose={() => setDocumentLinksVisible(false)}
-        onSelect={selectDocumentLink}
-      />
-
-      {relationGraphVisible && (
-        <Suspense fallback={null}>
-          <RelationGraphPanel
-            visible={relationGraphVisible}
-            index={workspaceIndex}
-            currentPath={currentDocument?.path}
-            onClose={() => setRelationGraphVisible(false)}
-            onSelect={(path) => {
-              setRelationGraphVisible(false);
-              void handleFileAction({ action: 'openFile', path });
-            }}
-          />
-        </Suspense>
-      )}
-
-      <DocumentPropertiesPanel
-        visible={documentPropertiesVisible}
-        content={currentDocument?.content ?? ''}
-        onClose={() => setDocumentPropertiesVisible(false)}
-        onApply={handleApplyDocumentProperties}
-        onNotice={showToast}
-      />
-
-      <TypographyDiagnosticsPanel
-        visible={typographyDiagnosticsVisible}
-        diagnostics={typographyDiagnostics}
-        onClose={() => setTypographyDiagnosticsVisible(false)}
-        onSelect={handleSelectTypographyDiagnostic}
+        backlinksVisible={backlinksVisible}
+        currentDocumentContent={currentDocument?.content ?? ''}
+        currentDocumentPath={currentDocument?.path}
+        displayedDiagnostics={displayedDiagnostics}
+        documentLinks={documentLinks}
+        documentLinksVisible={documentLinksVisible}
+        documentPropertiesVisible={documentPropertiesVisible}
+        linkDiagnosticsVisible={linkDiagnosticsVisible}
+        relationGraphVisible={relationGraphVisible}
+        typographyDiagnostics={typographyDiagnostics}
+        typographyDiagnosticsVisible={typographyDiagnosticsVisible}
+        workspaceIndex={workspaceIndex}
+        onApplyDocumentProperties={handleApplyDocumentProperties}
+        onBacklinkSelect={selectBacklink}
+        onBacklinksClose={() => setBacklinksVisible(false)}
+        onDocumentLinkSelect={selectDocumentLink}
+        onDocumentLinksClose={() => setDocumentLinksVisible(false)}
+        onDocumentPropertiesClose={() => setDocumentPropertiesVisible(false)}
+        onDocumentPropertiesNotice={showToast}
+        onLinkDiagnosticSelect={handleSelectDocumentDiagnostic}
+        onLinkDiagnosticsClose={closeDocumentDiagnostics}
+        onRelationGraphClose={() => setRelationGraphVisible(false)}
+        onRelationGraphSelect={(path) => {
+          void handleFileAction({ action: 'openFile', path });
+        }}
+        onTypographyDiagnosticSelect={handleSelectTypographyDiagnostic}
+        onTypographyDiagnosticsClose={() => setTypographyDiagnosticsVisible(false)}
       />
 
       <ExportUiController
