@@ -846,3 +846,54 @@ git diff --check
 - `App.tsx` 仍承担侧栏、状态栏、全局 context menu、命令面板、关于/设置等 wiring。
 - Phase 10 的 App 层瘦身仍未完成到 350 行以内。
 - `DocumentPanelsController` 仍是 props-driven 组合层，后续如要进一步收敛，可在不改行为的前提下把文档面板状态聚合到专门 hook。
+
+### Checkpoint 10.4：工作区 Controller
+
+### 目标
+
+继续缩小 `App.tsx` 的工作区渲染职责，把侧栏、编辑区容器、状态栏和全局 context menu 集中到 `WorkspaceController`。该 checkpoint 仍保留 App 对工作区状态、命令 handler、文件 action handler、editor ref 和文档视图实例的归属，不改变用户可见布局和交互。
+
+### 改动范围
+
+- 新增 `src/app/controllers/WorkspaceController.tsx`：
+  - 渲染 `app-main`、侧栏、传入的文档视图、状态栏和全局 context menu。
+  - 通过 props 转发 sidebar hover、文件点击、大纲跳转、状态栏按钮、导出菜单、工作区菜单和 context menu action。
+  - 支持传入 `documentView`，让 App 继续持有 `DocumentView` 的 `editorRef`，避免在本 checkpoint 改动编辑器 ref 归属。
+- 新增 `src/app/controllers/WorkspaceController.test.tsx`：
+  - 覆盖侧栏 / 文档视图 / 状态栏组合渲染与新建文件按钮委托。
+  - 覆盖全局 context menu action 按来源 kind 转发。
+- `src/App.tsx`：
+  - 移除 `StatusBar`、`Sidebar`、`ContextMenu` 直接渲染。
+  - 保留 `DocumentView` 实例、`editorRef`、工作区状态、命令上下文、文件 action 和状态栏数据计算。
+  - 改为渲染 `WorkspaceController`。
+- 本 checkpoint 未触碰 `EditorPane.tsx`，也不提交当前工作树中已有的 SettingsModal 初始分区未提交改动。
+
+### 风险等级
+
+中。该 checkpoint 移动主工作区骨架、状态栏和 context menu 渲染位置，但不改变工作区 store、文件 action、命令系统、编辑器 ref、状态栏组件内部实现或 CSS 类名。
+
+### 验证
+
+```bash
+npm test -- --run src/app/controllers/WorkspaceController.test.tsx src/domains/workspace/components/StatusBar.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 工作区 controller 与状态栏聚焦测试：通过，2 个测试文件、9 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 checkpoint 的风险面集中在 workspace UI 组合、状态栏 wiring 和 context menu action 转发，已由新增 controller 测试与 StatusBar 既有测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 只移动 React JSX 归属，不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+- 未继续拆 `EditorPane.tsx`：当前工作树已有与插入图片、Callout、Toggle、斜杠菜单相关的未提交编辑器改动，继续拆会增加混入无关改动的风险。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、文档恢复/冲突状态、导出 hook、文档导航 hook、设置/关于/命令面板等 wiring。
+- Phase 10 的 App 层瘦身仍未完成到 350 行以内。
+- `WorkspaceController` 目前仍是 props-driven 组合层；后续如要进一步瘦身，可把工作区 hover/context menu 状态收进专门 hook，但需要更完整 App smoke。

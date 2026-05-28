@@ -15,6 +15,7 @@ import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
+import { WorkspaceController, type WorkspaceContextMenuState } from './app/controllers/WorkspaceController';
 import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
@@ -25,8 +26,6 @@ import {
   reloadConflictedDocument,
   saveConflictedDocumentAs,
 } from './domains/document/services/conflictResolution';
-import { StatusBar } from './domains/workspace/components/StatusBar';
-import { Sidebar } from './domains/workspace/components/Sidebar';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
@@ -35,7 +34,7 @@ import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
 import { executeFileAction, FileActionInput, type DirtyDocumentSwitchAction } from './lib/fileActions';
-import { ContextMenu, type ContextMenuItem } from './components/shell/ContextMenu';
+import type { ContextMenuItem } from './components/shell/ContextMenu';
 import { ShortcutPanel } from './components/shell/ShortcutPanel';
 import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
 import { AboutModal } from './components/shell/AboutModal';
@@ -89,12 +88,7 @@ function App() {
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [selectionText, setSelectionText] = useState('');
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [globalContextMenu, setGlobalContextMenu] = useState<{
-    x: number;
-    y: number;
-    items: ContextMenuItem[];
-    kind: 'file' | 'menu';
-  } | null>(null);
+  const [globalContextMenu, setGlobalContextMenu] = useState<WorkspaceContextMenuState | null>(null);
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
   const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
   const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('files');
@@ -473,85 +467,66 @@ function App() {
       <WindowShell>
       <TitleBar docName={titleDocName} isDirty={titleDirty} />
       <MenuBar sections={menuSections} onAction={handleCommandAction} />
-      <div className="app-main" style={{ flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
-        {workspace.sidebarVisible && (
-          <div
-            className="app-sidebar"
-            onMouseEnter={() => setIsSidebarHovered(true)}
-            onMouseLeave={() => setIsSidebarHovered(false)}
-            style={{ display: 'flex', flexDirection: 'column' }}
-          >
-            <Sidebar
-              fileTree={workspace.fileTree}
-              sidebarTab={workspace.sidebarTab}
-              setSidebarTab={workspace.setSidebarTab}
-              documentContent={currentDocument?.content ?? ''}
-              activePath={currentDocument?.path}
-              onFileClick={handleFileClick}
-              onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
-            />
-          </div>
-        )}
-        <DocumentView
-          key={currentDocument?.path || 'new-doc'}
-          ref={editorRef}
-          onCursorChange={setCursor}
-          onOpenDocumentLink={openDocumentLink}
-          onSelectionTextChange={setSelectionText}
-          onNotice={showToast}
-          workspaceIndex={workspaceIndex}
-        />
-      </div>
-
-      {currentDocument && workspace.statusBarVisible && (
-        <div className="app-statusbar">
-          <StatusBar
-            writingStats={writingStats}
-            selectionStats={selectionWritingStats}
-            cursor={cursor}
-            sidebarVisible={workspace.sidebarVisible}
-            isSidebarHovered={isSidebarHovered}
-            onMouseEnter={() => setIsSidebarHovered(true)}
-            onMouseLeave={() => setIsSidebarHovered(false)}
-            onExportMenu={handleExportContextMenu}
-            onToggleFocusMode={() => workspace.toggleFocusMode()}
-            onToggleSidebar={() => workspace.toggleSidebar()}
-            onFolderContextMenu={handleFolderContextMenu}
-            onNewFile={() => handleFileAction('newFile')}
-            onToggleFileTreeMode={() => handleFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
-            linkIssueCount={actionableDiagnostics.length}
-            linkIssueTitle={firstActionableDiagnostic?.message}
-            onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
-            backlinkCount={backlinks.length}
-            onBacklinksClick={openBacklinks}
-            onDocumentPropertiesClick={() => setDocumentPropertiesVisible(true)}
-            typographyIssueCount={typographyDiagnostics.length}
-            typographyIssueTitle={firstTypographyDiagnostic?.message}
-            onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
-            onRelationGraphClick={openRelationGraph}
-            hasSavedPath={Boolean(currentDocument?.path)}
-            exportProgress={exportProgress}
-            exportProgressInBackground={exportProgressInBackground}
-            onShowExportProgress={showBackgroundExportProgress}
+      <WorkspaceController
+        activePath={currentDocument?.path}
+        actionableIssueCount={actionableDiagnostics.length}
+        backlinkCount={backlinks.length}
+        cursor={cursor}
+        documentContent={currentDocument?.content ?? ''}
+        documentView={(
+          <DocumentView
+            key={currentDocument?.path || 'new-doc'}
+            ref={editorRef}
+            onCursorChange={setCursor}
+            onOpenDocumentLink={openDocumentLink}
+            onSelectionTextChange={setSelectionText}
+            onNotice={showToast}
+            workspaceIndex={workspaceIndex}
           />
-        </div>
-      )}
-
-      {globalContextMenu && (
-        <ContextMenu
-          x={globalContextMenu.x}
-          y={globalContextMenu.y}
-          items={globalContextMenu.items}
-          onAction={(action) => {
-            if (globalContextMenu.kind === 'file') {
-              handleFileAction(action);
-            } else {
-              handleCommandAction(action);
-            }
-          }}
-          onClose={() => setGlobalContextMenu(null)}
-        />
-      )}
+        )}
+        exportProgress={exportProgress}
+        exportProgressInBackground={exportProgressInBackground}
+        fileTree={workspace.fileTree}
+        firstActionableMessage={firstActionableDiagnostic?.message}
+        firstTypographyMessage={firstTypographyDiagnostic?.message}
+        globalContextMenu={globalContextMenu}
+        hasSavedPath={Boolean(currentDocument?.path)}
+        isSidebarHovered={isSidebarHovered}
+        selectionWritingStats={selectionWritingStats}
+        sidebarTab={workspace.sidebarTab}
+        sidebarVisible={workspace.sidebarVisible}
+        statusBarVisible={Boolean(currentDocument && workspace.statusBarVisible)}
+        typographyIssueCount={typographyDiagnostics.length}
+        workspaceIndex={workspaceIndex}
+        writingStats={writingStats}
+        onBacklinksClick={openBacklinks}
+        onCloseContextMenu={() => setGlobalContextMenu(null)}
+        onContextMenuAction={(action, kind) => {
+          if (kind === 'file') {
+            handleFileAction(action);
+          } else {
+            handleCommandAction(action);
+          }
+        }}
+        onCursorChange={setCursor}
+        onExportMenu={handleExportContextMenu}
+        onFileClick={handleFileClick}
+        onFolderContextMenu={handleFolderContextMenu}
+        onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
+        onNewFile={() => handleFileAction('newFile')}
+        onNotice={showToast}
+        onOpenDocumentLink={openDocumentLink}
+        onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
+        onRelationGraphClick={openRelationGraph}
+        onSelectionTextChange={setSelectionText}
+        onSetSidebarHovered={setIsSidebarHovered}
+        onSetSidebarTab={workspace.setSidebarTab}
+        onShowExportProgress={showBackgroundExportProgress}
+        onToggleFileTreeMode={() => handleFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
+        onToggleFocusMode={() => workspace.toggleFocusMode()}
+        onToggleSidebar={() => workspace.toggleSidebar()}
+        onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
+      />
 
       <DocumentSafetyController
         activeRecoverySnapshot={activeRecoverySnapshot}
