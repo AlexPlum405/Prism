@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useDocumentStore } from './domains/document/store';
 import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
@@ -11,6 +11,7 @@ import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
 import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
+import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
@@ -29,9 +30,6 @@ import { ShortcutPanel } from './components/shell/ShortcutPanel';
 import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
 import { AboutModal } from './components/shell/AboutModal';
 import { SettingsModal } from './components/shell/SettingsModal';
-import {
-  computeWritingStats,
-} from './domains/workspace/services';
 import { t, useI18n } from './domains/i18n';
 
 interface RecoveryPromptVisibilityInput {
@@ -65,8 +63,6 @@ function App() {
   const workspace = useWorkspaceStore();
 
   const editorRef = useRef<EditorPaneHandle>(null);
-  const [cursor, setCursor] = useState({ line: 1, column: 1 });
-  const [selectionText, setSelectionText] = useState('');
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
   const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
@@ -83,6 +79,14 @@ function App() {
   });
 
   const {
+    cursor,
+    selectionWritingStats,
+    setCursor,
+    setSelectionText,
+    writingStats,
+  } = useAppWritingStatsModel({ currentDocument });
+
+  const {
     workspaceIndex,
     workspaceIndexing,
   } = useWorkspaceIndexModel({
@@ -91,10 +95,6 @@ function App() {
     rootPath: workspace.rootPath,
     recentFiles,
   });
-
-  useEffect(() => {
-    setSelectionText('');
-  }, [currentDocument?.path]);
 
   const { toast, showToast, dismissToast } = useAppToast();
   const {
@@ -283,14 +283,6 @@ function App() {
     hasSaveDialog: Boolean(saveDialog),
     hasSaveConflict,
   });
-  const writingStats = useMemo(
-    () => computeWritingStats(currentDocument?.content ?? ''),
-    [currentDocument?.content],
-  );
-  const selectionWritingStats = useMemo(
-    () => selectionText.trim() ? computeWritingStats(selectionText) : null,
-    [selectionText],
-  );
 
   return (
       <WindowShell>

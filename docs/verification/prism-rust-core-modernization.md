@@ -1151,6 +1151,7 @@ git diff --check
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
 
+
 ### Checkpoint 10.10：App file actions hook
 
 ### 目标
@@ -1203,6 +1204,7 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
 
 ### Checkpoint 10.11：App save conflict hook
 
@@ -1258,6 +1260,7 @@ git diff --check
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
 
+
 ### Checkpoint 10.12：App workspace context menu hook
 
 ### 目标
@@ -1304,6 +1307,59 @@ git diff --check
 - 未跑完整 `npm test -- --run`：风险面集中在 context menu 状态、菜单项创建和 action 分发，已由新增 hook 测试、WorkspaceController 测试与 App recovery 测试覆盖。
 - 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、文件系统 service、打包、签名、updater 或 UI 布局。
 - 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 workspace context menu 抽离无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.13：App writing stats hook
+
+### 目标
+
+继续缩小 `App.tsx` 的文档视图状态职责，把光标状态、选区文本、切换文档时清空选区、全文字数统计和选区字数统计集中到独立 hook。该 checkpoint 不改变状态栏展示、编辑器光标回传或选区统计行为。
+
+### 改动范围
+
+- 新增 `src/app/useAppWritingStatsModel.ts`：
+  - 接管 `cursor` 状态。
+  - 接管 `selectionText` 状态。
+  - 接管当前文档路径变化后的选区清理。
+  - 接管全文 `writingStats` 和选区 `selectionWritingStats` 计算。
+- 新增 `src/app/useAppWritingStatsModel.test.tsx`：
+  - 验证当前文档内容会生成全文统计。
+  - 验证非空选区才生成选区统计。
+  - 验证切换文档会清空选区统计。
+- `src/App.tsx`：
+  - 移除光标、选区和 `computeWritingStats` 的直接 wiring。
+  - 保留 `DocumentView` 与 `WorkspaceController` 的状态传递。
+- App 行数：staged 版本 `449 -> 441`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低。该 checkpoint 只移动 React 状态和既有 `computeWritingStats` 调用，不改变统计函数、状态栏 UI 或编辑器事件来源。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppWritingStatsModel.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Writing stats / StatusBar / App recovery 聚焦测试：通过，3 个测试文件、18 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在光标/选区状态与字数统计，已由新增 hook 测试、StatusBar 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、文件系统 service、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 writing stats 抽离无关。
 
 ### 剩余风险
 
