@@ -1,10 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
+import { normalizeNativeError } from './result';
 
-export function invokeNativeCommand<Result = unknown>(
+export async function invokeNativeCommand<Result = unknown>(
   command: string,
   args?: Record<string, unknown>,
 ): Promise<Result> {
-  return invoke<Result>(command, args);
+  try {
+    return await invoke<Result>(command, args);
+  } catch (error) {
+    throw normalizeNativeError(error);
+  }
 }
 
 export function grantMarkdownFileScopeNative(path: string): Promise<void> {

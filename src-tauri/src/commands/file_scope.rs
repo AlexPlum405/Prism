@@ -3,7 +3,7 @@ use std::path::Path;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_fs::FsExt;
 
-use crate::canonicalize_existing_path;
+use crate::{canonicalize_existing_path, domain::path};
 
 fn is_supported_markdown_path(path: &Path) -> bool {
     path.extension()
@@ -68,9 +68,7 @@ fn is_sensitive_directory(app: &AppHandle, path: &Path) -> bool {
 #[tauri::command]
 pub fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), String> {
     let file_path = canonicalize_existing_path(&path)?;
-    if !file_path.is_file() {
-        return Err("Path is not a file".to_string());
-    }
+    path::ensure_file(&file_path, "grant_markdown_file_scope").map_err(|error| error.message)?;
     if !is_supported_markdown_path(&file_path) {
         return Err("Only Markdown / Text documents can be authorized".to_string());
     }
@@ -94,9 +92,8 @@ pub fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), Str
 #[tauri::command]
 pub fn grant_workspace_directory_scope(app: AppHandle, path: String) -> Result<(), String> {
     let directory_path = canonicalize_existing_path(&path)?;
-    if !directory_path.is_dir() {
-        return Err("Path is not a folder".to_string());
-    }
+    path::ensure_directory(&directory_path, "grant_workspace_directory_scope")
+        .map_err(|error| error.message)?;
     if is_sensitive_directory(&app, &directory_path) {
         return Err(
             "System directories and the user home directory cannot be authorized as a workspace"

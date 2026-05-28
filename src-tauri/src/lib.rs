@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 mod commands;
+mod domain;
 
 pub(crate) fn first_non_empty_line(text: &[u8]) -> String {
     String::from_utf8_lossy(text)
@@ -17,9 +18,7 @@ pub(crate) fn first_non_empty_line(text: &[u8]) -> String {
 }
 
 pub(crate) fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> {
-    PathBuf::from(path)
-        .canonicalize()
-        .map_err(|err| format!("Failed to access path: {err}"))
+    domain::path::canonicalize_existing_path(path, "canonicalize").map_err(|error| error.message)
 }
 
 #[cfg(target_os = "macos")]

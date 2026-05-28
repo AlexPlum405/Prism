@@ -174,3 +174,65 @@ git diff --check
 - `src/platform/tauri/` 目前仍是轻量 wrapper，尚未引入统一 `PrismCommandError` 和 Result normalizer。
 - 文件 IO、工作区索引、搜索、反链/图谱、导出任务、资源读取等仍主要由前端业务层驱动。
 - 当前工作树仍有本 phase 之外的未提交改动；提交时需只 stage Phase 1 相关 hunk，避免混入图标、菜单、设置中心和插入块等无关改动。
+
+## Phase 2：Rust command 错误模型落地
+
+### 目标
+
+建立 Rust/TypeScript 两侧统一的 native command 错误模型，让后续 Rust 化能力可以返回 `code/message/hint/path/stage`，同时不一次性重写旧 command 的返回类型。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/mod.rs`。
+- 新增 `src-tauri/src/domain/error.rs`：
+  - `PrismCommandError`
+  - `PrismResult<T>`
+  - `with_hint` / `with_path` / `with_stage`
+- 新增 `src-tauri/src/domain/path.rs`：
+  - `canonicalize_existing_path(path, stage)`
+  - `ensure_file(path, stage)`
+  - `ensure_directory(path, stage)`
+  - `path_to_string(path)`
+- `src-tauri/src/lib.rs` 引入 `mod domain;`，并让旧 `canonicalize_existing_path` 复用 domain path helper，再继续向旧 command 暴露 `Result<PathBuf, String>`，保持前端行为不变。
+- `src-tauri/src/commands/file_scope.rs` 复用 `ensure_file` / `ensure_directory`，但仍保留旧 command 的字符串错误返回。
+- 新增 `src/platform/tauri/result.ts`：
+  - `PrismCommandError`
+  - `PrismNativeError`
+  - `normalizeNativeError`
+- `src/platform/tauri/nativeCommands.ts` 捕获 Tauri `invoke` 异常并统一转换为 `PrismNativeError`。
+- 新增 `src/platform/tauri/result.test.ts` 覆盖结构化错误、旧字符串错误和重复归一化。
+
+### 风险等级
+
+中。`invokeNativeCommand` 现在会把 legacy string/native Error 包装成 `PrismNativeError`，错误的 `message` 保持兼容，但 `name/code` 会更结构化。正常成功路径不变。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test
+cd src-tauri && cargo check
+npm test -- --run src/platform/tauri/result.test.ts src/lib/fileActions.test.ts src/domains/settings/pathPersistence.test.ts src/domains/export/exportPipeline.test.ts src/hooks/useBootstrap.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test`：通过，16 个 Rust 测试。
+- `cargo check`：通过。
+- TS 聚焦测试：通过，5 个测试文件、73 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 影响 native command adapter 和 Rust domain helper，已覆盖 native command 调用方、导出、设置、启动和新增错误归一化测试。
+- 未跑真实 app smoke：本 phase 不改用户可见 UI、窗口生命周期、file association、capabilities、打包、updater、签名或发布链路。
+
+### 剩余风险
+
+- 大多数旧 Rust command 仍返回 `Result<T, String>`，只是已有 domain error 基础设施。
+- 前端 UI 层暂未按错误码做差异化 toast/modal/diagnostics；后续阶段需要逐步消费 `PrismNativeError.code`。
+- 文件 IO、工作区索引、搜索、反链/图谱、导出任务和资源读取仍未迁到 Rust 主实现。
