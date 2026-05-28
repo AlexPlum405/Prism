@@ -50,10 +50,7 @@ import {
   scrollEditorToLine,
   setEditorScrollRatio,
 } from '../runtime/editorScrollRuntime';
-import {
-  handleEditorClipboardImagePaste,
-  handleEditorImageDrop,
-} from '../runtime/editorClipboardRuntime';
+import { createEditorClipboardController } from '../runtime/editorClipboardController';
 import {
   createEditorRuntime,
   getEditorPhrases,
@@ -591,25 +588,15 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       dropFailed: (message: string) => t('editor.image.dropFailed', { message }),
     }), [t]);
 
-    const handleClipboardImagePaste = useCallback(
-      (event: ClipboardEvent, view: EditorView) => handleEditorClipboardImagePaste(event, view, {
+    const clipboardController = useMemo(() => createEditorClipboardController({
+      handleTablePasteText,
+      imageDeps: {
         getCurrentDocument: () => useDocumentStore.getState().currentDocument,
         messages: imageClipboardMessages,
         notice: (message) => onNoticeRef.current?.(message),
         formatError: formatEditorError,
-      }),
-      [imageClipboardMessages],
-    );
-
-    const handleImageDrop = useCallback(
-      (event: DragEvent, view: EditorView) => handleEditorImageDrop(event, view, {
-        getCurrentDocument: () => useDocumentStore.getState().currentDocument,
-        messages: imageClipboardMessages,
-        notice: (message) => onNoticeRef.current?.(message),
-        formatError: formatEditorError,
-      }),
-      [imageClipboardMessages],
-    );
+      },
+    }), [handleTablePasteText, imageClipboardMessages]);
 
     // 监听菜单格式化事件
     useEffect(() => {
@@ -933,25 +920,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
 
       view.dom.addEventListener('contextmenu', handleContextMenu);
       const handlePaste = (event: ClipboardEvent) => {
-        const hasImage = Array.from(event.clipboardData?.items ?? []).some((item) => item.type.startsWith('image/'));
-        if (!hasImage) {
-          const text = event.clipboardData?.getData('text/plain') ?? '';
-          if (text && handleTablePasteText(view, text)) {
-            event.preventDefault();
-            event.stopPropagation();
-            return;
-          }
-        }
-        void handleClipboardImagePaste(event, view);
+        void clipboardController.handlePaste(event, view);
       };
       view.dom.addEventListener('paste', handlePaste);
       const handleDragOver = (event: DragEvent) => {
-        const hasImage = Array.from(event.dataTransfer?.items ?? []).some((item) => item.type.startsWith('image/'));
-        if (!hasImage) return;
-        event.preventDefault();
+        clipboardController.handleDragOver(event);
       };
       const handleDrop = (event: DragEvent) => {
-        void handleImageDrop(event, view);
+        void clipboardController.handleDrop(event, view);
       };
       view.dom.addEventListener('dragover', handleDragOver);
       view.dom.addEventListener('drop', handleDrop);

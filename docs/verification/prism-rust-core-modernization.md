@@ -997,3 +997,54 @@ git diff --check
 - `EditorPane.tsx` 仍保留表格命令 handler、表格复制/转换、paste/drop 和 command switch。
 - `editorTableController` 当前只接管 toolbar state 计算，还不是完整 table controller。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响，需要先清理或提交这些功能改动后再安全推进。
+
+### Checkpoint 10.7：Editor clipboard controller seam
+
+### 目标
+
+把编辑器 paste/drop 事件的分发逻辑从 `EditorPane.tsx` 移到 `editorClipboardController`，让组件只负责挂载 DOM 事件监听。该 checkpoint 不改变图片粘贴、图片拖放或表格粘贴行为，也不提交当前未提交的插入图片按钮逻辑。
+
+### 改动范围
+
+- 新增 `src/domains/editor/runtime/editorClipboardController.ts`：
+  - `hasClipboardImage`
+  - `hasDraggedImage`
+  - `createEditorClipboardController`
+- 新增 `src/domains/editor/runtime/editorClipboardController.test.ts`：
+  - 覆盖剪贴板/拖拽图片判断。
+  - 覆盖纯文本表格粘贴优先消费。
+  - 覆盖图片 dragover 才阻止默认行为。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 将 paste/drop/dragover 事件分发改为调用 `clipboardController`。
+  - 保留 image deps、notice、当前文档读取和事件监听挂载位置。
+- 本 checkpoint 未提交当前工作树中已有的插入图片、Callout、Toggle、斜杠菜单等编辑器功能未提交改动。
+
+### 风险等级
+
+中。该 checkpoint 移动 paste/drop 事件分发逻辑，但复用既有 `editorClipboardRuntime`，不改变保存图片、插入 Markdown、错误提示或表格粘贴逻辑。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorClipboardController.test.ts src/domains/editor/components/EditorPane.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/runtime/editorClipboardRuntime.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor clipboard controller / EditorPane / clipboard runtime 聚焦测试：通过，4 个测试文件、50 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未继续拆 command switch：当前工作树已有未提交编辑器功能增量，继续大拆会扩大提交边界。
+- 未跑完整 `npm test -- --run`：风险面集中在 paste/drop 事件分发、图片粘贴/拖放和 EditorPane 集成，已由聚焦测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+
+### 剩余风险
+
+- `EditorPane.tsx` 仍保留 command switch、表格命令 handler、表格复制/转换和多段 UI state。
+- `editorClipboardController` 已接管事件分发，但 image deps 仍在组件内组装。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响，需要先清理或提交这些功能改动后再安全推进。
