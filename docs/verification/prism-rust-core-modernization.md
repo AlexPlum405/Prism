@@ -689,3 +689,58 @@ git diff --check
 - Rust theme scan 当前只做目录、manifest/css 读取；主题 manifest 语义校验、字体/预览图资源校验仍由 TypeScript 负责。
 - 主题导入事务仍在前端实现，replace 失败恢复逻辑未迁入 Rust。
 - 设置文件 schema normalize 仍在 TypeScript；Rust 只负责稳定读写和 appData 路径。
+
+## Phase 10：前端体验层瘦身
+
+### Checkpoint 10.1：导出 UI Controller
+
+### 目标
+
+在不改变用户可见行为和妙言风格的前提下，先抽出 App 中最独立的导出保存弹窗、导出进度 toast、导出失败弹窗，为后续继续拆分 App controller 留边界。
+
+### 改动范围
+
+- 新增 `src/app/controllers/ExportUiController.tsx`：
+  - 导出/保存文件名弹窗
+  - 导出清晰度选择
+  - 覆盖确认
+  - 普通 toast 渲染
+  - 导出前台进度 toast
+  - 导出失败诊断弹窗
+- `src/App.tsx`：
+  - 移除导出 UI 相关 JSX。
+  - 保留 `useSaveExportDialogModel`、`useExportTaskUi`、`useAppToast` 状态归属，避免改变命令上下文和保存/导出请求链路。
+  - 改为渲染 `ExportUiController`。
+- App 行数：`849 -> 696`。本 checkpoint 未触碰 `EditorPane.tsx`，避免混入当前工作树中已有的编辑器/斜杠菜单/Callout 未提交改动。
+
+### 风险等级
+
+中。该 checkpoint 移动 App 渲染结构，但不改 hook 状态、事件、toast 类名、modal 类名、导出确认逻辑或文案。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useSaveExportDialogModel.test.tsx src/hooks/useExportTaskUi.test.tsx
+npm test -- --run src/App.recovery.test.tsx src/domains/editor/components/EditorPane.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/runtime/editorBlockCommands.test.ts src/domains/editor/runtime/editorTableRuntime.test.ts src/domains/editor/runtime/editorClipboardRuntime.test.ts src/app/useSaveExportDialogModel.test.tsx src/hooks/useExportTaskUi.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 导出保存弹窗 / 导出任务 UI 聚焦测试：通过，2 个测试文件、5 个测试。
+- Phase 10 App/Editor 聚焦测试：通过，8 个测试文件、67 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未继续拆 `EditorPane.tsx`：当前工作树已有与插入图片、Callout、Toggle、斜杠菜单相关的未提交编辑器改动；本 checkpoint 不混入这些未提交改动。
+- 未把 `App.tsx` 降到 350 行以内：本 checkpoint 先抽离导出 UI，后续还需继续抽 `DocumentSafetyController`、`DocumentPanelsController`、`WorkspaceController`。
+- 未跑真实 app smoke：本 checkpoint 只移动前端 JSX 归属，不改 Tauri capability、窗口生命周期、file association、打包、签名或 updater。
+
+### 剩余风险
+
+- `App.tsx` 仍有 696 行，文档安全弹窗、文档面板、侧栏/状态栏 wiring 仍待拆分。
+- `EditorPane.tsx` 仍有 1312 行，命令适配、表格控制、剪贴板控制和 runtime 初始化仍待继续拆。
+- 新 controller 目前是 props-driven UI controller，下一步可把导出 UI hook wiring 一并迁入 controller，但需要先确认不会影响 command context 的 `requestExportPath` / `requestSavePath`。
