@@ -13,15 +13,12 @@ import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
 import { useAppAuxiliaryModalsModel } from './app/useAppAuxiliaryModalsModel';
 import { useAppRecoveryModel, shouldShowRecoveryPrompt } from './app/useAppRecoveryModel';
 import { useAppDocumentPropertiesModel } from './app/useAppDocumentPropertiesModel';
-import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
+import { useAppExportUiModel } from './app/useAppExportUiModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
 import { AppAuxiliaryModalsController } from './app/controllers/AppAuxiliaryModalsController';
 import { AppWorkspaceViewController } from './app/controllers/AppWorkspaceViewController';
-import { useAppToast } from './hooks/useAppToast';
-import { useExportTaskUi } from './hooks/useExportTaskUi';
-import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
@@ -90,32 +87,29 @@ function App() {
     recentFiles,
   });
 
-  const { toast, showToast, dismissToast } = useAppToast();
-  const {
-    exportProgress,
-    exportProgressInBackground,
-    exportFailure,
-    sendExportProgressToBackground,
-    showBackgroundExportProgress,
-    dismissExportFailure,
-    copyExportFailureDiagnostic,
-  } = useExportTaskUi(showToast);
-
   const {
     chooseSaveDirectory,
     closeSaveDialog,
     confirmSaveDialog,
+    copyExportFailureDiagnostic,
+    dismissExportFailure,
+    dismissToast,
+    exportProgress,
+    exportProgressInBackground,
+    exportFailure,
     requestExportPath,
     requestMarkdownSavePath,
     saveDialog,
     saveDialogOverwriteFilename,
+    sendExportProgressToBackground,
+    showToast,
+    showBackgroundExportProgress,
+    toast,
     updateSaveDialogFilename,
     updateSaveDialogQualityScale,
-  } = useSaveExportDialogModel({
-    existsPath: fsExists,
+  } = useAppExportUiModel({
     exportDefaults,
     rootPath: workspace.rootPath,
-    showToast,
   });
 
   const {

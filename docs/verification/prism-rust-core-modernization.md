@@ -1723,3 +1723,57 @@ git diff --check
 - `App.tsx` 仍承担导出 hook、设置弹窗状态、workspace context menu 等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.21：App export UI model
+
+### 目标
+
+继续缩小 `App.tsx` 的导出 UI 接线职责，把 toast、后台导出进度、导出失败诊断、保存/导出路径弹窗和文件存在性检查集中到独立 model。该 checkpoint 不改变导出流程、保存弹窗 UI、导出 toast、后台导出状态栏或文件写入逻辑。
+
+### 改动范围
+
+- 新增 `src/app/useAppExportUiModel.ts`：
+  - 在 model 内调用 `useAppToast`。
+  - 在 model 内调用 `useExportTaskUi(showToast)`。
+  - 在 model 内调用 `useSaveExportDialogModel`，继续注入 Tauri `fs.exists`、导出默认设置、工作区 rootPath 和 `showToast`。
+  - 合并返回 toast、导出任务 UI 和保存/导出弹窗状态，供 `App.tsx` 原样传给现有 controller 与文件 action model。
+- 新增 `src/app/useAppExportUiModel.test.tsx`：
+  - 验证 toast 的 `showToast` 会传给导出任务 UI。
+  - 验证保存/导出弹窗继续收到 `fs.exists`、exportDefaults、rootPath 和 `showToast`。
+  - 验证合并返回值保持 App 需要的 toast、导出进度和导出路径请求。
+- `src/App.tsx`：
+  - 移除直接调用 `useAppToast`、`useExportTaskUi` 和 `useSaveExportDialogModel`。
+  - 移除 App 对 Tauri `fs.exists` 的直接 import。
+  - 改为调用 `useAppExportUiModel`。
+- App 行数：staged 版本 `382 -> 376`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低到中。该 checkpoint 聚合导出 UI 相关 hook，涉及 toast 与保存/导出弹窗的接线位置，但不改变底层导出任务、文件存在性判断、保存路径确认、toast 或 controller UI。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppExportUiModel.test.tsx src/app/useSaveExportDialogModel.test.tsx src/hooks/useExportTaskUi.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App export UI / Save export dialog / Export task UI / App recovery 聚焦测试：通过，4 个测试文件、14 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在导出 UI wiring、toast、保存/导出弹窗和导出任务 UI，已由新增 model 测试、Save export dialog 测试、Export task UI 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或导出底层执行链路。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 export UI model 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担设置弹窗状态、workspace context menu、标题派生等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
