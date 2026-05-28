@@ -1777,3 +1777,56 @@ git diff --check
 - `App.tsx` 仍承担设置弹窗状态、workspace context menu、标题派生等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.22：App store snapshot model
+
+### 目标
+
+继续缩小 `App.tsx` 顶部的 store 与 i18n 读取职责，把当前文档、设置快照、workspace、locale 和窗口标题派生集中到独立 model。该 checkpoint 不改变 Zustand store、设置默认值、i18n runtime、标题显示规则或任何 UI 样式。
+
+### 改动范围
+
+- 新增 `src/app/useAppStoreSnapshotModel.ts`：
+  - 集中读取 `useDocumentStore` 的当前文档。
+  - 集中读取 `useSettingsStore` 中 App shell 需要的设置字段。
+  - 集中读取 `useWorkspaceStore`。
+  - 集中读取 `useI18n` 的 `locale` 与 `localePreference`。
+  - 派生 `titleDocName` 与 `titleDirty`。
+- 新增 `src/app/useAppStoreSnapshotModel.test.tsx`：
+  - 验证 model 能收集文档、设置、workspace 和标题状态。
+- `src/App.tsx`：
+  - 移除直接 import document/settings/workspace store 和 i18n runtime。
+  - 改为消费 `useAppStoreSnapshotModel` 返回的 snapshot。
+  - 下游 model/controller 的输入改为从 `settings` snapshot 读取。
+- App 行数：staged 版本 `376 -> 365`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低到中。该 checkpoint 改变 App 读取 store 的位置和字段访问方式，但不改变 store 本身、状态更新函数、i18n 解析、标题规则或 controller UI。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppStoreSnapshotModel.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App store snapshot / App recovery 聚焦测试：通过，2 个测试文件、9 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 App store/i18n 读取与标题派生，已由新增 snapshot model 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 store snapshot model 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担设置弹窗状态、workspace context menu、部分 controller prop mapping。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

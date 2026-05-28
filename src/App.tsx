@@ -1,8 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
-import { useDocumentStore } from './domains/document/store';
-import { useSettingsStore } from './domains/settings/store';
-import { useWorkspaceStore } from './domains/workspace/store';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
+import { useAppStoreSnapshotModel } from './app/useAppStoreSnapshotModel';
 import { useAppLifecycleModel } from './app/useAppLifecycleModel';
 import { useAppCommandWiringModel } from './app/useAppCommandWiringModel';
 import { useAppDocumentInsightModel } from './app/useAppDocumentInsightModel';
@@ -24,34 +22,28 @@ import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
 import { SettingsModal } from './components/shell/SettingsModal';
-import { t, useI18n } from './domains/i18n';
 
 export { shouldShowRecoveryPrompt };
 
 function App() {
-  const { locale, localePreference } = useI18n();
-  const currentDocument = useDocumentStore((s) => s.currentDocument);
-
-  const loadSettings = useSettingsStore((s) => s.loadSettings);
-  const contentTheme = useSettingsStore((s) => s.contentTheme);
-  const settingsLocale = useSettingsStore((s) => s.locale);
-  const shortcutStyle = useSettingsStore((s) => s.shortcutStyle);
-  const autoSaveInterval = useSettingsStore((s) => s.autoSaveInterval);
-  const autoSaveEnabled = useSettingsStore((s) => s.autoSaveEnabled);
-  const wordWrap = useSettingsStore((s) => s.wordWrap);
-  const exportDefaults = useSettingsStore((s) => s.exportDefaults);
-  const recentFiles = useSettingsStore((s) => s.recentFiles);
-  const themeRegistryVersion = useSettingsStore((s) => s.themeRegistryVersion);
-  const workspace = useWorkspaceStore();
+  const {
+    currentDocument,
+    locale,
+    localePreference,
+    settings,
+    titleDirty,
+    titleDocName,
+    workspace,
+  } = useAppStoreSnapshotModel();
 
   const editorRef = useRef<EditorPaneHandle>(null);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   useAppLifecycleModel({
-    autoSaveEnabled,
-    autoSaveInterval,
+    autoSaveEnabled: settings.autoSaveEnabled,
+    autoSaveInterval: settings.autoSaveInterval,
     currentDocument,
-    loadSettings,
+    loadSettings: settings.loadSettings,
     workspace,
   });
 
@@ -84,7 +76,7 @@ function App() {
     currentDocument,
     fileTree: workspace.fileTree,
     rootPath: workspace.rootPath,
-    recentFiles,
+    recentFiles: settings.recentFiles,
   });
 
   const {
@@ -108,7 +100,7 @@ function App() {
     updateSaveDialogFilename,
     updateSaveDialogQualityScale,
   } = useAppExportUiModel({
-    exportDefaults,
+    exportDefaults: settings.exportDefaults,
     rootPath: workspace.rootPath,
   });
 
@@ -198,9 +190,9 @@ function App() {
     menuSections,
   } = useAppCommandWiringModel({
     closeAbout,
-    contentTheme,
+    contentTheme: settings.contentTheme,
     currentDocument,
-    exportDefaults,
+    exportDefaults: settings.exportDefaults,
     focusMode: workspace.focusMode,
     handleFileAction,
     locale,
@@ -214,15 +206,15 @@ function App() {
     openSettings,
     openShortcuts,
     openWorkspaceSearch,
-    recentFiles,
+    recentFiles: settings.recentFiles,
     requestExportPath,
     requestSavePath: requestMarkdownSavePath,
-    settingsLocale,
-    shortcutStyle,
+    settingsLocale: settings.locale,
+    shortcutStyle: settings.shortcutStyle,
     showToast,
-    themeRegistryVersion,
+    themeRegistryVersion: settings.themeRegistryVersion,
     toggleFocusMode: workspace.toggleFocusMode,
-    wordWrap,
+    wordWrap: settings.wordWrap,
     workspace,
     workspaceIndex,
   });
@@ -240,9 +232,6 @@ function App() {
     handleCommandAction,
     handleFileAction,
   });
-
-  const titleDocName = currentDocument?.name ?? t('common.untitled');
-  const titleDirty = currentDocument?.isDirty ?? false;
 
   return (
       <WindowShell>
@@ -343,7 +332,7 @@ function App() {
         exportFailure={exportFailure}
         exportProgress={exportProgress}
         exportProgressInBackground={exportProgressInBackground}
-        exportPngScale={exportDefaults.pngScale}
+        exportPngScale={settings.exportDefaults.pngScale}
         saveDialog={saveDialog}
         saveDialogOverwriteFilename={saveDialogOverwriteFilename}
         sendExportProgressToBackground={sendExportProgressToBackground}
@@ -357,7 +346,7 @@ function App() {
         commandPaletteMode={commandPaletteMode}
         commandPaletteVisible={commandPaletteVisible}
         files={workspace.fileTree}
-        recentFiles={recentFiles}
+        recentFiles={settings.recentFiles}
         shortcutPanelVisible={shortcutPanelVisible}
         workspaceIndex={workspaceIndex}
         workspaceIndexing={workspaceIndexing}
