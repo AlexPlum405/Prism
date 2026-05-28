@@ -2,11 +2,9 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useDocumentStore } from './domains/document/store';
 import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
-import { useWorkspaceFocusRefresh } from './domains/workspace/hooks/useWorkspaceFocusRefresh';
-import { useAutoSave } from './domains/document/hooks/useAutoSave';
-import { useExternalFileChangeMonitor } from './domains/document/hooks/useExternalFileChangeMonitor';
 import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
+import { useAppLifecycleModel } from './app/useAppLifecycleModel';
 import { useAppCommandContext } from './app/useAppCommandContext';
 import { useAppShortcuts } from './app/useAppShortcuts';
 import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
@@ -27,7 +25,6 @@ import {
   saveConflictedDocumentAs,
 } from './domains/document/services/conflictResolution';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
-import { useBootstrap } from './hooks/useBootstrap';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
@@ -44,7 +41,6 @@ import {
 } from './domains/commands';
 import {
   computeWritingStats,
-  getRuntimePlatform,
 } from './domains/workspace/services';
 import { t, useI18n } from './domains/i18n';
 
@@ -101,11 +97,13 @@ function App() {
     resolve: (action: DirtyDocumentSwitchAction) => void;
     targetName: string;
   } | null>(null);
-  const [settingsReady, setSettingsReady] = useState(false);
-  useBootstrap(settingsReady);
-  useAutoSave(autoSaveInterval, autoSaveEnabled);
-  useExternalFileChangeMonitor();
-  useWorkspaceFocusRefresh(settingsReady);
+  useAppLifecycleModel({
+    autoSaveEnabled,
+    autoSaveInterval,
+    currentDocument,
+    loadSettings,
+    workspace,
+  });
 
   const {
     workspaceIndex,
@@ -118,97 +116,8 @@ function App() {
   });
 
   useEffect(() => {
-    const platform = getRuntimePlatform();
-    document.documentElement.setAttribute('data-platform', platform);
-    document.body.classList.add(`platform-${platform}`);
-
-    return () => {
-      if (document.documentElement.getAttribute('data-platform') === platform) {
-        document.documentElement.removeAttribute('data-platform');
-      }
-      document.body.classList.remove(`platform-${platform}`);
-    };
-  }, []);
-
-  useEffect(() => {
     setSelectionText('');
   }, [currentDocument?.path]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    let changed = false;
-    if (currentDocument?.path) {
-      if (params.get('file') !== currentDocument.path) {
-        params.set('file', currentDocument.path);
-        changed = true;
-      }
-    }
-    if (workspace.rootPath) {
-      if (params.get('folder') !== workspace.rootPath) {
-        params.set('folder', workspace.rootPath);
-        changed = true;
-      }
-    }
-    if (changed) {
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState({ path: newUrl }, '', newUrl);
-    }
-  }, [currentDocument?.path, workspace.rootPath]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setSettingsReady(false);
-    loadSettings()
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setSettingsReady(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadSettings]);
-
-  useEffect(() => {
-    document.body.classList.toggle('focus-mode', workspace.focusMode);
-  }, [workspace.focusMode]);
-
-  useEffect(() => {
-    document.body.classList.toggle('typewriter-mode', workspace.typewriterMode);
-  }, [workspace.typewriterMode]);
-
-  useEffect(() => {
-    if (!settingsReady) return;
-
-    const timer = window.setTimeout(() => {
-      const doc = useDocumentStore.getState().currentDocument;
-      const ws = useWorkspaceStore.getState();
-      useSettingsStore.getState().setLastSession(
-        doc?.path || ws.rootPath
-          ? {
-              filePath: doc?.path || undefined,
-              folderPath: ws.rootPath || undefined,
-              viewMode: doc?.viewMode,
-              scrollState: doc?.scrollState,
-              sidebarVisible: ws.sidebarVisible,
-              sidebarTab: ws.sidebarTab,
-              updatedAt: Date.now(),
-            }
-          : null,
-      );
-    }, 500);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    currentDocument?.path,
-    currentDocument?.scrollState?.editorRatio,
-    currentDocument?.scrollState?.previewRatio,
-    currentDocument?.viewMode,
-    settingsReady,
-    workspace.rootPath,
-    workspace.sidebarTab,
-    workspace.sidebarVisible,
-  ]);
 
   const { toast, showToast, dismissToast } = useAppToast();
   const {

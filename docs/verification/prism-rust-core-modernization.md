@@ -1099,3 +1099,54 @@ git diff --check
 - `EditorPane.tsx` 仍保留非基础命令 switch、表格命令 handler、模板插入、折叠和当前未提交功能增量相关分支。
 - `editorCommandAdapter` 目前只接管基础命令和标题折叠 helper，还不是完整 command adapter。
 - 完整 EditorPane 拆分仍需要先处理当前未提交编辑器功能增量。
+
+### Checkpoint 10.9：App lifecycle hook
+
+### 目标
+
+继续缩小 `App.tsx` 的窗口级总控职责，把平台标记、设置加载、启动 bootstrap、自动保存、外部文件变更监控、工作区 focus refresh、URL 同步、focus/typewriter body class 和 last session 持久化集中到独立 hook。该 checkpoint 不改变用户可见行为，也不提交当前工作树中已有的 SettingsModal 初始分区未提交改动。
+
+### 改动范围
+
+- 新增 `src/app/useAppLifecycleModel.ts`：
+  - 接管 `useBootstrap(settingsReady)`。
+  - 接管 `useAutoSave`、`useExternalFileChangeMonitor`、`useWorkspaceFocusRefresh`。
+  - 接管运行平台 DOM 标记。
+  - 接管当前文档 / 工作区路径到 URL search params 的同步。
+  - 接管设置加载完成态。
+  - 接管 focus mode / typewriter mode body class。
+  - 接管 last session debounce 保存。
+- `src/App.tsx`：
+  - 移除上述 lifecycle effects 和直接 hook wiring。
+  - 保留 selection reset、恢复/冲突、命令上下文、导出和面板 wiring。
+- App 行数：工作树版本 `634 -> 543`；staged 版本会避开 SettingsModal 初始分区脏改。
+
+### 风险等级
+
+中。该 checkpoint 移动多个 App lifecycle effect，但不改变 effect 内容、依赖语义、store 读写目标或用户可见 UI。
+
+### 验证
+
+```bash
+npm test -- --run src/App.recovery.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/workspace/hooks/useWorkspaceFocusRefresh.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App recovery / platform marker / export wiring 与 lifecycle 相关 hook 聚焦测试：通过，4 个测试文件、26 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 App lifecycle effects、平台标记、自动保存、外部文件变更和 workspace focus refresh，已由 App 与相关 hook 聚焦测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 lifecycle 抽离无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
