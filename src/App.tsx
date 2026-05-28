@@ -17,6 +17,7 @@ import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
+import { AppAuxiliaryModalsController } from './app/controllers/AppAuxiliaryModalsController';
 import { WorkspaceController } from './app/controllers/WorkspaceController';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
@@ -26,9 +27,7 @@ import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
-import { ShortcutPanel } from './components/shell/ShortcutPanel';
-import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
-import { AboutModal } from './components/shell/AboutModal';
+import type { CommandPaletteMode } from './components/shell/CommandPalette';
 import { SettingsModal } from './components/shell/SettingsModal';
 import { t, useI18n } from './domains/i18n';
 
@@ -411,27 +410,21 @@ function App() {
         updateSaveDialogQualityScale={updateSaveDialogQualityScale}
       />
 
-      <ShortcutPanel
-        visible={shortcutPanelVisible}
-        onClose={() => setShortcutPanelVisible(false)}
-      />
-
-      <CommandPalette
-        visible={commandPaletteVisible}
+      <AppAuxiliaryModalsController
+        aboutVisible={aboutVisible}
+        commandPaletteMode={commandPaletteMode}
+        commandPaletteVisible={commandPaletteVisible}
         files={workspace.fileTree}
-        workspaceRoot={workspace.rootPath}
         recentFiles={recentFiles}
+        shortcutPanelVisible={shortcutPanelVisible}
         workspaceIndex={workspaceIndex}
         workspaceIndexing={workspaceIndexing}
-        mode={commandPaletteMode}
-        onClose={() => setCommandPaletteVisible(false)}
-        onExecute={(commandId) => handleCommandAction(commandId)}
-      />
-
-      <AboutModal
-        visible={aboutVisible}
-        onClose={() => setAboutVisible(false)}
-        onCheckUpdate={handleAboutCheckUpdate}
+        workspaceRoot={workspace.rootPath}
+        onAboutCheckUpdate={handleAboutCheckUpdate}
+        onAboutClose={() => setAboutVisible(false)}
+        onCommandPaletteClose={() => setCommandPaletteVisible(false)}
+        onCommandPaletteExecute={(commandId) => handleCommandAction(commandId)}
+        onShortcutPanelClose={() => setShortcutPanelVisible(false)}
       />
       <SettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
     </WindowShell>

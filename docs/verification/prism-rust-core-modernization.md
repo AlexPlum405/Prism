@@ -1366,3 +1366,56 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.14：App auxiliary modals controller
+
+### 目标
+
+继续缩小 `App.tsx` 的弹窗 JSX 职责，把快捷键面板、命令面板和关于弹窗集中到独立 controller。该 checkpoint 不移动 SettingsModal，因为当前工作树中已有未提交的 SettingsModal 初始分区改动，继续保持提交边界干净。
+
+### 改动范围
+
+- 新增 `src/app/controllers/AppAuxiliaryModalsController.tsx`：
+  - 接管 `ShortcutPanel` 渲染。
+  - 接管 `CommandPalette` 渲染。
+  - 接管 `AboutModal` 渲染。
+  - 保持所有 visible、close、execute 和 check update 回调由 App 注入。
+- 新增 `src/app/controllers/AppAuxiliaryModalsController.test.tsx`：
+  - 验证快捷键面板关闭回调。
+  - 验证命令面板关闭和执行回调。
+  - 验证关于弹窗关闭和检查更新回调。
+- `src/App.tsx`：
+  - 移除上述三个 shell 组件的直接 JSX。
+  - 仅保留 SettingsModal 的直接渲染，避免混入未提交设置中心改动。
+- App 行数：staged 版本 `441 -> 434`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低。该 checkpoint 只移动弹窗 JSX 归属，不改变弹窗组件实现、状态来源、命令执行、检查更新或 UI 样式。
+
+### 验证
+
+```bash
+npm test -- --run src/app/controllers/AppAuxiliaryModalsController.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App auxiliary modals / App recovery 聚焦测试：通过，2 个测试文件、9 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在辅助弹窗 JSX 归属和回调透传，已由新增 controller 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 auxiliary modals controller 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、设置弹窗等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
