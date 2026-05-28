@@ -1978,3 +1978,55 @@ git diff --check
 
 - `EditorPane.tsx` staged 版本已降到 846 行，但距离 500 行以内仍有差距。
 - 当前工作树仍有未提交编辑器功能增量，继续拆 command switch、popover layer、剪贴板 model 或搜索/滚动接线前需要持续精确暂存，避免混入无关功能改动。
+
+
+### Checkpoint 10.26：Editor command event model
+
+### 目标
+
+继续推进 `EditorPane.tsx` 拆分，把菜单、右键菜单和命令面板触发的编辑器事件订阅与命令路由集中到独立 hook。该 checkpoint 不改变格式化、标题、段落块、表格、模板、折叠、撤销/重做、复制/粘贴或右键菜单的业务实现。
+
+### 改动范围
+
+- 新增 `src/domains/editor/components/useEditorCommandEventModel.ts`：
+  - 统一订阅 `editor.format`、`editor.heading`、`editor.blockFormat` 和 `editor.command`。
+  - 统一处理右键菜单 action 到全局 command run event 的转发。
+  - 保持 source block operation、表格命令、基础编辑命令、表格插入/复制/转换、模板插入和当前标题折叠的原有路由顺序。
+  - 预留 `handleCustomEditorCommand` 扩展点，供后续编辑器功能增量在不改基础路由的情况下挂接特殊命令。
+- 新增 `src/domains/editor/components/useEditorCommandEventModel.test.tsx`：
+  - 验证格式化、表格、复制和模板事件能路由到对应 handler。
+  - 验证未知编辑器命令可以交给功能扩展回调。
+  - 验证右键菜单 action 会转发为全局 command run event 并保持 editor focus。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 移除本地 app event 订阅与 `onEditorCommand` switch。
+  - 改为消费 `useEditorCommandEventModel` 返回的 `handleEditorContextMenuAction`。
+- EditorPane 行数：staged 版本 `845 -> 742`；工作树中仍保留未暂存的 Callout/插图/Toggle/菜单/样式等功能增量，未混入本 checkpoint。
+
+### 风险等级
+
+中。该 checkpoint 移动编辑器命令事件路由，影响菜单、命令面板、右键菜单和快捷命令进入编辑器的路径，但底层编辑器 handler、表格 model、模板 model、block operation 和 UI 组件不变。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/useEditorTableModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/components/EditorPane.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor command event model / Editor table model / EditorPane integration / EditorPane 聚焦测试：通过，4 个测试文件、48 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在编辑器命令事件路由、表格命令接线和 EditorPane 集成行为，已由新增 hook 测试、表格 hook 测试、EditorPane integration 与 EditorPane 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交当前工作树中的 Callout/插图/Toggle/菜单/样式/图标等功能脏改：这些改动已存在于工作树，和本 checkpoint 的 command event model 拆分无关。
+
+### 剩余风险
+
+- `EditorPane.tsx` staged 版本已降到 742 行，但距离 500 行以内仍有差距。
+- 当前工作树仍有未提交编辑器功能增量，继续拆 runtime lifecycle、imperative handle、剪贴板 model、滚动/设置同步或 popover layer 前需要持续精确暂存，避免混入无关功能改动。

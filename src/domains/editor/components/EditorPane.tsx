@@ -21,20 +21,13 @@ import { useWorkspaceStore } from '../../workspace/store';
 import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services';
 import type { SearchAction, SearchParams } from './SearchPanel';
 import { ContextMenu } from '../../../components/shell/ContextMenu';
-import { isCommandId } from '../../commands';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
 import { getEditorFormatResult, type EditorFormat } from '../extensions/formatting';
 import {
   getSourceBlockOperationEdit,
-  isSourceBlockOperation,
   type SourceBlockOperation,
 } from '../extensions/blockOperations';
 import {
-  applyBlockFormatCommand,
-  applyHeadingLevel,
-} from '../runtime/editorBlockCommands';
-import {
-  EDITOR_TABLE_COMMANDS,
   runMarkdownTableNavigation,
 } from '../runtime/editorTableRuntime';
 import {
@@ -70,13 +63,11 @@ import {
 } from '../runtime/editorAppearanceRuntime';
 import {
   getCurrentHeadingFoldRange,
-  runBasicEditorCommand,
 } from '../runtime/editorCommandAdapter';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
 import { markdownListKeymap } from '../extensions/markdownLists';
 import {
   findMarkdownTableBlock,
-  type MarkdownTableInsertOptions,
 } from '../extensions/tables';
 import {
   getMarkdownTemplateInsertEdit,
@@ -95,8 +86,9 @@ import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
 import { TableInsertPopover } from './TableInsertPopover';
+import { useEditorCommandEventModel } from './useEditorCommandEventModel';
 import { useEditorTableModel } from './useEditorTableModel';
-import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
+import { emitAppEvent } from '../../../platform/events/appEvents';
 
 export interface EditorPaneHandle {
   focus: () => void;
@@ -319,17 +311,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       [],
     );
 
-    const handleEditorContextMenuAction = useCallback(async (action: string) => {
-      const view = viewRef.current;
-      if (!view) return;
-
-      if (isCommandId(action)) {
-        emitAppEvent('command.run', { action });
-      }
-
-      view.focus();
-    }, []);
-
     const handleTemplateInsert = useCallback((templateId: unknown) => {
       const view = viewRef.current;
       if (!view || !isMarkdownTemplateId(templateId)) return false;
@@ -412,93 +393,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       },
     }), [handleTablePasteText, imageClipboardMessages]);
 
-    // 监听菜单格式化事件
-    useEffect(() => {
-      const onFormat = (detail: { format?: string } | null | undefined) => {
-        if (detail?.format) handleFormat(detail.format as EditorFormat);
-      };
-      const onHeading = (detail: { level?: string } | null | undefined) => {
-        const view = viewRef.current;
-        if (!view) return;
-        const levelValue = typeof detail?.level === 'string' ? detail.level : '';
-        applyHeadingLevel(view, levelValue);
-      };
-      const onBlock = (detail: { format?: string } | null | undefined) => {
-        const view = viewRef.current;
-        if (!view) return;
-        const fmt = typeof detail?.format === 'string' ? detail.format : '';
-        applyBlockFormatCommand(view, fmt, handleSourceBlockOperation);
-      };
-
-      const onEditorCommand = (detail: ({ command?: string } & Record<string, unknown>) | null | undefined) => {
-        const view = viewRef.current;
-        if (!view) return;
-        const command = typeof detail?.command === 'string' ? detail.command : '';
-        if (!command) return;
-
-        if (isSourceBlockOperation(command)) {
-          handleSourceBlockOperation(command);
-          return;
-        }
-
-        const tableCommand = EDITOR_TABLE_COMMANDS[command];
-        if (tableCommand) {
-          handleTableCommand(tableCommand);
-          return;
-        }
-
-        if (runBasicEditorCommand(command, view, { handleTablePasteText })) return;
-
-        switch (command) {
-          case 'insertTable':
-            if (detail?.options && typeof detail.options === 'object') {
-              handleTableCommand('insert', detail.options as MarkdownTableInsertOptions);
-            } else {
-              setTableInsertVisible(true);
-            }
-            break;
-          case 'selectTable':
-            handleSelectTable();
-            break;
-          case 'copyTableMarkdown':
-            void handleTableCopy('markdown');
-            break;
-          case 'copyTableHtml':
-            void handleTableCopy('html');
-            break;
-          case 'copyTableCsv':
-            void handleTableCopy('csv');
-            break;
-          case 'copyTableTsv':
-            void handleTableCopy('tsv');
-            break;
-          case 'convertTableToHtml':
-            handleTableConvert('html');
-            break;
-          case 'convertHtmlTableToMarkdown':
-            handleTableConvert('markdown');
-            break;
-          case 'insertTemplate':
-            handleTemplateInsert(detail?.templateId);
-            break;
-          case 'foldCurrentHeading':
-            handleFoldCurrentHeading();
-            break;
-        }
-      };
-
-      const unsubscribeFormat = onAppEvent('editor.format', onFormat);
-      const unsubscribeHeading = onAppEvent('editor.heading', onHeading);
-      const unsubscribeBlock = onAppEvent('editor.blockFormat', onBlock);
-      const unsubscribeEditorCommand = onAppEvent('editor.command', onEditorCommand);
-
-      return () => {
-        unsubscribeFormat();
-        unsubscribeHeading();
-        unsubscribeBlock();
-        unsubscribeEditorCommand();
-      };
-    }, [
+    const { handleEditorContextMenuAction } = useEditorCommandEventModel({
+      viewRef,
       handleFoldCurrentHeading,
       handleFormat,
       handleSelectTable,
@@ -508,7 +404,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       handleTableCopy,
       handleTablePasteText,
       handleTemplateInsert,
-    ]);
+      setTableInsertVisible,
+    });
 
     // 处理来自 Props 的内容同步（非重挂载情况）
     useEffect(() => {
