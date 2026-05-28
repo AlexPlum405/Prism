@@ -34,11 +34,9 @@ import {
   applyHeadingLevel,
 } from '../runtime/editorBlockCommands';
 import {
-  applyMarkdownTableEdit,
   EDITOR_TABLE_COMMANDS,
   runMarkdownTableNavigation,
 } from '../runtime/editorTableRuntime';
-import { getEditorTableToolbarState } from '../runtime/editorTableController';
 import {
   execEditorSearch,
   restoreEditorSearch,
@@ -78,16 +76,8 @@ import { HorizontalScrollbar } from './HorizontalScrollbar';
 import { markdownListKeymap } from '../extensions/markdownLists';
 import {
   findMarkdownTableBlock,
-  getHtmlTableToMarkdownEdit,
-  getMarkdownTableCommandEdit,
-  getMarkdownTablePasteEdit,
-  getMarkdownTableSelection,
-  getMarkdownTableSerialization,
-  getMarkdownTableToHtmlEdit,
-  type MarkdownTableCommand,
   type MarkdownTableInsertOptions,
 } from '../extensions/tables';
-import { writeRichClipboard } from '../extensions/richCopy';
 import {
   getMarkdownTemplateInsertEdit,
   isMarkdownTemplateId,
@@ -105,6 +95,7 @@ import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
 import { TableInsertPopover } from './TableInsertPopover';
+import { useEditorTableModel } from './useEditorTableModel';
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 
 export interface EditorPaneHandle {
@@ -218,12 +209,18 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       hasSelection: boolean;
       isInTable: boolean;
     } | null>(null);
-    const [tableInsertVisible, setTableInsertVisible] = useState(false);
-    const [tableToolbar, setTableToolbar] = useState<{
-      visible: boolean;
-      x: number;
-      y: number;
-    }>({ visible: false, x: 16, y: 16 });
+    const {
+      handleSelectTable,
+      handleTableCommand,
+      handleTableConvert,
+      handleTableCopy,
+      handleTableInsert,
+      handleTablePasteText,
+      setTableInsertVisible,
+      tableInsertVisible,
+      tableToolbar,
+      updateTableToolbar,
+    } = useEditorTableModel({ editorRef, viewRef });
 
     useEffect(() => {
       onChangeRef.current = onChange;
@@ -332,99 +329,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
 
       view.focus();
     }, []);
-
-    const updateTableToolbar = useCallback((view: EditorView) => {
-      const nextToolbar = getEditorTableToolbarState(view, editorRef.current);
-      if (!nextToolbar.visible) {
-        setTableToolbar((current) => current.visible ? { ...current, visible: false } : current);
-        return;
-      }
-
-      setTableToolbar(nextToolbar);
-    }, []);
-
-    const handleTableCommand = useCallback((command: MarkdownTableCommand, options?: MarkdownTableInsertOptions) => {
-      const view = viewRef.current;
-      if (!view) return false;
-
-      const selection = view.state.selection.main;
-      const result = getMarkdownTableCommandEdit(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to,
-        command,
-        options,
-      );
-      if (!result) return false;
-
-      applyMarkdownTableEdit(view, result);
-      updateTableToolbar(view);
-      return true;
-    }, [updateTableToolbar]);
-
-    const handleTableInsert = useCallback((options: MarkdownTableInsertOptions) => {
-      setTableInsertVisible(false);
-      handleTableCommand('insert', options);
-    }, [handleTableCommand]);
-
-    const handleSelectTable = useCallback(() => {
-      const view = viewRef.current;
-      if (!view) return false;
-      const selection = getMarkdownTableSelection(view.state.doc.toString(), view.state.selection.main.head);
-      if (!selection) return false;
-      view.dispatch({
-        selection: { anchor: selection.from, head: selection.to },
-        scrollIntoView: true,
-      });
-      view.focus();
-      setTableToolbar((current) => ({ ...current, visible: false }));
-      return true;
-    }, []);
-
-    const handleTableCopy = useCallback(async (format: 'markdown' | 'html' | 'csv' | 'tsv') => {
-      const view = viewRef.current;
-      if (!view) return false;
-      const serialization = getMarkdownTableSerialization(view.state.doc.toString(), view.state.selection.main.head);
-      if (!serialization) return false;
-
-      if (format === 'html') {
-        await writeRichClipboard({
-          html: serialization.html,
-          text: serialization.markdown,
-        });
-        return true;
-      }
-
-      await navigator.clipboard.writeText(serialization[format]);
-      return true;
-    }, []);
-
-    const handleTableConvert = useCallback((target: 'html' | 'markdown') => {
-      const view = viewRef.current;
-      if (!view) return false;
-      const cursor = view.state.selection.main.head;
-      const result = target === 'html'
-        ? getMarkdownTableToHtmlEdit(view.state.doc.toString(), cursor)
-        : getHtmlTableToMarkdownEdit(view.state.doc.toString(), cursor);
-      if (!result) return false;
-      applyMarkdownTableEdit(view, result);
-      updateTableToolbar(view);
-      return true;
-    }, [updateTableToolbar]);
-
-    const handleTablePasteText = useCallback((view: EditorView, text: string) => {
-      const selection = view.state.selection.main;
-      const result = getMarkdownTablePasteEdit(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to,
-        text,
-      );
-      if (!result) return false;
-      applyMarkdownTableEdit(view, result);
-      updateTableToolbar(view);
-      return true;
-    }, [updateTableToolbar]);
 
     const handleTemplateInsert = useCallback((templateId: unknown) => {
       const view = viewRef.current;
