@@ -948,3 +948,52 @@ git diff --check
 - `EditorPane.tsx` 仍较大，command switch、table toolbar/action、paste/drop image 和 runtime extension 组装仍在组件内。
 - `createEditorRuntime` 当前只接管 state/view 创建，还未完全接管 extension 组装。
 - 若要继续完成完整 EditorPane 拆分，需要先处理或提交当前工作树中已有的编辑器功能增量，否则无法保证提交边界干净。
+
+### Checkpoint 10.6：Editor table controller seam
+
+### 目标
+
+在不改变表格编辑行为的前提下，把表格浮动工具栏的位置计算从 `EditorPane.tsx` 移到 `editorTableController`。该 checkpoint 继续建立 EditorPane 拆分落点，但不触碰当前未提交的插入图片、Callout、Toggle、斜杠菜单功能增量。
+
+### 改动范围
+
+- 新增 `src/domains/editor/runtime/editorTableController.ts`：
+  - `getEditorTableToolbarState`：根据选区、表格块和宿主 DOM 计算工具栏可见性与位置。
+  - `HIDDEN_TABLE_TOOLBAR_STATE`：统一隐藏状态。
+- 新增 `src/domains/editor/runtime/editorTableController.test.ts`：
+  - 覆盖光标在 Markdown 表格内时的 fallback 坐标。
+  - 覆盖非表格区域和范围选区时隐藏工具栏。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - `updateTableToolbar` 改用 `getEditorTableToolbarState`。
+  - 保留表格命令执行、复制、转换、粘贴和 toolbar state 设置归属。
+- 本 checkpoint 未提交当前工作树中已有的插入图片、Callout、Toggle、斜杠菜单等编辑器功能未提交改动。
+
+### 风险等级
+
+中低。该 checkpoint 只移动表格 toolbar 坐标计算，不改变表格解析、命令执行、剪贴板、粘贴、转换或浮层组件。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorTableController.test.ts src/domains/editor/runtime/createEditorRuntime.test.ts src/domains/editor/components/EditorPane.test.ts src/domains/editor/runtime/editorTableRuntime.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor table controller / EditorPane / table runtime 聚焦测试：通过，4 个测试文件、22 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未把所有 table action 完整迁入 `editorTableController`：当前工作树已有未提交编辑器功能增量，本 checkpoint 先迁纯计算，避免扩大提交边界。
+- 未跑完整 `npm test -- --run`：风险面集中在表格 toolbar 计算与既有 table runtime，已由新增测试和既有表格测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+
+### 剩余风险
+
+- `EditorPane.tsx` 仍保留表格命令 handler、表格复制/转换、paste/drop 和 command switch。
+- `editorTableController` 当前只接管 toolbar state 计算，还不是完整 table controller。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响，需要先清理或提交这些功能改动后再安全推进。

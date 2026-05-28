@@ -40,6 +40,7 @@ import {
   EDITOR_TABLE_COMMANDS,
   runMarkdownTableNavigation,
 } from '../runtime/editorTableRuntime';
+import { getEditorTableToolbarState } from '../runtime/editorTableController';
 import {
   execEditorSearch,
   restoreEditorSearch,
@@ -426,29 +427,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     }, []);
 
     const updateTableToolbar = useCallback((view: EditorView) => {
-      const selection = view.state.selection.main;
-      if (selection.from !== selection.to) {
+      const nextToolbar = getEditorTableToolbarState(view, editorRef.current);
+      if (!nextToolbar.visible) {
         setTableToolbar((current) => current.visible ? { ...current, visible: false } : current);
         return;
       }
 
-      const block = findMarkdownTableBlock(view.state.doc.toString(), selection.head);
-      if (!block) {
-        setTableToolbar((current) => current.visible ? { ...current, visible: false } : current);
-        return;
-      }
-
-      const hostRect = editorRef.current?.getBoundingClientRect();
-      const coords = view.coordsAtPos(selection.head) ?? view.coordsAtPos(block.from);
-      if (!hostRect || !coords) {
-        setTableToolbar({ visible: true, x: 16, y: 16 });
-        return;
-      }
-
-      const toolbarWidth = 560;
-      const x = Math.max(12, Math.min(coords.left - hostRect.left - 12, hostRect.width - toolbarWidth - 12));
-      const y = Math.max(12, coords.top - hostRect.top - 44);
-      setTableToolbar({ visible: true, x, y });
+      setTableToolbar(nextToolbar);
     }, []);
 
     const handleTableCommand = useCallback((command: MarkdownTableCommand, options?: MarkdownTableInsertOptions) => {
