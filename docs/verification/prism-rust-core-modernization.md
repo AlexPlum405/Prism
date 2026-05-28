@@ -1048,3 +1048,54 @@ git diff --check
 - `EditorPane.tsx` 仍保留 command switch、表格命令 handler、表格复制/转换和多段 UI state。
 - `editorClipboardController` 已接管事件分发，但 image deps 仍在组件内组装。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响，需要先清理或提交这些功能改动后再安全推进。
+
+### Checkpoint 10.8：Editor command adapter 基础命令
+
+### 目标
+
+开始拆 `onAppEvent('editor.command')` 大 switch，把不依赖当前未提交功能增量的基础编辑命令迁到 `editorCommandAdapter`。本 checkpoint 只迁移 undo/redo/cut/copy/paste/selectAll/clearFormat/comment，不触碰插入图片、Callout、Toggle、模板、表格等分支。
+
+### 改动范围
+
+- 扩展 `src/domains/editor/runtime/editorCommandAdapter.ts`：
+  - `runBasicEditorCommand`
+  - 处理基础历史、剪贴板、全选、粘贴、清除格式、HTML 注释包装。
+- 新增 `src/domains/editor/runtime/editorCommandAdapter.test.ts`：
+  - 覆盖 `selectAll`。
+  - 覆盖 `clearFormat`。
+  - 覆盖非基础命令返回 `false`。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 从 command switch 前置调用 `runBasicEditorCommand`。
+  - 移除 switch 内对应基础命令分支。
+  - 移除 `undo` / `redo` / `markdownSelectionToRichClipboardInput` 直接依赖。
+- 本 checkpoint 未提交当前工作树中已有的插入图片、Callout、Toggle、斜杠菜单等编辑器功能未提交改动。
+
+### 风险等级
+
+中。该 checkpoint 迁移真实命令分发逻辑，但范围限定在基础编辑命令，且保留原有命令语义和异步剪贴板行为。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/runtime/createEditorRuntime.test.ts src/domains/editor/components/EditorPane.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor command adapter / EditorPane 聚焦测试：通过，4 个测试文件、48 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未迁移插入图片、Callout、Toggle、模板、表格相关命令：这些区域与当前未提交编辑器功能增量交织，继续迁移会增加混入无关改动的风险。
+- 未跑完整 `npm test -- --run`：风险面集中在基础命令分发和 EditorPane 集成，已由 adapter 测试与 EditorPane 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+
+### 剩余风险
+
+- `EditorPane.tsx` 仍保留非基础命令 switch、表格命令 handler、模板插入、折叠和当前未提交功能增量相关分支。
+- `editorCommandAdapter` 目前只接管基础命令和标题折叠 helper，还不是完整 command adapter。
+- 完整 EditorPane 拆分仍需要先处理当前未提交编辑器功能增量。

@@ -12,7 +12,7 @@ import { Compartment, EditorState, Prec } from '@codemirror/state';
 
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { history, historyKeymap, defaultKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
+import { history, historyKeymap, defaultKeymap, indentWithTab } from '@codemirror/commands';
 import { indentOnInput, bracketMatching, foldGutter, foldKeymap, foldEffect } from '@codemirror/language';
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { search } from '@codemirror/search';
@@ -55,7 +55,10 @@ import {
   createEditorRuntime,
   getEditorPhrases,
 } from '../runtime/createEditorRuntime';
-import { getCurrentHeadingFoldRange } from '../runtime/editorCommandAdapter';
+import {
+  getCurrentHeadingFoldRange,
+  runBasicEditorCommand,
+} from '../runtime/editorCommandAdapter';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -71,7 +74,7 @@ import {
   type MarkdownTableCommand,
   type MarkdownTableInsertOptions,
 } from '../extensions/tables';
-import { markdownSelectionToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
+import { writeRichClipboard } from '../extensions/richCopy';
 import {
   getMarkdownTemplateInsertEdit,
   isMarkdownTemplateId,
@@ -633,49 +636,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           return;
         }
 
+        if (runBasicEditorCommand(command, view, { handleTablePasteText })) return;
+
         switch (command) {
-          case 'undo':
-            undo(view);
-            break;
-          case 'redo':
-            redo(view);
-            break;
-          case 'cut':
-            document.execCommand('cut');
-            break;
-          case 'copy':
-          case 'copyMd':
-          case 'copyPlain': {
-            const sel = view.state.selection.main;
-            const text = view.state.doc.sliceString(sel.from, sel.to);
-            if (text) navigator.clipboard.writeText(text);
-            break;
-          }
-          case 'copyHtml': {
-            const sel2 = view.state.selection.main;
-            const text2 = view.state.doc.sliceString(sel2.from, sel2.to);
-            if (text2) void writeRichClipboard(markdownSelectionToRichClipboardInput(text2));
-            break;
-          }
-          case 'selectAll':
-            view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } });
-            break;
-          case 'paste':
-          case 'pastePlain':
-            navigator.clipboard.readText().then(text => {
-              if (handleTablePasteText(view, text)) return;
-              view.dispatch({
-                changes: { from: view.state.selection.main.from, to: view.state.selection.main.to, insert: text },
-              });
-            });
-            break;
-          case 'clearFormat': {
-            const sel3 = view.state.selection.main;
-            const raw = view.state.doc.sliceString(sel3.from, sel3.to);
-            const cleaned = raw.replace(/[*_~`<>[\]()#]/g, '');
-            view.dispatch({ changes: { from: sel3.from, to: sel3.to, insert: cleaned } });
-            break;
-          }
           case 'insertTable':
             if (detail?.options && typeof detail.options === 'object') {
               handleTableCommand('insert', detail.options as MarkdownTableInsertOptions);
@@ -710,12 +673,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           case 'foldCurrentHeading':
             handleFoldCurrentHeading();
             break;
-          case 'comment': {
-            const sel4 = view.state.selection.main;
-            const raw2 = view.state.doc.sliceString(sel4.from, sel4.to);
-            view.dispatch({ changes: { from: sel4.from, to: sel4.to, insert: `<!-- ${raw2} -->` } });
-            break;
-          }
         }
       };
 
