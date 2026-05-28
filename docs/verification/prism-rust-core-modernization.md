@@ -2082,3 +2082,53 @@ git diff --check
 
 - `EditorPane.tsx` staged 版本已降到 649 行，但距离 500 行以内仍有差距。
 - 当前工作树仍有未提交编辑器功能增量，继续拆 runtime lifecycle、imperative handle、剪贴板 model、滚动/设置同步或 popover layer 前需要持续精确暂存，避免混入无关功能改动。
+
+
+### Checkpoint 10.28：Editor runtime model
+
+### 目标
+
+完成 Phase 10 的 `EditorPane.tsx` 500 行以内目标，把 CodeMirror 初始化、内容同步、设置 reconfigure、粘贴/drop/滚动监听和编辑器 scroller 暴露集中到独立 runtime hook。该 checkpoint 不改变 CodeMirror extension 列表、快捷键、滚动回调、表格工具栏刷新、图片粘贴/drop、链接补全、主题 reconfigure 或任何 UI 样式。
+
+### 改动范围
+
+- 新增 `src/domains/editor/components/useEditorRuntimeModel.ts`：
+  - 承载内容从 props 同步到 CodeMirror 的 effect。
+  - 承载 CodeMirror mount-once 初始化，包括表格导航 keymap、搜索面板、Markdown/list/keymap、兼容主题高亮、选择监听、链接补全、主题与排版 extension。
+  - 承载 contextmenu、paste、dragover、drop、scroll DOM listener 的注册与清理。
+  - 承载 locale、dark theme、content theme、行号、自动换行、排版和链接补全的 reconfigure effect。
+  - 返回 `getEditorScroller`，供现有水平滚动条组件继续读取 CodeMirror scroller。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 移除本地 CodeMirror 初始化和 runtime sync effects。
+  - 改为调用 `useEditorRuntimeModel`。
+  - 保留 `EditorPaneHandle`、编辑器 action model、命令事件 model、表格 model、右键菜单 UI、表格弹窗和水平滚动条 UI。
+- EditorPane 行数：staged 版本 `649 -> 344`，达到 Phase 10 的 500 行以内目标；工作树中仍保留未暂存的 Callout/插图/Toggle/菜单/样式等功能增量，未混入本 checkpoint。
+
+### 风险等级
+
+中到高。该 checkpoint 移动 CodeMirror runtime lifecycle 和 DOM listener 注册位置，影响编辑器初始化、内容同步、粘贴/drop、滚动、链接补全和设置 reconfigure 接线，但不改变底层 extension、handler、runtime helper 或 UI 组件。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/components/useEditorActionModel.test.tsx src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/useEditorTableModel.test.tsx src/domains/editor/runtime/editorAppearanceRuntime.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/components/EditorPane.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor action model / Editor command event model / Editor table model / Editor appearance runtime / EditorPane integration / EditorPane 聚焦测试：通过，6 个测试文件、55 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 EditorPane runtime lifecycle、命令/动作/表格接线、appearance reconfigure 和编辑器集成行为，已由新增/既有编辑器聚焦测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交当前工作树中的 Callout/插图/Toggle/菜单/样式/图标等功能脏改：这些改动已存在于工作树，和本 checkpoint 的 runtime model 拆分无关。
+
+### 剩余风险
+
+- Phase 10 的 `App.tsx < 350` 与 `EditorPane.tsx < 500` 目标均已达成；仍可继续整理当前未提交功能增量带来的额外编辑器 UI 接线，但不再属于本阶段硬性行数目标。
+- 当前工作树仍有未提交编辑器功能增量，后续若继续提交 Callout/插图/Toggle/菜单/样式/图标，应按各自功能 checkpoint 单独验证、单独提交。
