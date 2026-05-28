@@ -236,3 +236,69 @@ git diff --check
 - 大多数旧 Rust command 仍返回 `Result<T, String>`，只是已有 domain error 基础设施。
 - 前端 UI 层暂未按错误码做差异化 toast/modal/diagnostics；后续阶段需要逐步消费 `PrismNativeError.code`。
 - 文件 IO、工作区索引、搜索、反链/图谱、导出任务和资源读取仍未迁到 Rust 主实现。
+
+## Phase 3：Rust 文档 IO
+
+### 目标
+
+把打开文档、读取快照、写入文档的核心 IO 能力接入 Rust command，同时保留 TypeScript fallback，避免 native command 不可用时影响当前桌面写作链路。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/document_io.rs`：
+  - `FileSnapshotDto`
+  - `DocumentFileSessionDto`
+  - `WriteDocumentInput`
+  - `DocumentWriteResult`
+  - 文档读取、写入、快照、扩展名校验、外部修改/删除检测。
+- 新增 `src-tauri/src/commands/document_io.rs`：
+  - `get_file_snapshot`
+  - `read_document_file`
+  - `write_document_file`
+- `src-tauri/src/commands/mod.rs`、`src-tauri/src/domain/mod.rs`、`src-tauri/src/lib.rs` 注册 document IO command。
+- 新增 `src/platform/tauri/documentIo.ts` 作为前端 native adapter。
+- 新增 `src/domains/document/services/documentIo.ts` 作为业务层 document IO seam：native-first，command 不可用或测试环境返回空 DTO 时 fallback 到旧 TS fs。
+- `src/domains/document/fileSnapshot.ts` 改为优先 native 快照，native 不可用时 fallback 到 `stat`。
+- `src/domains/document/services/fileSafety.ts` 继续作为文件安全边界，读写实现委托给 `documentIo`，并按 `PrismNativeError.code` 识别 missing / permission-denied。
+- `src/domains/document/hooks/useAutoSave.ts` 写入时传入 `expectedSnapshot`，减少检测后写入前的竞态。
+- `src/domains/commands/categories/fileCommands.ts` 保存/关闭前保存时把已验证快照传给写入层。
+- `src/lib/fileActions.ts` 的打开文件、切换前保存、新建文件改走 document IO seam。
+- `src/domains/document/components/OpenFileButton.tsx` 和 `src/hooks/useBootstrap.ts` 的打开文档路径改走 document IO seam。
+- `src/platform/tauri/result.ts` 补充 native command unavailable 判断，支持测试环境和旧版本 fallback。
+
+### 风险等级
+
+中高。该阶段穿过打开、保存、自动保存、冲突检测和启动恢复路径。控制方式是 native-first + fallback，并保留既有 `fileSafety` 边界和现有 UI 调用形态。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test document_io
+cd src-tauri && cargo check
+npm test -- --run src/domains/document/services/fileSafety.test.ts src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/services/conflictResolution.test.ts src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts src/platform/tauri/result.test.ts
+npm test -- --run src/hooks/useBootstrap.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test document_io`：通过，4 个 Rust document IO 测试。
+- `cargo check`：通过。
+- 文档 IO / 保存冲突 TS 聚焦测试：通过，6 个测试文件、36 个测试。
+- `useBootstrap` 聚焦测试：通过，1 个测试文件、6 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 已覆盖 document IO、文件安全、自动保存、冲突处理、文件命令、Finder 打开/切换和启动恢复。
+- 未跑真实 app smoke：本 phase 不改窗口生命周期、file association、Tauri capabilities、安装器、签名、updater 或发布链路。真实打开/保存 smoke 留到文件 IO 与工作区树迁移稳定后集中做。
+
+### 剩余风险
+
+- `write_document_file` 已支持 `expectedSnapshot`，但部分另存为/覆盖路径仍按兼容旧行为写入，后续可继续细分 create-new / replace 语义。
+- 前端仍有部分非文档正文 IO 直接走 TS fs，例如恢复快照文件、复制/重复文件、工作区树和导出资源。
+- 后续 Phase 4/5 仍需把工作区树、索引和搜索从 WebView 迁到 Rust。

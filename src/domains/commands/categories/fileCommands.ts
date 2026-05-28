@@ -161,8 +161,12 @@ async function handleSave(context: CommandContext): Promise<void> {
         reason: 'manual-save',
       }).catch(() => undefined);
     }
-    if (doc.path) await ensureDocumentNotChangedOnDisk(context, targetPath);
-    const snapshot = await writeDocumentFileSession({ path: targetPath, content: doc.content });
+    const expectedSnapshot = doc.path ? await ensureDocumentNotChangedOnDisk(context, targetPath) : null;
+    const snapshot = await writeDocumentFileSession({
+      path: targetPath,
+      content: doc.content,
+      expectedSnapshot,
+    });
     if (!doc.path) {
       context.documentStore.openDocument(targetPath, basename(targetPath), doc.content, snapshot);
     }
@@ -258,8 +262,12 @@ async function handleCloseDocument(context: CommandContext): Promise<void> {
           reason: 'manual-save',
         }).catch(() => undefined);
       }
-      if (doc.path) await ensureDocumentNotChangedOnDisk(context, targetPath);
-      const snapshot = await writeDocumentFileSession({ path: targetPath, content: doc.content });
+      const expectedSnapshot = doc.path ? await ensureDocumentNotChangedOnDisk(context, targetPath) : null;
+      const snapshot = await writeDocumentFileSession({
+        path: targetPath,
+        content: doc.content,
+        expectedSnapshot,
+      });
       context.documentStore.markSaved(targetPath, snapshot);
       await recoverySnapshotStore.clearForDocument(targetPath).catch(() => undefined);
     } catch (err) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeNativeError, PrismNativeError } from './result';
+import { isNativeCommandUnavailableError, normalizeNativeError, PrismNativeError } from './result';
 
 describe('normalizeNativeError', () => {
   it('keeps structured native errors', () => {
@@ -35,5 +35,17 @@ describe('normalizeNativeError', () => {
     });
 
     expect(normalizeNativeError(original)).toBe(original);
+  });
+
+  it('detects missing native command errors for fallback paths', () => {
+    expect(isNativeCommandUnavailableError(new PrismNativeError({
+      code: 'unknown_error',
+      message: 'unknown command read_document_file',
+    }))).toBe(true);
+
+    expect(isNativeCommandUnavailableError(new PrismNativeError({
+      code: 'file_not_found',
+      message: 'File does not exist',
+    }))).toBe(false);
   });
 });

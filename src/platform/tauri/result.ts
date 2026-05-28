@@ -57,3 +57,10 @@ export function normalizeNativeError(error: unknown): PrismNativeError {
     message: getUnknownErrorMessage(error),
   });
 }
+
+export function isNativeCommandUnavailableError(error: unknown): boolean {
+  if (!(error instanceof PrismNativeError)) return false;
+  if (error.code !== 'unknown_error') return false;
+  return /unknown command|command .* not found|not implemented|not available|__tauri|tauri_internals|window\.__tauri|reading ['"]invoke['"]|invoke.*undefined|not a function/i
+    .test(error.message);
+}

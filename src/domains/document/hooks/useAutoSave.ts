@@ -51,6 +51,7 @@ export function useAutoSave(interval = 2000, enabled = true) {
           markSaved(documentPath, await writeDocumentFileSession({
             path: documentPath,
             content: documentContent,
+            expectedSnapshot: knownSnapshot,
           }));
           await recoverySnapshotStore.clearForDocument(documentPath).catch(() => undefined);
         }

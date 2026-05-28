@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
-import { exists, readTextFile } from '../platform/tauri/fileSystem';
+import { exists } from '../platform/tauri/fileSystem';
 import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
-import { addRecentFile, basename, dirname } from '../domains/workspace/services';
-import { getFileSnapshotOrNull } from '../domains/document/fileSnapshot';
+import { addRecentFile, dirname } from '../domains/workspace/services';
 import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
+import { readDocumentFileSession } from '../domains/document/services/fileSafety';
 
 export function useBootstrap(enabled = true) {
   const currentDocument = useDocumentStore((s) => s.currentDocument);
@@ -36,16 +36,15 @@ export function useBootstrap(enabled = true) {
     ) => {
       await grantMarkdownFileScope(path);
       if (!(await exists(path))) return false;
-      const snapshot = await getFileSnapshotOrNull(path);
-      const content = await readTextFile(path);
+      const session = await readDocumentFileSession(path);
       if (cancelled || useDocumentStore.getState().currentDocument) return true;
 
-      openDocument(path, basename(path), content, snapshot);
+      openDocument(session.path, session.name, session.content, session.knownSnapshot);
       if (restoreViewMode) setViewMode(restoreViewMode);
       if (restoreScrollState) updateScrollState(restoreScrollState);
-      addRecentFile(path, basename(path));
+      addRecentFile(session.path, session.name);
 
-      const parentDir = dirname(path);
+      const parentDir = dirname(session.path);
       setRootPath(parentDir);
       const tree = await loadFolderTree(parentDir);
       if (cancelled) return true;

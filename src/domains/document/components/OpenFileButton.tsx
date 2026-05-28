@@ -1,13 +1,12 @@
 import { openDialog } from '../../../platform/tauri/dialogs';
-import { readTextFile } from '../../../platform/tauri/fileSystem';
 import { useDocumentStore } from '../store';
 import { useWorkspaceStore } from '../../workspace/store';
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
-import { MARKDOWN_FILE_FILTERS, basename, dirname } from '../../workspace/services';
+import { MARKDOWN_FILE_FILTERS, dirname } from '../../workspace/services';
 import { openPrismWindow } from '../../../lib/openWindow';
-import { getFileSnapshotOrNull } from '../fileSnapshot';
 import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
 import { useI18n } from '../../i18n';
+import { readDocumentFileSession } from '../services/fileSafety';
 
 export function OpenFileButton() {
   const { t } = useI18n();
@@ -26,9 +25,8 @@ export function OpenFileButton() {
       await grantMarkdownFileScope(selected);
 
       if (!currentDocument) {
-        const snapshot = await getFileSnapshotOrNull(selected);
-        const content = await readTextFile(selected);
-        openDocument(selected, basename(selected), content, snapshot);
+        const session = await readDocumentFileSession(selected);
+        openDocument(session.path, session.name, session.content, session.knownSnapshot);
 
         const parentDir = dirname(selected);
         setRootPath(parentDir);

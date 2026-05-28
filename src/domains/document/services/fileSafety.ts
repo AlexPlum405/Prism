@@ -1,9 +1,6 @@
-import { readTextFile, writeTextFile } from '../../../platform/tauri/fileSystem';
-import { basename } from '../../workspace/services/path';
 import {
   getExternalChangeMessage,
   getFileSnapshot,
-  getFileSnapshotOrNull,
   hasFileSnapshotChanged,
   type FileSnapshot,
 } from '../fileSnapshot';
@@ -16,13 +13,13 @@ import {
 } from './recovery';
 import type { DocumentSaveIssue } from '../types';
 import { t } from '../../i18n';
-
-export interface DocumentFileSession {
-  content: string;
-  knownSnapshot: FileSnapshot;
-  name: string;
-  path: string;
-}
+import { PrismNativeError } from '../../../platform/tauri/result';
+import {
+  readDocumentFileSession as readDocumentFileSessionFromIo,
+  writeDocumentFileSession as writeDocumentFileSessionFromIo,
+  type DocumentFileSession,
+  type WriteDocumentFileSessionInput,
+} from './documentIo';
 
 export interface WorkspaceFileSession {
   activeDocumentPath?: string;
@@ -116,6 +113,11 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function classifyFileAccessIssue(error: unknown): FileAccessIssueKind {
+  if (error instanceof PrismNativeError) {
+    if (error.code === 'file_not_found' || error.code === 'external_deleted') return 'missing';
+    if (error.code === 'permission_denied') return 'permission-denied';
+  }
+
   const message = getErrorMessage(error);
   if (/enoent|not\s+found|no\s+such\s+file|os\s+error\s+2/i.test(message)) return 'missing';
   if (/eacces|eperm|permission\s+denied|not\s+permitted|os\s+error\s+13/i.test(message)) {
@@ -177,20 +179,8 @@ export const recoverySnapshotStore: RecoverySnapshotStore = {
   clearForDocument: clearRecoverySnapshotsForDocument,
 };
 
-export async function readDocumentFileSession(path: string): Promise<DocumentFileSession> {
-  const content = await readTextFile(path);
-  return {
-    path,
-    name: basename(path),
-    content,
-    knownSnapshot: await getFileSnapshotOrNull(path) ?? createKnownFileSnapshot(null, null),
-  };
-}
+export type { DocumentFileSession, WriteDocumentFileSessionInput };
 
-export async function writeDocumentFileSession(input: {
-  content: string;
-  path: string;
-}): Promise<FileSnapshot | null> {
-  await writeTextFile(input.path, input.content);
-  return getFileSnapshotOrNull(input.path);
-}
+export const readDocumentFileSession = readDocumentFileSessionFromIo;
+export const writeDocumentFileSession: (input: WriteDocumentFileSessionInput) => Promise<FileSnapshot | null> =
+  writeDocumentFileSessionFromIo;

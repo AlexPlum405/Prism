@@ -26,7 +26,6 @@ import {
   joinPath,
   replacePathPrefix,
 } from '../domains/workspace/services';
-import { getFileSnapshotOrNull } from '../domains/document/fileSnapshot';
 import { openPrismWindow } from './openWindow';
 import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from './fileSystemScope';
 import {
@@ -37,7 +36,13 @@ import {
 import { t } from '../domains/i18n';
 import { emitAppEvent } from '../platform/events/appEvents';
 import type { OpenDocument } from '../domains/document/types';
-import { createKnownFileSnapshot, fileConflictDetector } from '../domains/document/services/fileSafety';
+import {
+  createKnownFileSnapshot,
+  fileConflictDetector,
+  readDocumentFileSession,
+  writeDocumentFileSession,
+  type WriteDocumentFileSessionInput,
+} from '../domains/document/services/fileSafety';
 
 export type { FileActionInput } from './fileActionCommands';
 
@@ -221,6 +226,7 @@ async function saveDirtyDocumentBeforeSwitch(
 
   context.documentStore.markSaving(document.path || undefined);
   try {
+    let expectedSnapshot: WriteDocumentFileSessionInput['expectedSnapshot'];
     if (document.path && action === 'save') {
       const result = await fileConflictDetector.inspect(
         document.path,
@@ -236,10 +242,14 @@ async function saveDirtyDocumentBeforeSwitch(
         context.showToast?.(fileConflictDetector.message);
         return false;
       }
+      expectedSnapshot = result.currentSnapshot;
     }
 
-    await writeTextFile(targetPath, document.content);
-    const snapshot = await getFileSnapshotOrNull(targetPath);
+    const snapshot = await writeDocumentFileSession({
+      path: targetPath,
+      content: document.content,
+      expectedSnapshot,
+    });
     if (!document.path || !isSamePath(document.path, targetPath)) {
       context.documentStore.openDocument(targetPath, basename(targetPath), document.content, snapshot);
     }
@@ -316,10 +326,9 @@ async function handleOpenFile(path: string, context: FileActionContext): Promise
 
   if (!(await ensureCanSwitchDocument(path, context))) return;
 
-  const snapshot = await getFileSnapshotOrNull(path);
-  const content = await readTextFile(path);
-  context.documentStore.openDocument(path, basename(path), content, snapshot);
-  addRecentFile(path, basename(path));
+  const session = await readDocumentFileSession(path);
+  context.documentStore.openDocument(session.path, session.name, session.content, session.knownSnapshot);
+  addRecentFile(session.path, session.name);
   await syncWorkspaceForOpenedFile(path, context);
 }
 
@@ -347,10 +356,8 @@ async function handleNewFile(parentPath: string | undefined, context: FileAction
   if (!targetDir) return;
 
   const filePath = await getUniquePath(targetDir, t('file.newUntitledStem'), '.md');
-  await writeTextFile(filePath, '', { createNew: true });
-  const snapshot = await getFileSnapshotOrNull(filePath);
-  const content = await readTextFile(filePath);
-  context.documentStore.openDocument(filePath, basename(filePath), content, snapshot);
+  const snapshot = await writeDocumentFileSession({ path: filePath, content: '', createNew: true });
+  context.documentStore.openDocument(filePath, basename(filePath), '', snapshot);
   addRecentFile(filePath, basename(filePath));
   await refreshWorkspace(context);
   requestInlineRename(filePath);
