@@ -897,3 +897,54 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、文档恢复/冲突状态、导出 hook、文档导航 hook、设置/关于/命令面板等 wiring。
 - Phase 10 的 App 层瘦身仍未完成到 350 行以内。
 - `WorkspaceController` 目前仍是 props-driven 组合层；后续如要进一步瘦身，可把工作区 hover/context menu 状态收进专门 hook，但需要更完整 App smoke。
+
+### Checkpoint 10.5：Editor runtime seam
+
+### 目标
+
+在不触碰当前未提交编辑器功能增量的前提下，为 `EditorPane.tsx` 拆分建立第一个 runtime seam：把 CodeMirror state/view 创建和当前标题折叠范围 helper 移出组件文件。该 checkpoint 是后续继续拆 `editorCommandAdapter`、table controller、clipboard controller 的安全落点。
+
+### 改动范围
+
+- 新增 `src/domains/editor/runtime/createEditorRuntime.ts`：
+  - `createEditorRuntime`：集中创建 `EditorState` 和 `EditorView`。
+  - `getEditorPhrases`：集中维护 CodeMirror 内置文案映射。
+- 新增 `src/domains/editor/runtime/createEditorRuntime.test.ts`：
+  - 覆盖 CodeMirror view 创建。
+  - 覆盖 CodeMirror 文案映射。
+- 新增 `src/domains/editor/runtime/editorCommandAdapter.ts`：
+  - `getCurrentHeadingFoldRange`：从 `EditorPane.tsx` 移出当前标题折叠范围查找。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 改用 `createEditorRuntime` 创建编辑器实例。
+  - 改从 runtime 引入 `getEditorPhrases` 和 `getCurrentHeadingFoldRange`。
+- 本 checkpoint 未提交当前工作树中已有的插入图片、Callout、Toggle、斜杠菜单等编辑器功能未提交改动。
+
+### 风险等级
+
+中。该 checkpoint 触碰 CodeMirror 初始化入口，但只移动 state/view 创建和纯 helper，不改变扩展数组、事件监听、表格逻辑、剪贴板逻辑或编辑命令语义。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/runtime/createEditorRuntime.test.ts src/domains/editor/components/EditorPane.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor runtime seam / EditorPane 聚焦测试：通过，3 个测试文件、45 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未把 `onAppEvent('editor.command')` 大 switch 整体迁到 `editorCommandAdapter`：当前 `EditorPane.tsx` 已有未提交的插入图片、Callout、Toggle、斜杠菜单功能增量，直接大拆会把无关改动混入本 goal。
+- 未抽 table controller / clipboard controller：同上，当前编辑器区域存在未提交功能改动，本 checkpoint 先建立可验证 seam。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、文件打开协议、打包、签名或 updater。
+
+### 剩余风险
+
+- `EditorPane.tsx` 仍较大，command switch、table toolbar/action、paste/drop image 和 runtime extension 组装仍在组件内。
+- `createEditorRuntime` 当前只接管 state/view 创建，还未完全接管 extension 组装。
+- 若要继续完成完整 EditorPane 拆分，需要先处理或提交当前工作树中已有的编辑器功能增量，否则无法保证提交边界干净。

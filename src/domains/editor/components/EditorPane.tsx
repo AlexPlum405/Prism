@@ -13,7 +13,7 @@ import { Compartment, EditorState, Prec } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { history, historyKeymap, defaultKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
-import { indentOnInput, bracketMatching, foldGutter, foldKeymap, foldable, foldEffect } from '@codemirror/language';
+import { indentOnInput, bracketMatching, foldGutter, foldKeymap, foldEffect } from '@codemirror/language';
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { search } from '@codemirror/search';
 import { useDocumentStore } from '../../document/store';
@@ -53,6 +53,11 @@ import {
   handleEditorClipboardImagePaste,
   handleEditorImageDrop,
 } from '../runtime/editorClipboardRuntime';
+import {
+  createEditorRuntime,
+  getEditorPhrases,
+} from '../runtime/createEditorRuntime';
+import { getCurrentHeadingFoldRange } from '../runtime/editorCommandAdapter';
 import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
@@ -234,35 +239,6 @@ function getSelectedText(view: EditorView) {
 function formatEditorError(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return String(error);
-}
-
-function getEditorPhrases(t: ReturnType<typeof useI18n>['t']) {
-  return {
-    Find: t('editor.cm.find'),
-    Replace: t('editor.cm.replaceWith'),
-    next: t('editor.search.next'),
-    previous: t('editor.search.previous'),
-    all: t('editor.search.replaceAll'),
-    'match case': t('editor.cm.matchCase'),
-    regexp: t('editor.cm.regexp'),
-    'by word': t('editor.cm.wholeWord'),
-    replace: t('editor.search.replace'),
-    'replace all': t('editor.search.replaceAll'),
-  };
-}
-
-function getCurrentHeadingFoldRange(view: EditorView) {
-  let line = view.state.doc.lineAt(view.state.selection.main.head);
-
-  while (line.number >= 1) {
-    if (/^#{1,6}\s+\S/.test(line.text)) {
-      return foldable(view.state, line.from, line.to);
-    }
-    if (line.number === 1) break;
-    line = view.state.doc.line(line.number - 1);
-  }
-
-  return null;
 }
 
 export const __editorPaneTesting = {
@@ -813,8 +789,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     useEffect(() => {
       if (!editorRef.current) return;
 
-      const startState = EditorState.create({
+      const view = createEditorRuntime({
         doc: content,
+        parent: editorRef.current,
         extensions: [
           Prec.highest(keymap.of([
             {
@@ -940,11 +917,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
             }
           }),
         ],
-      });
-
-      const view = new EditorView({
-        state: startState,
-        parent: editorRef.current,
       });
 
       viewRef.current = view;
