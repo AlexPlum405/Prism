@@ -360,3 +360,63 @@ git diff --check
 - Rust preview 提取是轻量规则，和前端旧实现保持方向一致但不是完整 Markdown AST。
 - 子目录权限错误当前会跳过不可读 entry 或返回 workspace 读取错误，后续可接入 diagnostics warning。
 - 工作区索引、全文搜索、反链和图谱仍由前端计算，Phase 5 继续迁移。
+
+## Phase 5：Rust 工作区索引
+
+### 目标
+
+把工作区索引构建迁到 Rust，统一读取 Markdown 文档、解析标题/front matter/链接、生成反链和 recent 信息；搜索、反链展示和关系图谱算法继续复用前端现有逻辑，基于返回的 `WorkspaceIndex` 运行。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/workspace_index.rs`：
+  - `BuildWorkspaceIndexInput`
+  - `CurrentDocumentOverride`
+  - `RecentFileDto`
+  - `WorkspaceIndexedDocumentDto`
+  - `WorkspaceIndexDto`
+  - heading/front matter/markdown link/wiki link 轻量解析
+  - current document override
+  - recent rank
+  - backlinksByPath
+- 新增 `src-tauri/src/commands/workspace_index.rs`：
+  - `build_workspace_index`
+- `src-tauri/src/commands/mod.rs`、`src-tauri/src/domain/mod.rs`、`src-tauri/src/lib.rs` 注册 workspace index command。
+- 新增 `src/platform/tauri/workspaceIndex.ts`。
+- 新增 `src/domains/workspace/services/workspaceIndexNative.ts`，把 native DTO 转回现有 `WorkspaceIndex` 的 `Map` 结构。
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.ts` 改为 native-first，native 不可用或返回无效 DTO 时 fallback 到原 TS `readWorkspaceIndexSources + buildWorkspaceIndex`。同时用稳定 `recentFilesKey` 避免数组引用变化导致反复 indexing。
+
+### 风险等级
+
+中高。该阶段影响快速打开、全文搜索、`[[` 链接补全、反链和图谱的数据源。控制方式是只迁 index build，保留前端搜索/图谱算法和 fallback。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test workspace_index
+npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/workspace/services/backlinks.test.ts src/domains/workspace/services/relationGraph.test.ts
+cd src-tauri && cargo check
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test workspace_index`：通过，1 个 Rust workspace index 测试。
+- TS 工作区索引/反链/图谱聚焦测试：通过，4 个测试文件、10 个测试。
+- `cargo check`：通过。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 已覆盖 workspace index hook、workspace index service、backlinks 和 relation graph。
+- 未跑真实 app smoke：本 phase 保留 TS fallback，且不改 UI、窗口、file association、capabilities、打包、签名、updater 或发布链路。
+
+### 剩余风险
+
+- Rust Markdown parser 是第一版轻量规则，不是完整 Markdown AST；复杂链接、复杂 YAML 和标题 slug 未来可继续对齐前端 parser。
+- 搜索和关系图谱算法仍在前端执行；后续可以把 search / relation graph 作为第二段 Rust 化。
+- 大工作区索引目前仍是一次性 command 返回；后续如遇超大目录可改为 job/streaming。

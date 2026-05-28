@@ -10,6 +10,8 @@ import {
   type WorkspaceIndex,
   type WorkspaceIndexSourceDocument,
 } from '../services';
+import { buildWorkspaceIndexNativeModel } from '../services/workspaceIndexNative';
+import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
 const INDEX_BATCH_THRESHOLD = 40;
@@ -84,7 +86,12 @@ export function useWorkspaceIndexModel(input: {
     recentFiles,
   } = input;
   const [workspaceIndexSources, setWorkspaceIndexSources] = useState<WorkspaceIndexSourceDocument[]>([]);
+  const [nativeWorkspaceIndex, setNativeWorkspaceIndex] = useState<WorkspaceIndex | null>(null);
   const [workspaceIndexing, setWorkspaceIndexing] = useState(false);
+  const recentFilesKey = useMemo(
+    () => recentFiles.map((file) => `${file.path}:${file.lastOpened}`).join('\n'),
+    [recentFiles],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -92,8 +99,31 @@ export function useWorkspaceIndexModel(input: {
     const run = async () => {
       if (!rootPath) {
         setWorkspaceIndexSources([]);
+        setNativeWorkspaceIndex(null);
         setWorkspaceIndexing(false);
         return;
+      }
+
+      setWorkspaceIndexing(true);
+
+      try {
+        const nativeIndex = await buildWorkspaceIndexNativeModel({
+          rootPath,
+          currentDocumentOverride: currentDocument?.path && MARKDOWN_FILE_RE.test(currentDocument.path)
+            ? { path: currentDocument.path, content: currentDocument.content }
+            : null,
+          recentFiles,
+        });
+        if (!cancelled && nativeIndex) {
+          setNativeWorkspaceIndex(nativeIndex);
+          setWorkspaceIndexSources([]);
+          setWorkspaceIndexing(false);
+          return;
+        }
+      } catch (error) {
+        if (!isNativeCommandUnavailableError(error)) {
+          console.warn('[useWorkspaceIndexModel] Native workspace index unavailable, falling back to TypeScript:', error);
+        }
       }
 
       const files = flattenFiles(fileTree, rootPath)
@@ -102,14 +132,15 @@ export function useWorkspaceIndexModel(input: {
 
       if (files.length === 0) {
         setWorkspaceIndexSources([]);
+        setNativeWorkspaceIndex(null);
         setWorkspaceIndexing(false);
         return;
       }
 
-      setWorkspaceIndexing(true);
       const documents = await readWorkspaceIndexSources(files);
 
       if (!cancelled) {
+        setNativeWorkspaceIndex(null);
         setWorkspaceIndexSources(documents);
         setWorkspaceIndexing(false);
       }
@@ -120,7 +151,7 @@ export function useWorkspaceIndexModel(input: {
     return () => {
       cancelled = true;
     };
-  }, [fileTree, rootPath]);
+  }, [currentDocument?.content, currentDocument?.path, fileTree, recentFilesKey, rootPath]);
 
   const workspaceIndexDocuments = useMemo(() => {
     if (!currentDocument?.path || !MARKDOWN_FILE_RE.test(currentDocument.path)) {
@@ -134,6 +165,7 @@ export function useWorkspaceIndexModel(input: {
   }, [currentDocument?.content, currentDocument?.path, workspaceIndexSources]);
 
   const workspaceIndex = useMemo<WorkspaceIndex | null>(() => {
+    if (nativeWorkspaceIndex) return nativeWorkspaceIndex;
     if (!rootPath) return null;
     return buildWorkspaceIndex({
       fileTree,
@@ -141,7 +173,7 @@ export function useWorkspaceIndexModel(input: {
       documents: workspaceIndexDocuments,
       recentFiles,
     });
-  }, [fileTree, recentFiles, rootPath, workspaceIndexDocuments]);
+  }, [fileTree, nativeWorkspaceIndex, recentFiles, rootPath, workspaceIndexDocuments]);
 
   return {
     workspaceIndex,
