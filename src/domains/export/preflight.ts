@@ -12,6 +12,7 @@ import { scanMarkdownImageDiagnostics } from '../editor/extensions/imageDiagnost
 import { scanMarkdownLinks } from '../editor/extensions/linkDiagnostics';
 import { scanMarkdownTableDiagnostics } from '../editor/extensions/tables';
 import { t } from '../i18n';
+import { exportResourceExists } from './resources/exportResourceClient';
 import type { ExportFormat } from './types';
 
 interface ExportPreflightInput {
@@ -212,6 +213,7 @@ export async function scanMarkdownRenderDiagnostics(content: string): Promise<Pr
 export async function buildExportPreflightDiagnostics(input: ExportPreflightInput): Promise<PrismDiagnostic[]> {
   const imageDiagnostics = await scanMarkdownImageDiagnostics(input.content, {
     documentPath: input.documentPath,
+    existsPath: exportResourceExists,
   });
   const linkDiagnostics = scanMarkdownLinks(input.content, {
     currentPath: input.documentPath,

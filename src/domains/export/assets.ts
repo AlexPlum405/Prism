@@ -1,6 +1,7 @@
 import { readFile } from '../../platform/tauri/fileSystem';
 import { t } from '../i18n';
 import { dirname, joinPath } from '../workspace/services/path';
+import { readExportResource } from './resources/exportResourceClient';
 
 export type RasterDocxImageType = 'png' | 'jpg' | 'gif' | 'bmp';
 
@@ -213,6 +214,17 @@ export function getDocxRasterType(mimeType: string, filePath: string): RasterDoc
 export async function readLocalExportMedia(rawSrc: string, documentPath?: string) {
   const filePath = resolveExportMediaPath(rawSrc, documentPath);
   if (!filePath) return null;
+  const nativeResource = await readExportResource({
+    rawSrc,
+    documentPath: documentPath ?? null,
+  }).catch(() => null);
+  if (nativeResource) {
+    return {
+      filePath: nativeResource.path,
+      bytes: nativeResource.bytes,
+      mimeType: nativeResource.mimeType,
+    };
+  }
   const bytes = await readFile(filePath);
   return {
     filePath,

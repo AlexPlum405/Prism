@@ -11,6 +11,7 @@ const fsMock = vi.hoisted(() => ({
 
 vi.mock('mermaid', () => ({ default: mermaidMock }));
 vi.mock('@tauri-apps/plugin-fs', () => fsMock);
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
 import { buildExportPreflightDiagnostics, scanMarkdownKatexDiagnostics } from './preflight';
 

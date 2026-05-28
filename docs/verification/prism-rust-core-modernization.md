@@ -486,3 +486,68 @@ git diff --check
 - 导出 job 当前仍是内存态，app 重启后不会恢复历史 running job。
 - `useExportTaskUi.ts` 仍监听现有 app event，没有切到 job polling/订阅；这是为了保持现有 toast 与后台状态行为不变。
 - pipeline 取消检查点尚未接入，用户触发取消后的真正中断能力需要后续阶段逐步把 `throwIfExportCancelled(jobId)` 放进 Mermaid/PDF/PNG/DOCX 长耗时节点。
+
+## Phase 7：Rust 导出资源与预检
+
+### 目标
+
+把本地导出资源的解析、读取和图片资源预检能力接入 Rust command；前端仍保留现有 TS 路径和诊断 UI，避免影响 HTML/PDF/PNG/DOCX 渲染保真。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/export_resources.rs`：
+  - `ResolveResourceInput`
+  - `ResourceRefDto`
+  - `ResourceBytesDto`
+  - `PreflightExportInput`
+  - `ExportResourceDiagnosticDto`
+  - 本地/外部/file URL/unsupported protocol/未保存相对路径解析
+  - MIME 判断
+  - 资源读取
+  - Markdown 图片资源轻量预检
+- 新增 `src-tauri/src/commands/export_resources.rs`：
+  - `resolve_export_resource`
+  - `read_export_resource`
+  - `preflight_export`
+- `src-tauri/src/commands/mod.rs`、`src-tauri/src/domain/mod.rs`、`src-tauri/src/lib.rs` 注册 export resource commands。
+- 新增 `src/platform/tauri/exportResources.ts` 作为 native adapter。
+- 新增 `src/domains/export/resources/exportResourceClient.ts`，提供 native-first resource client；native 不可用或测试环境返回无效 DTO 时 fallback 到现有 fs plugin。
+- `src/domains/export/assets.ts` 的 `readLocalExportMedia()` 在已有同步路径解析通过后优先调用 Rust `read_export_resource`，失败再走 `readFile` fallback。
+- `src/domains/export/preflight.ts` 的本地图片存在性检查优先走 Rust resource resolve，失败再走现有 `exists` fallback。
+- `src/domains/export/assets.test.ts`、`src/domains/export/preflight.test.ts` 补充 native invoke mock，保持测试环境 fallback 行为稳定。
+
+### 风险等级
+
+中。该阶段影响本地图片读取和导出前图片缺失检测，但不改导出渲染器、不改诊断 UI、不改 Mermaid/KaTeX/表格/链接检查。所有 native resource 调用都保留 fallback。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test export_resources
+cd src-tauri && cargo check
+npm test -- --run src/domains/export/assets.test.ts src/domains/export/preflight.test.ts src/domains/export/exportPipeline.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test export_resources`：通过，3 个 Rust export resources 测试。
+- `cargo check`：通过。
+- 导出资源 / 预检 / export pipeline 聚焦测试：通过，3 个测试文件、59 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 的主要风险面已由 assets、preflight、exportPipeline 覆盖。
+- 未跑真实 app smoke：本 phase 不改窗口、file association、capabilities、打包、签名、updater 或安装器链路；导出资源行为由自动化测试覆盖。
+- 未把所有链接/引用文件诊断迁入 Rust：当前先迁本地媒体资源解析与图片预检，链接、引用文件和复杂 Markdown AST 仍保留现有前端实现。
+
+### 剩余风险
+
+- Rust Markdown 图片扫描是轻量规则，复杂嵌套括号/引用式图片仍以现有前端诊断和 export pipeline 为主。
+- 绝对路径资源仍按当前 Prism 兼容行为允许解析，权限错误只在读取阶段转为结构化错误。
+- 资源读取返回 bytes 后仍由前端渲染和 DOCX/PDF 适配器决定如何处理 SVG、WebP 等格式。

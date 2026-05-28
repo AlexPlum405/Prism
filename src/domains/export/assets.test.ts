@@ -5,6 +5,7 @@ const fsMock = vi.hoisted(() => ({
 }));
 
 vi.mock('@tauri-apps/plugin-fs', () => fsMock);
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
 import {
   bytesToDataUrl,
