@@ -1670,3 +1670,56 @@ git diff --check
 - `App.tsx` 仍承担导出 hook、文档导航 hook、设置弹窗状态等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.20：App document insight model
+
+### 目标
+
+继续缩小 `App.tsx` 的文档分析与导航接线职责，把编辑器行号跳转、文档诊断、文档链接、反向链接和关系图谱入口集中到独立 model。该 checkpoint 不改变诊断算法、链接解析、反链索引、图谱 UI、面板 UI 或任何视觉样式。
+
+### 改动范围
+
+- 新增 `src/app/useAppDocumentInsightModel.ts`：
+  - 在 model 内创建共享的 `jumpToEditorLine`，统一转接到 `EditorPaneHandle.jumpToLine`。
+  - 包装 `useDocumentDiagnosticsModel`，继续使用 Tauri `fs.exists` 作为图片/资源存在性检查。
+  - 包装 `useDocumentNavigationModel`，继续复用现有文件打开、toast、工作区索引和图谱入口逻辑。
+  - 合并返回 diagnostics 与 navigation 输出，供 `App.tsx` 原样传给现有 controller。
+- 新增 `src/app/useAppDocumentInsightModel.test.tsx`：
+  - 验证 diagnostics 与 navigation 共用同一个编辑器行号跳转转接。
+  - 验证 `fs.exists`、文件树、rootPath、文件 action、toast、workspaceIndex 被正确传入下游 model。
+- `src/App.tsx`：
+  - 移除本地 `jumpToEditorLine`。
+  - 移除直接调用 `useDocumentDiagnosticsModel` 和 `useDocumentNavigationModel`。
+  - 改为调用 `useAppDocumentInsightModel`。
+- App 行数：staged 版本 `396 -> 382`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低到中。该 checkpoint 移动诊断/导航 hook 的接线位置，并调整 hook 调用顺序，但不改变底层诊断、导航、面板、图谱、文件打开或样式实现。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppDocumentInsightModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App document insight / Document navigation / App recovery 聚焦测试：通过，3 个测试文件、12 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 diagnostics/navigation wiring 与编辑器行号跳转转接，已由新增 model 测试、Document navigation 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 document insight model 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担导出 hook、设置弹窗状态、workspace context menu 等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

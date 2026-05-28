@@ -5,7 +5,7 @@ import { useWorkspaceStore } from './domains/workspace/store';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppLifecycleModel } from './app/useAppLifecycleModel';
 import { useAppCommandWiringModel } from './app/useAppCommandWiringModel';
-import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
+import { useAppDocumentInsightModel } from './app/useAppDocumentInsightModel';
 import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
 import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
@@ -13,7 +13,6 @@ import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
 import { useAppAuxiliaryModalsModel } from './app/useAppAuxiliaryModalsModel';
 import { useAppRecoveryModel, shouldShowRecoveryPrompt } from './app/useAppRecoveryModel';
 import { useAppDocumentPropertiesModel } from './app/useAppDocumentPropertiesModel';
-import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
@@ -102,32 +101,6 @@ function App() {
     copyExportFailureDiagnostic,
   } = useExportTaskUi(showToast);
 
-  const jumpToEditorLine = useCallback((line: number) => {
-    editorRef.current?.jumpToLine(line);
-  }, []);
-
-  const {
-    actionableDiagnostics,
-    closeDocumentDiagnostics,
-    displayedDiagnostics,
-    firstActionableDiagnostic,
-    firstTypographyDiagnostic,
-    handleLinkDiagnosticsClick,
-    handleSelectDocumentDiagnostic,
-    handleSelectTypographyDiagnostic,
-    handleTypographyDiagnosticsClick,
-    linkDiagnosticsVisible,
-    setTypographyDiagnosticsVisible,
-    typographyDiagnostics,
-    typographyDiagnosticsVisible,
-  } = useDocumentDiagnosticsModel({
-    currentDocument,
-    existsPath: fsExists,
-    fileTree: workspace.fileTree,
-    jumpToLine: jumpToEditorLine,
-    rootPath: workspace.rootPath,
-  });
-
   const {
     chooseSaveDirectory,
     closeSaveDialog,
@@ -156,10 +129,20 @@ function App() {
   });
 
   const {
+    actionableDiagnostics,
     backlinks,
     backlinksVisible,
+    closeDocumentDiagnostics,
+    displayedDiagnostics,
     documentLinks,
     documentLinksVisible,
+    firstActionableDiagnostic,
+    firstTypographyDiagnostic,
+    handleLinkDiagnosticsClick,
+    handleSelectDocumentDiagnostic,
+    handleSelectTypographyDiagnostic,
+    handleTypographyDiagnosticsClick,
+    linkDiagnosticsVisible,
     openBacklinks,
     openDocumentLink,
     openDocumentLinks,
@@ -170,11 +153,14 @@ function App() {
     setBacklinksVisible,
     setDocumentLinksVisible,
     setRelationGraphVisible,
-  } = useDocumentNavigationModel({
+    setTypographyDiagnosticsVisible,
+    typographyDiagnostics,
+    typographyDiagnosticsVisible,
+  } = useAppDocumentInsightModel({
     currentDocument,
+    editorRef,
     fileTree: workspace.fileTree,
     handleFileAction,
-    jumpToLine: jumpToEditorLine,
     rootPath: workspace.rootPath,
     showToast,
     workspaceIndex,
