@@ -63,6 +63,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(pending_files)
+        .manage(domain::export_job::ExportJobStore::default())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -89,6 +90,13 @@ pub fn run() {
             commands::document_io::write_document_file,
             commands::workspace_tree::load_workspace_tree,
             commands::workspace_index::build_workspace_index,
+            commands::export_jobs::create_export_job,
+            commands::export_jobs::update_export_job,
+            commands::export_jobs::complete_export_job,
+            commands::export_jobs::fail_export_job,
+            commands::export_jobs::cancel_export_job,
+            commands::export_jobs::get_export_job,
+            commands::export_jobs::list_export_jobs,
             commands::file_scope::grant_markdown_file_scope,
             commands::file_scope::grant_workspace_directory_scope,
             commands::trash::move_path_to_trash,

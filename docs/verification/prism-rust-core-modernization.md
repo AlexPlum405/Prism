@@ -420,3 +420,69 @@ git diff --check
 - Rust Markdown parser 是第一版轻量规则，不是完整 Markdown AST；复杂链接、复杂 YAML 和标题 slug 未来可继续对齐前端 parser。
 - 搜索和关系图谱算法仍在前端执行；后续可以把 search / relation graph 作为第二段 Rust 化。
 - 大工作区索引目前仍是一次性 command 返回；后续如遇超大目录可改为 job/streaming。
+
+## Phase 6：Rust 导出 Job
+
+### 目标
+
+导出渲染继续由现有 WebView / export pipeline 完成，只把导出任务状态、进度、成功、失败、取消标记迁到 Rust 管理；前端保留现有 `export.progress` event、toast、后台导出 UI 和失败诊断链路。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/export_job.rs`：
+  - `ExportJobDto`
+  - `CreateExportJobInput`
+  - `UpdateExportJobInput`
+  - `CompleteExportJobInput`
+  - `FailExportJobInput`
+  - `ExportJobStore`
+  - create/update/complete/fail/cancel/get/list 领域函数。
+- 新增 `src-tauri/src/commands/export_jobs.rs`：
+  - `create_export_job`
+  - `update_export_job`
+  - `complete_export_job`
+  - `fail_export_job`
+  - `cancel_export_job`
+  - `get_export_job`
+  - `list_export_jobs`
+- `src-tauri/src/domain/error.rs` 为 `PrismCommandError` 增加 `Deserialize`，支持前端把结构化失败原因写回 Rust job。
+- `src-tauri/src/commands/mod.rs`、`src-tauri/src/domain/mod.rs`、`src-tauri/src/lib.rs` 注册 export job store 和 commands。
+- 新增 `src/platform/tauri/exportJobs.ts` 作为 native command adapter。
+- 新增 `src/domains/export/jobs/exportJobClient.ts`，提供 native-first export job client；native command 不可用或测试环境返回无效 DTO 时使用本地内存 fallback。
+- `src/domains/commands/categories/exportCommands.ts` 在导出开始后创建 job，在 `onProgress` 同步 job 进度，在导出成功/失败时写入 complete/fail job。现有导出 toast、后台按钮和失败诊断不变。
+
+### 风险等级
+
+中。该阶段触碰导出命令入口，但不改 HTML/PDF/PNG/DOCX 渲染、导出设置、清晰度策略、toast UI 或失败诊断 UI。Job 写入失败不会阻断真实文件导出。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test export_jobs
+cd src-tauri && cargo check
+npm test -- --run src/domains/commands/exportCommand.integration.test.ts src/hooks/useExportTaskUi.test.tsx src/domains/export/isolatedWebviewExport.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test export_jobs`：通过，3 个 Rust export job 测试。
+- `cargo check`：通过。
+- 导出命令 / 导出 UI / isolated webview 聚焦测试：通过，3 个测试文件、5 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 的前端风险面集中在导出命令、导出任务 UI 和 isolated webview 导出，已跑对应聚焦测试；导出渲染 pipeline 本身没有重构。
+- 未跑真实 app smoke：本 phase 不改窗口生命周期、file association、Tauri capabilities、打包、签名、updater 或安装器链路；导出文件行为由 integration test 覆盖。
+- 未实现前台取消按钮：本 phase 已提供 Rust `cancel_export_job` 和前端 `throwIfExportCancelled` 基础能力，UI 入口与 pipeline 检查点可在后续专门阶段接入。
+
+### 剩余风险
+
+- 导出 job 当前仍是内存态，app 重启后不会恢复历史 running job。
+- `useExportTaskUi.ts` 仍监听现有 app event，没有切到 job polling/订阅；这是为了保持现有 toast 与后台状态行为不变。
+- pipeline 取消检查点尚未接入，用户触发取消后的真正中断能力需要后续阶段逐步把 `throwIfExportCancelled(jobId)` 放进 Mermaid/PDF/PNG/DOCX 长耗时节点。

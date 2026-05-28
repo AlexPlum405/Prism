@@ -6,6 +6,13 @@ import {
   type ExportFormat,
 } from '../../export';
 import { buildExportFailureDiagnostic } from '../../export/diagnostics';
+import {
+  completeExportJob,
+  createExportJob,
+  failExportJob,
+  updateExportJob,
+  type ExportJob,
+} from '../../export/jobs/exportJobClient';
 import { buildExportPreflightDiagnostics } from '../../export/preflight';
 import { normalizeExportQualityScale } from '../../export/quality';
 import { getActionableErrorDiagnostics } from '../../diagnostics/types';
@@ -15,11 +22,21 @@ import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
 import { openPathWithSystemNative } from '../../../platform/tauri/nativeCommands';
 import { openPathWithDefaultApp, revealPathInFileManager } from '../../../platform/tauri/opener';
+import type { PrismCommandError } from '../../../platform/tauri/result';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (err instanceof Event) return err.type || t('common.unknownEventError');
   return String(err);
+}
+
+function createExportJobError(error: unknown, stage: string, path?: string | null): PrismCommandError {
+  return {
+    code: 'export_failed',
+    message: formatError(error),
+    path: path ?? null,
+    stage,
+  };
 }
 
 function getCurrentDocumentExportHistory(context: CommandContext): ExportHistoryEntry | null {
@@ -161,15 +178,30 @@ async function handleExport(
     return;
   }
 
-  const setExportProgress = (message: string | null) => {
-    emitAppEvent('export.progress', message ? { visible: true, message } : { visible: false });
-  };
   let outputPath: string | null | undefined;
+  let exportJob: ExportJob | null = null;
   let lastProgress = t('app.prepareExport');
   const exportSettings = options.settings ?? context.settingsStore;
   let resolvedExportSettings = exportSettings;
   const exportWarnings: string[] = [];
   const formatLabel = getExportFormatLabel(format);
+  const syncExportJobProgress = (message: string, stage = message) => {
+    if (!exportJob) return;
+    void updateExportJob({
+      id: exportJob.id,
+      outputPath: outputPath ?? null,
+      stage,
+      message,
+    })
+      .then((job) => {
+        exportJob = job;
+      })
+      .catch(() => undefined);
+  };
+  const setExportProgress = (message: string | null) => {
+    emitAppEvent('export.progress', message ? { visible: true, message } : { visible: false });
+    if (message) syncExportJobProgress(message);
+  };
 
   try {
     const preflightDiagnostics = getActionableErrorDiagnostics(await buildExportPreflightDiagnostics({
@@ -215,6 +247,13 @@ async function handleExport(
     outputPath = typeof requestedOutput === 'string' ? requestedOutput : requestedOutput?.path;
     if (!outputPath) return;
     resolvedExportSettings = applyExportQualityScale(exportSettings, selectedQualityScale);
+    exportJob = await createExportJob({
+      format,
+      documentPath: doc.path ?? null,
+      outputPath,
+      stage: 'prepare',
+      message: lastProgress,
+    }).catch(() => null);
 
     setExportProgress(lastProgress);
     await waitForExportProgressPaint();
@@ -242,6 +281,17 @@ async function handleExport(
     if (exported) {
       const completedOutputPath = outputPath;
       if (!completedOutputPath) return;
+      if (exportJob) {
+        try {
+          exportJob = await completeExportJob({
+            id: exportJob.id,
+            outputPath: completedOutputPath,
+            message: t('export.completedTitle', { format: formatLabel }),
+          });
+        } catch {
+          // Export job state is diagnostic metadata; successful file output remains authoritative.
+        }
+      }
 
       if (doc.path) {
         context.settingsStore.recordExportHistory({
@@ -282,6 +332,18 @@ async function handleExport(
       });
     }
   } catch (err) {
+    if (exportJob) {
+      try {
+        exportJob = await failExportJob({
+          id: exportJob.id,
+          stage: lastProgress,
+          message: formatError(err),
+          error: createExportJobError(err, lastProgress, outputPath),
+        });
+      } catch {
+        // Keep the existing export failure diagnostic path even if job state cannot be updated.
+      }
+    }
     const diagnostic = buildExportFailureDiagnostic({
       format,
       documentName: doc.name,
