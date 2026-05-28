@@ -10,29 +10,25 @@ import { useAppShortcuts } from './app/useAppShortcuts';
 import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
+import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
-import { WorkspaceController, type WorkspaceContextMenuState } from './app/controllers/WorkspaceController';
+import { WorkspaceController } from './app/controllers/WorkspaceController';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
-import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
-import type { ContextMenuItem } from './components/shell/ContextMenu';
 import { ShortcutPanel } from './components/shell/ShortcutPanel';
 import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
 import { AboutModal } from './components/shell/AboutModal';
 import { SettingsModal } from './components/shell/SettingsModal';
-import {
-  getCommandMenuItems,
-} from './domains/commands';
 import {
   computeWritingStats,
 } from './domains/workspace/services';
@@ -72,7 +68,6 @@ function App() {
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [selectionText, setSelectionText] = useState('');
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [globalContextMenu, setGlobalContextMenu] = useState<WorkspaceContextMenuState | null>(null);
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
   const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
   const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('files');
@@ -267,24 +262,19 @@ function App() {
     toggleFocusMode: workspace.toggleFocusMode,
   });
 
-  const handleFolderContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const items = createFileTreeContextMenuItems({
-      fileTreeMode: workspace.fileTreeMode,
-      fileSortMode: workspace.fileSortMode,
-      includeOpenNewWindow: true,
-    });
-    setGlobalContextMenu({ x: e.clientX, y: e.clientY, items, kind: 'file' });
-  };
-
-  const handleExportContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const items = getCommandMenuItems(
-      ['exportWithPrevious', 'exportOverwritePrevious', 'exportPdf', 'exportDocx', 'exportHtml', 'exportPng'],
-      createCommandContext(),
-    ) as ContextMenuItem[];
-    setGlobalContextMenu({ x: e.clientX, y: e.clientY, items, kind: 'menu' });
-  };
+  const {
+    closeGlobalContextMenu,
+    globalContextMenu,
+    handleContextMenuAction,
+    handleExportContextMenu,
+    handleFolderContextMenu,
+  } = useAppWorkspaceContextMenu({
+    createCommandContext,
+    fileSortMode: workspace.fileSortMode,
+    fileTreeMode: workspace.fileTreeMode,
+    handleCommandAction,
+    handleFileAction,
+  });
 
   const titleDocName = currentDocument?.name ?? t('common.untitled');
   const titleDirty = currentDocument?.isDirty ?? false;
@@ -339,14 +329,8 @@ function App() {
         workspaceIndex={workspaceIndex}
         writingStats={writingStats}
         onBacklinksClick={openBacklinks}
-        onCloseContextMenu={() => setGlobalContextMenu(null)}
-        onContextMenuAction={(action, kind) => {
-          if (kind === 'file') {
-            handleFileAction(action);
-          } else {
-            handleCommandAction(action);
-          }
-        }}
+        onCloseContextMenu={closeGlobalContextMenu}
+        onContextMenuAction={handleContextMenuAction}
         onCursorChange={setCursor}
         onExportMenu={handleExportContextMenu}
         onFileClick={handleFileClick}

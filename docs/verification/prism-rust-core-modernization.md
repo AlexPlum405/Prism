@@ -1257,3 +1257,56 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+### Checkpoint 10.12：App workspace context menu hook
+
+### 目标
+
+继续缩小 `App.tsx` 的 workspace wiring，把文件树右键菜单、导出按钮菜单、全局 context menu 状态和 action 分流集中到独立 hook。该 checkpoint 不改变菜单项、菜单位置、文件 action 分发或导出命令分发。
+
+### 改动范围
+
+- 新增 `src/app/useAppWorkspaceContextMenu.ts`：
+  - 接管 `globalContextMenu` 状态。
+  - 接管文件树菜单项创建和坐标记录。
+  - 接管导出菜单项创建和当前 command context 注入。
+  - 接管 context menu action 按 `file` / `menu` 来源分发。
+  - 接管 context menu 关闭。
+- 新增 `src/app/useAppWorkspaceContextMenu.test.tsx`：
+  - 验证文件菜单会阻止默认事件并使用当前 file tree mode / sort mode。
+  - 验证导出菜单会使用当前 command context 创建命令项。
+  - 验证 action 根据来源分发到文件 action 或命令 action。
+- `src/App.tsx`：
+  - 移除 context menu state、菜单项创建和 inline action 分流。
+  - 保留 `WorkspaceController` 的 UI wiring。
+- App 行数：staged 版本 `465 -> 449`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低到中。该 checkpoint 只移动 workspace context menu 状态与分发，不改变 `WorkspaceController`、命令注册表、文件 action 或菜单样式。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppWorkspaceContextMenu.test.tsx src/app/controllers/WorkspaceController.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Workspace context menu / WorkspaceController / App recovery 聚焦测试：通过，3 个测试文件、13 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 context menu 状态、菜单项创建和 action 分发，已由新增 hook 测试、WorkspaceController 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、文件系统 service、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 workspace context menu 抽离无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
