@@ -87,6 +87,7 @@ pub fn run() {
             commands::document_io::get_file_snapshot,
             commands::document_io::read_document_file,
             commands::document_io::write_document_file,
+            commands::workspace_tree::load_workspace_tree,
             commands::file_scope::grant_markdown_file_scope,
             commands::file_scope::grant_workspace_directory_scope,
             commands::trash::move_path_to_trash,

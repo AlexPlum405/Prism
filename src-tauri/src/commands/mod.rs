@@ -6,3 +6,4 @@ pub mod settings;
 pub mod startup_files;
 pub mod system_open;
 pub mod trash;
+pub mod workspace_tree;

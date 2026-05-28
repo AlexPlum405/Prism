@@ -1,6 +1,8 @@
 import { readDir, readTextFile, stat } from '../../../platform/tauri/fileSystem';
 import { FileNode } from '../types';
 import { isSupportedMarkdownPath, joinPath } from '../services';
+import { loadWorkspaceTreeNative } from '../../../platform/tauri/workspaceTree';
+import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
 const IGNORE_DIRS = new Set([
   'node_modules',
@@ -135,5 +137,15 @@ async function readFolderChildren(folderPath: string, depth: number): Promise<Fi
 }
 
 export async function loadFolderTree(folderPath: string): Promise<FileNode[]> {
+  try {
+    const tree = await loadWorkspaceTreeNative(folderPath, {
+      maxDepth: MAX_DEPTH,
+      includePreview: true,
+    });
+    if (Array.isArray(tree)) return tree;
+  } catch (error) {
+    if (!isNativeCommandUnavailableError(error)) throw error;
+  }
+
   return readFolderChildren(folderPath, 0);
 }

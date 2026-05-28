@@ -302,3 +302,61 @@ git diff --check
 - `write_document_file` 已支持 `expectedSnapshot`，但部分另存为/覆盖路径仍按兼容旧行为写入，后续可继续细分 create-new / replace 语义。
 - 前端仍有部分非文档正文 IO 直接走 TS fs，例如恢复快照文件、复制/重复文件、工作区树和导出资源。
 - 后续 Phase 4/5 仍需把工作区树、索引和搜索从 WebView 迁到 Rust。
+
+## Phase 4：Rust 工作区文件树
+
+### 目标
+
+把工作区文件树扫描接入 Rust command，降低大目录扫描对 WebView 的压力，同时保持 `loadFolderTree(folderPath)` 作为前端唯一入口和 TS fallback。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/workspace_tree.rs`：
+  - `LoadWorkspaceTreeOptions`
+  - `FileNodeDto`
+  - Markdown / Text 文件筛选
+  - 忽略目录规则
+  - 最大递归深度
+  - preview 提取
+  - 空目录剪枝
+  - 系统根目录保护
+- 新增 `src-tauri/src/commands/workspace_tree.rs`：
+  - `load_workspace_tree`
+- `src-tauri/src/commands/mod.rs`、`src-tauri/src/domain/mod.rs`、`src-tauri/src/lib.rs` 注册 workspace tree command。
+- 新增 `src/platform/tauri/workspaceTree.ts`。
+- `src/domains/workspace/lib/loadFolderTree.ts` 改为 native-first，native 不可用或返回非数组时 fallback 到既有 TS `readDir` 实现。
+
+### 风险等级
+
+中。该阶段影响打开文件夹、刷新文件树、文件操作后刷新、Finder 打开文件时侧栏同步。通过保留 `loadFolderTree` 函数签名和 fallback 控制风险。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test workspace_tree
+cd src-tauri && cargo check
+npm test -- --run src/domains/workspace/services/fileTree.test.ts src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test workspace_tree`：通过，2 个 Rust workspace tree 测试。
+- `cargo check`：通过。
+- TS 聚焦测试：通过，3 个测试文件、23 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 已覆盖工作区树服务、文件操作刷新和启动恢复。
+- 未跑真实 app smoke：本 phase 保留 TS fallback，且不改窗口、file association、capabilities、打包、签名或发布链路。
+
+### 剩余风险
+
+- Rust preview 提取是轻量规则，和前端旧实现保持方向一致但不是完整 Markdown AST。
+- 子目录权限错误当前会跳过不可读 entry 或返回 workspace 读取错误，后续可接入 diagnostics warning。
+- 工作区索引、全文搜索、反链和图谱仍由前端计算，Phase 5 继续迁移。
