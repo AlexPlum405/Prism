@@ -1875,3 +1875,55 @@ git diff --check
 - `App.tsx` 已低于 350 行，但仍有部分 controller prop mapping 可在后续批次继续整理。
 - `EditorPane.tsx` 仍约 1202 行，尚未达到 Phase 10 的 500 行以内目标。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.24：Editor appearance runtime
+
+### 目标
+
+继续推进 `EditorPane.tsx` 拆分，把 CodeMirror 外观、排版、主题、行号、自动换行和 Markdown 链接补全 extension 工厂移到独立 runtime。该 checkpoint 不改变编辑器初始化流程、主题视觉、补全行为、CodeMirror phrases、表格、剪贴板、搜索或任何 UI 样式。
+
+### 改动范围
+
+- 新增 `src/domains/editor/runtime/editorAppearanceRuntime.ts`：
+  - 承载 editor appearance 相关 `Compartment`。
+  - 承载暗色编辑器主题判断与 dark theme extension。
+  - 承载行号、自动换行、内容主题、排版和链接补全 extension 工厂。
+  - 继续复用 `contentThemeFacet`、slash menu completion 和 Markdown link completion。
+- 新增 `src/domains/editor/runtime/editorAppearanceRuntime.test.ts`：
+  - 验证主题暗色判断。
+  - 验证编辑器排版 CSS 变量。
+  - 验证行号与自动换行 extension 开关。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 移除本地 appearance helper 和 compartment 定义。
+  - 改为从 `editorAppearanceRuntime` 导入同等能力。
+- EditorPane 行数：staged 版本 `1034 -> 941`；工作树中仍保留未暂存的编辑器功能增量，未混入本 checkpoint。
+
+### 风险等级
+
+低到中。该 checkpoint 移动 CodeMirror 外观 extension 工厂和 compartment 定义，触及编辑器初始化配置，但不改变 extension 输出语义、事件监听、命令分发、表格、剪贴板或 UI 样式。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorAppearanceRuntime.test.ts src/domains/editor/components/EditorPane.test.ts src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor appearance runtime / EditorPane / EditorPane integration 聚焦测试：通过，3 个测试文件、47 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 editor appearance extension 工厂和 EditorPane 初始化集成，已由新增 runtime 测试、EditorPane 测试与 EditorPane integration 覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交当前工作树中的 Callout/插图/菜单/样式等功能脏改：这些改动已存在于工作树，和本 checkpoint 的 appearance runtime 拆分无关。
+
+### 剩余风险
+
+- `EditorPane.tsx` staged 版本已降到 941 行，但距离 500 行以内仍有较大差距。
+- 当前工作树仍有未提交编辑器功能增量，继续大拆 command switch、table UI 或 popover layer 前需要持续精确暂存，避免混入无关功能改动。

@@ -7,18 +7,16 @@ import {
   useRef,
   useState,
 } from 'react';
-import { EditorView, ViewUpdate, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
-import { Compartment, EditorState, Prec } from '@codemirror/state';
+import { EditorView, ViewUpdate, keymap, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
+import { EditorState, Prec } from '@codemirror/state';
 
 import { markdown } from '@codemirror/lang-markdown';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { history, historyKeymap, defaultKeymap, indentWithTab } from '@codemirror/commands';
-import { indentOnInput, bracketMatching, foldGutter, foldKeymap, foldEffect } from '@codemirror/language';
-import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+import { indentOnInput, bracketMatching, foldKeymap, foldEffect } from '@codemirror/language';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { search } from '@codemirror/search';
 import { useDocumentStore } from '../../document/store';
 import { useSettingsStore } from '../../settings/store';
-import type { ContentTheme } from '../../settings/types';
 import { useWorkspaceStore } from '../../workspace/store';
 import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services';
 import type { SearchAction, SearchParams } from './SearchPanel';
@@ -56,11 +54,26 @@ import {
   getEditorPhrases,
 } from '../runtime/createEditorRuntime';
 import {
+  editorContentThemeCompartment,
+  editorDarkThemeCompartment,
+  editorLineNumbersCompartment,
+  editorLineWrappingCompartment,
+  editorLinkCompletionCompartment,
+  editorPhrasesCompartment,
+  editorTypographyCompartment,
+  getContentThemeExtension,
+  getDarkThemeExtensions,
+  getEditorTypographyStyle,
+  getLineNumberExtensions,
+  getLineWrappingExtensions,
+  getLinkCompletionExtension,
+  getTypographyExtension,
+  shouldUseDarkEditor,
+} from '../runtime/editorAppearanceRuntime';
+import {
   getCurrentHeadingFoldRange,
   runBasicEditorCommand,
 } from '../runtime/editorCommandAdapter';
-import { createMarkdownLinkCompletionSource } from '../extensions/linkCompletion';
-import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
 import { markdownListKeymap } from '../extensions/markdownLists';
 import {
@@ -82,7 +95,6 @@ import {
 import {
   MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT,
   compatibilityMarkdownPlugin,
-  contentThemeFacet,
   getMiaoyanCodeHighlightRanges,
   getMiaoyanCodeLanguage,
   shouldHighlightCompatibilityCodeTheme,
@@ -94,111 +106,6 @@ import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
 import { TableInsertPopover } from './TableInsertPopover';
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
-
-const editorLineNumbersCompartment = new Compartment();
-const editorLineWrappingCompartment = new Compartment();
-const editorDarkThemeCompartment = new Compartment();
-const editorContentThemeCompartment = new Compartment();
-const editorTypographyCompartment = new Compartment();
-const editorLinkCompletionCompartment = new Compartment();
-const editorPhrasesCompartment = new Compartment();
-const editorDarkThemeExtension = [
-  oneDark,
-  EditorView.theme(
-    {
-      '.cm-content': { color: '#E2E8F0' },
-      '.cm-gutters': { borderRight: '1px solid var(--stroke-surface)' },
-    },
-    { dark: true },
-  ),
-];
-
-const DARK_CONTENT_THEMES = new Set(['nocturne']);
-const LIGHT_CONTENT_THEMES = new Set(['miaoyan', 'inkstone', 'slate', 'mono']);
-
-function shouldUseDarkEditor(contentTheme: string, theme: string) {
-  return DARK_CONTENT_THEMES.has(contentTheme)
-    ? true
-    : LIGHT_CONTENT_THEMES.has(contentTheme)
-      ? false
-      : theme === 'dark';
-}
-
-function getLineNumberExtensions(showLineNumbers: boolean) {
-  return showLineNumbers ? [lineNumbers(), highlightActiveLineGutter(), foldGutter()] : [];
-}
-
-function getLineWrappingExtensions(wordWrap: boolean) {
-  return wordWrap ? [EditorView.lineWrapping] : [];
-}
-
-function getDarkThemeExtensions(isEditorDark: boolean) {
-  return isEditorDark ? editorDarkThemeExtension : [];
-}
-
-function getContentThemeExtension(contentTheme: ContentTheme) {
-  return contentThemeFacet.of(contentTheme);
-}
-
-function getEditorTypographyStyle(
-  fontSize: number,
-  lineHeight: number,
-  fontFamily: string,
-  useThemeFont = false,
-) {
-  const lineHeightPx = Math.round(fontSize * lineHeight * 100) / 100;
-  const variables: Record<string, string> = {
-    '--prism-editor-font-size': `${fontSize}px`,
-    '--prism-editor-line-height': `${lineHeightPx}px`,
-  };
-  if (!useThemeFont) {
-    variables['--prism-editor-font-family'] = fontFamily;
-  }
-
-  return {
-    fontFamily: useThemeFont ? undefined : fontFamily,
-    fontSize: `${fontSize}px`,
-    lineHeight: `${lineHeightPx}px`,
-    variables,
-  };
-}
-
-function getTypographyExtension(fontSize: number, lineHeight: number, fontFamily: string, useThemeFont: boolean) {
-  const typography = getEditorTypographyStyle(fontSize, lineHeight, fontFamily, useThemeFont);
-  const rootStyle: Record<string, string> = {
-    ...typography.variables,
-    fontSize: typography.fontSize,
-  };
-  const scrollerStyle: Record<string, string> = {
-    lineHeight: typography.lineHeight,
-  };
-  if (typography.fontFamily) {
-    rootStyle.fontFamily = typography.fontFamily;
-    scrollerStyle.fontFamily = typography.fontFamily;
-  }
-
-  return EditorView.theme({
-    '&': rootStyle,
-    '.cm-scroller': scrollerStyle,
-    '.cm-line': {
-      lineHeight: typography.lineHeight,
-    },
-  });
-}
-
-function getLinkCompletionExtension(input: {
-  currentDocumentPath?: string;
-  workspaceFiles: Array<{ name: string; path: string }>;
-  workspaceRootPath?: string | null;
-}) {
-  return autocompletion({
-    activateOnTyping: true,
-    override: [
-      createSlashMenuCompletionSource(),
-      createMarkdownLinkCompletionSource(() => input),
-    ],
-  });
-}
 
 export interface EditorPaneHandle {
   focus: () => void;
