@@ -12,6 +12,7 @@ import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
 import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
 import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
+import { useAppAuxiliaryModalsModel } from './app/useAppAuxiliaryModalsModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
@@ -27,7 +28,6 @@ import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
-import type { CommandPaletteMode } from './components/shell/CommandPalette';
 import { SettingsModal } from './components/shell/SettingsModal';
 import { t, useI18n } from './domains/i18n';
 
@@ -63,10 +63,6 @@ function App() {
 
   const editorRef = useRef<EditorPaneHandle>(null);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
-  const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
-  const [commandPaletteMode, setCommandPaletteMode] = useState<CommandPaletteMode>('files');
-  const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
   useAppLifecycleModel({
@@ -76,6 +72,20 @@ function App() {
     loadSettings,
     workspace,
   });
+
+  const {
+    aboutVisible,
+    closeAbout,
+    closeCommandPalette,
+    closeShortcutPanel,
+    commandPaletteMode,
+    commandPaletteVisible,
+    openAbout,
+    openQuickOpen,
+    openShortcuts,
+    openWorkspaceSearch,
+    shortcutPanelVisible,
+  } = useAppAuxiliaryModalsModel();
 
   const {
     cursor,
@@ -205,17 +215,7 @@ function App() {
     showToast,
   });
 
-  const openAbout = useCallback(() => setAboutVisible(true), []);
   const openSettings = useCallback(() => setSettingsVisible(true), []);
-  const openShortcuts = useCallback(() => setShortcutPanelVisible(true), []);
-  const openQuickOpen = useCallback(() => {
-    setCommandPaletteMode('files');
-    setCommandPaletteVisible(true);
-  }, []);
-  const openWorkspaceSearch = useCallback(() => {
-    setCommandPaletteMode('search');
-    setCommandPaletteVisible(true);
-  }, []);
   const openDocumentProperties = useCallback(() => setDocumentPropertiesVisible(true), []);
 
   const {
@@ -251,9 +251,9 @@ function App() {
   });
 
   const handleAboutCheckUpdate = useCallback(() => {
-    setAboutVisible(false);
+    closeAbout();
     void handleCommandAction('checkUpdate');
-  }, [handleCommandAction]);
+  }, [closeAbout, handleCommandAction]);
 
   useAppShortcuts({
     createCommandContext,
@@ -421,10 +421,10 @@ function App() {
         workspaceIndexing={workspaceIndexing}
         workspaceRoot={workspace.rootPath}
         onAboutCheckUpdate={handleAboutCheckUpdate}
-        onAboutClose={() => setAboutVisible(false)}
-        onCommandPaletteClose={() => setCommandPaletteVisible(false)}
+        onAboutClose={closeAbout}
+        onCommandPaletteClose={closeCommandPalette}
         onCommandPaletteExecute={(commandId) => handleCommandAction(commandId)}
-        onShortcutPanelClose={() => setShortcutPanelVisible(false)}
+        onShortcutPanelClose={closeShortcutPanel}
       />
       <SettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
     </WindowShell>
