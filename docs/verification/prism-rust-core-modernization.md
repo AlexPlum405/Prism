@@ -744,3 +744,51 @@ git diff --check
 - `App.tsx` 仍有 696 行，文档安全弹窗、文档面板、侧栏/状态栏 wiring 仍待拆分。
 - `EditorPane.tsx` 仍有 1312 行，命令适配、表格控制、剪贴板控制和 runtime 初始化仍待继续拆。
 - 新 controller 目前是 props-driven UI controller，下一步可把导出 UI hook wiring 一并迁入 controller，但需要先确认不会影响 command context 的 `requestExportPath` / `requestSavePath`。
+
+### Checkpoint 10.2：文档安全 Controller
+
+### 目标
+
+继续缩小 `App.tsx` 的渲染职责，把未保存切换提示、恢复快照提示、保存冲突提示三类文档安全弹窗集中到独立 controller。该 checkpoint 只搬迁 JSX 归属，不改变恢复、丢弃、重载、另存为或覆盖保存逻辑。
+
+### 改动范围
+
+- 新增 `src/app/controllers/DocumentSafetyController.tsx`：
+  - `DirtyDocumentSwitchModal`
+  - `RecoveryModal`
+  - `SaveConflictModal`
+- `src/App.tsx`：
+  - 移除三类文档安全弹窗的直接渲染。
+  - 保留恢复、冲突处理、脏文档切换状态和 handler 归属。
+  - 改为通过 `DocumentSafetyController` 传入当前状态和回调。
+- App 行数：`696 -> 686`。本 checkpoint 未触碰 `EditorPane.tsx`，避免混入当前工作树中已有的编辑器/菜单/Callout 未提交改动。
+
+### 风险等级
+
+低。该 checkpoint 只移动 modal 渲染层，不改变状态机、事件处理、错误文案、按钮行为或样式类名。
+
+### 验证
+
+```bash
+npm test -- --run src/App.recovery.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx src/domains/document/components/RecoveryModal.test.tsx src/domains/document/components/SaveConflictModal.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 文档恢复 / 脏文档切换 / 保存冲突弹窗聚焦测试：通过，4 个测试文件、17 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 checkpoint 的风险面集中在文档安全 modal，已由对应聚焦测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 只移动 React JSX 归属，不改 Tauri capability、窗口生命周期、文件打开、打包、签名或 updater。
+- 未继续拆 `EditorPane.tsx`：当前工作树已有与插入图片、Callout、Toggle、斜杠菜单相关的未提交编辑器改动，继续拆会增加混入无关改动的风险。
+
+### 剩余风险
+
+- `App.tsx` 仍有 686 行，文档诊断、属性、链接、反链、图谱、侧栏和状态栏 wiring 仍待拆分。
+- Phase 10 的 App 层瘦身还未完成到 350 行以内。
+- 后续若继续拆 `DocumentPanelsController` 或 `WorkspaceController`，仍需保持 props-driven 搬迁，避免同时重构状态归属。

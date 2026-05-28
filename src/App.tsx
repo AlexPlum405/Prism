@@ -13,13 +13,12 @@ import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
+import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
-import { DirtyDocumentSwitchModal } from './domains/document/components/DirtyDocumentSwitchModal';
-import { RecoveryModal } from './domains/document/components/RecoveryModal';
-import { SaveConflictModal, type SaveConflictAction } from './domains/document/components/SaveConflictModal';
+import type { SaveConflictAction } from './domains/document/components/SaveConflictModal';
 import {
   overwriteConflictedDocument,
   reloadConflictedDocument,
@@ -561,30 +560,21 @@ function App() {
         />
       )}
 
-      <DirtyDocumentSwitchModal
-        visible={Boolean(dirtySwitchPrompt)}
-        currentName={dirtySwitchPrompt?.currentName ?? ''}
-        targetName={dirtySwitchPrompt?.targetName ?? ''}
-        onAction={resolveDirtySwitchPrompt}
-      />
-
-      <RecoveryModal
-        visible={recoveryPromptVisible}
-        snapshot={activeRecoverySnapshot}
-        busyAction={recoveryAction}
-        onRestore={handleRestoreRecovery}
-        onDiscard={handleDiscardRecovery}
-      />
-
-      <SaveConflictModal
-        visible={Boolean(hasSaveConflict && !saveDialog)}
-        documentName={currentDocument?.name ?? t('common.untitled')}
-        error={currentDocument?.saveError ?? null}
-        issueKind={currentDocument?.saveIssue ?? null}
-        busyAction={conflictAction}
-        onReload={() => runConflictAction('reload')}
-        onSaveAs={() => runConflictAction('saveAs')}
-        onOverwrite={() => runConflictAction('overwrite')}
+      <DocumentSafetyController
+        activeRecoverySnapshot={activeRecoverySnapshot}
+        conflictAction={conflictAction}
+        currentDocumentName={currentDocument?.name}
+        dirtySwitchPrompt={dirtySwitchPrompt}
+        hasSaveConflict={hasSaveConflict}
+        recoveryAction={recoveryAction}
+        recoveryPromptVisible={recoveryPromptVisible}
+        saveDialogVisible={Boolean(saveDialog)}
+        saveError={currentDocument?.saveError ?? null}
+        saveIssue={currentDocument?.saveIssue ?? null}
+        onDiscardRecovery={handleDiscardRecovery}
+        onRestoreRecovery={handleRestoreRecovery}
+        onResolveDirtySwitch={resolveDirtySwitchPrompt}
+        onRunConflictAction={runConflictAction}
       />
 
       <DocumentDiagnosticsPanel
