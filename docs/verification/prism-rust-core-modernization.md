@@ -1203,3 +1203,57 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+### Checkpoint 10.11：App save conflict hook
+
+### 目标
+
+继续缩小 `App.tsx` 的文档安全 orchestration，把保存冲突处理 action、执行中状态、冲突态判断和冲突消失后的状态清理集中到独立 hook。该 checkpoint 不改变重载磁盘版本、另存当前版本、覆盖磁盘版本、缺失原文件重建或失败 toast 的用户行为。
+
+### 改动范围
+
+- 新增 `src/app/useAppSaveConflictModel.ts`：
+  - 接管 `conflictAction` 状态。
+  - 接管 `hasSaveConflict` 判断。
+  - 接管 `reloadConflictedDocument` / `saveConflictedDocumentAs` / `overwriteConflictedDocument` 的分发。
+  - 接管冲突处理成功和失败 toast。
+  - 接管当前文档离开 conflict 状态后的 action 清理。
+- 新增 `src/app/useAppSaveConflictModel.test.tsx`：
+  - 验证 reload action 触发磁盘版本重载和成功 toast。
+  - 验证 saveAs action 复用当前保存路径请求函数。
+  - 验证缺失原文件 overwrite 使用重建成功文案。
+  - 验证冲突处理异常会转成失败 toast。
+- `src/App.tsx`：
+  - 移除保存冲突 action 处理和错误格式化逻辑。
+  - 保留 `DocumentSafetyController` 的 UI wiring。
+- App 行数：staged 版本 `499 -> 465`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+中。该 checkpoint 移动保存冲突处理逻辑，但不改变底层 conflict resolution service、保存路径请求、toast key 或 `DocumentSafetyController` 交互入口。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppSaveConflictModel.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App save conflict / App recovery 聚焦测试：通过，2 个测试文件、12 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在保存冲突 action 分发和 App recovery，已由新增 hook 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、文件系统 service、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的保存冲突抽离无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

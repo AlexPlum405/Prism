@@ -9,6 +9,7 @@ import { useAppCommandContext } from './app/useAppCommandContext';
 import { useAppShortcuts } from './app/useAppShortcuts';
 import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useAppFileActionsModel } from './app/useAppFileActionsModel';
+import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
@@ -18,12 +19,6 @@ import { WorkspaceController, type WorkspaceContextMenuState } from './app/contr
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
-import type { SaveConflictAction } from './domains/document/components/SaveConflictModal';
-import {
-  overwriteConflictedDocument,
-  reloadConflictedDocument,
-  saveConflictedDocumentAs,
-} from './domains/document/services/conflictResolution';
 import { createFileTreeContextMenuItems } from './domains/workspace/components/fileTreeContextMenu';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
@@ -57,12 +52,6 @@ export function shouldShowRecoveryPrompt({
   return hasSnapshot && !hasSaveDialog && !hasSaveConflict;
 }
 
-function formatAppError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || t('common.unknownEventError');
-  return String(error);
-}
-
 function App() {
   const { locale, localePreference } = useI18n();
   const currentDocument = useDocumentStore((s) => s.currentDocument);
@@ -90,7 +79,6 @@ function App() {
   const [aboutVisible, setAboutVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
-  const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
   useAppLifecycleModel({
     autoSaveEnabled,
     autoSaveInterval,
@@ -213,36 +201,15 @@ function App() {
     workspaceIndex,
   });
 
-  const runConflictAction = useCallback(async (action: SaveConflictAction) => {
-    if (conflictAction) return;
-    setConflictAction(action);
-    try {
-      let result: { resolved: boolean; path?: string };
-      const issueKind = useDocumentStore.getState().currentDocument?.saveIssue ?? null;
-      if (action === 'reload') {
-        result = await reloadConflictedDocument();
-        if (result.resolved) showToast(t('app.reloadedDiskVersion'));
-      } else if (action === 'saveAs') {
-        result = await saveConflictedDocumentAs(requestMarkdownSavePath);
-        if (result.resolved) showToast(t('app.savedCurrentVersionAs'));
-      } else {
-        result = await overwriteConflictedDocument();
-        if (result.resolved) {
-          showToast(issueKind === 'missing' ? t('app.recreatedMissingFile') : t('app.overwroteDiskVersion'));
-        }
-      }
-    } catch (error) {
-      showToast(t('app.conflictActionFailed', { message: formatAppError(error) }));
-    } finally {
-      setConflictAction(null);
-    }
-  }, [conflictAction, requestMarkdownSavePath, showToast]);
-
-  useEffect(() => {
-    if (currentDocument?.saveStatus !== 'conflict' && conflictAction) {
-      setConflictAction(null);
-    }
-  }, [conflictAction, currentDocument?.saveStatus]);
+  const {
+    conflictAction,
+    hasSaveConflict,
+    runConflictAction,
+  } = useAppSaveConflictModel({
+    currentDocument,
+    requestMarkdownSavePath,
+    showToast,
+  });
 
   const openAbout = useCallback(() => setAboutVisible(true), []);
   const openSettings = useCallback(() => setSettingsVisible(true), []);
@@ -321,7 +288,6 @@ function App() {
 
   const titleDocName = currentDocument?.name ?? t('common.untitled');
   const titleDirty = currentDocument?.isDirty ?? false;
-  const hasSaveConflict = currentDocument?.saveStatus === 'conflict' && Boolean(currentDocument.path);
   const recoveryPromptVisible = shouldShowRecoveryPrompt({
     hasSnapshot: Boolean(activeRecoverySnapshot),
     hasSaveDialog: Boolean(saveDialog),
