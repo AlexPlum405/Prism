@@ -610,3 +610,82 @@ git diff --check
 - capability 只解决“是否进入 native capture”的决策，不优化 native capture 的具体速度。
 - macOS native capture 仍依赖 WebKit `createPDF`，真实页面过高时仍按现有 batch 逻辑拆分。
 - 文案仍沿用现有 WebKit fallback warning；后续如果要多平台统一措辞，可单独调整 i18n。
+
+## Phase 9：设置和主题存储 Rust 化
+
+### 目标
+
+设置文件、主题目录、主题包 manifest/css 扫描、主题删除和主题目录打开接入 Rust/Tauri；设置中心 UI、主题包解析、ZIP 解压、主题 CSS 运行时注入逻辑不变。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/settings_store.rs`：
+  - `settings_config_path`
+  - `read_settings_file_at`
+  - `write_settings_file_at`
+- 新增 `src-tauri/src/commands/settings_store.rs`：
+  - `read_settings_file`
+  - `write_settings_file`
+- 新增 `src-tauri/src/domain/theme_store.rs`：
+  - `themes_directory`
+  - `ensure_themes_directory_at`
+  - `read_theme_package_source_at`
+  - `scan_installed_themes_at`
+  - `delete_user_theme_at`
+  - `ThemePackageSourceDto`
+  - `ThemeScanResultDto`
+- 新增 `src-tauri/src/commands/theme_store.rs`：
+  - `get_themes_directory`
+  - `scan_installed_themes`
+  - `read_theme_package_source`
+  - `delete_user_theme`
+  - `open_themes_directory`
+- `src-tauri/src/commands/mod.rs`、`src-tauri/src/domain/mod.rs`、`src-tauri/src/lib.rs` 注册 settings/theme store commands。
+- 新增 `src/platform/tauri/settingsStorage.ts` 和 `src/platform/tauri/themeStore.ts`。
+- `src/domains/settings/store.ts`：
+  - `loadSettings()` 优先 `read_settings_file`，无 native 时 fallback 旧 appData path。
+  - `saveSettings()` 优先 `write_settings_file`，无 native 时 fallback 旧 `appDataDir + writeTextFile`。
+  - 旧版 config migration 逻辑保留。
+- `src/domains/themes/themeStorage.ts`：
+  - 主题目录优先由 Rust ensure/返回。
+  - installed theme scan 优先 Rust 读取 manifest/css，再用现有 TS `parseThemeManifest` / `validateThemePackageInput` 做契约校验。
+  - 主题删除、打开主题目录优先 Rust，失败 fallback 原 TS/opener 实现。
+- `src/domains/settings/pathPersistence.test.ts` 更新 native command mock，让 legacy migration 继续覆盖 fallback 路径。
+
+### 风险等级
+
+中高。该阶段影响设置读写、主题列表、异常主题展示、主题目录打开和用户主题删除。控制方式是 native-first + TS fallback，并保留现有设置中心 UI 与主题校验逻辑。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test settings_store
+cd src-tauri && cargo test theme_store
+cd src-tauri && cargo check
+npm test -- --run src/domains/settings/pathPersistence.test.ts src/domains/themes/themeInstaller.test.ts src/domains/themes/themeRegistry.test.ts src/components/shell/SettingsModal.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test settings_store`：通过，1 个 Rust settings store 测试。
+- `cargo test theme_store`：通过，1 个 Rust theme store 测试。
+- `cargo check`：通过。
+- 设置路径 / 主题安装解析 / 主题注册 / 设置中心聚焦测试：通过，4 个测试文件、24 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 的风险面已由 settings path persistence、theme installer、theme registry 和 SettingsModal 聚焦测试覆盖。
+- 未跑真实 app smoke：本 phase 不改窗口、file association、打包、签名、updater 或发布链路。
+- 未把 ZIP / `.prism-theme` 解压迁到 Rust：当前继续使用前端 `fflate` 和既有校验，避免引入新的 Rust 解压依赖和更大行为变更。
+
+### 剩余风险
+
+- Rust theme scan 当前只做目录、manifest/css 读取；主题 manifest 语义校验、字体/预览图资源校验仍由 TypeScript 负责。
+- 主题导入事务仍在前端实现，replace 失败恢复逻辑未迁入 Rust。
+- 设置文件 schema normalize 仍在 TypeScript；Rust 只负责稳定读写和 appData 路径。

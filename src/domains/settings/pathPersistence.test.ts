@@ -48,19 +48,27 @@ describe('settings app data paths', () => {
   it('migrates the legacy config path into appData when the new config is missing', async () => {
     (appDataDir as ReturnType<typeof vi.fn>).mockResolvedValue('/Users/Alex/Library/Application Support/com.prism.editor.v1');
     (readTextFile as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('not found'));
-    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue(JSON.stringify({
-      theme: 'dark',
-      recentFiles: [{
-        path: '/Users/Alex/notes/legacy.md',
-        name: 'legacy.md',
-        lastOpened: 1,
-      }],
-      lastSession: {
-        filePath: '/Users/Alex/notes/legacy.md',
-        viewMode: 'preview',
-        updatedAt: 2,
-      },
-    }));
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(async (command: string) => {
+      if (command === 'read_settings_file' || command === 'write_settings_file') {
+        throw new Error(`unknown command ${command}`);
+      }
+      if (command === 'read_legacy_settings_config') {
+        return JSON.stringify({
+          theme: 'dark',
+          recentFiles: [{
+            path: '/Users/Alex/notes/legacy.md',
+            name: 'legacy.md',
+            lastOpened: 1,
+          }],
+          lastSession: {
+            filePath: '/Users/Alex/notes/legacy.md',
+            viewMode: 'preview',
+            updatedAt: 2,
+          },
+        });
+      }
+      return null;
+    });
     (exists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     (writeTextFile as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 

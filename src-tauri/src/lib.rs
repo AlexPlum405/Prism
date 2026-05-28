@@ -106,6 +106,13 @@ pub fn run() {
             commands::system_open::open_path_with_system,
             commands::pdf_capture::get_pdf_capture_capability,
             commands::pdf_capture::capture_current_webview_pdf,
+            commands::settings_store::read_settings_file,
+            commands::settings_store::write_settings_file,
+            commands::theme_store::get_themes_directory,
+            commands::theme_store::scan_installed_themes,
+            commands::theme_store::read_theme_package_source,
+            commands::theme_store::delete_user_theme,
+            commands::theme_store::open_themes_directory,
             commands::settings::read_legacy_settings_config
         ])
         .build(tauri::generate_context!())

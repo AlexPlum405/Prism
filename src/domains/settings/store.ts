@@ -46,6 +46,8 @@ import {
 } from '../../platform/tauri/fileSystem';
 import { appDataDir } from '../../platform/tauri/path';
 import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
+import { isNativeCommandUnavailableError } from '../../platform/tauri/result';
+import { readSettingsFileNative, writeSettingsFileNative } from '../../platform/tauri/settingsStorage';
 import { joinPath } from '../workspace/services/path';
 
 const CONFIG_FILENAME = 'config.json';
@@ -60,6 +62,37 @@ export const autoSaveIntervalByStrategy: Record<AutoSaveStrategy, number> = {
 async function getConfigPath(): Promise<string> {
   const appData = await appDataDir();
   return joinPath(appData, CONFIG_FILENAME);
+}
+
+async function readSettingsFile(): Promise<string | null> {
+  try {
+    const raw = await readSettingsFileNative();
+    if (typeof raw === 'string' || raw === null) return raw;
+  } catch (error) {
+    if (!isNativeCommandUnavailableError(error)) throw error;
+  }
+
+  try {
+    return await readTextFile(await getConfigPath());
+  } catch {
+    return null;
+  }
+}
+
+async function writeSettingsFile(contents: string): Promise<void> {
+  try {
+    await writeSettingsFileNative(contents);
+    return;
+  } catch (error) {
+    if (!isNativeCommandUnavailableError(error)) throw error;
+  }
+
+  const appData = await appDataDir();
+  const dirExists = await exists(appData);
+  if (!dirExists) {
+    await mkdir(appData, { recursive: true });
+  }
+  await writeTextFile(await getConfigPath(), contents);
 }
 
 async function loadLegacySettingsConfig(): Promise<Partial<SettingsState> | null> {
@@ -572,8 +605,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     };
 
     try {
-      const configPath = await getConfigPath();
-      const raw = await readTextFile(configPath);
+      const raw = await readSettingsFile();
+      if (!raw) throw new Error('settings file missing');
       const saved = JSON.parse(raw) as Partial<SettingsState>;
       const settings = normalizeSettings(saved);
       if (!saved.recentFiles) {
@@ -626,13 +659,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   saveSettings: async () => {
     try {
-      const appData = await appDataDir();
-      const dirExists = await exists(appData);
-      if (!dirExists) {
-        await mkdir(appData, { recursive: true });
-      }
-
-      const configPath = await getConfigPath();
       const {
         settingsVersion,
         locale,
@@ -697,7 +723,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         null,
         2,
       );
-      await writeTextFile(configPath, data);
+      await writeSettingsFile(data);
     } catch (err) {
       console.error('[Settings] Save failed:', err);
     }
