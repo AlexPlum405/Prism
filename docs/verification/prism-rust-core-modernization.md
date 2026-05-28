@@ -1619,3 +1619,54 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、设置弹窗等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.19：App command wiring model
+
+### 目标
+
+继续缩小 `App.tsx` 的命令系统接线职责，把命令上下文、全局快捷键注册和 About 弹窗里的检查更新回调集中到独立 model。该 checkpoint 不改变菜单结构、命令执行逻辑、快捷键行为、About 弹窗 UI 或更新检查实现。
+
+### 改动范围
+
+- 新增 `src/app/useAppCommandWiringModel.ts`：
+  - 包装既有 `useAppCommandContext`，继续向 `App.tsx` 返回 `createCommandContext`、`handleCommandAction` 和 `menuSections`。
+  - 接管 `handleAboutCheckUpdate`，保持先关闭 About 弹窗、再执行 `checkUpdate` 命令的既有顺序。
+  - 在 model 内调用 `useAppShortcuts`，把快捷键注册从 `App.tsx` 抽离。
+- 新增 `src/app/useAppCommandWiringModel.test.tsx`：
+  - 验证命令上下文会接入 `useAppShortcuts`。
+  - 验证 About 检查更新会先关闭弹窗再执行命令。
+- `src/App.tsx`：
+  - 用 `useAppCommandWiringModel` 替换直接调用 `useAppCommandContext` 和 `useAppShortcuts`。
+  - 移除本地 `handleAboutCheckUpdate`。
+- 工作树中仍有未暂存的 SettingsModal 初始分区改动；本 checkpoint 提交时会排除该无关 hunk。
+
+### 风险等级
+
+低。该 checkpoint 只移动命令/快捷键 wiring 的归属，不改变命令 registry、菜单模型、快捷键定义、更新检查命令或任何 UI 样式。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppCommandWiringModel.test.tsx src/app/useAppShortcuts.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App command wiring / App shortcuts / App recovery 聚焦测试：通过，3 个测试文件、12 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在命令 wiring、快捷键注册和 About 检查更新回调，已由新增 model 测试、App shortcuts 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 command wiring model 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担导出 hook、文档导航 hook、设置弹窗状态等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

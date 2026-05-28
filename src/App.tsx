@@ -4,8 +4,7 @@ import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppLifecycleModel } from './app/useAppLifecycleModel';
-import { useAppCommandContext } from './app/useAppCommandContext';
-import { useAppShortcuts } from './app/useAppShortcuts';
+import { useAppCommandWiringModel } from './app/useAppCommandWiringModel';
 import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
 import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
@@ -214,12 +213,15 @@ function App() {
 
   const {
     createCommandContext,
+    handleAboutCheckUpdate,
     handleCommandAction,
     menuSections,
-  } = useAppCommandContext({
+  } = useAppCommandWiringModel({
+    closeAbout,
     contentTheme,
     currentDocument,
     exportDefaults,
+    focusMode: workspace.focusMode,
     handleFileAction,
     locale,
     localePreference,
@@ -239,20 +241,10 @@ function App() {
     shortcutStyle,
     showToast,
     themeRegistryVersion,
+    toggleFocusMode: workspace.toggleFocusMode,
     wordWrap,
     workspace,
     workspaceIndex,
-  });
-
-  const handleAboutCheckUpdate = useCallback(() => {
-    closeAbout();
-    void handleCommandAction('checkUpdate');
-  }, [closeAbout, handleCommandAction]);
-
-  useAppShortcuts({
-    createCommandContext,
-    focusMode: workspace.focusMode,
-    toggleFocusMode: workspace.toggleFocusMode,
   });
 
   const {
