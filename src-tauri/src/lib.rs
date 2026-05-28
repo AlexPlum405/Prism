@@ -104,6 +104,7 @@ pub fn run() {
             commands::file_scope::grant_workspace_directory_scope,
             commands::trash::move_path_to_trash,
             commands::system_open::open_path_with_system,
+            commands::pdf_capture::get_pdf_capture_capability,
             commands::pdf_capture::capture_current_webview_pdf,
             commands::settings::read_legacy_settings_config
         ])

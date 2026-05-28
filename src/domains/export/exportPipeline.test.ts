@@ -135,6 +135,28 @@ function resetFsMockImplementations() {
   fsMock.writeFile.mockImplementation(async (_path: string, _contents: Uint8Array) => undefined);
 }
 
+function mockPdfCaptureRuntime(options: {
+  captureError?: Error;
+  supported?: boolean;
+} = {}) {
+  invokeMock.mockImplementation(async (command: string) => {
+    if (command === 'get_pdf_capture_capability') {
+      return options.supported === false
+        ? { supported: false, engine: 'webview2', reason: 'webview2_pdf_capture_not_enabled' }
+        : { supported: true, engine: 'webkit_create_pdf', reason: null };
+    }
+    if (command === 'capture_current_webview_pdf') {
+      if (options.captureError) throw options.captureError;
+      return undefined;
+    }
+    return undefined;
+  });
+}
+
+function getPdfCaptureCalls() {
+  return invokeMock.mock.calls.filter(([command]) => command === 'capture_current_webview_pdf');
+}
+
 describe('export pipeline html', () => {
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
   let originalFonts: unknown;
@@ -1081,7 +1103,7 @@ describe('export pipeline image progress', () => {
   it('uses the WebKit PDF engine inside the Tauri export worker before raster fallback', async () => {
     (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
     (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
-    invokeMock.mockResolvedValueOnce(undefined);
+    mockPdfCaptureRuntime();
     const { PDFDocument, StandardFonts } = await import('pdf-lib');
     const sourcePdf = await PDFDocument.create();
     const sourceFont = await sourcePdf.embedFont(StandardFonts.Helvetica);
@@ -1129,7 +1151,7 @@ describe('export pipeline image progress', () => {
   it('keeps native PDF content and overlays only small chrome when headers or page numbers are enabled', async () => {
     (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
     (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
-    invokeMock.mockResolvedValueOnce(undefined);
+    mockPdfCaptureRuntime();
     const { PDFDocument, StandardFonts } = await import('pdf-lib');
     const pdf = await PDFDocument.create();
     const sourceFont = await pdf.embedFont(StandardFonts.Helvetica);
@@ -1210,7 +1232,7 @@ describe('export pipeline image progress', () => {
     try {
       (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
       (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
-      invokeMock.mockResolvedValue(undefined);
+      mockPdfCaptureRuntime();
       const { PDFDocument, StandardFonts } = await import('pdf-lib');
       const sourcePdf = await PDFDocument.create();
       const sourceFont = await sourcePdf.embedFont(StandardFonts.Helvetica);
@@ -1227,13 +1249,14 @@ describe('export pipeline image progress', () => {
         onProgress: (message) => progress.push(message),
       }), '/tmp/native-long.pdf');
 
-      expect(invokeMock).toHaveBeenCalledTimes(2);
-      expect(invokeMock).toHaveBeenNthCalledWith(1, 'capture_current_webview_pdf', expect.objectContaining({
+      const captureCalls = getPdfCaptureCalls();
+      expect(captureCalls).toHaveLength(2);
+      expect(captureCalls[0]).toEqual(['capture_current_webview_pdf', expect.objectContaining({
         outputPath: '/tmp/native-long.webkit-capture-1.pdf',
-      }));
-      expect(invokeMock).toHaveBeenNthCalledWith(2, 'capture_current_webview_pdf', expect.objectContaining({
+      })]);
+      expect(captureCalls[1]).toEqual(['capture_current_webview_pdf', expect.objectContaining({
         outputPath: '/tmp/native-long.webkit-capture-2.pdf',
-      }));
+      })]);
       expect(canvasRenderMock.render).not.toHaveBeenCalled();
       expect(fsMock.remove).toHaveBeenCalledWith('/tmp/native-long.webkit-capture-1.pdf');
       expect(fsMock.remove).toHaveBeenCalledWith('/tmp/native-long.webkit-capture-2.pdf');
@@ -1260,7 +1283,7 @@ describe('export pipeline image progress', () => {
   it('falls back to the raster PDF engine with a warning when WebKit capture fails', async () => {
     (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
     (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
-    invokeMock.mockRejectedValueOnce(new Error('native unavailable'));
+    mockPdfCaptureRuntime({ captureError: new Error('native unavailable') });
     const warnings: string[] = [];
 
     await exportPdf(createInput({
@@ -1272,6 +1295,22 @@ describe('export pipeline image progress', () => {
     ]);
     expect(canvasRenderMock.render).toHaveBeenCalled();
     expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/fallback.pdf', expect.any(Uint8Array));
+  });
+
+  it('uses raster PDF directly when native capture capability is unavailable', async () => {
+    (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
+    (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
+    mockPdfCaptureRuntime({ supported: false });
+    const warnings: string[] = [];
+
+    await exportPdf(createInput({
+      onWarning: (message) => warnings.push(message),
+    }), '/tmp/unsupported-native.pdf');
+
+    expect(warnings).toEqual([]);
+    expect(getPdfCaptureCalls()).toHaveLength(0);
+    expect(canvasRenderMock.render).toHaveBeenCalled();
+    expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/unsupported-native.pdf', expect.any(Uint8Array));
   });
 
   it('writes complex export smoke artifacts for all supported formats', async () => {

@@ -551,3 +551,62 @@ git diff --check
 - Rust Markdown 图片扫描是轻量规则，复杂嵌套括号/引用式图片仍以现有前端诊断和 export pipeline 为主。
 - 绝对路径资源仍按当前 Prism 兼容行为允许解析，权限错误只在读取阶段转为结构化错误。
 - 资源读取返回 bytes 后仍由前端渲染和 DOCX/PDF 适配器决定如何处理 SVG、WebP 等格式。
+
+## Phase 8：PDF capture 能力深化
+
+### 目标
+
+保持 WebView 渲染保真，同时让 native PDF capture 的平台能力检测明确化：macOS 使用 WebKit `createPDF`，Windows/Linux 直接走 raster fallback，不再把“不支持 native capture”当成一次失败导出来提示。
+
+### 改动范围
+
+- `src-tauri/src/commands/pdf_capture.rs` 新增：
+  - `PdfCaptureCapability`
+  - `get_pdf_capture_capability`
+  - 平台能力判断：macOS `supported=true, engine=webkit_create_pdf`；Windows `supported=false, reason=webview2_pdf_capture_not_enabled`；Linux/其他平台 `supported=false, reason=webkitgtk_pdf_capture_not_enabled`。
+- `src-tauri/src/lib.rs` 注册 `get_pdf_capture_capability`。
+- 新增 `src/platform/tauri/pdfCapture.ts`，封装 native PDF capture capability/capture commands。
+- 新增 `src/domains/export/pdf/pdfCaptureClient.ts`，提供 capability 读取和 capture 调用；旧版本或测试环境 capability command 不可用时保守保留旧 capture 尝试。
+- `src/domains/export/exportPipeline.ts`：
+  - `exportPdfWithWebkitCapture` 收口为 `exportPdfWithNativeCapture`。
+  - Tauri export worker 中先读取 capability。
+  - capability 支持时才进入 native capture。
+  - capture 失败时保留现有 warning + raster fallback。
+  - capability 不支持时直接 raster fallback，不额外 warning。
+- `src/domains/export/exportPipeline.test.ts` 更新 native PDF 测试 mock，并增加“不支持 native capability 时直接 raster 且无 warning”的覆盖。
+
+### 风险等级
+
+中。该阶段影响 PDF 导出分支选择，但不改变 native capture 的实际分页/合成逻辑，也不改变 raster fallback 的清晰度和分页逻辑。
+
+### 验证
+
+```bash
+cd src-tauri && cargo fmt
+cd src-tauri && cargo test pdf_capture
+cd src-tauri && cargo check
+npm test -- --run src/domains/export/exportPipeline.test.ts src/domains/export/pdf/pdfLinks.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- `cargo fmt`：已执行。
+- `cargo test pdf_capture`：通过，3 个 Rust pdf capture 测试。
+- `cargo check`：通过。
+- PDF export pipeline / PDF link 聚焦测试：通过，2 个测试文件、52 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 的风险面集中在 PDF capture 分支、PDF 链接和 fallback，已跑对应聚焦测试。
+- 未跑真实 app smoke：本 phase 不改签名、安装器、updater 或 file association。macOS native capture 真实输出仍建议在发布打包前集中 smoke。
+- 未实现 Windows native PDF capture：当前显式标记为 unsupported，按计划直接使用 raster pipeline。
+
+### 剩余风险
+
+- capability 只解决“是否进入 native capture”的决策，不优化 native capture 的具体速度。
+- macOS native capture 仍依赖 WebKit `createPDF`，真实页面过高时仍按现有 batch 逻辑拆分。
+- 文案仍沿用现有 WebKit fallback warning；后续如果要多平台统一措辞，可单独调整 i18n。

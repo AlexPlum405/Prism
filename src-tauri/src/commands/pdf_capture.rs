@@ -1,5 +1,42 @@
 use std::path::PathBuf;
 
+#[derive(Debug, serde::Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfCaptureCapability {
+    pub supported: bool,
+    pub engine: String,
+    pub reason: Option<String>,
+}
+
+fn pdf_capture_capability() -> PdfCaptureCapability {
+    #[cfg(target_os = "macos")]
+    {
+        PdfCaptureCapability {
+            supported: true,
+            engine: "webkit_create_pdf".to_string(),
+            reason: None,
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        PdfCaptureCapability {
+            supported: false,
+            engine: "webview2".to_string(),
+            reason: Some("webview2_pdf_capture_not_enabled".to_string()),
+        }
+    }
+
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    {
+        PdfCaptureCapability {
+            supported: false,
+            engine: "webkitgtk".to_string(),
+            reason: Some("webkitgtk_pdf_capture_not_enabled".to_string()),
+        }
+    }
+}
+
 fn validate_pdf_output_path(path: &str) -> Result<PathBuf, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
@@ -164,6 +201,11 @@ async fn capture_current_webview_pdf_platform(
 }
 
 #[tauri::command]
+pub fn get_pdf_capture_capability() -> PdfCaptureCapability {
+    pdf_capture_capability()
+}
+
+#[tauri::command]
 pub async fn capture_current_webview_pdf(
     webview_window: tauri::WebviewWindow,
     output_path: String,
@@ -195,6 +237,33 @@ mod tests {
         assert!(validate_pdf_output_path("/tmp/export.png")
             .expect_err("non-pdf path should fail")
             .contains(".pdf"));
+    }
+
+    #[test]
+    fn reports_pdf_capture_capability_for_current_platform() {
+        let capability = pdf_capture_capability();
+        #[cfg(target_os = "macos")]
+        {
+            assert!(capability.supported);
+            assert_eq!(capability.engine, "webkit_create_pdf");
+            assert_eq!(capability.reason, None);
+        }
+        #[cfg(target_os = "windows")]
+        {
+            assert!(!capability.supported);
+            assert_eq!(
+                capability.reason,
+                Some("webview2_pdf_capture_not_enabled".to_string())
+            );
+        }
+        #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+        {
+            assert!(!capability.supported);
+            assert_eq!(
+                capability.reason,
+                Some("webkitgtk_pdf_capture_not_enabled".to_string())
+            );
+        }
     }
 
     #[test]

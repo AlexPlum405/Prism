@@ -67,6 +67,10 @@ import {
   type ExportPdfLinkRect,
 } from './pdf/pdfLinks';
 import {
+  captureCurrentWebviewPdf,
+  getPdfCaptureCapability,
+} from './pdf/pdfCaptureClient';
+import {
   buildHeaderFooterTextParts,
   createPdfChromeTextImage,
   formatPdfHeaderFooterText,
@@ -1318,7 +1322,7 @@ async function overlayPdfChrome(input: ExportDocumentInput, targetPath: string) 
   await writeFile(targetPath, await pdf.save());
 }
 
-async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath: string) {
+async function exportPdfWithNativeCapture(input: ExportDocumentInput, targetPath: string) {
   const layout = await prepareWebkitPdfCaptureDocument(input);
   reportProgress(input, exportProgressMessages.printNativePdf());
 
@@ -1343,7 +1347,7 @@ async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath
       tempPaths.push(capturePath);
 
       reportProgress(input, getWebkitPdfCaptureProgressMessage(pageIndex + 1, batchEndPage, layout.pageCount));
-      await invokeNativeCommand('capture_current_webview_pdf', {
+      await captureCurrentWebviewPdf({
         outputPath: capturePath,
         x: layout.rect.x,
         y: layout.rect.y + batchStartY,
@@ -1500,13 +1504,16 @@ export async function exportPdf(input: ExportDocumentInput, outputPath?: string)
   if (!targetPath) return false;
 
   if (isTauriExportWorkerRuntime()) {
-    try {
-      return await exportPdfWithWebkitCapture(input, targetPath);
-    } catch (error) {
-      reportWarning(
-        input,
-        t('export.warning.webkitFallback', { message: getErrorMessage(error) }),
-      );
+    const capability = await getPdfCaptureCapability();
+    if (capability.supported) {
+      try {
+        return await exportPdfWithNativeCapture(input, targetPath);
+      } catch (error) {
+        reportWarning(
+          input,
+          t('export.warning.webkitFallback', { message: getErrorMessage(error) }),
+        );
+      }
     }
   }
 
