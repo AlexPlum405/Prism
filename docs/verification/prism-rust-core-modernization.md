@@ -1830,3 +1830,48 @@ git diff --check
 - `App.tsx` 仍承担设置弹窗状态、workspace context menu、部分 controller prop mapping。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.23：App document insight grouped consumption
+
+### 目标
+
+完成 App 层 350 行以内的瘦身目标，把 `useAppDocumentInsightModel` 的大量拆包变量改为整体对象消费。该 checkpoint 不改变文档诊断、链接跳转、反链、关系图谱、面板 UI、命令行为或任何样式。
+
+### 改动范围
+
+- `src/App.tsx`：
+  - 将 `useAppDocumentInsightModel` 的 20 多个返回字段保留在 `documentInsight` 对象上。
+  - `AppWorkspaceViewController`、`DocumentPanelsController`、`ExportUiController` 和命令接线改为通过 `documentInsight.*` 访问同一批能力。
+  - 保持所有下游 prop、回调和 controller 结构不变。
+- App 行数：staged 版本 `365 -> 337`，达到 Phase 10 的 App 层 350 行以内目标；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低。该 checkpoint 是同一 model 输出的消费方式调整，不改变下游模型、controller、UI、诊断、导航或文件 action 行为。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppDocumentInsightModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App document insight / Document navigation / App recovery 聚焦测试：通过，3 个测试文件、12 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 document insight 输出消费方式，已由 App recovery 与 document insight/navigation 聚焦测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 document insight grouped consumption 无关。
+
+### 剩余风险
+
+- `App.tsx` 已低于 350 行，但仍有部分 controller prop mapping 可在后续批次继续整理。
+- `EditorPane.tsx` 仍约 1202 行，尚未达到 Phase 10 的 500 行以内目标。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

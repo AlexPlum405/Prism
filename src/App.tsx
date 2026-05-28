@@ -114,35 +114,7 @@ function App() {
     showToast,
   });
 
-  const {
-    actionableDiagnostics,
-    backlinks,
-    backlinksVisible,
-    closeDocumentDiagnostics,
-    displayedDiagnostics,
-    documentLinks,
-    documentLinksVisible,
-    firstActionableDiagnostic,
-    firstTypographyDiagnostic,
-    handleLinkDiagnosticsClick,
-    handleSelectDocumentDiagnostic,
-    handleSelectTypographyDiagnostic,
-    handleTypographyDiagnosticsClick,
-    linkDiagnosticsVisible,
-    openBacklinks,
-    openDocumentLink,
-    openDocumentLinks,
-    openRelationGraph,
-    relationGraphVisible,
-    selectBacklink,
-    selectDocumentLink,
-    setBacklinksVisible,
-    setDocumentLinksVisible,
-    setRelationGraphVisible,
-    setTypographyDiagnosticsVisible,
-    typographyDiagnostics,
-    typographyDiagnosticsVisible,
-  } = useAppDocumentInsightModel({
+  const documentInsight = useAppDocumentInsightModel({
     currentDocument,
     editorRef,
     fileTree: workspace.fileTree,
@@ -198,11 +170,11 @@ function App() {
     locale,
     localePreference,
     openAbout,
-    openBacklinks,
-    openDocumentLinks,
+    openBacklinks: documentInsight.openBacklinks,
+    openDocumentLinks: documentInsight.openDocumentLinks,
     openDocumentProperties,
     openQuickOpen,
-    openRelationGraph,
+    openRelationGraph: documentInsight.openRelationGraph,
     openSettings,
     openShortcuts,
     openWorkspaceSearch,
@@ -239,23 +211,23 @@ function App() {
       <MenuBar sections={menuSections} onAction={handleCommandAction} />
       <AppWorkspaceViewController
         activePath={currentDocument?.path}
-        actionableIssueCount={actionableDiagnostics.length}
-        backlinkCount={backlinks.length}
+        actionableIssueCount={documentInsight.actionableDiagnostics.length}
+        backlinkCount={documentInsight.backlinks.length}
         currentDocument={currentDocument}
         cursor={cursor}
         editorRef={editorRef}
         exportProgress={exportProgress}
         exportProgressInBackground={exportProgressInBackground}
-        firstActionableMessage={firstActionableDiagnostic?.message}
-        firstTypographyMessage={firstTypographyDiagnostic?.message}
+        firstActionableMessage={documentInsight.firstActionableDiagnostic?.message}
+        firstTypographyMessage={documentInsight.firstTypographyDiagnostic?.message}
         globalContextMenu={globalContextMenu}
         isSidebarHovered={isSidebarHovered}
         selectionWritingStats={selectionWritingStats}
-        typographyIssueCount={typographyDiagnostics.length}
+        typographyIssueCount={documentInsight.typographyDiagnostics.length}
         workspace={workspace}
         workspaceIndex={workspaceIndex}
         writingStats={writingStats}
-        onBacklinksClick={openBacklinks}
+        onBacklinksClick={documentInsight.openBacklinks}
         onCloseContextMenu={closeGlobalContextMenu}
         onContextMenuAction={handleContextMenuAction}
         onCursorChange={setCursor}
@@ -263,14 +235,14 @@ function App() {
         onFileAction={handleFileAction}
         onFileClick={handleFileClick}
         onFolderContextMenu={handleFolderContextMenu}
-        onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
+        onLinkDiagnosticsClick={documentInsight.handleLinkDiagnosticsClick}
         onNotice={showToast}
-        onOpenDocumentLink={openDocumentLink}
-        onRelationGraphClick={openRelationGraph}
+        onOpenDocumentLink={documentInsight.openDocumentLink}
+        onRelationGraphClick={documentInsight.openRelationGraph}
         onSelectionTextChange={setSelectionText}
         onSetSidebarHovered={setIsSidebarHovered}
         onShowExportProgress={showBackgroundExportProgress}
-        onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
+        onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}
       />
 
       <DocumentSafetyController
@@ -291,38 +263,38 @@ function App() {
       />
 
       <DocumentPanelsController
-        backlinks={backlinks}
-        backlinksVisible={backlinksVisible}
+        backlinks={documentInsight.backlinks}
+        backlinksVisible={documentInsight.backlinksVisible}
         currentDocumentContent={currentDocument?.content ?? ''}
         currentDocumentPath={currentDocument?.path}
-        displayedDiagnostics={displayedDiagnostics}
-        documentLinks={documentLinks}
-        documentLinksVisible={documentLinksVisible}
+        displayedDiagnostics={documentInsight.displayedDiagnostics}
+        documentLinks={documentInsight.documentLinks}
+        documentLinksVisible={documentInsight.documentLinksVisible}
         documentPropertiesVisible={documentPropertiesVisible}
-        linkDiagnosticsVisible={linkDiagnosticsVisible}
-        relationGraphVisible={relationGraphVisible}
-        typographyDiagnostics={typographyDiagnostics}
-        typographyDiagnosticsVisible={typographyDiagnosticsVisible}
+        linkDiagnosticsVisible={documentInsight.linkDiagnosticsVisible}
+        relationGraphVisible={documentInsight.relationGraphVisible}
+        typographyDiagnostics={documentInsight.typographyDiagnostics}
+        typographyDiagnosticsVisible={documentInsight.typographyDiagnosticsVisible}
         workspaceIndex={workspaceIndex}
         onApplyDocumentProperties={handleApplyDocumentProperties}
-        onBacklinkSelect={selectBacklink}
-        onBacklinksClose={() => setBacklinksVisible(false)}
-        onDocumentLinkSelect={selectDocumentLink}
-        onDocumentLinksClose={() => setDocumentLinksVisible(false)}
+        onBacklinkSelect={documentInsight.selectBacklink}
+        onBacklinksClose={() => documentInsight.setBacklinksVisible(false)}
+        onDocumentLinkSelect={documentInsight.selectDocumentLink}
+        onDocumentLinksClose={() => documentInsight.setDocumentLinksVisible(false)}
         onDocumentPropertiesClose={closeDocumentProperties}
         onDocumentPropertiesNotice={showToast}
-        onLinkDiagnosticSelect={handleSelectDocumentDiagnostic}
-        onLinkDiagnosticsClose={closeDocumentDiagnostics}
-        onRelationGraphClose={() => setRelationGraphVisible(false)}
+        onLinkDiagnosticSelect={documentInsight.handleSelectDocumentDiagnostic}
+        onLinkDiagnosticsClose={documentInsight.closeDocumentDiagnostics}
+        onRelationGraphClose={() => documentInsight.setRelationGraphVisible(false)}
         onRelationGraphSelect={(path) => {
           void handleFileAction({ action: 'openFile', path });
         }}
-        onTypographyDiagnosticSelect={handleSelectTypographyDiagnostic}
-        onTypographyDiagnosticsClose={() => setTypographyDiagnosticsVisible(false)}
+        onTypographyDiagnosticSelect={documentInsight.handleSelectTypographyDiagnostic}
+        onTypographyDiagnosticsClose={() => documentInsight.setTypographyDiagnosticsVisible(false)}
       />
 
       <ExportUiController
-        actionableIssueCount={actionableDiagnostics.length}
+        actionableIssueCount={documentInsight.actionableDiagnostics.length}
         chooseSaveDirectory={chooseSaveDirectory}
         closeSaveDialog={closeSaveDialog}
         confirmSaveDialog={confirmSaveDialog}
