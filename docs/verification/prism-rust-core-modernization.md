@@ -2030,3 +2030,55 @@ git diff --check
 
 - `EditorPane.tsx` staged 版本已降到 742 行，但距离 500 行以内仍有差距。
 - 当前工作树仍有未提交编辑器功能增量，继续拆 runtime lifecycle、imperative handle、剪贴板 model、滚动/设置同步或 popover layer 前需要持续精确暂存，避免混入无关功能改动。
+
+
+### Checkpoint 10.27：Editor action model
+
+### 目标
+
+继续推进 `EditorPane.tsx` 拆分，把格式化、模板插入、源码块操作和当前标题折叠这类纯 CodeMirror source action 移到独立 hook。该 checkpoint 不改变格式化语法、模板内容、源码块操作算法、折叠算法、命令事件路由或任何 UI 样式。
+
+### 改动范围
+
+- 新增 `src/domains/editor/components/useEditorActionModel.ts`：
+  - 承载 `handleFormat`，继续复用 `getEditorFormatResult`。
+  - 承载 `handleTemplateInsert`，继续复用 `getMarkdownTemplateInsertEdit` 和模板 id 校验。
+  - 承载 `handleSourceBlockOperation`，继续复用 `getSourceBlockOperationEdit`。
+  - 承载 `handleFoldCurrentHeading`，继续复用 `getCurrentHeadingFoldRange` 和 CodeMirror `foldEffect`。
+- 新增 `src/domains/editor/components/useEditorActionModel.test.tsx`：
+  - 验证选区加粗格式化。
+  - 验证 PRD 模板插入。
+  - 验证源码选区转任务列表操作。
+- `src/domains/editor/components/EditorPane.tsx`：
+  - 移除本地 action handler 实现。
+  - 改为消费 `useEditorActionModel` 返回的 handler，并继续传给 `useEditorCommandEventModel` 与当前 UI 交互。
+- EditorPane 行数：staged 版本 `742 -> 649`；工作树中仍保留未暂存的 Callout/插图/Toggle/菜单/样式等功能增量，未混入本 checkpoint。
+
+### 风险等级
+
+低到中。该 checkpoint 移动 source action handler 的定义位置，影响格式化、模板、源码块操作和折叠命令的接线，但底层算法、命令事件模型和 UI 不变。
+
+### 验证
+
+```bash
+npm test -- --run src/domains/editor/components/useEditorActionModel.test.tsx src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/useEditorTableModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/components/EditorPane.test.ts
+npm run build
+git diff --check
+```
+
+结果：
+
+- Editor action model / Editor command event model / Editor table model / EditorPane integration / EditorPane 聚焦测试：通过，5 个测试文件、51 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 source action handler、命令事件路由和 EditorPane 集成行为，已由新增 hook 测试、命令事件 hook 测试、表格 hook 测试、EditorPane integration 与 EditorPane 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater、安装器或 UI 布局。
+- 未提交当前工作树中的 Callout/插图/Toggle/菜单/样式/图标等功能脏改：这些改动已存在于工作树，和本 checkpoint 的 action model 拆分无关。
+
+### 剩余风险
+
+- `EditorPane.tsx` staged 版本已降到 649 行，但距离 500 行以内仍有差距。
+- 当前工作树仍有未提交编辑器功能增量，继续拆 runtime lifecycle、imperative handle、剪贴板 model、滚动/设置同步或 popover layer 前需要持续精确暂存，避免混入无关功能改动。

@@ -12,7 +12,7 @@ import { EditorState, Prec } from '@codemirror/state';
 
 import { markdown } from '@codemirror/lang-markdown';
 import { history, historyKeymap, defaultKeymap, indentWithTab } from '@codemirror/commands';
-import { indentOnInput, bracketMatching, foldKeymap, foldEffect } from '@codemirror/language';
+import { indentOnInput, bracketMatching, foldKeymap } from '@codemirror/language';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { search } from '@codemirror/search';
 import { useDocumentStore } from '../../document/store';
@@ -22,11 +22,7 @@ import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '.
 import type { SearchAction, SearchParams } from './SearchPanel';
 import { ContextMenu } from '../../../components/shell/ContextMenu';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
-import { getEditorFormatResult, type EditorFormat } from '../extensions/formatting';
-import {
-  getSourceBlockOperationEdit,
-  type SourceBlockOperation,
-} from '../extensions/blockOperations';
+import { getEditorFormatResult } from '../extensions/formatting';
 import {
   runMarkdownTableNavigation,
 } from '../runtime/editorTableRuntime';
@@ -61,18 +57,11 @@ import {
   getTypographyExtension,
   shouldUseDarkEditor,
 } from '../runtime/editorAppearanceRuntime';
-import {
-  getCurrentHeadingFoldRange,
-} from '../runtime/editorCommandAdapter';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
 import { markdownListKeymap } from '../extensions/markdownLists';
 import {
   findMarkdownTableBlock,
 } from '../extensions/tables';
-import {
-  getMarkdownTemplateInsertEdit,
-  isMarkdownTemplateId,
-} from '../extensions/templates';
 import {
   MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT,
   compatibilityMarkdownPlugin,
@@ -86,6 +75,7 @@ import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
 import { TableInsertPopover } from './TableInsertPopover';
+import { useEditorActionModel } from './useEditorActionModel';
 import { useEditorCommandEventModel } from './useEditorCommandEventModel';
 import { useEditorTableModel } from './useEditorTableModel';
 import { emitAppEvent } from '../../../platform/events/appEvents';
@@ -284,95 +274,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       },
     }));
 
-    const handleFormat = useCallback(
-      (format: EditorFormat) => {
-        const view = viewRef.current;
-        if (!view) return;
-
-        const selection = view.state.selection.main;
-        const result = getEditorFormatResult(
-          view.state.doc.toString(),
-          selection.from,
-          selection.to,
-          format,
-        );
-
-        view.dispatch({
-          changes: {
-            from: result.from,
-            to: result.to,
-            insert: result.insert,
-          },
-          selection: { anchor: result.selectionFrom, head: result.selectionTo },
-        });
-
-        view.focus();
-      },
-      [],
-    );
-
-    const handleTemplateInsert = useCallback((templateId: unknown) => {
-      const view = viewRef.current;
-      if (!view || !isMarkdownTemplateId(templateId)) return false;
-
-      const selection = view.state.selection.main;
-      const result = getMarkdownTemplateInsertEdit(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to,
-        templateId,
-      );
-
-      view.dispatch({
-        changes: {
-          from: result.from,
-          to: result.to,
-          insert: result.insert,
-        },
-        selection: { anchor: result.selectionFrom, head: result.selectionTo },
-        scrollIntoView: true,
-      });
-      view.focus();
-      return true;
-    }, []);
-
-    const handleSourceBlockOperation = useCallback((operation: SourceBlockOperation) => {
-      const view = viewRef.current;
-      if (!view) return false;
-
-      const selection = view.state.selection.main;
-      const result = getSourceBlockOperationEdit(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to,
-        operation,
-      );
-      if (!result) return false;
-
-      view.dispatch({
-        changes: {
-          from: result.from,
-          to: result.to,
-          insert: result.insert,
-        },
-        selection: { anchor: result.selectionFrom, head: result.selectionTo },
-        scrollIntoView: true,
-      });
-      view.focus();
-      return true;
-    }, []);
-
-    const handleFoldCurrentHeading = useCallback(() => {
-      const view = viewRef.current;
-      if (!view) return false;
-
-      const range = getCurrentHeadingFoldRange(view);
-      if (!range) return false;
-
-      view.dispatch({ effects: foldEffect.of(range), scrollIntoView: true });
-      view.focus();
-      return true;
-    }, []);
+    const {
+      handleFoldCurrentHeading,
+      handleFormat,
+      handleSourceBlockOperation,
+      handleTemplateInsert,
+    } = useEditorActionModel({ viewRef });
 
     const imageClipboardMessages = useMemo(() => ({
       clipboardUnreadable: t('editor.image.clipboardUnreadable'),
