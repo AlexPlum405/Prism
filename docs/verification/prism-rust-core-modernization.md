@@ -1470,3 +1470,51 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、设置弹窗等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.16：App recovery model
+
+### 目标
+
+继续缩小 `App.tsx` 的文档安全状态职责，把恢复快照队列、恢复/丢弃回调和恢复提示显示条件集中到独立 model。该 checkpoint 不改变恢复提示显示规则，也保留 `shouldShowRecoveryPrompt` 的 App 级 re-export 以兼容既有测试。
+
+### 改动范围
+
+- 新增 `src/app/useAppRecoveryModel.ts`：
+  - 接管 `useRecoveryQueue({ showToast })`。
+  - 接管 `recoveryPromptVisible` 计算。
+  - 导出 `shouldShowRecoveryPrompt` 供既有 App recovery 测试复用。
+- `src/App.tsx`：
+  - 移除恢复队列 hook 直连和本地恢复提示计算。
+  - 通过 `useAppRecoveryModel` 向 `DocumentSafetyController` 传递恢复状态。
+- App 行数：staged 版本 `434 -> 422`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+低到中。该 checkpoint 移动恢复提示状态来源，但不改变恢复队列 hook、恢复快照 service、显示规则或弹窗 UI。
+
+### 验证
+
+```bash
+npm test -- --run src/App.recovery.test.tsx src/domains/document/hooks/useRecoveryQueue.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App recovery / recovery queue 聚焦测试：通过，2 个测试文件、14 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在恢复提示显示规则和 recovery queue wiring，已由 App recovery 与 recovery queue 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 recovery model 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、设置弹窗等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

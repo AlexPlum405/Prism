@@ -2,7 +2,6 @@ import { useRef, useState, useCallback } from 'react';
 import { useDocumentStore } from './domains/document/store';
 import { useSettingsStore } from './domains/settings/store';
 import { useWorkspaceStore } from './domains/workspace/store';
-import { useRecoveryQueue } from './domains/document/hooks/useRecoveryQueue';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppLifecycleModel } from './app/useAppLifecycleModel';
 import { useAppCommandContext } from './app/useAppCommandContext';
@@ -13,6 +12,7 @@ import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
 import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
 import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
 import { useAppAuxiliaryModalsModel } from './app/useAppAuxiliaryModalsModel';
+import { useAppRecoveryModel, shouldShowRecoveryPrompt } from './app/useAppRecoveryModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
@@ -31,19 +31,7 @@ import { MenuBar } from './components/shell/MenuBar';
 import { SettingsModal } from './components/shell/SettingsModal';
 import { t, useI18n } from './domains/i18n';
 
-interface RecoveryPromptVisibilityInput {
-  hasSnapshot: boolean;
-  hasSaveDialog: boolean;
-  hasSaveConflict: boolean;
-}
-
-export function shouldShowRecoveryPrompt({
-  hasSnapshot,
-  hasSaveDialog,
-  hasSaveConflict,
-}: RecoveryPromptVisibilityInput) {
-  return hasSnapshot && !hasSaveDialog && !hasSaveConflict;
-}
+export { shouldShowRecoveryPrompt };
 
 function App() {
   const { locale, localePreference } = useI18n();
@@ -115,13 +103,6 @@ function App() {
     dismissExportFailure,
     copyExportFailureDiagnostic,
   } = useExportTaskUi(showToast);
-
-  const {
-    activeRecoverySnapshot,
-    recoveryAction,
-    handleRestoreRecovery,
-    handleDiscardRecovery,
-  } = useRecoveryQueue({ showToast });
 
   const jumpToEditorLine = useCallback((line: number) => {
     editorRef.current?.jumpToLine(line);
@@ -215,6 +196,18 @@ function App() {
     showToast,
   });
 
+  const {
+    activeRecoverySnapshot,
+    handleDiscardRecovery,
+    handleRestoreRecovery,
+    recoveryAction,
+    recoveryPromptVisible,
+  } = useAppRecoveryModel({
+    hasSaveConflict,
+    saveDialogVisible: Boolean(saveDialog),
+    showToast,
+  });
+
   const openSettings = useCallback(() => setSettingsVisible(true), []);
   const openDocumentProperties = useCallback(() => setDocumentPropertiesVisible(true), []);
 
@@ -277,11 +270,6 @@ function App() {
 
   const titleDocName = currentDocument?.name ?? t('common.untitled');
   const titleDirty = currentDocument?.isDirty ?? false;
-  const recoveryPromptVisible = shouldShowRecoveryPrompt({
-    hasSnapshot: Boolean(activeRecoverySnapshot),
-    hasSaveDialog: Boolean(saveDialog),
-    hasSaveConflict,
-  });
 
   return (
       <WindowShell>
