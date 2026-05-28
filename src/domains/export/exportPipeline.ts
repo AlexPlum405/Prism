@@ -1,5 +1,5 @@
-import { readFile, remove, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
-import { invoke } from '@tauri-apps/api/core';
+import { readFile, remove, writeFile, writeTextFile } from '../../platform/tauri/fileSystem';
+import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 import { readCustomFontBytes } from '../settings/fontService';
 import type {
   Paragraph as DocxParagraph,
@@ -204,7 +204,7 @@ async function renderPandocCitationHtml(input: ExportDocumentInput): Promise<Pan
   if (findPandocCitations(input.content).length === 0) return { attempted: false, html: null };
 
   try {
-    const result = await invoke<PandocCitationHtmlResult>('render_citations_with_pandoc', {
+    const result = await invokeNativeCommand<PandocCitationHtmlResult>('render_citations_with_pandoc', {
       path: input.pandoc?.path || null,
       markdown: input.content,
       bibliographyPath: input.citation?.bibliographyPath ?? '',
@@ -1343,7 +1343,7 @@ async function exportPdfWithWebkitCapture(input: ExportDocumentInput, targetPath
       tempPaths.push(capturePath);
 
       reportProgress(input, getWebkitPdfCaptureProgressMessage(pageIndex + 1, batchEndPage, layout.pageCount));
-      await invoke('capture_current_webview_pdf', {
+      await invokeNativeCommand('capture_current_webview_pdf', {
         outputPath: capturePath,
         x: layout.rect.x,
         y: layout.rect.y + batchStartY,

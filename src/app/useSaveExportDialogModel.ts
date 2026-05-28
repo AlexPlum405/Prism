@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { downloadDir, homeDir } from '@tauri-apps/api/path';
+import { downloadDir, homeDir } from '../platform/tauri/path';
 import type { ExportFormat } from '../domains/export';
 import { getExportFormatLabel } from '../domains/export';
 import { normalizeExportQualityScale } from '../domains/export/quality';

@@ -1,6 +1,6 @@
-import { open } from '@tauri-apps/plugin-dialog';
-import { appDataDir } from '@tauri-apps/api/path';
-import { copyFile, exists, mkdir, readFile, remove } from '@tauri-apps/plugin-fs';
+import { openDialog } from '../../platform/tauri/dialogs';
+import { appDataDir } from '../../platform/tauri/path';
+import { copyFile, exists, mkdir, readFile, remove } from '../../platform/tauri/fileSystem';
 import type { CustomFont, FontSource } from './types';
 import { joinPath } from '../workspace/services/path';
 import { t, type I18nKey } from '../i18n';
@@ -120,7 +120,7 @@ async function registerFont(font: CustomFont) {
 }
 
 export async function importCustomFont(): Promise<ImportedFontResult | null> {
-  const selected = await open({
+  const selected = await openDialog({
     multiple: false,
     filters: [{ name: 'Fonts', extensions: [...FONT_EXTENSIONS] }],
   });

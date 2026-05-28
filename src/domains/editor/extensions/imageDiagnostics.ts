@@ -2,6 +2,7 @@ import { t } from '../../i18n';
 import type { I18nKey } from '../../i18n';
 import { extractMarkdownDocumentImages } from '../../markdown/documentModel';
 import { dirname, joinPath } from '../../workspace/services/path';
+import { exists } from '../../../platform/tauri/fileSystem';
 
 export type ImageDiagnosticKind =
   | 'empty-target'
@@ -95,8 +96,7 @@ export function resolveMarkdownImagePath(target: string, documentPath?: string):
 
 async function defaultExistsPath(path: string) {
   try {
-    const fs = await import('@tauri-apps/plugin-fs');
-    return typeof fs.exists === 'function' ? fs.exists(path) : true;
+    return exists(path);
   } catch {
     return true;
   }

@@ -39,13 +39,13 @@ import {
   type ThemeRegistryEntry,
 } from '../themes';
 import {
+  exists,
+  mkdir,
   readTextFile,
   writeTextFile,
-  mkdir,
-  exists,
-} from '@tauri-apps/plugin-fs';
-import { appDataDir } from '@tauri-apps/api/path';
-import { invoke } from '@tauri-apps/api/core';
+} from '../../platform/tauri/fileSystem';
+import { appDataDir } from '../../platform/tauri/path';
+import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 import { joinPath } from '../workspace/services/path';
 
 const CONFIG_FILENAME = 'config.json';
@@ -63,7 +63,7 @@ async function getConfigPath(): Promise<string> {
 }
 
 async function loadLegacySettingsConfig(): Promise<Partial<SettingsState> | null> {
-  const raw = await invoke<string | null>('read_legacy_settings_config');
+  const raw = await invokeNativeCommand<string | null>('read_legacy_settings_config');
   if (!raw) return null;
   return JSON.parse(raw) as Partial<SettingsState>;
 }
@@ -397,7 +397,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   detectPandoc: async () => {
     try {
-      const result = await invoke<PandocSettings>('detect_pandoc', {
+      const result = await invokeNativeCommand<PandocSettings>('detect_pandoc', {
         path: get().pandoc.path || null,
       });
       const pandoc = normalizePandocSettings(result);

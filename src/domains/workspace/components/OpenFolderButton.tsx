@@ -1,4 +1,4 @@
-import { open } from '@tauri-apps/plugin-dialog';
+import { openDialog } from '../../../platform/tauri/dialogs';
 import { useDocumentStore } from '../../document/store';
 import { useWorkspaceStore } from '../store';
 import { loadFolderTree } from '../lib/loadFolderTree';
@@ -13,7 +13,7 @@ export function OpenFolderButton() {
 
   const handleOpen = async () => {
     try {
-      const selected = await open({
+      const selected = await openDialog({
         directory: true,
         multiple: false,
         recursive: true,

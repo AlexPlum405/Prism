@@ -1,4 +1,4 @@
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile, writeTextFile } from '../../../platform/tauri/fileSystem';
 import { basename } from '../../workspace/services/path';
 import {
   getExternalChangeMessage,

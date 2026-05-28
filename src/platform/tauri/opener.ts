@@ -1,5 +1,5 @@
-import { openPath, openUrl, revealItemInDir } from '@tauri-apps/plugin-opener';
+import * as opener from '@tauri-apps/plugin-opener';
 
-export const openPathWithDefaultApp = openPath;
-export const openExternalUrl = openUrl;
-export const revealPathInFileManager = revealItemInDir;
+export const openPathWithDefaultApp: typeof opener.openPath = (...args) => opener.openPath(...args);
+export const openExternalUrl: typeof opener.openUrl = (...args) => opener.openUrl(...args);
+export const revealPathInFileManager: typeof opener.revealItemInDir = (...args) => opener.revealItemInDir(...args);

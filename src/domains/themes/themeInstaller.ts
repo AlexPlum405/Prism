@@ -6,7 +6,7 @@ import {
   remove,
   rename,
   stat,
-} from '@tauri-apps/plugin-fs';
+} from '../../platform/tauri/fileSystem';
 import { t } from '../i18n';
 import { joinPath } from '../workspace/services/path';
 import {

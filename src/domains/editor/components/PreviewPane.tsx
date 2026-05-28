@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef, useState } from 'react';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile } from '../../../platform/tauri/fileSystem';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
-import { openUrl } from '@tauri-apps/plugin-opener';
+import { openExternalUrl } from '../../../platform/tauri/opener';
 import { ContentTheme, DEFAULT_SETTINGS, isContentTheme } from '../../settings/types';
 import { useSettingsStore } from '../../settings/store';
 import { getMermaidThemeConfig, getThemeContract } from '../../themes';
@@ -384,7 +384,7 @@ export function PreviewPane({
         if (externalUrl) {
           e.preventDefault();
           try {
-            await openUrl(externalUrl);
+            await openExternalUrl(externalUrl);
           } catch {
             onNotice?.(t('editor.preview.openExternalFailed'));
           }

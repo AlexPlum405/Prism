@@ -1,4 +1,4 @@
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile } from '../../platform/tauri/fileSystem';
 import { t } from '../i18n';
 import { dirname, joinPath } from '../workspace/services/path';
 

@@ -8,9 +8,9 @@ import {
   remove,
   stat,
   writeFile,
-} from '@tauri-apps/plugin-fs';
-import { appDataDir } from '@tauri-apps/api/path';
-import { openPath } from '@tauri-apps/plugin-opener';
+} from '../../platform/tauri/fileSystem';
+import { appDataDir } from '../../platform/tauri/path';
+import { openPathWithDefaultApp } from '../../platform/tauri/opener';
 import { getCurrentLocale, t } from '../i18n';
 import { joinPath } from '../workspace/services/path';
 import {
@@ -196,7 +196,7 @@ export async function removeThemeDirectory(themeId: string) {
 }
 
 export async function openThemesDirectory() {
-  await openPath(await ensureThemesDirectory());
+  await openPathWithDefaultApp(await ensureThemesDirectory());
 }
 
 export function getThemeDirectoryNameFromPath(path: string) {

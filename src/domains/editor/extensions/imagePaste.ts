@@ -1,4 +1,4 @@
-import { exists, mkdir, writeFile } from '@tauri-apps/plugin-fs';
+import { exists, mkdir, writeFile } from '../../../platform/tauri/fileSystem';
 import { t } from '../../i18n';
 
 interface ClipboardImageInput {

@@ -1,5 +1,5 @@
-import { open } from '@tauri-apps/plugin-dialog';
-import { readTextFile } from '@tauri-apps/plugin-fs';
+import { openDialog } from '../../../platform/tauri/dialogs';
+import { readTextFile } from '../../../platform/tauri/fileSystem';
 import { useDocumentStore } from '../store';
 import { useWorkspaceStore } from '../../workspace/store';
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
@@ -17,7 +17,7 @@ export function OpenFileButton() {
 
   const handleOpen = async () => {
     try {
-      const selected = await open({
+      const selected = await openDialog({
         multiple: false,
         filters: MARKDOWN_FILE_FILTERS,
       });

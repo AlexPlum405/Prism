@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { exists, readTextFile } from '@tauri-apps/plugin-fs';
+import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
+import { exists, readTextFile } from '../platform/tauri/fileSystem';
 import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
@@ -86,7 +86,7 @@ export function useBootstrap(enabled = true) {
       }
 
       try {
-        const pendingFiles = await invoke<string[]>('get_pending_files');
+        const pendingFiles = await invokeNativeCommand<string[]>('get_pending_files');
         if (cancelled || useDocumentStore.getState().currentDocument) return;
         if (pendingFiles.length > 0 && await openFile(pendingFiles[0])) return;
       } catch {

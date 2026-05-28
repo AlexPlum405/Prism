@@ -109,3 +109,68 @@ git diff --check --cached
 - 前端业务代码仍有多处直接 import Tauri fs/dialog/opener/core/path/event/window/webview 相关 API。
 - 文档 IO、工作区树、工作区索引、导出 job、导出资源、PDF capture capability、设置/主题存储仍未按本计划迁到 Rust 主实现。
 - `App.tsx` 和 `EditorPane.tsx` 仍未按本计划进一步瘦身。
+
+## Phase 1：前端 Tauri seam 收口
+
+### 目标
+
+在不新增 Rust command、不改变用户行为的前提下，把生产代码中直接调用 Tauri fs/path/dialog/opener/core 的入口统一迁到 `src/platform/tauri/` adapter 后面，为后续 Rust command DTO、结构化错误和领域服务迁移留 seam。
+
+### 改动范围
+
+- 新增 `src/platform/tauri/fileSystem.ts`，统一包装 `@tauri-apps/plugin-fs`。
+- 新增 `src/platform/tauri/path.ts`，统一包装 `@tauri-apps/api/path`。
+- 调整 `src/platform/tauri/opener.ts` 为惰性 wrapper，避免测试 mock 缺少完整导出时在 module import 阶段失败。
+- 将以下生产代码的 Tauri fs/path/opener/core 直接 import 改为 platform adapter：
+  - `src/lib/fileActions.ts`
+  - `src/app/useSaveExportDialogModel.ts`
+  - `src/hooks/useBootstrap.ts`
+  - `src/domains/settings/store.ts`
+  - `src/domains/settings/fontService.ts`
+  - `src/domains/themes/themeStorage.ts`
+  - `src/domains/themes/themeInstaller.ts`
+  - `src/domains/document/fileSnapshot.ts`
+  - `src/domains/document/services/fileSafety.ts`
+  - `src/domains/document/services/recovery.ts`
+  - `src/domains/document/components/OpenFileButton.tsx`
+  - `src/domains/workspace/lib/loadFolderTree.ts`
+  - `src/domains/workspace/hooks/useWorkspaceIndexModel.ts`
+  - `src/domains/workspace/components/OpenFolderButton.tsx`
+  - `src/domains/editor/components/PreviewPane.tsx`
+  - `src/domains/editor/extensions/imageDiagnostics.ts`
+  - `src/domains/editor/extensions/imagePaste.ts`
+  - `src/domains/export/assets.ts`
+  - `src/domains/export/exportPipeline.ts`
+  - `src/domains/commands/categories/fileCommands.ts`
+
+### 风险等级
+
+中低。代码路径覆盖文件读取、保存、导出、设置、主题、工作区和图片诊断，但本 phase 只替换 import/adapter，不改变业务分支、数据结构或 UI。
+
+### 验证
+
+```bash
+rg -n "@tauri-apps/(plugin-fs|api/path|plugin-dialog|plugin-opener|api/core)|\binvoke\(" src/domains src/lib src/hooks src/app --glob '!**/*.test.*'
+npm test -- --run src/lib/fileActions.test.ts src/domains/settings/pathPersistence.test.ts src/domains/themes/themeInstaller.test.ts src/domains/themes/themeRegistry.test.ts src/domains/document/services/fileSafety.test.ts src/domains/document/services/recovery.test.ts src/domains/workspace/services/fileTree.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/export/assets.test.ts src/domains/export/exportPipeline.test.ts src/domains/commands/categories/fileCommands.test.ts src/hooks/useBootstrap.test.tsx src/app/useSaveExportDialogModel.test.tsx src/domains/editor/components/PreviewPane.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- 生产代码直接 Tauri import audit：通过，除 `src/platform/tauri/` adapter 外无匹配。
+- 聚焦测试：通过，14 个测试文件、129 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：本 phase 是 adapter seam 收口，已覆盖文件、设置、主题、工作区、导出、命令、启动和预览相关聚焦测试。
+- 未跑 `cargo test` / `cargo check`：本 phase 不改 Rust。
+- 未跑真实 app smoke：本 phase 不改窗口生命周期、文件关联、Tauri capabilities、签名、打包、updater、安装器或发布链路。
+
+### 剩余风险
+
+- `src/platform/tauri/` 目前仍是轻量 wrapper，尚未引入统一 `PrismCommandError` 和 Result normalizer。
+- 文件 IO、工作区索引、搜索、反链/图谱、导出任务、资源读取等仍主要由前端业务层驱动。
+- 当前工作树仍有本 phase 之外的未提交改动；提交时需只 stage Phase 1 相关 hunk，避免混入图标、菜单、设置中心和插入块等无关改动。

@@ -1,4 +1,4 @@
-import { stat, type FileInfo } from '@tauri-apps/plugin-fs';
+import { stat, type FileInfo } from '../../platform/tauri/fileSystem';
 import { t } from '../i18n';
 
 export interface FileSnapshot {

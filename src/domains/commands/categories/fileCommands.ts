@@ -1,6 +1,9 @@
-import { ask, open } from '@tauri-apps/plugin-dialog';
-import { stat } from '@tauri-apps/plugin-fs';
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
+import { askDialog, openDialog } from '../../../platform/tauri/dialogs';
+import { stat } from '../../../platform/tauri/fileSystem';
+import {
+  openPathWithDefaultApp,
+  revealPathInFileManager,
+} from '../../../platform/tauri/opener';
 import { openPrismWindow } from '../../../lib/openWindow';
 import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
 import {
@@ -77,7 +80,7 @@ function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: Command
 }
 
 async function handleOpen(context: CommandContext): Promise<void> {
-  const selected = await open({
+  const selected = await openDialog({
     multiple: false,
     filters: MARKDOWN_FILE_FILTERS,
   });
@@ -90,7 +93,7 @@ async function handleOpen(context: CommandContext): Promise<void> {
     const fileSizeMB = fileInfo.size / (1024 * 1024);
 
     if (fileSizeMB > 10) {
-      const shouldContinue = await ask(
+      const shouldContinue = await askDialog(
         t('command.largeFileWarning', { size: fileSizeMB.toFixed(2) }),
         { title: t('command.largeFileTitle'), kind: 'warning' },
       );
@@ -121,7 +124,7 @@ async function handleOpen(context: CommandContext): Promise<void> {
   } catch (err) {
     console.error('[Command] Failed to open file:', err);
     const message = formatError(err);
-    await ask(t('command.openFileFailedDialog', { message }), {
+    await askDialog(t('command.openFileFailedDialog', { message }), {
       title: t('command.openFileFailedTitle'),
       kind: 'error',
     });
@@ -214,13 +217,13 @@ async function handleSaveAs(context: CommandContext): Promise<void> {
 async function handleOpenCurrentLocation(context: CommandContext): Promise<void> {
   const docPath = context.documentStore.currentDocument?.path;
   if (docPath) {
-    await revealItemInDir(docPath);
+    await revealPathInFileManager(docPath);
     return;
   }
 
   const rootPath = context.workspaceStore.rootPath;
   if (rootPath) {
-    await openPath(rootPath);
+    await openPathWithDefaultApp(rootPath);
     return;
   }
 

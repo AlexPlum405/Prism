@@ -1,4 +1,4 @@
-import { readDir, readTextFile, stat } from '@tauri-apps/plugin-fs';
+import { readDir, readTextFile, stat } from '../../../platform/tauri/fileSystem';
 import { FileNode } from '../types';
 import { isSupportedMarkdownPath, joinPath } from '../services';
 

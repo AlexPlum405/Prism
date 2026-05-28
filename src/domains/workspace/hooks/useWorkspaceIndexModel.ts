@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { readTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile } from '../../../platform/tauri/fileSystem';
 import type { OpenDocument } from '../../document/types';
 import type { RecentFileEntry } from '../../settings/types';
 import type { FileNode } from '../types';

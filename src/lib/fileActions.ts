@@ -6,10 +6,13 @@ import {
   rename,
   stat,
   writeTextFile,
-} from '@tauri-apps/plugin-fs';
-import { invoke } from '@tauri-apps/api/core';
-import { confirm, message } from '@tauri-apps/plugin-dialog';
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
+} from '../platform/tauri/fileSystem';
+import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
+import { confirmDialog as confirm, messageDialog as message } from '../platform/tauri/dialogs';
+import {
+  openPathWithDefaultApp as openPath,
+  revealPathInFileManager as revealItemInDir,
+} from '../platform/tauri/opener';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
@@ -81,7 +84,7 @@ function formatError(err: unknown): string {
 }
 
 async function movePathToTrash(path: string): Promise<void> {
-  await invoke('move_path_to_trash', { path });
+  await invokeNativeCommand('move_path_to_trash', { path });
 }
 
 export async function deletePathWithTrashFallback({

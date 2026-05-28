@@ -5,8 +5,8 @@ import {
   readTextFile,
   remove,
   writeTextFile,
-} from '@tauri-apps/plugin-fs';
-import { appDataDir } from '@tauri-apps/api/path';
+} from '../../../platform/tauri/fileSystem';
+import { appDataDir } from '../../../platform/tauri/path';
 import { addRecentFile } from '../../workspace/services/recentFiles';
 import { basename, joinPath } from '../../workspace/services/path';
 import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
