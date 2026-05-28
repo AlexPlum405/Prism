@@ -1568,3 +1568,54 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、设置弹窗等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.18：App workspace view controller
+
+### 目标
+
+继续缩小 `App.tsx` 的 workspace 渲染职责，把 `WorkspaceController` 加内嵌 `DocumentView` 的大段 JSX 集中到 App 层 controller。该 checkpoint 不改变侧栏、状态栏、文件树、DocumentView、光标、选区、outline 跳转或文件 action 行为。
+
+### 改动范围
+
+- 新增 `src/app/controllers/AppWorkspaceViewController.tsx`：
+  - 接管 `WorkspaceController` 渲染。
+  - 在 controller 内创建带 `editorRef`、当前文档 key、链接跳转、光标、选区和通知回调的 `DocumentView`。
+  - 接管新建文件、文件树视图切换、outline 跳转、专注模式和侧栏切换的短回调转接。
+- 新增 `src/app/controllers/AppWorkspaceViewController.test.tsx`：
+  - 验证 `DocumentView` 会放入 `WorkspaceController` 并转发光标变化。
+  - 验证新建文件、文件树视图切换和 outline 跳转走 App 桥接回调。
+- `src/App.tsx`：
+  - 移除直接渲染 `WorkspaceController` / `DocumentView` 的大段 JSX。
+  - 改为向 `AppWorkspaceViewController` 传递同等状态和回调。
+- App 行数：staged 版本 `424 -> 404`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+中。该 checkpoint 移动主要编辑区域与 workspace UI 的 JSX 归属，但不改变底层 `WorkspaceController`、`DocumentView`、store action、文件 action 或样式。
+
+### 验证
+
+```bash
+npm test -- --run src/app/controllers/AppWorkspaceViewController.test.tsx src/app/controllers/WorkspaceController.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App workspace view / WorkspaceController / App recovery 聚焦测试：通过，3 个测试文件、12 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 workspace/controller JSX 归属和回调转接，已由新增 controller 测试、WorkspaceController 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、窗口生命周期、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 workspace view controller 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、设置弹窗等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。

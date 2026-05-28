@@ -20,10 +20,9 @@ import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
 import { AppAuxiliaryModalsController } from './app/controllers/AppAuxiliaryModalsController';
-import { WorkspaceController } from './app/controllers/WorkspaceController';
+import { AppWorkspaceViewController } from './app/controllers/AppWorkspaceViewController';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
-import { DocumentView } from './domains/document/components/DocumentView';
 import { exists as fsExists } from '@tauri-apps/plugin-fs';
 import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
@@ -277,36 +276,22 @@ function App() {
       <WindowShell>
       <TitleBar docName={titleDocName} isDirty={titleDirty} />
       <MenuBar sections={menuSections} onAction={handleCommandAction} />
-      <WorkspaceController
+      <AppWorkspaceViewController
         activePath={currentDocument?.path}
         actionableIssueCount={actionableDiagnostics.length}
         backlinkCount={backlinks.length}
+        currentDocument={currentDocument}
         cursor={cursor}
-        documentContent={currentDocument?.content ?? ''}
-        documentView={(
-          <DocumentView
-            key={currentDocument?.path || 'new-doc'}
-            ref={editorRef}
-            onCursorChange={setCursor}
-            onOpenDocumentLink={openDocumentLink}
-            onSelectionTextChange={setSelectionText}
-            onNotice={showToast}
-            workspaceIndex={workspaceIndex}
-          />
-        )}
+        editorRef={editorRef}
         exportProgress={exportProgress}
         exportProgressInBackground={exportProgressInBackground}
-        fileTree={workspace.fileTree}
         firstActionableMessage={firstActionableDiagnostic?.message}
         firstTypographyMessage={firstTypographyDiagnostic?.message}
         globalContextMenu={globalContextMenu}
-        hasSavedPath={Boolean(currentDocument?.path)}
         isSidebarHovered={isSidebarHovered}
         selectionWritingStats={selectionWritingStats}
-        sidebarTab={workspace.sidebarTab}
-        sidebarVisible={workspace.sidebarVisible}
-        statusBarVisible={Boolean(currentDocument && workspace.statusBarVisible)}
         typographyIssueCount={typographyDiagnostics.length}
+        workspace={workspace}
         workspaceIndex={workspaceIndex}
         writingStats={writingStats}
         onBacklinksClick={openBacklinks}
@@ -314,21 +299,16 @@ function App() {
         onContextMenuAction={handleContextMenuAction}
         onCursorChange={setCursor}
         onExportMenu={handleExportContextMenu}
+        onFileAction={handleFileAction}
         onFileClick={handleFileClick}
         onFolderContextMenu={handleFolderContextMenu}
         onLinkDiagnosticsClick={handleLinkDiagnosticsClick}
-        onNewFile={() => handleFileAction('newFile')}
         onNotice={showToast}
         onOpenDocumentLink={openDocumentLink}
-        onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
         onRelationGraphClick={openRelationGraph}
         onSelectionTextChange={setSelectionText}
         onSetSidebarHovered={setIsSidebarHovered}
-        onSetSidebarTab={workspace.setSidebarTab}
         onShowExportProgress={showBackgroundExportProgress}
-        onToggleFileTreeMode={() => handleFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
-        onToggleFocusMode={() => workspace.toggleFocusMode()}
-        onToggleSidebar={() => workspace.toggleSidebar()}
         onTypographyDiagnosticsClick={handleTypographyDiagnosticsClick}
       />
 
