@@ -8,13 +8,13 @@ import { useAppLifecycleModel } from './app/useAppLifecycleModel';
 import { useAppCommandContext } from './app/useAppCommandContext';
 import { useAppShortcuts } from './app/useAppShortcuts';
 import { useDocumentDiagnosticsModel } from './app/useDocumentDiagnosticsModel';
+import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
 import { DocumentSafetyController } from './app/controllers/DocumentSafetyController';
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
 import { WorkspaceController, type WorkspaceContextMenuState } from './app/controllers/WorkspaceController';
-import { useStartupFileOpen } from './app/useStartupFileOpen';
 import { useAppToast } from './hooks/useAppToast';
 import { useExportTaskUi } from './hooks/useExportTaskUi';
 import { DocumentView } from './domains/document/components/DocumentView';
@@ -30,7 +30,6 @@ import { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
-import { executeFileAction, FileActionInput, type DirtyDocumentSwitchAction } from './lib/fileActions';
 import type { ContextMenuItem } from './components/shell/ContextMenu';
 import { ShortcutPanel } from './components/shell/ShortcutPanel';
 import { CommandPalette, type CommandPaletteMode } from './components/shell/CommandPalette';
@@ -92,11 +91,6 @@ function App() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
   const [conflictAction, setConflictAction] = useState<SaveConflictAction | null>(null);
-  const [dirtySwitchPrompt, setDirtySwitchPrompt] = useState<{
-    currentName: string;
-    resolve: (action: DirtyDocumentSwitchAction) => void;
-    targetName: string;
-  } | null>(null);
   useAppLifecycleModel({
     autoSaveEnabled,
     autoSaveInterval,
@@ -184,45 +178,15 @@ function App() {
     showToast,
   });
 
-  const requestDirtyDocumentAction = useCallback((input: {
-    currentName: string;
-    targetName: string;
-  }) => (
-    new Promise<DirtyDocumentSwitchAction>((resolve) => {
-      setDirtySwitchPrompt({
-        currentName: input.currentName,
-        targetName: input.targetName,
-        resolve,
-      });
-    })
-  ), []);
-
-  const resolveDirtySwitchPrompt = useCallback((action: DirtyDocumentSwitchAction) => {
-    setDirtySwitchPrompt((prompt) => {
-      prompt?.resolve(action);
-      return null;
-    });
-  }, []);
-
-  const handleFileAction = useCallback(async (input: FileActionInput) => {
-    await executeFileAction(input, {
-      documentStore: useDocumentStore.getState(),
-      requestDirtyDocumentAction,
-      requestSavePath: requestMarkdownSavePath,
-      workspaceStore: useWorkspaceStore.getState(),
-      showToast,
-    });
-  }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
-
-  const handleStartupFileOpen = useCallback((path: string) => {
-    return handleFileAction({ action: 'openFile', path });
-  }, [handleFileAction]);
-
-  useStartupFileOpen({ onOpenFilePath: handleStartupFileOpen });
-
-  const handleFileClick = useCallback(async (path: string) => {
-    await handleFileAction({ action: 'openFile', path });
-  }, [handleFileAction]);
+  const {
+    dirtySwitchPrompt,
+    handleFileAction,
+    handleFileClick,
+    resolveDirtySwitchPrompt,
+  } = useAppFileActionsModel({
+    requestMarkdownSavePath,
+    showToast,
+  });
 
   const {
     backlinks,

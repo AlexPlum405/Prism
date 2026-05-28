@@ -1150,3 +1150,56 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+### Checkpoint 10.10：App file actions hook
+
+### 目标
+
+继续缩小 `App.tsx` 的窗口级 orchestration 职责，把文件操作分发、脏文档切换提示和启动文件打开集中到独立 hook。该 checkpoint 不改变文件打开、新建、切换文档前保存确认或从 Finder/系统事件打开文件的行为，也不提交当前工作树中已有的 SettingsModal 初始分区未提交改动。
+
+### 改动范围
+
+- 新增 `src/app/useAppFileActionsModel.ts`：
+  - 接管 `executeFileAction` 的 store/context wiring。
+  - 接管 `requestDirtyDocumentAction` 与 dirty switch prompt 状态。
+  - 接管 dirty switch prompt 的 resolve 逻辑。
+  - 接管 `useStartupFileOpen` 到 `openFile` action 的转接。
+  - 接管文件树点击打开文件的 `handleFileClick`。
+- 新增 `src/app/useAppFileActionsModel.test.tsx`：
+  - 验证文件 action 会携带保存路径请求和 toast 回调进入统一执行链路。
+  - 验证 dirty switch prompt 在用户选择前保持，选择后 resolve 并清空。
+  - 验证 startup file open 复用同一文件 action 路径。
+- `src/App.tsx`：
+  - 移除文件 action、startup open 和 dirty switch prompt 的直接状态/wiring。
+  - 保留命令上下文、冲突处理、面板状态、导出和 workspace controller wiring。
+- App 行数：staged 版本 `535 -> 499`；工作树中仍保留未暂存的 SettingsModal 初始分区改动。
+
+### 风险等级
+
+中。该 checkpoint 移动文件操作入口的 wiring，但不改变 `executeFileAction` 本身、文件安全策略、保存路径选择、workspace store 更新或 native 文件打开事件来源。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppFileActionsModel.test.tsx src/app/useStartupFileOpen.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- App file actions / startup open / App recovery 聚焦测试：通过，3 个测试文件、14 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在 App 文件 action wiring、dirty switch prompt 和启动文件打开，已由新增 hook 测试、startup hook 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、打包、签名、updater、系统文件关联实现或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的文件 action 抽离无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、关于/设置/命令面板等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
