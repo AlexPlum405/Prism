@@ -13,6 +13,7 @@ import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
 import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
 import { useAppAuxiliaryModalsModel } from './app/useAppAuxiliaryModalsModel';
 import { useAppRecoveryModel, shouldShowRecoveryPrompt } from './app/useAppRecoveryModel';
+import { useAppDocumentPropertiesModel } from './app/useAppDocumentPropertiesModel';
 import { useDocumentNavigationModel } from './app/useDocumentNavigationModel';
 import { useSaveExportDialogModel } from './app/useSaveExportDialogModel';
 import { ExportUiController } from './app/controllers/ExportUiController';
@@ -52,7 +53,6 @@ function App() {
   const editorRef = useRef<EditorPaneHandle>(null);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [documentPropertiesVisible, setDocumentPropertiesVisible] = useState(false);
   useAppLifecycleModel({
     autoSaveEnabled,
     autoSaveInterval,
@@ -130,10 +130,6 @@ function App() {
     rootPath: workspace.rootPath,
   });
 
-  const handleApplyDocumentProperties = useCallback((content: string) => {
-    useDocumentStore.getState().updateContent(content);
-  }, []);
-
   const {
     chooseSaveDirectory,
     closeSaveDialog,
@@ -187,6 +183,13 @@ function App() {
   });
 
   const {
+    closeDocumentProperties,
+    documentPropertiesVisible,
+    handleApplyDocumentProperties,
+    openDocumentProperties,
+  } = useAppDocumentPropertiesModel();
+
+  const {
     conflictAction,
     hasSaveConflict,
     runConflictAction,
@@ -209,7 +212,6 @@ function App() {
   });
 
   const openSettings = useCallback(() => setSettingsVisible(true), []);
-  const openDocumentProperties = useCallback(() => setDocumentPropertiesVisible(true), []);
 
   const {
     createCommandContext,
@@ -366,7 +368,7 @@ function App() {
         onBacklinksClose={() => setBacklinksVisible(false)}
         onDocumentLinkSelect={selectDocumentLink}
         onDocumentLinksClose={() => setDocumentLinksVisible(false)}
-        onDocumentPropertiesClose={() => setDocumentPropertiesVisible(false)}
+        onDocumentPropertiesClose={closeDocumentProperties}
         onDocumentPropertiesNotice={showToast}
         onLinkDiagnosticSelect={handleSelectDocumentDiagnostic}
         onLinkDiagnosticsClose={closeDocumentDiagnostics}

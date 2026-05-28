@@ -1518,3 +1518,53 @@ git diff --check
 - `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、文档属性状态、设置弹窗等 wiring。
 - Phase 10 的 App 层瘦身仍未达到 350 行以内。
 - 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
+
+
+### Checkpoint 10.17：App document properties model
+
+### 目标
+
+继续缩小 `App.tsx` 的文档面板状态职责，把文档属性面板的 visible/open/close 和应用 front matter 内容的回调集中到独立 model。该 checkpoint 不改变文档属性面板 UI、front matter 编辑或文档内容更新行为。
+
+### 改动范围
+
+- 新增 `src/app/useAppDocumentPropertiesModel.ts`：
+  - 接管文档属性面板 visible/open/close。
+  - 接管 `handleApplyDocumentProperties`，继续调用 `useDocumentStore.getState().updateContent(content)`。
+- 新增 `src/app/useAppDocumentPropertiesModel.test.tsx`：
+  - 验证文档属性面板打开和关闭状态。
+  - 验证应用文档属性会更新文档内容。
+- `src/App.tsx`：
+  - 移除文档属性面板本地 state 和 apply callback。
+  - `DocumentPanelsController` 改用 model 提供的 close/apply 回调。
+- App 行数：staged 版本 `422 -> 424`；该 checkpoint 主要减少 App 直接管理的状态职责，新增 hook destructuring 使行数略增。
+
+### 风险等级
+
+低。该 checkpoint 只移动文档属性状态和既有 store 写入，不改变面板组件、front matter 解析、文档内容更新或 UI 样式。
+
+### 验证
+
+```bash
+npm test -- --run src/app/useAppDocumentPropertiesModel.test.tsx src/app/controllers/DocumentPanelsController.test.tsx src/App.recovery.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Document properties model / DocumentPanelsController / App recovery 聚焦测试：通过，3 个测试文件、12 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 跳过项
+
+- 未跑完整 `npm test -- --run`：风险面集中在文档属性面板状态和文档内容更新回调，已由新增 model 测试、DocumentPanelsController 测试与 App recovery 测试覆盖。
+- 未跑真实 app smoke：本 checkpoint 不改 Tauri capability、文件系统 service、打包、签名、updater 或 UI 布局。
+- 未提交 SettingsModal 初始分区相关脏改：该改动已存在于工作树，和本 checkpoint 的 document properties model 无关。
+
+### 剩余风险
+
+- `App.tsx` 仍承担命令上下文、快捷键、导出 hook、文档导航 hook、设置弹窗等 wiring。
+- Phase 10 的 App 层瘦身仍未达到 350 行以内。
+- 完整 EditorPane 拆分仍受当前未提交编辑器功能增量影响。
