@@ -1,6 +1,7 @@
 import type { CommandCategory, CommandId } from '../commands/types';
 import { t } from './runtime';
 import type { I18nKey } from './resources';
+import { getShowInFileManagerLabel } from '../workspace/services/platform';
 
 const commandLabelKeys: Record<CommandId, I18nKey> = {
   new: 'command.new',
@@ -33,6 +34,7 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   exportPng: 'command.exportPng',
   exportWithPrevious: 'command.exportWithPrevious',
   exportOverwritePrevious: 'command.exportOverwritePrevious',
+  exportSettings: 'command.exportSettings',
   undo: 'command.undo',
   redo: 'command.redo',
   cut: 'command.cut',
@@ -47,6 +49,9 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   copyMd: 'command.copyMd',
   copyHtml: 'command.copyHtml',
   link: 'command.link',
+  insertImage: 'command.insertImage',
+  insertCallout: 'command.insertCallout',
+  insertToggle: 'command.insertToggle',
   codeBlock: 'command.codeBlock',
   mathBlock: 'command.mathBlock',
   quote: 'command.quote',
@@ -108,9 +113,11 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   duplicateSection: 'command.duplicateSection',
   foldCurrentHeading: 'command.foldCurrentHeading',
   selectionQuote: 'command.selectionQuote',
+  selectionCallout: 'command.selectionCallout',
   selectionCalloutNote: 'command.selectionCalloutNote',
   selectionCalloutWarning: 'command.selectionCalloutWarning',
   selectionCalloutTip: 'command.selectionCalloutTip',
+  selectionCalloutImportant: 'command.selectionCalloutImportant',
   selectionUnorderedList: 'command.selectionUnorderedList',
   selectionOrderedList: 'command.selectionOrderedList',
   selectionTaskList: 'command.selectionTaskList',
@@ -158,6 +165,7 @@ const categoryLabelKeys: Record<CommandCategory, I18nKey> = {
 };
 
 export function getLocalizedCommandLabel(id: CommandId) {
+  if (id === 'openCurrentLocation') return getShowInFileManagerLabel();
   return t(commandLabelKeys[id]);
 }
 

@@ -46,6 +46,16 @@ describe('SettingsModal', () => {
     expect(screen.getByText('Pandoc 路径')).toBeInTheDocument();
   });
 
+  it('opens from an initially hidden state without changing hook order', () => {
+    const { rerender } = render(<SettingsModal visible={false} onClose={vi.fn()} />);
+
+    expect(screen.queryByRole('dialog', { name: '设置中心' })).not.toBeInTheDocument();
+
+    rerender(<SettingsModal visible onClose={vi.fn()} />);
+
+    expect(screen.getByRole('dialog', { name: '设置中心' })).toBeInTheDocument();
+  });
+
   it('persists the interface language from general settings', () => {
     render(<SettingsModal visible onClose={vi.fn()} />);
 

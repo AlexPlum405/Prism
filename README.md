@@ -32,11 +32,11 @@
   <a href="#development">Development</a>
 </p>
 
-<a href="docs/screenshot/prism-intro/prism-intro-final.mp4">
-  <img src="docs/screenshot/prism-intro/prism-intro-readme.gif" alt="Prism 20-second product demo" width="920">
+<a href="docs/prism-promo-video/prism-promo-showcase-final.mp4">
+  <img src="docs/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism product video poster" width="920">
 </a>
 
-<sub>Click the animation to open the MP4 demo with sound.</sub>
+<sub>Click the poster to open the 36-second MP4 product video with sound.</sub>
 
 </div>
 
@@ -70,7 +70,7 @@ It is currently best suited for:
 
 ## Download
 
-Current source version: **v1.4.0**
+Current source version: **v1.4.1**
 
 Stable builds are published through [GitHub Releases](https://github.com/AlexPlum405/Prism/releases/latest). Release asset names can vary by platform and signing status, so use the latest release page as the source of truth.
 

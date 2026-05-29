@@ -16,6 +16,7 @@ describe('editor context menu', () => {
         expect.objectContaining({ action: 'selectionCalloutNote' }),
         expect.objectContaining({ action: 'selectionCalloutWarning' }),
         expect.objectContaining({ action: 'selectionCalloutTip' }),
+        expect.objectContaining({ action: 'selectionCalloutImportant' }),
         expect.objectContaining({ action: 'selectionTaskList' }),
         expect.objectContaining({ action: 'duplicateSection' }),
         expect.objectContaining({ action: 'foldCurrentHeading' }),

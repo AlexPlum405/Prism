@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -7,6 +8,7 @@ import {
   useState,
 } from 'react';
 import type { EditorView } from '@codemirror/view';
+
 import { useDocumentStore } from '../../document/store';
 import { useSettingsStore } from '../../settings/store';
 import { useWorkspaceStore } from '../../workspace/store';
@@ -24,6 +26,7 @@ import {
   scrollEditorToLine,
   setEditorScrollRatio,
 } from '../runtime/editorScrollRuntime';
+import { insertTextAtSelection } from '../runtime/editorClipboardRuntime';
 import { createEditorClipboardController } from '../runtime/editorClipboardController';
 import {
   getEditorTypographyStyle,
@@ -32,6 +35,13 @@ import {
   shouldUseDarkEditor,
 } from '../runtime/editorAppearanceRuntime';
 import { HorizontalScrollbar } from './HorizontalScrollbar';
+import { CalloutPickerPopover } from './CalloutPickerPopover';
+import type { CalloutKind } from '../extensions/callouts';
+import {
+  getCalloutSnippet,
+  getSelectionCalloutOperation,
+  isEditorCalloutKind,
+} from '../extensions/calloutSnippets';
 import {
   MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT,
   getMiaoyanCodeHighlightRanges,
@@ -45,6 +55,8 @@ import { useEditorActionModel } from './useEditorActionModel';
 import { useEditorCommandEventModel } from './useEditorCommandEventModel';
 import { useEditorRuntimeModel } from './useEditorRuntimeModel';
 import { useEditorTableModel } from './useEditorTableModel';
+import { openDialog } from '../../../platform/tauri/dialogs';
+import { saveImageAssetFromPath } from '../extensions/imagePaste';
 
 export interface EditorPaneHandle {
   focus: () => void;
@@ -78,6 +90,50 @@ function formatEditorError(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return String(error);
 }
+
+function clampSnippetSelectionOffset(value: unknown, length: number, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(length, Math.trunc(value)));
+}
+
+function insertSnippetIntoView(
+  view: EditorView,
+  insert: string,
+  selectionStart?: unknown,
+  selectionEnd?: unknown,
+) {
+  const selection = view.state.selection.main;
+  const startOffset = clampSnippetSelectionOffset(selectionStart, insert.length, insert.length);
+  const endOffset = clampSnippetSelectionOffset(selectionEnd, insert.length, startOffset);
+  view.dispatch({
+    changes: { from: selection.from, to: selection.to, insert },
+    selection: {
+      anchor: selection.from + startOffset,
+      head: selection.from + endOffset,
+    },
+    scrollIntoView: true,
+  });
+  view.focus();
+}
+
+function getEditorInlinePopoverPosition(view: EditorView, host: HTMLElement | null) {
+  const hostRect = host?.getBoundingClientRect();
+  const coords = view.coordsAtPos(view.state.selection.main.head);
+
+  if (!hostRect || !coords || hostRect.width <= 0) {
+    return { x: 16, y: 48 };
+  }
+
+  const width = 276;
+  const margin = 12;
+  const x = Math.max(margin, Math.min(coords.left - hostRect.left, hostRect.width - width - margin));
+  const y = Math.max(margin, coords.bottom - hostRect.top + 8);
+  return { x, y };
+}
+
+const TOGGLE_BLOCK_SNIPPET = '<details>\n<summary>标题</summary>\n\n内容\n\n</details>\n';
+const TOGGLE_BLOCK_TITLE_START = TOGGLE_BLOCK_SNIPPET.indexOf('标题');
+const TOGGLE_BLOCK_TITLE_END = TOGGLE_BLOCK_TITLE_START + '标题'.length;
 
 export const __editorPaneTesting = {
   getMiaoyanCodeLanguage,
@@ -160,6 +216,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       tableToolbar,
       updateTableToolbar,
     } = useEditorTableModel({ editorRef, viewRef });
+    const [calloutPicker, setCalloutPicker] = useState<{
+      mode: 'insert' | 'selection';
+      x: number;
+      y: number;
+    } | null>(null);
 
     useEffect(() => {
       onChangeRef.current = onChange;
@@ -238,6 +299,72 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       handleTemplateInsert,
     } = useEditorActionModel({ viewRef });
 
+    const showCalloutPicker = useCallback((mode: 'insert' | 'selection') => {
+      const view = viewRef.current;
+      if (!view) return;
+      setCalloutPicker({
+        mode,
+        ...getEditorInlinePopoverPosition(view, editorRef.current),
+      });
+    }, []);
+
+    const handleInsertCallout = useCallback((kind: CalloutKind) => {
+      const view = viewRef.current;
+      if (!view) return false;
+      const snippet = getCalloutSnippet(kind);
+      insertSnippetIntoView(view, snippet.insert, snippet.selectionStart, snippet.selectionEnd);
+      setCalloutPicker(null);
+      return true;
+    }, []);
+
+    const handleSelectionCallout = useCallback((kind: CalloutKind) => {
+      const handled = handleSourceBlockOperation(getSelectionCalloutOperation(kind));
+      setCalloutPicker(null);
+      return handled;
+    }, [handleSourceBlockOperation]);
+
+    const handleCalloutPickerSelect = useCallback((kind: CalloutKind) => {
+      if (calloutPicker?.mode === 'selection') {
+        handleSelectionCallout(kind);
+      } else {
+        handleInsertCallout(kind);
+      }
+    }, [calloutPicker?.mode, handleInsertCallout, handleSelectionCallout]);
+
+    const handleInsertImage = useCallback(async () => {
+      const view = viewRef.current;
+      if (!view) return false;
+
+      const currentDocument = useDocumentStore.getState().currentDocument;
+      if (!currentDocument?.path) {
+        onNoticeRef.current?.(t('editor.image.saveBeforeInsert'));
+        return true;
+      }
+
+      try {
+        const selected = await openDialog({
+          directory: false,
+          multiple: false,
+          filters: [{
+            name: t('editor.image.dialogFilter'),
+            extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'],
+          }],
+        });
+        const sourcePath = Array.isArray(selected) ? selected[0] : selected;
+        if (typeof sourcePath !== 'string' || !sourcePath) return true;
+
+        const markdownImage = await saveImageAssetFromPath({
+          documentName: currentDocument.name,
+          documentPath: currentDocument.path,
+          sourcePath,
+        });
+        insertTextAtSelection(view, markdownImage);
+      } catch (error) {
+        onNoticeRef.current?.(t('editor.image.insertFailed', { message: formatEditorError(error) }));
+      }
+      return true;
+    }, [t]);
+
     const imageClipboardMessages = useMemo(() => ({
       clipboardUnreadable: t('editor.image.clipboardUnreadable'),
       saveBeforePaste: t('editor.image.saveBeforePaste'),
@@ -257,8 +384,56 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       },
     }), [handleTablePasteText, imageClipboardMessages]);
 
+    const handleCustomEditorCommand = useCallback((
+      command: string,
+      detail: Record<string, unknown>,
+      view: EditorView,
+    ) => {
+      switch (command) {
+        case 'insertImage':
+          void handleInsertImage();
+          return true;
+        case 'insertCallout':
+          if (isEditorCalloutKind(detail.kind)) {
+            handleInsertCallout(detail.kind);
+          } else {
+            showCalloutPicker('insert');
+          }
+          return true;
+        case 'selectionCallout':
+          if (isEditorCalloutKind(detail.kind)) {
+            handleSelectionCallout(detail.kind);
+          } else {
+            showCalloutPicker('selection');
+          }
+          return true;
+        case 'insertToggle':
+          insertSnippetIntoView(
+            view,
+            TOGGLE_BLOCK_SNIPPET,
+            TOGGLE_BLOCK_TITLE_START,
+            TOGGLE_BLOCK_TITLE_END,
+          );
+          return true;
+        case 'insertSnippet': {
+          const insert = typeof detail.insert === 'string' ? detail.insert : '';
+          if (!insert) return false;
+          insertSnippetIntoView(view, insert, detail.selectionStart, detail.selectionEnd);
+          return true;
+        }
+        default:
+          return false;
+      }
+    }, [
+      handleInsertCallout,
+      handleInsertImage,
+      handleSelectionCallout,
+      showCalloutPicker,
+    ]);
+
     const { handleEditorContextMenuAction } = useEditorCommandEventModel({
       viewRef,
+      handleCustomEditorCommand,
       handleFoldCurrentHeading,
       handleFormat,
       handleSelectTable,
@@ -314,6 +489,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           visible={tableInsertVisible}
           onClose={() => setTableInsertVisible(false)}
           onInsert={handleTableInsert}
+        />
+        <CalloutPickerPopover
+          visible={Boolean(calloutPicker)}
+          mode={calloutPicker?.mode ?? 'insert'}
+          x={calloutPicker?.x ?? 16}
+          y={calloutPicker?.y ?? 48}
+          onClose={() => setCalloutPicker(null)}
+          onSelect={handleCalloutPickerSelect}
         />
         <TableFloatingToolbar
           visible={tableToolbar.visible}

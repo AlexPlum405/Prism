@@ -655,6 +655,100 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   background: var(--c-graphite);
 }
 
+.prism-callout-picker {
+  position: absolute;
+  z-index: 2400;
+  width: min(276px, calc(100% - 28px));
+  padding: 8px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--c-canvas) 96%, transparent);
+  box-shadow: var(--shadow-flyout);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: prism-fade-in 120ms var(--ease-out);
+}
+
+.prism-callout-picker__title {
+  padding: 3px 6px 0;
+  color: var(--c-void);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.prism-callout-picker__subtitle {
+  padding: 1px 6px 7px;
+  color: var(--c-ash);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.prism-callout-picker__list {
+  display: grid;
+  gap: 2px;
+}
+
+.prism-callout-picker__item {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--r-link);
+  background: transparent;
+  color: var(--c-void);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prism-callout-picker__item:hover,
+.prism-callout-picker__item:focus-visible {
+  outline: 0;
+  background: var(--c-chalk);
+}
+
+.prism-callout-picker__mark {
+  width: 6px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.prism-callout-picker__item--warning .prism-callout-picker__mark {
+  background: #d9822b;
+}
+
+.prism-callout-picker__item--tip .prism-callout-picker__mark {
+  background: #3d8b68;
+}
+
+.prism-callout-picker__item--important .prism-callout-picker__mark {
+  background: #b4566a;
+}
+
+.prism-callout-picker__label,
+.prism-callout-picker__description {
+  display: block;
+}
+
+.prism-callout-picker__label {
+  color: var(--c-void);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.prism-callout-picker__description {
+  margin-top: 2px;
+  color: var(--c-ash);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
 .prism-table-toolbar {
   position: absolute;
   z-index: 2300;

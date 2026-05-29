@@ -32,11 +32,11 @@
   <a href="#本地开发">本地开发</a>
 </p>
 
-<a href="docs/screenshot/prism-intro/prism-intro-final.mp4">
-  <img src="docs/screenshot/prism-intro/prism-intro-readme.gif" alt="Prism 20 秒产品演示" width="920">
+<a href="docs/prism-promo-video/prism-promo-showcase-final.mp4">
+  <img src="docs/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism 产品介绍视频封面" width="920">
 </a>
 
-<sub>点击动图可以打开带声音的 MP4 演示。</sub>
+<sub>点击封面可以打开 36 秒带声音的 MP4 产品介绍视频。</sub>
 
 </div>
 
@@ -70,7 +70,7 @@ Prism 是一个基于 Tauri、React、TypeScript 和 CodeMirror 6 的桌面 Mark
 
 ## 下载
 
-当前源码版本：**v1.4.0**
+当前源码版本：**v1.4.1**
 
 稳定构建通过 [GitHub Releases](https://github.com/AlexPlum405/Prism/releases/latest) 发布。不同平台与签名状态下的产物命名可能不同，请以 latest release 页面为准。
 

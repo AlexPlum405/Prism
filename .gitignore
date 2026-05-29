@@ -18,6 +18,7 @@ release-latest/
 scripts/*
 !scripts/generate-updater-manifest.mjs
 !scripts/generate-updater-manifest.test.ts
+!scripts/generate-brand-icons.mjs
 !scripts/patch-windows-exe-icon.mjs
 !scripts/generate-windows-icon.mjs
 !scripts/package-macos-dmg-skip-finder.sh

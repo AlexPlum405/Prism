@@ -1,0 +1,59 @@
+{
+  "imageStatus": [
+    {
+      "src": "../prism-promo-assets/01-edit.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/02-split-frontmatter.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/03-split-tasks.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/05-split-mermaid.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/04-split-table-katex.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/06-split-callout-code.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/08-quick-open.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/09-export-menu.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    },
+    {
+      "src": "../prism-promo-assets/10-settings-center.png",
+      "width": 2200,
+      "height": 1520,
+      "complete": true
+    }
+  ],
+  "messages": []
+}

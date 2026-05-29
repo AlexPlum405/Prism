@@ -48,6 +48,7 @@ export function getEditorContextMenuItems(
         commandItem('selectionCalloutNote', shortcutStyle),
         commandItem('selectionCalloutWarning', shortcutStyle),
         commandItem('selectionCalloutTip', shortcutStyle),
+        commandItem('selectionCalloutImportant', shortcutStyle),
         commandItem('selectionTaskList', shortcutStyle),
         { type: 'separator' },
         commandItem('duplicateSection', shortcutStyle),

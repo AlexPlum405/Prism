@@ -1,4 +1,4 @@
-import { exists, mkdir, writeFile } from '../../../platform/tauri/fileSystem';
+import { exists, mkdir, readFile, writeFile } from '../../../platform/tauri/fileSystem';
 import { t } from '../../i18n';
 
 interface ClipboardImageInput {
@@ -14,6 +14,13 @@ const IMAGE_EXTENSION_BY_TYPE: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
+const IMAGE_TYPE_BY_EXTENSION: Record<string, string> = {
+  gif: 'image/gif',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+};
 const SUPPORTED_IMAGE_EXTENSION_RE = /\.(gif|jpe?g|png|webp)$/i;
 
 function dirname(path: string): string {
@@ -26,6 +33,11 @@ function joinFsPath(dir: string, name: string): string {
   const trimmed = dir.replace(/[\\/]+$/, '');
   const sep = dir.includes('\\') ? '\\' : '/';
   return `${trimmed}${sep}${name}`;
+}
+
+function basename(path: string): string {
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] || 'image.png';
 }
 
 function stripMarkdownExtension(filename: string): string {
@@ -43,6 +55,10 @@ export function getClipboardImageExtension(mimeType: string, filename = ''): str
 
 export function isSupportedImageFile(file: Pick<File, 'name' | 'type'>): boolean {
   return file.type.startsWith('image/') || SUPPORTED_IMAGE_EXTENSION_RE.test(file.name);
+}
+
+export function isSupportedImagePath(path: string): boolean {
+  return SUPPORTED_IMAGE_EXTENSION_RE.test(path);
 }
 
 export function getNativeImageFilePath(file: File): string | null {
@@ -127,4 +143,29 @@ export async function saveClipboardImage(input: ClipboardImageInput): Promise<st
   }
 
   throw new Error(t('editor.image.uniqueNameFailed'));
+}
+
+export async function saveImageAssetFromPath(input: {
+  documentName: string;
+  documentPath: string;
+  sourcePath: string;
+  now?: Date;
+}): Promise<string> {
+  if (!isSupportedImagePath(input.sourcePath)) {
+    throw new Error(t('editor.image.unsupportedSelectedFile'));
+  }
+
+  const name = basename(input.sourcePath);
+  const extension = getClipboardImageExtension('', name);
+  const bytes = await readFile(input.sourcePath);
+  const file = new File([bytes], name, {
+    type: IMAGE_TYPE_BY_EXTENSION[extension] ?? '',
+  });
+
+  return saveClipboardImage({
+    documentName: input.documentName,
+    documentPath: input.documentPath,
+    file,
+    now: input.now,
+  });
 }

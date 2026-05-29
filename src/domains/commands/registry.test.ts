@@ -246,9 +246,13 @@ describe('command registry', () => {
         contentTheme: 'warm-paper',
       },
     }));
-    expect(sections['主题'].some((item) => item.type !== 'separator' && item.action === 'setTheme:warm-paper')).toBe(true);
-    expect(sections['主题'].some((item) => item.type !== 'separator' && item.action === 'setTheme:broken-theme')).toBe(false);
-    expect(sections['主题'].find((item) => item.type !== 'separator' && item.action === 'setTheme:warm-paper')).toMatchObject({
+    const themeMenu = sections['视图'].find((item) => item.type !== 'separator' && item.label === '主题');
+    expect(themeMenu).toMatchObject({ submenu: true });
+    const themeItems = themeMenu && themeMenu.type !== 'separator' ? themeMenu.children ?? [] : [];
+
+    expect(themeItems.some((item) => item.type !== 'separator' && item.action === 'setTheme:warm-paper')).toBe(true);
+    expect(themeItems.some((item) => item.type !== 'separator' && item.action === 'setTheme:broken-theme')).toBe(false);
+    expect(themeItems.find((item) => item.type !== 'separator' && item.action === 'setTheme:warm-paper')).toMatchObject({
       label: '暖纸',
       checked: true,
     });
@@ -260,6 +264,7 @@ describe('command registry', () => {
     const helpActions = sections['帮助'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
 
     expect(Object.keys(sections)).not.toContain('Prism');
+    expect(Object.keys(sections)).toEqual(['文件', '编辑', '插入', '格式', '导航', '视图', '导出', '窗口', '帮助']);
     expect(fileActions).toContain('preferences');
     expect(helpActions).toEqual(expect.arrayContaining(['showShortcuts', 'checkUpdate', 'about']));
     expect(helpActions).not.toContain('commandPalette');
@@ -333,7 +338,7 @@ describe('command registry', () => {
     expect(visibleText.join('\n')).not.toMatch(/插件市场|插件 API|plugin marketplace|marketplace|prism:\/\/|deep\s*link|deeplink|云同步|移动端|实时协作|WYSIWYG/i);
   });
 
-  it('opens quick-open from the File menu when a workspace has markdown files', async () => {
+  it('opens quick-open from the Navigate menu when a workspace has markdown files', async () => {
     const openQuickOpen = vi.fn();
     const context = createCommandContext({
       openQuickOpen,
@@ -345,9 +350,10 @@ describe('command registry', () => {
         ],
       },
     });
-    const fileActions = getMenuSections(context)['文件'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
+    const navigationActions = getMenuSections(context)['导航']
+      .flatMap((item) => item.type === 'separator' ? [] : [item.action]);
 
-    expect(fileActions).toContain('quickOpen');
+    expect(navigationActions).toContain('quickOpen');
 
     await runCommand('quickOpen', context);
 
@@ -368,15 +374,10 @@ describe('command registry', () => {
         ],
       },
     });
-    const editMenu = getMenuSections(context)['编辑'];
-    const searchMenu = editMenu.find((item) => item.type !== 'separator' && item.label === '查找与替换');
+    const editActions = getMenuSections(context)['编辑']
+      .flatMap((item) => item.type === 'separator' ? [] : [item.action]);
 
-    expect(searchMenu).toMatchObject({
-      submenu: true,
-      children: expect.arrayContaining([
-        expect.objectContaining({ action: 'workspaceSearch' }),
-      ]),
-    });
+    expect(editActions).toEqual(expect.arrayContaining(['showSearch', 'showReplace', 'workspaceSearch']));
 
     await runCommand('workspaceSearch', context);
 
@@ -384,7 +385,7 @@ describe('command registry', () => {
     expect(commandRegistryById.get('workspaceSearch')?.shortcuts).toEqual([{ code: 'KeyF', mod: true, shift: true }]);
   });
 
-  it('routes document info commands through the View menu instead of status bar entries', async () => {
+  it('routes document info commands through the Navigate menu instead of status bar entries', async () => {
     const openDocumentProperties = vi.fn();
     const openDocumentLinks = vi.fn();
     const openBacklinks = vi.fn();
@@ -411,18 +412,16 @@ describe('command registry', () => {
       openBacklinks,
       openRelationGraph,
     });
-    const viewMenu = getMenuSections(context)['视图'];
-    const documentInfoMenu = viewMenu.find((item) => item.type !== 'separator' && item.label === '文档信息');
+    const navigationActions = getMenuSections(context)['导航']
+      .flatMap((item) => item.type === 'separator' ? [] : [item.action]);
 
-    expect(documentInfoMenu).toMatchObject({
-      submenu: true,
-      children: expect.arrayContaining([
-        expect.objectContaining({ action: 'openDocumentProperties' }),
-        expect.objectContaining({ action: 'showDocumentLinks' }),
-        expect.objectContaining({ action: 'showBacklinks' }),
-        expect.objectContaining({ action: 'showRelationGraph' }),
-      ]),
-    });
+    expect(navigationActions).toEqual(expect.arrayContaining([
+      'openDocumentProperties',
+      'showDocumentLinks',
+      'showBacklinks',
+      'showRelationGraph',
+      'showOutline',
+    ]));
 
     await runCommand('openDocumentProperties', context);
     await runCommand('showDocumentLinks', context);
@@ -453,7 +452,7 @@ describe('command registry', () => {
     expect(setWordWrap).toHaveBeenCalledWith(false);
   });
 
-  it('exposes source-only table helpers from the Insert menu', () => {
+  it('keeps the Insert menu focused on primary table insertion', () => {
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
@@ -472,29 +471,31 @@ describe('command registry', () => {
         },
       },
     });
-    const insertMenu = getMenuSections(context)['插入'];
-    const tableMenu = insertMenu.find((item) => item.type !== 'separator' && item.label === '表格');
+    const insertActions = getMenuSections(context)['插入']
+      .flatMap((item) => item.type === 'separator' ? [] : [item.action]);
 
-    expect(tableMenu).toMatchObject({
-      submenu: true,
-      children: expect.arrayContaining([
-        expect.objectContaining({ action: 'insertTable' }),
-        expect.objectContaining({ action: 'formatTable' }),
-        expect.objectContaining({ action: 'addTableRow' }),
-        expect.objectContaining({ action: 'addTableColumn' }),
-        expect.objectContaining({ action: 'deleteTableRow' }),
-        expect.objectContaining({ action: 'deleteTableColumn' }),
-        expect.objectContaining({ action: 'insertTableRowAbove' }),
-        expect.objectContaining({ action: 'insertTableColumnRight' }),
-        expect.objectContaining({ action: 'moveTableRowUp' }),
-        expect.objectContaining({ action: 'sortTableAsc' }),
-        expect.objectContaining({ action: 'copyTableCsv' }),
-        expect.objectContaining({ action: 'convertTableToHtml' }),
-      ]),
-    });
+    expect(insertActions).toEqual(expect.arrayContaining([
+      'link',
+      'insertImage',
+      'insertTable',
+      'codeBlock',
+      'mathBlock',
+      'quote',
+      'insertCallout',
+      'insertToggle',
+    ]));
+    expect(insertActions).not.toEqual(expect.arrayContaining([
+      'formatTable',
+      'addTableRow',
+      'deleteTableColumn',
+      'moveTableRowUp',
+      'sortTableAsc',
+      'copyTableCsv',
+      'convertTableToHtml',
+    ]));
   });
 
-  it('exposes markdown templates from the File menu', async () => {
+  it('exposes markdown templates from the Insert menu', async () => {
     const createNewDocument = vi.fn();
     const showToast = vi.fn();
     const context = createCommandContext({
@@ -504,8 +505,8 @@ describe('command registry', () => {
       },
       showToast,
     });
-    const fileMenu = getMenuSections(context)['文件'];
-    const templateMenu = fileMenu.find((item) => item.type !== 'separator' && item.label === '模板');
+    const insertMenu = getMenuSections(context)['插入'];
+    const templateMenu = insertMenu.find((item) => item.type !== 'separator' && item.label === '模板');
 
     expect(templateMenu).toMatchObject({
       submenu: true,
@@ -532,7 +533,7 @@ describe('command registry', () => {
     expect(showToast).toHaveBeenCalledWith('已创建 论文草稿 模板');
   });
 
-  it('exposes source block operations from the Format menu', () => {
+  it('exposes selection transforms from the Format menu without paragraph maintenance clutter', () => {
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
@@ -552,23 +553,30 @@ describe('command registry', () => {
       },
     });
     const formatMenu = getMenuSections(context)['格式'];
-    const blockMenu = formatMenu.find((item) => item.type !== 'separator' && item.label === '块级源码操作');
+    const formatText: string[] = [];
+    const collectFormatText = (items: Array<{ action?: string; children?: unknown }>) => {
+      for (const item of items) {
+        if (item.action) formatText.push(item.action);
+        if (Array.isArray(item.children)) collectFormatText(item.children as Array<{ action?: string; children?: unknown }>);
+      }
+    };
+    collectFormatText(formatMenu);
 
-    expect(blockMenu).toMatchObject({
-      submenu: true,
-      children: expect.arrayContaining([
-        expect.objectContaining({ action: 'moveParagraphUp' }),
-        expect.objectContaining({ action: 'moveParagraphDown' }),
-        expect.objectContaining({ action: 'duplicateParagraph' }),
-        expect.objectContaining({ action: 'deleteParagraph' }),
-        expect.objectContaining({ action: 'moveSectionUp' }),
-        expect.objectContaining({ action: 'moveSectionDown' }),
-        expect.objectContaining({ action: 'duplicateSection' }),
-        expect.objectContaining({ action: 'foldCurrentHeading' }),
-        expect.objectContaining({ action: 'selectionCalloutNote' }),
-        expect.objectContaining({ action: 'selectionTaskList' }),
-      ]),
-    });
+    expect(formatText).toEqual(expect.arrayContaining([
+      'selectionQuote',
+      'selectionTaskList',
+      'selectionCallout',
+    ]));
+    expect(formatText).not.toEqual(expect.arrayContaining([
+      'moveParagraphUp',
+      'moveParagraphDown',
+      'duplicateParagraph',
+      'deleteParagraph',
+      'moveSectionUp',
+      'moveSectionDown',
+      'duplicateSection',
+      'foldCurrentHeading',
+    ]));
   });
 
   it('dispatches template insertion to the active editor when a document is open', async () => {
@@ -615,7 +623,7 @@ describe('command registry', () => {
         ],
       },
     }));
-    const recentMenu = sections['文件'].find((item) => item.type !== 'separator' && item.label === '打开最近文档');
+    const recentMenu = sections['文件'].find((item) => item.type !== 'separator' && item.label === '最近打开');
 
     expect(recentMenu).toMatchObject({
       submenu: true,
@@ -674,27 +682,22 @@ describe('command registry', () => {
       },
     });
 
-    const exportMenu = getMenuSections(context)['文件']
-      .find((item) => item.type !== 'separator' && item.label === '导出');
+    const exportMenu = getMenuSections(context)['导出'];
 
-    expect(exportMenu).toMatchObject({
-      submenu: true,
-      children: expect.arrayContaining([
-        expect.objectContaining({ action: 'exportWithPrevious', disabled: false }),
-        expect.objectContaining({ action: 'exportOverwritePrevious', disabled: false }),
-      ]),
-    });
+    expect(exportMenu).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'exportWithPrevious', disabled: false }),
+      expect.objectContaining({ action: 'exportOverwritePrevious', disabled: false }),
+      expect.objectContaining({ action: 'exportSettings' }),
+    ]));
 
     const noHistoryExportMenu = getMenuSections(createCommandContext({
       documentStore: context.documentStore,
-    }))['文件'].find((item) => item.type !== 'separator' && item.label === '导出');
-    expect(noHistoryExportMenu).toMatchObject({
-      submenu: true,
-      children: expect.arrayContaining([
-        expect.objectContaining({ action: 'exportWithPrevious', disabled: true }),
-        expect.objectContaining({ action: 'exportOverwritePrevious', disabled: true }),
-      ]),
-    });
+    }))['导出'];
+    expect(noHistoryExportMenu).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'exportWithPrevious', disabled: true }),
+      expect.objectContaining({ action: 'exportOverwritePrevious', disabled: true }),
+      expect.objectContaining({ action: 'exportSettings' }),
+    ]));
   });
 
   it('reuses the previous export settings and lets the user choose a new path', async () => {

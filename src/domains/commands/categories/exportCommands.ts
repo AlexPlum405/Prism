@@ -444,5 +444,11 @@ export function createExportCommands(deps: {
       enabled: hasCurrentDocumentExportHistory,
       run: (context) => handleExportWithPrevious(context, true),
     },
+    {
+      id: 'exportSettings',
+      category: 'file',
+      keywords: ['export', 'settings', 'preferences'],
+      run: (context) => context.openSettings?.('export'),
+    },
   ] satisfies CommandDefinition[];
 }

@@ -15,6 +15,7 @@ describe('source block operations', () => {
     expect(isSourceBlockOperation('duplicateParagraph')).toBe(true);
     expect(isSourceBlockOperation('deleteParagraph')).toBe(true);
     expect(isSourceBlockOperation('selectionCalloutWarning')).toBe(true);
+    expect(isSourceBlockOperation('selectionCalloutImportant')).toBe(true);
     expect(isSourceBlockOperation('unknown')).toBe(false);
   });
 
@@ -71,6 +72,9 @@ describe('source block operations', () => {
     expect(applyOperation(doc, doc, 'selectionQuote')).toBe('> First line\n> Second line');
     expect(applyOperation(doc, doc, 'selectionCalloutWarning')).toBe(
       '> [!WARNING]\n> First line\n> Second line',
+    );
+    expect(applyOperation(doc, doc, 'selectionCalloutImportant')).toBe(
+      '> [!IMPORTANT]\n> First line\n> Second line',
     );
     expect(applyOperation(doc, doc, 'selectionOrderedList')).toBe('1. First line\n2. Second line');
     expect(applyOperation(doc, doc, 'selectionTaskList')).toBe('- [ ] First line\n- [ ] Second line');

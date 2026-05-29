@@ -45,6 +45,7 @@ export type CommandId =
   | 'exportPng'
   | 'exportWithPrevious'
   | 'exportOverwritePrevious'
+  | 'exportSettings'
   | 'undo'
   | 'redo'
   | 'cut'
@@ -59,6 +60,9 @@ export type CommandId =
   | 'copyMd'
   | 'copyHtml'
   | 'link'
+  | 'insertImage'
+  | 'insertCallout'
+  | 'insertToggle'
   | 'codeBlock'
   | 'mathBlock'
   | 'quote'
@@ -120,9 +124,11 @@ export type CommandId =
   | 'duplicateSection'
   | 'foldCurrentHeading'
   | 'selectionQuote'
+  | 'selectionCallout'
   | 'selectionCalloutNote'
   | 'selectionCalloutWarning'
   | 'selectionCalloutTip'
+  | 'selectionCalloutImportant'
   | 'selectionUnorderedList'
   | 'selectionOrderedList'
   | 'selectionTaskList'
@@ -157,7 +163,7 @@ export type CommandId =
   | 'feedback'
   | 'about';
 
-export type AppPlatform = 'mac' | 'windows' | 'linux';
+export type AppPlatform = 'mac' | 'windows';
 
 export interface ShortcutBinding {
   code: string;
@@ -186,7 +192,7 @@ export interface CommandContext {
     documentPath?: string;
   }) => Promise<string | null>;
   openAbout?: () => void;
-  openSettings?: () => void;
+  openSettings?: (section?: 'general' | 'writing' | 'appearance' | 'export' | 'citation' | 'files') => void;
   openShortcuts?: () => void;
   openQuickOpen?: () => void;
   openWorkspaceSearch?: () => void;

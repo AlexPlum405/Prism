@@ -9,10 +9,7 @@ import {
 } from '../platform/tauri/fileSystem';
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 import { confirmDialog as confirm, messageDialog as message } from '../platform/tauri/dialogs';
-import {
-  openPathWithDefaultApp as openPath,
-  revealPathInFileManager as revealItemInDir,
-} from '../platform/tauri/opener';
+import { revealPathInFileManager as revealItemInDir } from '../platform/tauri/opener';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
@@ -452,12 +449,6 @@ async function handleDelete(path: string, context: FileActionContext): Promise<v
 }
 
 async function handleOpenLocation(path: string): Promise<void> {
-  const info = await stat(path);
-  if (info.isDirectory) {
-    await openPath(path);
-    return;
-  }
-
   await revealItemInDir(path);
 }
 
@@ -539,7 +530,7 @@ export async function executeFileAction(
 
       case 'openRootLocation':
         if (!context.workspaceStore.rootPath) throw new Error(t('file.noWorkspace'));
-        await openPath(context.workspaceStore.rootPath);
+        await revealItemInDir(context.workspaceStore.rootPath);
         return;
 
       case 'openLocation':

@@ -39,6 +39,7 @@ function App() {
   const editorRef = useRef<EditorPaneHandle>(null);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [settingsInitialSection, setSettingsInitialSection] = useState<'general' | 'writing' | 'appearance' | 'export' | 'citation' | 'files'>('general');
   useAppLifecycleModel({
     autoSaveEnabled: settings.autoSaveEnabled,
     autoSaveInterval: settings.autoSaveInterval,
@@ -153,7 +154,10 @@ function App() {
     showToast,
   });
 
-  const openSettings = useCallback(() => setSettingsVisible(true), []);
+  const openSettings = useCallback((section: 'general' | 'writing' | 'appearance' | 'export' | 'citation' | 'files' = 'general') => {
+    setSettingsInitialSection(section);
+    setSettingsVisible(true);
+  }, []);
 
   const {
     createCommandContext,
@@ -329,7 +333,11 @@ function App() {
         onCommandPaletteExecute={(commandId) => handleCommandAction(commandId)}
         onShortcutPanelClose={closeShortcutPanel}
       />
-      <SettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <SettingsModal
+        initialSection={settingsInitialSection}
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
     </WindowShell>
   );
 }

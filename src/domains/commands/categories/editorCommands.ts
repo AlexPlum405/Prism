@@ -33,7 +33,7 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       keywords: ['redo'],
       shortcuts: [
         { code: 'KeyZ', mod: true, shift: true },
-        { code: 'KeyY', mod: true, platforms: ['windows', 'linux'] },
+        { code: 'KeyY', mod: true, platforms: ['windows'] },
       ],
       enabled: hasDocument,
       run: () => emitEditorCommand('redo'),
@@ -130,6 +130,27 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       shortcuts: [{ code: 'KeyK', mod: true }],
       enabled: hasDocument,
       run: () => emitInlineFormat('link'),
+    },
+    {
+      id: 'insertImage',
+      category: 'insert',
+      keywords: ['image', 'picture', 'asset', '图片'],
+      enabled: hasDocument,
+      run: () => emitEditorCommand('insertImage'),
+    },
+    {
+      id: 'insertCallout',
+      category: 'insert',
+      keywords: ['callout', 'note', '提示块'],
+      enabled: hasDocument,
+      run: () => emitEditorCommand('insertCallout'),
+    },
+    {
+      id: 'insertToggle',
+      category: 'insert',
+      keywords: ['toggle', 'details', 'summary', '折叠'],
+      enabled: hasDocument,
+      run: () => emitEditorCommand('insertToggle'),
     },
     {
       id: 'codeBlock',
@@ -527,6 +548,13 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       run: () => emitEditorCommand('selectionQuote'),
     },
     {
+      id: 'selectionCallout',
+      category: 'format',
+      keywords: ['block', 'selection', 'callout'],
+      enabled: hasDocument,
+      run: () => emitEditorCommand('selectionCallout'),
+    },
+    {
       id: 'selectionCalloutNote',
       category: 'format',
       keywords: ['block', 'selection', 'callout', 'note'],
@@ -546,6 +574,13 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       keywords: ['block', 'selection', 'callout', 'tip'],
       enabled: hasDocument,
       run: () => emitEditorCommand('selectionCalloutTip'),
+    },
+    {
+      id: 'selectionCalloutImportant',
+      category: 'format',
+      keywords: ['block', 'selection', 'callout', 'important'],
+      enabled: hasDocument,
+      run: () => emitEditorCommand('selectionCalloutImportant'),
     },
     {
       id: 'selectionUnorderedList',

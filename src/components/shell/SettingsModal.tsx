@@ -41,6 +41,7 @@ import { useCitationSettingsModel } from './settings/useCitationSettingsModel';
 import { useExportSettingsModel } from './settings/useExportSettingsModel';
 
 interface SettingsModalProps {
+  initialSection?: SettingsSectionId;
   visible: boolean;
   onClose: () => void;
 }
@@ -106,13 +107,17 @@ function showSettingsToast(input: ToastInput) {
   emitAppEvent('toast.show', input);
 }
 
-export function SettingsModal({ visible, onClose }: SettingsModalProps) {
+export function SettingsModal({ initialSection = 'general', visible, onClose }: SettingsModalProps) {
   const { t } = useI18n();
   const settings = useSettingsStore();
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('general');
   const [pandocChecking, setPandocChecking] = useState(false);
   const [themeBusy, setThemeBusy] = useState(false);
   const [themePrompt, setThemePrompt] = useState<ThemePromptState | null>(null);
+
+  useEffect(() => {
+    if (visible) setActiveSection(initialSection);
+  }, [initialSection, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -131,8 +136,6 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [visible, onClose, themePrompt]);
-
-  if (!visible) return null;
 
   const toggleClass = (on: boolean) => `toggle ${on ? 'on' : ''}`;
   const selectStyle: CSSProperties = {
@@ -172,6 +175,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     pandocDetected: settings.pandoc.detected,
   });
   const exportSettingsModel = useExportSettingsModel(settings.exportDefaults);
+
+  if (!visible) return null;
 
   const importFont = async () => {
     const result = await importCustomFont();

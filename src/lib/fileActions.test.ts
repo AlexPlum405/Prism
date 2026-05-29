@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
+import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
@@ -367,5 +368,36 @@ describe('executeFileAction openFile workspace sync', () => {
       saveStatus: 'conflict',
       saveIssue: 'missing',
     });
+  });
+});
+
+describe('executeFileAction reveal location', () => {
+  it('reveals a file from the file tree context menu', async () => {
+    await executeFileAction('openLocation:/notes/draft.md', fileActionContext());
+
+    expect(stat).not.toHaveBeenCalled();
+    expect(revealItemInDir).toHaveBeenCalledWith('/notes/draft.md');
+    expect(openPath).not.toHaveBeenCalled();
+  });
+
+  it('reveals a directory instead of opening it as a default app path', async () => {
+    await executeFileAction('openLocation:/Users/Alex/hermes-test/spark/prompt3', fileActionContext());
+
+    expect(stat).not.toHaveBeenCalled();
+    expect(revealItemInDir).toHaveBeenCalledWith('/Users/Alex/hermes-test/spark/prompt3');
+    expect(openPath).not.toHaveBeenCalled();
+  });
+
+  it('reveals the workspace root from the sidebar background menu', async () => {
+    useWorkspaceStore.setState({
+      fileTree: [],
+      mode: 'folder',
+      rootPath: '/Users/Alex/hermes-test/spark/prompt3',
+    });
+
+    await executeFileAction('openRootLocation', fileActionContext());
+
+    expect(revealItemInDir).toHaveBeenCalledWith('/Users/Alex/hermes-test/spark/prompt3');
+    expect(openPath).not.toHaveBeenCalled();
   });
 });

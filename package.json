@@ -1,6 +1,6 @@
 {
   "name": "prism",
-  "version": "1.0.5",
+  "version": "1.4.1",
   "description": "A local-first Markdown editor for writing, preview typography, and reliable export.",
   "main": "index.js",
   "directories": {
@@ -14,6 +14,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:build:app-smoke": "tauri build --config src-tauri/tauri.local-smoke.conf.json --bundles app && node scripts/run-app-smoke.mjs",
+    "icons:generate": "node scripts/generate-brand-icons.mjs",
     "release:mac-dmg:skip-finder": "bash scripts/package-macos-dmg-skip-finder.sh",
     "release:manifest": "node scripts/generate-updater-manifest.mjs",
     "release:manifest:check": "node scripts/generate-updater-manifest.mjs --check"

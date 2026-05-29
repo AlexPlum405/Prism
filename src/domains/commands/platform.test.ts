@@ -22,7 +22,6 @@ describe('command shortcut platform helpers', () => {
 
     expect(getShortcutLabel(shortcut, 'mac')).toBe('⌘P');
     expect(getShortcutLabel(shortcut, 'windows')).toBe('Ctrl+P');
-    expect(getShortcutLabel(shortcut, 'linux')).toBe('Ctrl+P');
   });
 
   it('formats explicit modifier combinations without losing the key label', () => {
@@ -33,11 +32,10 @@ describe('command shortcut platform helpers', () => {
   });
 
   it('hides platform-specific shortcuts on other platforms', () => {
-    const windowsOnly: ShortcutBinding = { code: 'KeyY', mod: true, platforms: ['windows', 'linux'] };
+    const windowsOnly: ShortcutBinding = { code: 'KeyY', mod: true, platforms: ['windows'] };
 
     expect(getShortcutLabel(windowsOnly, 'mac')).toBeUndefined();
     expect(getShortcutLabel(windowsOnly, 'windows')).toBe('Ctrl+Y');
-    expect(getShortcutLabel(windowsOnly, 'linux')).toBe('Ctrl+Y');
   });
 
   it('matches mod shortcuts against meta on mac and ctrl on windows', () => {
@@ -50,7 +48,7 @@ describe('command shortcut platform helpers', () => {
   });
 
   it('respects explicit platform filters while matching events', () => {
-    const windowsOnly: ShortcutBinding = { code: 'KeyY', mod: true, platforms: ['windows', 'linux'] };
+    const windowsOnly: ShortcutBinding = { code: 'KeyY', mod: true, platforms: ['windows'] };
 
     expect(shortcutMatchesEvent(windowsOnly, keyEvent('KeyY', { metaKey: true }), 'mac')).toBe(false);
     expect(shortcutMatchesEvent(windowsOnly, keyEvent('KeyY', { ctrlKey: true }), 'windows')).toBe(true);

@@ -10,6 +10,7 @@ export type SourceBlockOperation =
   | 'selectionCalloutNote'
   | 'selectionCalloutWarning'
   | 'selectionCalloutTip'
+  | 'selectionCalloutImportant'
   | 'selectionUnorderedList'
   | 'selectionOrderedList'
   | 'selectionTaskList';
@@ -47,6 +48,7 @@ const SOURCE_BLOCK_OPERATIONS = new Set<SourceBlockOperation>([
   'selectionCalloutNote',
   'selectionCalloutWarning',
   'selectionCalloutTip',
+  'selectionCalloutImportant',
   'selectionUnorderedList',
   'selectionOrderedList',
   'selectionTaskList',
@@ -380,13 +382,16 @@ function transformSelectionLines(lines: string[], operation: SourceBlockOperatio
   if (
     operation === 'selectionCalloutNote' ||
     operation === 'selectionCalloutWarning' ||
-    operation === 'selectionCalloutTip'
+    operation === 'selectionCalloutTip' ||
+    operation === 'selectionCalloutImportant'
   ) {
     const calloutType = operation === 'selectionCalloutWarning'
       ? 'WARNING'
       : operation === 'selectionCalloutTip'
         ? 'TIP'
-        : 'NOTE';
+        : operation === 'selectionCalloutImportant'
+          ? 'IMPORTANT'
+          : 'NOTE';
     const bodyLines = lines.map((line) => {
       const { body } = stripBlockPrefix(line);
       return body.length > 0 ? `> ${body}` : '> ';
@@ -458,6 +463,7 @@ export function getSourceBlockOperationEdit(
     case 'selectionCalloutNote':
     case 'selectionCalloutWarning':
     case 'selectionCalloutTip':
+    case 'selectionCalloutImportant':
     case 'selectionUnorderedList':
     case 'selectionOrderedList':
     case 'selectionTaskList':

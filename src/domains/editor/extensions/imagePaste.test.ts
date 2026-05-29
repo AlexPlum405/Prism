@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const fsMock = vi.hoisted(() => ({
   exists: vi.fn(),
   mkdir: vi.fn(),
+  readFile: vi.fn(),
   writeFile: vi.fn(),
 }));
 
@@ -14,7 +15,9 @@ import {
   getMarkdownImageForPath,
   getPastedImageAssetTarget,
   isSupportedImageFile,
+  isSupportedImagePath,
   saveClipboardImage,
+  saveImageAssetFromPath,
   sanitizeAssetSegment,
 } from './imagePaste';
 
@@ -22,6 +25,7 @@ describe('image paste assets', () => {
   beforeEach(() => {
     fsMock.exists.mockReset();
     fsMock.mkdir.mockReset();
+    fsMock.readFile.mockReset();
     fsMock.writeFile.mockReset();
   });
 
@@ -36,6 +40,8 @@ describe('image paste assets', () => {
   it('recognizes draggable image files and normalizes native paths for markdown', () => {
     expect(isSupportedImageFile({ name: 'diagram.PNG', type: '' })).toBe(true);
     expect(isSupportedImageFile({ name: 'notes.md', type: 'text/markdown' })).toBe(false);
+    expect(isSupportedImagePath('/tmp/diagram.webp')).toBe(true);
+    expect(isSupportedImagePath('/tmp/notes.md')).toBe(false);
     expect(getMarkdownImageForPath('/tmp/My Image.png', 'My Image.png')).toBe('![My Image.png](/tmp/My Image.png)');
     expect(getMarkdownImageForPath('C:\\tmp\\image.png')).toBe('![](C:/tmp/image.png)');
   });
@@ -109,5 +115,24 @@ describe('image paste assets', () => {
       new Uint8Array([4, 5, 6]),
     );
     expect(markdown).toBe('![image-20260515-010203-2.png](assets/Plan/image-20260515-010203-2.png)');
+  });
+
+  it('copies a selected image file into the document asset folder', async () => {
+    fsMock.exists.mockResolvedValue(false);
+    fsMock.readFile.mockResolvedValue(new Uint8Array([7, 8, 9]));
+
+    const markdown = await saveImageAssetFromPath({
+      documentName: 'Plan.md',
+      documentPath: '/repo/docs/Plan.md',
+      sourcePath: '/Users/alex/Pictures/photo.jpeg',
+      now: new Date('2026-05-15T01:02:03'),
+    });
+
+    expect(fsMock.readFile).toHaveBeenCalledWith('/Users/alex/Pictures/photo.jpeg');
+    expect(fsMock.writeFile).toHaveBeenCalledWith(
+      '/repo/docs/assets/Plan/image-20260515-010203.jpg',
+      new Uint8Array([7, 8, 9]),
+    );
+    expect(markdown).toBe('![image-20260515-010203.jpg](assets/Plan/image-20260515-010203.jpg)');
   });
 });

@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prism 36s Promo Video</title>
+  <style>
+    @font-face {
+      font-family: "Prism Newsreader";
+      src: url("../../src/assets/fonts/Newsreader-Variable.woff2") format("woff2");
+      font-weight: 300 800;
+    }
+
+    @font-face {
+      font-family: "Prism JinKai";
+      src: url("../../src/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+      font-weight: 400;
+    }
+
+    @font-face {
+      font-family: "Prism Mono";
+      src: url("../../src/assets/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+      font-weight: 400;
+    }
+
+    :root {
+      --paper: #eee8dd;
+      --paper-soft: #f7f3ea;
+      --ink: #24211d;
+      --muted: #746b60;
+      --quiet: #9a9287;
+      --line: rgba(44, 38, 31, 0.14);
+      --green: #315f43;
+      --green-soft: #d8e2d4;
+      --blue: #465f7a;
+      --red: #8a4639;
+      --gold: #b78442;
+      --deep: #17231d;
+      --shadow: 0 34px 100px rgba(38, 31, 24, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Prism JinKai", "Kaiti SC", "STKaiti", "Songti SC", "PingFang SC", serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(49, 95, 67, 0.075) 0 1px, transparent 1px 100%),
+        linear-gradient(180deg, rgba(70, 95, 122, 0.045) 0 1px, transparent 1px 100%),
+        var(--paper);
+      background-size: 120px 120px, 120px 120px, auto;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 52px;
+      border: 1px solid rgba(44, 38, 31, 0.11);
+      pointer-events: none;
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(36, 33, 29, 0.07) 0.7px, transparent 0.7px);
+      background-size: 5px 5px;
+      opacity: 0.18;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+
+    .brandPlate {
+      position: absolute;
+      left: 112px;
+      top: 116px;
+      z-index: 20;
+      width: 620px;
+      opacity: 0;
+      transform: translateY(18px);
+      will-change: opacity, transform;
+    }
+
+    .brandName {
+      margin: 0;
+      font-family: "Prism Newsreader", Georgia, serif;
+      font-size: 138px;
+      font-weight: 520;
+      line-height: 0.88;
+      letter-spacing: 0;
+    }
+
+    .brandRule {
+      width: 146px;
+      height: 3px;
+      margin: 38px 0 28px;
+      background: var(--green);
+      transform-origin: left center;
+    }
+
+    .brandSub {
+      margin: 0;
+      max-width: 580px;
+      color: var(--muted);
+      font-size: 32px;
+      line-height: 1.55;
+    }
+
+    .copyPlate {
+      position: absolute;
+      left: 116px;
+      bottom: 116px;
+      z-index: 24;
+      width: 590px;
+      opacity: 0;
+      will-change: opacity, transform;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      font-family: "Prism Mono", Menlo, monospace;
+      font-size: 15px;
+      line-height: 1;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--green);
+    }
+
+    .sceneHeadline {
+      margin: 0;
+      max-width: 590px;
+      color: var(--ink);
+      font-size: 56px;
+      font-weight: 600;
+      line-height: 1.14;
+      letter-spacing: 0;
+    }
+
+    .sceneBody {
+      margin: 22px 0 0;
+      max-width: 540px;
+      color: var(--muted);
+      font-size: 26px;
+      line-height: 1.58;
+    }
+
+    .timeCode {
+      position: absolute;
+      left: 116px;
+      top: 64px;
+      z-index: 24;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "Prism Mono", Menlo, monospace;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      color: rgba(36, 33, 29, 0.48);
+    }
+
+    .timeCode::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .shot {
+      position: absolute;
+      z-index: 10;
+      left: 50%;
+      top: 50%;
+      width: 1280px;
+      height: 884px;
+      overflow: hidden;
+      border: 1px solid rgba(44, 38, 31, 0.14);
+      border-radius: 8px;
+      background: #f8f5ee;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform-origin: center center;
+      will-change: opacity, transform, filter;
+    }
+
+    .shot.medium {
+      width: 1030px;
+      height: 712px;
+    }
+
+    .shot.small {
+      width: 760px;
+      height: 525px;
+      box-shadow: 0 26px 72px rgba(38, 31, 24, 0.18);
+    }
+
+    .shot.focusTree {
+      width: 690px;
+      height: 884px;
+    }
+
+    .shot.focusTree img {
+      object-position: left center;
+    }
+
+    .shot img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .shot::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+      pointer-events: none;
+    }
+
+    .chips {
+      position: absolute;
+      z-index: 30;
+      display: flex;
+      gap: 12px;
+      opacity: 0;
+      will-change: opacity, transform;
+    }
+
+    .chip {
+      min-width: 112px;
+      padding: 11px 17px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(247, 243, 234, 0.88);
+      color: var(--ink);
+      box-shadow: 0 12px 36px rgba(38, 31, 24, 0.12);
+      backdrop-filter: blur(18px);
+      font-family: "Prism Mono", Menlo, monospace;
+      font-size: 16px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .chip.green {
+      color: #254c35;
+      border-color: rgba(49, 95, 67, 0.3);
+    }
+
+    .chip.blue {
+      color: #334e67;
+      border-color: rgba(70, 95, 122, 0.3);
+    }
+
+    .chip.red {
+      color: #76372f;
+      border-color: rgba(138, 70, 57, 0.3);
+    }
+
+    .sideNote {
+      position: absolute;
+      z-index: 28;
+      right: 128px;
+      bottom: 104px;
+      width: 510px;
+      padding: 26px 30px 28px;
+      border: 1px solid rgba(44, 38, 31, 0.14);
+      border-radius: 8px;
+      background: rgba(247, 243, 234, 0.86);
+      box-shadow: 0 18px 58px rgba(38, 31, 24, 0.14);
+      backdrop-filter: blur(20px);
+      opacity: 0;
+      will-change: opacity, transform;
+    }
+
+    .sideNote p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 23px;
+      line-height: 1.5;
+    }
+
+    .sideNote strong {
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    .finalFrame {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      pointer-events: none;
+      will-change: opacity, transform;
+    }
+
+    .finalPanel {
+      width: 1180px;
+      padding: 74px 78px 76px;
+      border: 1px solid rgba(44, 38, 31, 0.16);
+      border-radius: 8px;
+      background: rgba(247, 243, 234, 0.91);
+      box-shadow: 0 40px 120px rgba(38, 31, 24, 0.22);
+      backdrop-filter: blur(24px);
+      text-align: center;
+    }
+
+    .finalPanel h2 {
+      margin: 0;
+      font-family: "Prism Newsreader", Georgia, serif;
+      font-size: 112px;
+      font-weight: 520;
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .finalPanel p {
+      margin: 30px auto 0;
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 31px;
+      line-height: 1.52;
+    }
+
+    .finalMeta {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 40px;
+    }
+
+    .watermark {
+      position: absolute;
+      right: 34px;
+      bottom: 24px;
+      z-index: 90;
+      color: rgba(36, 33, 29, 0.44);
+      font-family: "Prism Mono", Menlo, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="stage">
+    <div class="timeCode">PRISM PRODUCT FILM · 36S</div>
+
+    <section class="brandPlate" id="brandPlate">
+      <h1 class="brandName">Prism</h1>
+      <div class="brandRule" id="brandRule"></div>
+      <p class="brandSub">一个安静、本地优先的 Markdown 写作器，让古文、批注、图示和导出留在同一篇文档里。</p>
+    </section>
+
+    <section class="copyPlate" id="copyPlate">
+      <p class="eyebrow" id="copyEyebrow">Local Markdown</p>
+      <h2 class="sceneHeadline" id="copyHeadline">从一篇真实文稿开始</h2>
+      <p class="sceneBody" id="copyBody">标题、段落、任务、图片和引用都留在普通 Markdown 里，写作不需要离开文档。</p>
+    </section>
+
+    <div class="shot" id="shotEdit"><img src="../prism-promo-assets/01-edit.png" alt=""></div>
+    <div class="shot focusTree" id="shotTree"><img src="../prism-promo-assets/01-edit.png" alt=""></div>
+    <div class="shot" id="shotSplit"><img src="../prism-promo-assets/02-split-frontmatter.png" alt=""></div>
+    <div class="shot medium" id="shotTasks"><img src="../prism-promo-assets/03-split-tasks.png" alt=""></div>
+    <div class="shot small" id="shotMermaid"><img src="../prism-promo-assets/05-split-mermaid.png" alt=""></div>
+    <div class="shot small" id="shotFormula"><img src="../prism-promo-assets/04-split-table-katex.png" alt=""></div>
+    <div class="shot small" id="shotCode"><img src="../prism-promo-assets/06-split-callout-code.png" alt=""></div>
+    <div class="shot medium" id="shotQuick"><img src="../prism-promo-assets/08-quick-open.png" alt=""></div>
+    <div class="shot medium" id="shotExport"><img src="../prism-promo-assets/09-export-menu.png" alt=""></div>
+    <div class="shot medium" id="shotSettings"><img src="../prism-promo-assets/10-settings-center.png" alt=""></div>
+
+    <div class="chips" id="chipsWrite">
+      <div class="chip green">原文</div>
+      <div class="chip blue">批注</div>
+      <div class="chip red">本地</div>
+    </div>
+
+    <div class="chips" id="chipsPower">
+      <div class="chip green">路线图</div>
+      <div class="chip blue">KaTeX</div>
+      <div class="chip red">表格</div>
+      <div class="chip">札记</div>
+    </div>
+
+    <div class="chips" id="chipsDesktop">
+      <div class="chip green">文档树</div>
+      <div class="chip blue">快速打开</div>
+      <div class="chip red">设置中心</div>
+      <div class="chip">导出</div>
+    </div>
+
+    <div class="chips" id="chipsExport">
+      <div class="chip green">HTML</div>
+      <div class="chip blue">PDF</div>
+      <div class="chip red">Word</div>
+      <div class="chip">PNG</div>
+    </div>
+
+    <aside class="sideNote" id="sideNote">
+      <p id="sideNoteText"><strong>真实 Prism 截图。</strong> 每一帧都来自当前 App 打开的同一篇古文批注稿。</p>
+    </aside>
+
+    <section class="finalFrame" id="finalFrame">
+      <div class="finalPanel">
+        <h2>Prism</h2>
+        <p>Markdown editor for quiet reading, careful annotation, and polished local export.</p>
+        <div class="finalMeta">
+          <span class="chip green">Local-first</span>
+          <span class="chip blue">Tauri</span>
+          <span class="chip red">Markdown</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="watermark">Created by Huashu-Design</div>
+  </main>
+
+  <script>
+    const DURATION = 36;
+    const state = {
+      startedAt: 0,
+      raf: 0,
+      nodes: {},
+    };
+
+    const beats = [
+      {
+        start: 1.0,
+        end: 4.4,
+        eyebrow: "Local Markdown",
+        headline: "从《桃花源记》开始",
+        body: "原文、题名、作者、标签和封面图都留在普通 Markdown 里，文档仍然清楚可读。",
+      },
+      {
+        start: 4.0,
+        end: 8.0,
+        eyebrow: "Document Tree",
+        headline: "文档树就是写作入口",
+        body: "工作区、文件夹、最近文档都在左侧，写作不需要先进入复杂知识库。",
+      },
+      {
+        start: 7.5,
+        end: 11.8,
+        eyebrow: "Split View",
+        headline: "左边原文，右边成稿",
+        body: "分栏模式让批注稿的源码和预览同时可见，校读时不用来回切换。",
+      },
+      {
+        start: 11.0,
+        end: 16.4,
+        eyebrow: "Annotations",
+        headline: "路线图、表格和清单自然进入批注",
+        body: "用 Mermaid 梳理行旅路径，用表格整理段落动作，用任务清单记录校读进度。",
+      },
+      {
+        start: 15.8,
+        end: 20.6,
+        eyebrow: "Rich Blocks",
+        headline: "公式、提示和折叠札记仍然是 Markdown",
+        body: "批注可以更丰富，但不必把文本锁进私有格式。",
+      },
+      {
+        start: 20.0,
+        end: 24.2,
+        eyebrow: "Quick Open",
+        headline: "快速打开回到任何文档",
+        body: "用键盘在工作区里找文件，文档树和快速打开配合承担日常导航。",
+      },
+      {
+        start: 23.6,
+        end: 28.8,
+        eyebrow: "Settings",
+        headline: "设置中心服务写作习惯",
+        body: "语言、默认视图、写作、外观、导出偏好集中在一个轻量桌面面板里。",
+      },
+      {
+        start: 28.0,
+        end: 34.0,
+        eyebrow: "Export",
+        headline: "导出是交付主流程",
+        body: "HTML、PDF、Word、PNG 从状态栏直接进入，写完文档就能交付分享。",
+      },
+    ];
+
+    function q(id) {
+      return document.getElementById(id);
+    }
+
+    function clamp(value, min = 0, max = 1) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function easeOutCubic(x) {
+      x = clamp(x);
+      return 1 - Math.pow(1 - x, 3);
+    }
+
+    function easeInOutCubic(x) {
+      x = clamp(x);
+      return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    }
+
+    function pulse(t, start, end, fade = 0.8) {
+      return clamp((t - start) / fade) * clamp((end - t) / fade);
+    }
+
+    function lerp(a, b, x) {
+      return a + (b - a) * x;
+    }
+
+    function setShot(node, opacity, x, y, scale, rotate = 0, blur = 0) {
+      node.style.opacity = opacity.toFixed(3);
+      node.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale}) rotate(${rotate}deg)`;
+      node.style.filter = blur > 0 ? `blur(${blur}px)` : "none";
+    }
+
+    function setCopy(node, opacity, x, y) {
+      node.style.opacity = opacity.toFixed(3);
+      node.style.transform = `translate(${x}px, ${y}px)`;
+    }
+
+    function setChips(node, opacity, x, y) {
+      node.style.opacity = opacity.toFixed(3);
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+      node.style.transform = `translateY(${lerp(18, 0, opacity)}px)`;
+    }
+
+    function setSideNote(opacity, x, y, text) {
+      const node = state.nodes.sideNote;
+      state.nodes.sideNoteText.innerHTML = text;
+      node.style.opacity = opacity.toFixed(3);
+      node.style.transform = `translate(${x}px, ${y}px)`;
+    }
+
+    function applyBeat(t) {
+      const beat = beats.find((item) => t >= item.start - 0.2 && t < item.end + 0.2) ?? beats[0];
+      state.nodes.copyEyebrow.textContent = beat.eyebrow;
+      state.nodes.copyHeadline.textContent = beat.headline;
+      state.nodes.copyBody.textContent = beat.body;
+      const opacity = pulse(t, beat.start, beat.end, 0.68);
+      const entrance = easeOutCubic((t - beat.start) / 0.9);
+      setCopy(state.nodes.copyPlate, opacity, lerp(-28, 0, entrance), lerp(22, 0, entrance));
+    }
+
+    function render(t) {
+      t = clamp(t, 0, DURATION);
+
+      const intro = pulse(t, -0.25, 4.0, 0.72);
+      const introMove = easeOutCubic(t / 1.1);
+      setCopy(state.nodes.brandPlate, intro, lerp(-34, 0, introMove), lerp(18, 0, introMove));
+      state.nodes.brandRule.style.transform = `scaleX(${easeOutCubic((t - 0.35) / 0.6)})`;
+
+      applyBeat(t);
+
+      const edit = pulse(t, -0.15, 4.9, 0.62);
+      const editMove = easeInOutCubic((t + 0.15) / 4.8);
+      setShot(
+        state.nodes.shotEdit,
+        edit,
+        lerp(450, 324, editMove),
+        lerp(18, -14, editMove),
+        lerp(0.71, 0.80, editMove),
+        lerp(0.25, 0, editMove)
+      );
+
+      const tree = pulse(t, 3.5, 8.4, 0.52);
+      const treeMove = easeInOutCubic((t - 3.5) / 4.6);
+      setShot(
+        state.nodes.shotTree,
+        tree,
+        lerp(420, 292, treeMove),
+        lerp(-12, -20, treeMove),
+        lerp(0.84, 0.99, treeMove)
+      );
+
+      const split = pulse(t, 7.0, 12.4, 0.55);
+      const splitMove = easeInOutCubic((t - 7.0) / 5.2);
+      setShot(
+        state.nodes.shotSplit,
+        split,
+        lerp(420, 285, splitMove),
+        lerp(0, -20, splitMove),
+        lerp(0.70, 0.84, splitMove)
+      );
+      setChips(state.nodes.chipsWrite, pulse(t, 8.2, 11.8, 0.35), 690, 820);
+
+      const tasks = pulse(t, 10.6, 16.3, 0.5);
+      const tasksMove = easeInOutCubic((t - 10.6) / 5.1);
+      setShot(
+        state.nodes.shotTasks,
+        tasks,
+        lerp(420, 274, tasksMove),
+        lerp(18, -12, tasksMove),
+        lerp(0.78, 0.91, tasksMove)
+      );
+
+      const diagram = pulse(t, 12.2, 18.0, 0.48);
+      const diagramMove = easeInOutCubic((t - 12.2) / 5.4);
+      setShot(
+        state.nodes.shotMermaid,
+        diagram,
+        lerp(-250, -318, diagramMove),
+        lerp(-48, -110, diagramMove),
+        lerp(1.02, 1.12, diagramMove),
+        -0.2
+      );
+      setShot(
+        state.nodes.shotFormula,
+        diagram,
+        lerp(462, 386, diagramMove),
+        lerp(142, 76, diagramMove),
+        lerp(1.01, 1.10, diagramMove),
+        0.18
+      );
+      setChips(state.nodes.chipsPower, pulse(t, 13.2, 17.4, 0.35), 612, 844);
+
+      const code = pulse(t, 17.0, 21.6, 0.48);
+      const codeMove = easeInOutCubic((t - 17.0) / 4.2);
+      setShot(
+        state.nodes.shotCode,
+        code,
+        lerp(380, 270, codeMove),
+        lerp(24, -22, codeMove),
+        lerp(0.98, 1.12, codeMove)
+      );
+      setSideNote(
+        pulse(t, 17.8, 20.9, 0.35),
+        0,
+        lerp(14, 0, easeOutCubic((t - 17.8) / 0.45)),
+        "<strong>批注保持可迁移。</strong> 提示、折叠札记、表格和公式都仍然写在普通 Markdown 里。"
+      );
+
+      const quick = pulse(t, 20.2, 24.8, 0.45);
+      const quickMove = easeInOutCubic((t - 20.2) / 4.3);
+      setShot(
+        state.nodes.shotQuick,
+        quick,
+        lerp(402, 260, quickMove),
+        lerp(0, -20, quickMove),
+        lerp(0.82, 0.99, quickMove)
+      );
+      setChips(state.nodes.chipsDesktop, pulse(t, 21.2, 24.2, 0.32), 606, 830);
+
+      const settings = pulse(t, 23.4, 29.4, 0.48);
+      const settingsMove = easeInOutCubic((t - 23.4) / 5.4);
+      setShot(
+        state.nodes.shotSettings,
+        settings,
+        lerp(422, 286, settingsMove),
+        lerp(10, -18, settingsMove),
+        lerp(0.82, 1.00, settingsMove)
+      );
+
+      const exportShot = pulse(t, 28.0, 34.8, 0.48);
+      const exportMove = easeInOutCubic((t - 28.0) / 6.2);
+      setShot(
+        state.nodes.shotExport,
+        exportShot,
+        lerp(408, 266, exportMove),
+        lerp(4, -20, exportMove),
+        lerp(0.82, 1.05, exportMove)
+      );
+      setChips(state.nodes.chipsExport, pulse(t, 29.2, 34.1, 0.32), 650, 830);
+
+      if (t > 32.6) {
+        const fade = easeOutCubic((t - 32.6) / 0.85);
+        const bgOpacity = 0.18 * fade;
+        setShot(state.nodes.shotTree, bgOpacity, -560, -98, 0.52, -1.0, 2);
+        setShot(state.nodes.shotSettings, bgOpacity, 0, 104, 0.55, 0.4, 2);
+        setShot(state.nodes.shotExport, bgOpacity, 540, -72, 0.56, 1.0, 2);
+      }
+
+      const final = easeOutCubic((t - 33.7) / 0.95);
+      state.nodes.finalFrame.style.opacity = final.toFixed(3);
+      state.nodes.finalFrame.style.transform = `scale(${lerp(0.985, 1, final)})`;
+    }
+
+    function tick(now) {
+      if (!state.startedAt) state.startedAt = now;
+      const raw = (now - state.startedAt) / 1000;
+      const t = window.__recording ? Math.min(raw, DURATION) : raw % DURATION;
+      render(t);
+      if (!window.__recording || raw < DURATION) {
+        state.raf = requestAnimationFrame(tick);
+      }
+    }
+
+    function waitForImages() {
+      const images = Array.from(document.images);
+      return Promise.all(images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.addEventListener("load", resolve, { once: true });
+          img.addEventListener("error", resolve, { once: true });
+        });
+      }));
+    }
+
+    function boot() {
+      state.nodes = {
+        brandPlate: q("brandPlate"),
+        brandRule: q("brandRule"),
+        copyPlate: q("copyPlate"),
+        copyEyebrow: q("copyEyebrow"),
+        copyHeadline: q("copyHeadline"),
+        copyBody: q("copyBody"),
+        sideNote: q("sideNote"),
+        sideNoteText: q("sideNoteText"),
+        shotEdit: q("shotEdit"),
+        shotTree: q("shotTree"),
+        shotSplit: q("shotSplit"),
+        shotTasks: q("shotTasks"),
+        shotMermaid: q("shotMermaid"),
+        shotFormula: q("shotFormula"),
+        shotCode: q("shotCode"),
+        shotQuick: q("shotQuick"),
+        shotExport: q("shotExport"),
+        shotSettings: q("shotSettings"),
+        chipsWrite: q("chipsWrite"),
+        chipsPower: q("chipsPower"),
+        chipsDesktop: q("chipsDesktop"),
+        chipsExport: q("chipsExport"),
+        finalFrame: q("finalFrame"),
+      };
+
+      window.__seek = (time) => {
+        state.startedAt = performance.now() - time * 1000;
+        render(time);
+      };
+
+      Promise.all([
+        document.fonts ? document.fonts.ready : Promise.resolve(),
+        waitForImages(),
+      ]).then(() => {
+        requestAnimationFrame(() => {
+          render(0);
+          window.__ready = true;
+          state.startedAt = 0;
+          state.raf = requestAnimationFrame(tick);
+        });
+      });
+    }
+
+    boot();
+  </script>
+</body>
+</html>

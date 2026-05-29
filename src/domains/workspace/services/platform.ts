@@ -1,6 +1,6 @@
-import { t } from '../../i18n';
+import { t } from '../../i18n/runtime';
 
-export type RuntimePlatform = 'mac' | 'windows' | 'linux';
+export type RuntimePlatform = 'mac' | 'windows';
 
 export function getRuntimePlatform(
   nav: Pick<Navigator, 'platform' | 'userAgent'> | undefined =
@@ -13,13 +13,12 @@ export function getRuntimePlatform(
 
   if (platform.includes('mac') || userAgent.includes('mac os')) return 'mac';
   if (platform.includes('win') || userAgent.includes('windows')) return 'windows';
-  return 'linux';
+  return 'windows';
 }
 
 export function getFileManagerName(platform: RuntimePlatform = getRuntimePlatform()): string {
   if (platform === 'mac') return t('workspace.fileManager.mac');
-  if (platform === 'windows') return t('workspace.fileManager.windows');
-  return t('workspace.fileManager.linux');
+  return t('workspace.fileManager.windows');
 }
 
 export function getShowInFileManagerLabel(platform: RuntimePlatform = getRuntimePlatform()): string {

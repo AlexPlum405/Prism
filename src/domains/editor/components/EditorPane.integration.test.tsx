@@ -13,6 +13,11 @@ import { EditorPane } from './EditorPane';
 const imagePasteMock = vi.hoisted(() => ({
   getNativeImageFilePath: vi.fn(),
   saveClipboardImage: vi.fn(),
+  saveImageAssetFromPath: vi.fn(),
+}));
+
+const dialogMock = vi.hoisted(() => ({
+  openDialog: vi.fn(),
 }));
 
 vi.mock('../extensions/imagePaste', async () => {
@@ -21,8 +26,11 @@ vi.mock('../extensions/imagePaste', async () => {
     ...actual,
     getNativeImageFilePath: imagePasteMock.getNativeImageFilePath,
     saveClipboardImage: imagePasteMock.saveClipboardImage,
+    saveImageAssetFromPath: imagePasteMock.saveImageAssetFromPath,
   };
 });
+
+vi.mock('../../../platform/tauri/dialogs', () => dialogMock);
 
 beforeAll(() => {
   if (!Range.prototype.getClientRects) {
@@ -51,6 +59,8 @@ beforeAll(() => {
 beforeEach(() => {
   imagePasteMock.getNativeImageFilePath.mockReset();
   imagePasteMock.saveClipboardImage.mockReset();
+  imagePasteMock.saveImageAssetFromPath.mockReset();
+  dialogMock.openDialog.mockReset();
   useDocumentStore.setState({ currentDocument: null });
   useWorkspaceStore.setState({ mode: 'single', rootPath: null, fileTree: [] });
 });
@@ -418,6 +428,60 @@ describe('EditorPane command event integration', () => {
     });
   });
 
+  it('lets the generic callout transform choose the callout kind', async () => {
+    const { changes, onChange } = await renderEditorPane('Key decision');
+
+    await dispatchEditorCommand({ command: 'selectAll' });
+    await dispatchEditorCommand({ command: 'selectionCallout' });
+
+    const importantButton = document.querySelector('button[data-callout-kind="important"]') as HTMLButtonElement;
+    expect(importantButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(importantButton);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('> [!IMPORTANT]\n> Key decision');
+    });
+  });
+
+  it('inserts a chosen callout snippet and selects its editable placeholder', async () => {
+    const { changes, onChange } = await renderEditorPane('');
+
+    await dispatchEditorCommand({ command: 'insertCallout' });
+
+    const warningButton = document.querySelector('button[data-callout-kind="warning"]') as HTMLButtonElement;
+    expect(warningButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(warningButton);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('> [!WARNING]\n> 需要注意的内容\n');
+    });
+    const view = getMountedEditorView();
+    const selection = view.state.selection.main;
+    expect(view.state.doc.sliceString(selection.from, selection.to)).toBe('需要注意的内容');
+  });
+
+  it('inserts a details block and selects the summary title for editing', async () => {
+    const { changes, onChange } = await renderEditorPane('');
+
+    await dispatchEditorCommand({ command: 'insertToggle' });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('<details>\n<summary>标题</summary>\n\n内容\n\n</details>\n');
+    });
+    const view = getMountedEditorView();
+    const selection = view.state.selection.main;
+    expect(view.state.doc.sliceString(selection.from, selection.to)).toBe('标题');
+  });
+
   it('accepts fold current heading commands without changing source text', async () => {
     const { changes, onChange } = await renderEditorPane('## Section\nBody');
 
@@ -466,6 +530,24 @@ describe('EditorPane command event integration', () => {
 
     await waitFor(() => {
       expect(latestChange(changes)).toBe('- first\n');
+    });
+  });
+
+  it('toggles markdown task list checkboxes from the source editor', async () => {
+    const { changes, onChange } = await renderEditorPane('- [ ] Review UX options');
+    const checkbox = document.querySelector<HTMLInputElement>('.cm-task-list-checkbox');
+
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox?.checked).toBe(false);
+
+    await act(async () => {
+      checkbox?.click();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('- [x] Review UX options');
     });
   });
 
@@ -606,9 +688,9 @@ describe('EditorPane command event integration', () => {
         '表格',
         'Mermaid 图表',
         'KaTeX 公式',
-        'Callout: Note',
-        'Callout: Important',
-        'Toggle 折叠块',
+        '提示块：普通',
+        '提示块：重点',
+        '折叠块',
         '分割线',
         '图片',
         '链接',
@@ -648,6 +730,59 @@ describe('EditorPane command event integration', () => {
       documentName: 'Plan.md',
       documentPath: '/repo/docs/Plan.md',
     }));
+  });
+
+  it('inserts selected image files through the document asset pipeline', async () => {
+    openSavedDocument();
+    dialogMock.openDialog.mockResolvedValue('/repo/source/photo.png');
+    imagePasteMock.saveImageAssetFromPath.mockResolvedValue('![photo.png](assets/Plan/photo.png)');
+    const { changes, onChange } = await renderEditorPane('Before\n');
+
+    await dispatchEditorCommand({ command: 'insertImage' });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toContain('![photo.png](assets/Plan/photo.png)');
+    });
+    expect(dialogMock.openDialog).toHaveBeenCalledWith(expect.objectContaining({
+      directory: false,
+      multiple: false,
+    }));
+    expect(imagePasteMock.saveImageAssetFromPath).toHaveBeenCalledWith(expect.objectContaining({
+      documentName: 'Plan.md',
+      documentPath: '/repo/docs/Plan.md',
+      sourcePath: '/repo/source/photo.png',
+    }));
+  });
+
+  it('asks users to save the document before inserting an image from disk', async () => {
+    const onNotice = vi.fn();
+    useDocumentStore.setState({
+      currentDocument: {
+        path: '',
+        name: '未命名.md',
+        content: '',
+        isDirty: true,
+        lastSavedAt: 0,
+        lastKnownMtime: null,
+        lastKnownSize: null,
+        saveStatus: 'dirty',
+        saveError: null,
+        viewMode: 'edit',
+        scrollState: { editorRatio: 0, previewRatio: 0 },
+      },
+    });
+    const { changes, onChange } = await renderEditorPane('Before\n', { onNotice });
+
+    await dispatchEditorCommand({ command: 'insertImage' });
+
+    await waitFor(() => {
+      expect(onNotice).toHaveBeenCalledWith('请先保存 Markdown 文档，再插入图片');
+    });
+    expect(dialogMock.openDialog).not.toHaveBeenCalled();
+    expect(imagePasteMock.saveImageAssetFromPath).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(latestChange(changes)).toBe('');
   });
 
   it('copies dropped images into the document asset pipeline when Alt/Option is not pressed', async () => {

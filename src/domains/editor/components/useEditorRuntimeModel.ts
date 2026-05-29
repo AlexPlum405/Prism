@@ -22,6 +22,7 @@ import { findMarkdownTableBlock } from '../extensions/tables';
 import {
   compatibilityMarkdownPlugin,
 } from '../extensions/markdownHighlight';
+import { taskListCheckboxExtension } from '../extensions/taskListCheckbox';
 import { createHiddenSearchPanel } from '../extensions/search';
 import { editorSelectionPlugin, lineFlashField } from '../extensions/selection';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
@@ -213,6 +214,7 @@ export function useEditorRuntimeModel({
           editorUsesThemeFont,
         )),
         compatibilityMarkdownPlugin,
+        taskListCheckboxExtension,
         editorSelectionPlugin,
         bracketMatching(),
         closeBrackets(),
