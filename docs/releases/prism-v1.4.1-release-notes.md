@@ -21,6 +21,7 @@ Prism v1.4.1 是一次面向真实发布入口和写作效率的增量版本。�
 - 已通过生产构建：`npm run build`。
 - 已生成并校验 macOS Apple Silicon DMG：`Prism_1.4.1_aarch64.dmg`。
 - 已验证产品介绍视频：1920x1080、36 秒、60fps、H.264 + AAC。
+- 新增高质量产品介绍视频资产：2560x1440、36 秒、120fps、H.264 + AAC，平均码率约 21.7Mbps。
 
 ## English
 
@@ -43,3 +44,4 @@ Prism v1.4.1 is an incremental release focused on the public release surface and
 - Production build passed: `npm run build`.
 - Built and verified the macOS Apple Silicon DMG: `Prism_1.4.1_aarch64.dmg`.
 - Verified the product video: 1920x1080, 36 seconds, 60fps, H.264 + AAC.
+- Added a high-quality product video asset: 2560x1440, 36 seconds, 120fps, H.264 + AAC, with an average bitrate around 21.7Mbps.
