@@ -274,6 +274,53 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).not.toContain('[!IMPORTANT]');
   });
 
+  it('preserves details/summary toggle blocks and parses their inner markdown', () => {
+    const html = markdownToHtml([
+      '<details>',
+      '<summary>点击展开</summary>',
+      '',
+      '折叠内容包含 **加粗** 与 `代码`。',
+      '',
+      '</details>',
+    ].join('\n'));
+
+    expect(html).toContain('<details>');
+    expect(html).toContain('</details>');
+    expect(html).toContain('<summary>点击展开</summary>');
+    expect(html).toContain('<strong>加粗</strong>');
+    expect(html).toContain('<code>代码</code>');
+  });
+
+  it.each(compatibilityModes)('keeps %s toggle blocks intact through the safety pipeline', (compatibilityMode) => {
+    const html = markdownToHtml([
+      '<details>',
+      '<summary>折叠标题</summary>',
+      '',
+      '主题内的折叠正文。',
+      '',
+      '</details>',
+    ].join('\n'), { compatibilityMode });
+
+    expect(html).toContain('<details>');
+    expect(html).toContain('<summary>折叠标题</summary>');
+    expect(html).toContain('主题内的折叠正文。');
+  });
+
+  it('strips event handlers from toggle blocks while keeping the disclosure structure', () => {
+    const html = markdownToHtml([
+      '<details onclick="alert(1)">',
+      '<summary>不可信折叠</summary>',
+      '',
+      '正文',
+      '',
+      '</details>',
+    ].join('\n'));
+
+    expect(html).toContain('<details>');
+    expect(html).toContain('<summary>不可信折叠</summary>');
+    expect(html).not.toContain('onclick');
+  });
+
   it('renders the long preview smoke fixture with source anchors inside a bounded time', () => {
     const markdown = buildLongPreviewSmokeMarkdown();
     const startedAt = performance.now();

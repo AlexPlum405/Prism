@@ -1662,9 +1662,19 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan kbd {
   color: var(--theme-text, var(--c-void, #111));
   font-weight: 650;
   line-height: 1.4;
+  list-style: disclosure-closed inside;
+}
+
+.preview-compat details[open] > summary {
+  list-style-type: disclosure-open;
+  margin-bottom: 0.6em;
 }
 
 .preview-compat summary::marker {
+  color: var(--theme-muted, var(--c-ash, #8f8f8f));
+}
+
+.preview-compat summary::-webkit-details-marker {
   color: var(--theme-muted, var(--c-ash, #8f8f8f));
 }
 
