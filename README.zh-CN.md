@@ -32,11 +32,15 @@
   <a href="#本地开发">本地开发</a>
 </p>
 
-<a href="docs/prism-promo-video/prism-promo-showcase-final.mp4">
+<a href="https://cdn.jsdelivr.net/gh/AlexPlum405/Prism@v1.4.1/docs/prism-promo-video/prism-promo-showcase-final.mp4">
   <img src="docs/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism 产品介绍视频封面" width="920">
 </a>
 
-<sub>点击封面可以打开 36 秒带声音的 MP4 产品介绍视频。</sub>
+<sub>
+  点击封面可在浏览器中播放 MP4 产品介绍视频。
+  ·
+  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-final.mp4">下载 1080p Release 视频</a>
+</sub>
 
 </div>
 

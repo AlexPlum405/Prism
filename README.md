@@ -32,11 +32,15 @@
   <a href="#development">Development</a>
 </p>
 
-<a href="docs/prism-promo-video/prism-promo-showcase-final.mp4">
+<a href="https://cdn.jsdelivr.net/gh/AlexPlum405/Prism@v1.4.1/docs/prism-promo-video/prism-promo-showcase-final.mp4">
   <img src="docs/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism product video poster" width="920">
 </a>
 
-<sub>Click the poster to open the 36-second MP4 product video with sound.</sub>
+<sub>
+  Click the poster to play the MP4 video in browser.
+  ·
+  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-final.mp4">Download the 1080p release video</a>
+</sub>
 
 </div>
 
