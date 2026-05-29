@@ -18,6 +18,7 @@ import {
 } from '@codemirror/view';
 import type { I18nKey, I18nParams } from '../../i18n/resources';
 import { markdownListKeymap } from '../extensions/markdownLists';
+import type { WorkspaceLinkFile } from '../extensions/linkCompletion';
 import { findMarkdownTableBlock } from '../extensions/tables';
 import {
   compatibilityMarkdownPlugin,
@@ -82,7 +83,7 @@ interface UseEditorRuntimeModelInput {
   updateTableToolbar: (view: EditorView) => void;
   viewRef: MutableRefObject<EditorView | null>;
   wordWrap: boolean;
-  workspaceLinkFiles: Array<{ name: string; path: string }>;
+  workspaceLinkFiles: WorkspaceLinkFile[];
   workspaceRootPath?: string | null;
 }
 

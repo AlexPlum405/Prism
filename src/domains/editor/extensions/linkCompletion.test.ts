@@ -116,4 +116,41 @@ describe('markdown link completion', () => {
     ]);
     expect(options.every((option) => typeof option.apply === 'function')).toBe(true);
   });
+
+  it('inserts a standard Markdown link (not a private wiki link) when a wiki suggestion is applied', () => {
+    const options = getWikiLinkCompletionOptions({
+      currentDocumentPath: '/repo/docs/current.md',
+      workspaceRootPath: '/repo',
+      workspaceFiles: [
+        {
+          path: '/repo/docs/guide.md',
+          name: 'guide.md',
+          title: '入门指南',
+          headings: [{ title: '安装步骤', slug: '安装步骤' }],
+        },
+      ],
+    });
+
+    const headingOption = options.find((option) => option.label === '安装步骤');
+    expect(headingOption).toBeDefined();
+
+    // 模拟用户在编辑器中输入 "[[安" 后选中标题建议；apply 应替换掉 "[[" 并写入标准 Markdown 链接
+    const dispatched: Array<Record<string, unknown>> = [];
+    const fakeView = { dispatch: (spec: Record<string, unknown>) => dispatched.push(spec) };
+    const from = 5; // "[[" 之后查询起点
+    const to = 7;
+    (headingOption!.apply as (view: unknown, completion: unknown, from: number, to: number) => void)(
+      fakeView,
+      headingOption,
+      from,
+      to,
+    );
+
+    expect(dispatched).toHaveLength(1);
+    const change = (dispatched[0].changes as { from: number; to: number; insert: string });
+    expect(change.from).toBe(from - 2); // 连同 "[[" 一起替换
+    expect(change.to).toBe(to);
+    expect(change.insert).toBe('[安装步骤](guide.md#安装步骤)');
+    expect(change.insert).not.toContain('[[');
+  });
 });
