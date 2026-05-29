@@ -39,7 +39,7 @@
 <sub>
   Click the poster to play the MP4 video in browser.
   ·
-  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-final.mp4">Download the 1080p release video</a>
+  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-hq-1440p-120fps.mp4">Download the 1440p / 120fps release video</a>
 </sub>
 
 </div>

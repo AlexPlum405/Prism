@@ -39,7 +39,7 @@
 <sub>
   点击封面可在浏览器中播放 MP4 产品介绍视频。
   ·
-  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-final.mp4">下载 1080p Release 视频</a>
+  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-hq-1440p-120fps.mp4">下载 1440p / 120fps Release 视频</a>
 </sub>
 
 </div>
