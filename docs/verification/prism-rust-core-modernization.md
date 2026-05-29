@@ -67,7 +67,7 @@
 - 本地 ignore 调整：
   - `.gitignore`
 - Goal prompt 草稿：
-  - `docs/prism-rust-core-modernization-goal.md`
+  - `docs/archive/dirty-data-2026-05-30/prism-rust-core-modernization-goal.md`
 
 ## Phase 0：基线冻结
 

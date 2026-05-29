@@ -1,8 +1,8 @@
 # Prism 优雅架构现代化验证记录
 
 > 启动日期：2026-05-21
-> 计划文件：`docs/prism-elegant-architecture-modernization-plan.md`
-> Goal 文件：`docs/prism-elegant-architecture-modernization-goal.md`
+> 计划文件：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-elegant-architecture-modernization-plan.md`
+> Goal 文件：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-elegant-architecture-modernization-goal.md`
 > 目标：按 Phase 0 到 Phase 10 完成行为保持型架构现代化，让 App、导出、编辑器、平台事件、Tauri native command 的职责收敛，同时保持本地优先、单文档单窗口、Markdown 源码可见、当前妙言风格和既有用户功能不回退。
 
 ## 基线
@@ -10,8 +10,8 @@
 - 当前 HEAD：`3daefb8 优化主题导入弹窗交互`。
 - 最近已完成背景：主题导入弹窗已改为 Prism/Miaoyan 风格内部弹窗，并已推送到 `origin/main`。
 - 工作树开始状态：
-  - `?? docs/prism-elegant-architecture-modernization-plan.md`：本轮计划文件，纳入 Checkpoint 0。
-  - `?? docs/prism-elegant-architecture-modernization-goal.md`：本轮 goal 文件，纳入 Checkpoint 0。
+  - `?? docs/archive/dirty-data-2026-05-30/historical-docs/prism-elegant-architecture-modernization-plan.md`：本轮计划文件，纳入 Checkpoint 0。
+  - `?? docs/archive/dirty-data-2026-05-30/historical-docs/prism-elegant-architecture-modernization-goal.md`：本轮 goal 文件，纳入 Checkpoint 0。
   - `?? .antigravitycli/`：本地 scratch，无关脏改，不提交。
   - `?? temp_script_check.js`：本地原型/检查 scratch，无关脏改，不提交。
 - 已读上下文：
@@ -42,8 +42,8 @@
 
 改动范围：
 
-- `docs/prism-elegant-architecture-modernization-plan.md`
-- `docs/prism-elegant-architecture-modernization-goal.md`
+- `docs/archive/dirty-data-2026-05-30/historical-docs/prism-elegant-architecture-modernization-plan.md`
+- `docs/archive/dirty-data-2026-05-30/historical-docs/prism-elegant-architecture-modernization-goal.md`
 - `docs/verification/prism-elegant-architecture-modernization.md`
 
 实现结果：

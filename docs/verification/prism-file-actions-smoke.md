@@ -1,8 +1,8 @@
 # Prism 文件动作 Smoke 验证
 
-> 日期：2026-05-15  
-> 目标：验证工作区文件树的核心文件动作不会落到空壳入口，并且删除优先进入系统废纸篓。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 9 节“工作区、快速打开与链接能力”。  
+> 日期：2026-05-15
+> 目标：验证工作区文件树的核心文件动作不会落到空壳入口，并且删除优先进入系统废纸篓。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 9 节“工作区、快速打开与链接能力”。
 > 当前状态：已补系统废纸篓 Tauri command、macOS Finder trash 超时保护、`~/.Trash` 唯一路径 fallback 和永久删除 fallback 自动化回归；macOS Prism `.app` 文件树删除真实 smoke 已通过；Windows 桌面 smoke 尚未执行。
 
 ## 1. 覆盖范围

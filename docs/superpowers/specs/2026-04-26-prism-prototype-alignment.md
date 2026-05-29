@@ -2,7 +2,7 @@
 
 **日期**: 2026-04-26  
 **项目**: Prism  
-**目标**: 让 Tauri 应用完全对齐原型 `prism.html` 的所有功能和视觉
+**目标**: 让 Tauri 应用完全对齐原型 `docs/archive/dirty-data-2026-05-30/history/prism.html` 的所有功能和视觉
 
 ---
 
@@ -11,10 +11,10 @@
 ### 1.1 当前状态
 - Tauri 应用已实现核心编辑功能：编辑/分栏/预览、自动保存、KaTeX、Mermaid
 - 产品方向已调整为 Typora 式单文档单窗口
-- 但与原型 `prism.html` 相比，缺少桌面外壳、菜单系统、浮动工具栏、视觉精修
+- 但与原型 `docs/archive/dirty-data-2026-05-30/history/prism.html` 相比，缺少桌面外壳、菜单系统、浮动工具栏、视觉精修
 
 ### 1.2 目标
-让 Tauri 应用在功能、交互、视觉三个维度完全对齐原型 `prism.html`。
+让 Tauri 应用在功能、交互、视觉三个维度完全对齐原型 `docs/archive/dirty-data-2026-05-30/history/prism.html`。
 
 ### 1.3 实施策略
 采用**原型迁移式**：把原型中已验证的界面结构、交互层次、视觉语言系统性迁移到 Tauri 应用中，而不是参考原型重新设计。

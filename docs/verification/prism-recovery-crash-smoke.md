@@ -1,8 +1,8 @@
 # Prism Recovery Crash / Restart Smoke 验证
 
-> 日期：2026-05-15  
-> 目标：验证 Prism 在异常退出或保存失败后能让用户找回未保存内容。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 3 节“文件安全、自动保存与恢复”。  
+> 日期：2026-05-15
+> 目标：验证 Prism 在异常退出或保存失败后能让用户找回未保存内容。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 3 节“文件安全、自动保存与恢复”。
 > 当前状态：本文档定义 smoke 协议和检查表；合法 recovery 快照注入后的真实 `.app` 启动提示和恢复动作已通过截图验证；真实编辑后异常退出生成 recovery、重启恢复、保存清理和二次重启不重复提示已在 macOS App-only smoke bundle 中通过。
 
 ## 1. 覆盖范围

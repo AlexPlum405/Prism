@@ -7,7 +7,7 @@ Prism 是一个 Markdown 桌面编辑器（Tauri 2 + React + TypeScript），产
 ### Prototype（设计原型）
 历史上指 `docs/prism-openai-redesign.html`。该原型不再是当前视觉与交互的唯一参考标准，只作为早期重构参考保留。
 
-原先的 `prism.html`（Win11 Fluent Design 方向）已于 2026-05-10 被取代，不再作为实现依据。
+原先根目录的 `prism.html`（Win11 Fluent Design 方向）已于 2026-05-10 被取代，不再作为实现依据；文件现已归档到 `docs/archive/dirty-data-2026-05-30/history/prism.html`。
 
 ### 设计方向（Design language）
 **妙言风格（Miaoyan-style）**。当前 Prism 的主视觉应贴近妙言式 macOS Markdown 写作器：内容优先、轻量原生桌面质感、克制浅色界面、低对比边框、紧凑工具区、舒适中文长文排版。后续 UI 优化必须以当前 app 的妙言风格为主，不再按 OpenAI 极简原型扩展新视觉。

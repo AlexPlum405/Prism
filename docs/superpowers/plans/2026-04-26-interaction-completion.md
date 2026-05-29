@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 补齐原型 prism.html 中所有可点击交互功能，消除所有 toast 占位符
+**Goal:** 补齐原型 docs/archive/dirty-data-2026-05-30/history/prism.html 中所有可点击交互功能，消除所有 toast 占位符
 
 **Architecture:** 分 4 批推进：P0 结构性 UI 缺失 → P1 编辑菜单动作 → P2 段落/视图/窗口动作 → P3 帮助菜单。每批修改尽量集中在少数文件，避免冲突。
 

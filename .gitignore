@@ -10,6 +10,7 @@ Thumbs.db
 .codex-screens/
 .codex-smoke/
 .codex-output/
+docs/archive/*/local-ignored/
 .antigravitycli/
 .playwright-mcp/
 .tmp-icons/

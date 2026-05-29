@@ -1,8 +1,8 @@
 # Prism 写作效率 Smoke 验证
 
-> 日期：2026-05-15  
-> 目标：验证 Markdown 高频写作能力在真实桌面编辑器工作流中可用。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 4 节“写作效率工具”。  
+> 日期：2026-05-15
+> 目标：验证 Markdown 高频写作能力在真实桌面编辑器工作流中可用。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 4 节“写作效率工具”。
 > 当前状态：已补图片粘贴文件写入、同秒冲突、标题锚点补全/诊断一致性和轻量 wiki 内链补全自动化回归；macOS 真实 `.app` 已通过系统剪贴板图片粘贴、快速打开键盘、链接补全/诊断、表格命令、列表续写/退出、PRD 模板插入、大纲搜索和选区统计 smoke；Finder / Explorer 拖拽、Option / Alt 原路径和 Windows 桌面路径仍未通过真实桌面 smoke。2026-05-15 曾尝试 macOS Finder 拖拽，但当前自动化工具无法安全完成跨应用文件拖入，不能作为产品通过证据。
 
 ## 1. 覆盖范围

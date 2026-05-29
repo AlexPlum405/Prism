@@ -1,8 +1,8 @@
 # Prism Windows Release Smoke 验证
 
-> 日期：2026-05-15  
-> 目标：把 Windows 发布链路从旧版人工清单升级为 Prism v1.4.0 的 release 阻塞项与验收协议。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 2 节“产品信任与发布治理”和第 12 节“质量体系”。  
+> 日期：2026-05-15
+> 目标：把 Windows 发布链路从旧版人工清单升级为 Prism v1.4.0 的 release 阻塞项与验收协议。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 2 节“产品信任与发布治理”和第 12 节“质量体系”。
 > 当前状态：当前机器是 macOS，未生成 Windows 安装器、updater 签名产物或 Windows `latest.json` 平台条目；Windows Stable 发布仍为阻塞。
 
 ## 1. 阻塞定义
@@ -88,7 +88,7 @@ src-tauri/target/release/bundle/msi/
 
 - 当前环境：macOS，本机不能真实生成或安装 Windows 产物。
 - 已确认 `docs/prism-updater-manifest.example.json` 只有示例性质，不能作为 Windows updater 已验证证据。
-- 已确认旧文档 `docs/prism-1.0.3-windows-smoke-checklist.md` 只适合作为历史参考，不代表 v1.4.0 release 已通过。
+- 已确认旧文档 `docs/archive/dirty-data-2026-05-30/historical-docs/prism-1.0.3-windows-smoke-checklist.md` 只适合作为历史参考，不代表 v1.4.0 release 已通过。
 - Windows release / updater 仍为阻塞项，应在 GitHub Release 前由 Windows 机器或 CI 执行本文档。
 
 待真实 smoke 完成后，在此追加：

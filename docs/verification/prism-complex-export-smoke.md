@@ -1,8 +1,8 @@
 # Prism 复杂导出 Smoke 验证
 
-> 日期：2026-05-15  
-> 目标：用同一份复杂 Markdown 文件验证 HTML / PDF / PNG / DOCX 导出在真实桌面运行时的可靠性。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 7 节“导出工作台”。  
+> 日期：2026-05-15
+> 目标：用同一份复杂 Markdown 文件验证 HTML / PDF / PNG / DOCX 导出在真实桌面运行时的可靠性。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 7 节“导出工作台”。
 > 当前状态：自动化 pipeline 产物 smoke、命令入口集成 smoke、真实 Prism UI 四格式导出 smoke 均已闭环；真实 Pandoc citeproc 仍受本机未安装 Pandoc 阻塞。
 
 ## 1. 覆盖范围

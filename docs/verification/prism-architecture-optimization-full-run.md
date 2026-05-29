@@ -1,7 +1,7 @@
 # Prism 架构优化全阶段验证记录
 
-> 启动日期：2026-05-20  
-> 计划文件：`docs/prism-architecture-optimization-full-plan.md`  
+> 启动日期：2026-05-20
+> 计划文件：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-architecture-optimization-full-plan.md`
 > 目标：按 checkpoint 完成 10 个架构优化项，同时保持现有写作、预览、保存、恢复、搜索、诊断、导出能力不回退。
 
 ## 基线

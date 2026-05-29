@@ -1,7 +1,7 @@
 # Prism 当前 UX 优化点选择清单
 
 > 用法：先勾选你认为要优化的问题，再勾选对应方案。未勾选的点，后续默认不做。
-> 范围：基于当前 Prism 代码实现、`CONTEXT.md` 产品边界，以及 `docs/ux-audit-assets/` 下的当前运行截图。
+> 范围：基于当前 Prism 代码实现、`CONTEXT.md` 产品边界，以及 `docs/archive/dirty-data-2026-05-30/ux-audit-assets/` 下的当前运行截图。
 > 原则：不换视觉方向，不回到旧 OpenAI 原型，不把 Prism 做成知识库工作台；仍然保持妙言式、本地优先、单文档 Markdown 写作器。
 
 ## 选择标签

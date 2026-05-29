@@ -2,13 +2,13 @@
 
 > 状态：进行中
 > 启动日期：2026-05-21
-> 计划文件：`docs/prism-next-optimization-implementation-plan.md`
-> Goal 文件：`docs/prism-next-optimization-goal.md`
-> 当前 active plan：`docs/prism-next-optimization-implementation-plan.md`
+> 计划文件：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md`
+> Goal 文件：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-goal.md`
+> 当前 active plan：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md`
 
 ## 1. 目标拆解
 
-本轮目标是按 `docs/prism-next-optimization-implementation-plan.md` 完成 Phase 0 到 Phase 8：
+本轮目标是按 `docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md` 完成 Phase 0 到 Phase 8：
 
 1. Phase 0：基线收口。
 2. Phase 1：导出保真二期。
@@ -29,11 +29,11 @@
 | 开始前读取 `AGENTS.md` | 已读取，确认始终中文、当前妙言风格、增量推进和真实验证要求 | 已完成 |
 | 开始前读取 `CONTEXT.md` | 已读取，确认本地优先、单文档单窗口、妙言风格、状态栏、导出、链接、模板、图谱边界 | 已完成 |
 | 开始前读取 `docs/adr/` | 已读取 ADR-0001 到 ADR-0005，确认 ADR-0005 已取代旧 OpenAI 唯一视觉方向 | 已完成 |
-| 开始前读取当前 active plan | `docs/prism-next-optimization-implementation-plan.md` | 已完成 |
+| 开始前读取当前 active plan | `docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md` | 已完成 |
 | 开始前读取 `docs/verification/` | 已列出当前 verification 文档，后续证据写入本文 | 已完成 |
 | 开始前检查 `git status` / `git diff` / 最近 log | 当前 `git status --short` 仅有 `.codex-output/` 未跟踪；最近提交包含 `8910137` 和 `0bd0d4f` | 已完成 |
 | 旧计划和旧 goal 不再污染 active plan | 旧计划/旧 goal 已在顶部标记“已完成 / 历史归档” | 已完成 |
-| 当前唯一 active plan | `docs/prism-next-optimization-implementation-plan.md` 顶部标记“状态：待实施”“当前唯一待实施计划：是” | 已完成 |
+| 当前唯一 active plan | `docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md` 顶部标记“状态：待实施”“当前唯一待实施计划：是” | 已完成 |
 | `.codex-output/` 作为本地裁图产物不提交 | 本 checkpoint 将 `.codex-output/` 加入 `.gitignore` | 已完成 |
 
 ## 3. Phase 0：基线收口
@@ -47,8 +47,8 @@
 
 实现结果：
 
-- 新增 `docs/prism-next-optimization-implementation-plan.md`。
-- 新增 `docs/prism-next-optimization-goal.md`。
+- 新增 `docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md`。
+- 新增 `docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-goal.md`。
 - 历史计划和旧 goal 文件顶部已标记为“已完成 / 历史归档”。
 - 图标资产已单独提交，未混入计划文档提交。
 
@@ -721,7 +721,7 @@ git diff --check
 
 影响文件：
 
-- `docs/prism-next-optimization-implementation-plan.md`
+- `docs/archive/dirty-data-2026-05-30/historical-docs/prism-next-optimization-implementation-plan.md`
 - `docs/verification/prism-next-optimization-run.md`
 
 风险等级：

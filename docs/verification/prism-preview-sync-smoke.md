@@ -1,8 +1,8 @@
 # Prism 预览同步与长文性能 Smoke 验证
 
-> 日期：2026-05-15  
-> 目标：验证源码编辑与 Markdown 预览之间的映射、滚动同步、点击跳转和渲染诊断在真实长文中可信。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 6 节“预览同步与渲染诊断”。  
+> 日期：2026-05-15
+> 目标：验证源码编辑与 Markdown 预览之间的映射、滚动同步、点击跳转和渲染诊断在真实长文中可信。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 6 节“预览同步与渲染诊断”。
 > 当前状态：已补长文和重媒体 source-line mapping 自动化回归，并降低预览滚动回算中的样式读取成本；macOS 真实 `.app` 已补分栏长文打开、源码/预览滚动同步、预览点击跳源码、底部错误区不空白、单次真实输入预览刷新、视图切换、undo history、`Cmd+Down` 跳文末同步、本地图片 / Mermaid / KaTeX 混排重媒体 smoke，以及 System Events 键盘突发输入 smoke；30 秒人工输入、精确帧率和 CPU 量化尚未闭环。
 
 ## 1. 覆盖范围

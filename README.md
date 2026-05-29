@@ -33,7 +33,7 @@
 </p>
 
 <a href="https://cdn.jsdelivr.net/gh/AlexPlum405/Prism@v1.4.1/docs/prism-promo-video/prism-promo-showcase-final.mp4">
-  <img src="docs/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism product video poster" width="920">
+  <img src="docs/archive/dirty-data-2026-05-30/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism product video poster" width="920">
 </a>
 
 <sub>

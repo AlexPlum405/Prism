@@ -51,7 +51,7 @@ TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/prism-updater.key" TAURI_SIGNING_PRIVATE
 
 ## 5. 运行时 smoke
 
-P0 运行时验证记录见 `docs/prism-p0-runtime-smoke.md`。
+P0 运行时验证记录见 `docs/archive/dirty-data-2026-05-30/historical-docs/prism-p0-runtime-smoke.md`。
 
 当前已验证：
 

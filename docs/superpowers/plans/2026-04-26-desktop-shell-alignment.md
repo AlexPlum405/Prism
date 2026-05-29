@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把原型 `prism.html` 的桌面外壳（titlebar、menubar、菜单下拉）迁移到 Tauri 应用中，让应用在第一眼观感上进入原型体系。
+**Goal:** 把原型 `docs/archive/dirty-data-2026-05-30/history/prism.html` 的桌面外壳（titlebar、menubar、菜单下拉）迁移到 Tauri 应用中，让应用在第一眼观感上进入原型体系。
 
 **Architecture:** 新增 `src/components/shell/` 层，包含 WindowShell、TitleBar、MenuBar、MenuDropdown 四个组件。App.tsx 负责注入状态和动作，shell 层不反向依赖业务 store。
 

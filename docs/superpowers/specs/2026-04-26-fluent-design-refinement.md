@@ -11,7 +11,7 @@
 
 1. **缺少统一的设计 token**：圆角、强调色、透明度等值散落在各组件中
 2. **硬编码值过多**：`rgba(...)` 和魔法数字直接写在 CSS 中
-3. **与原型不完全一致**：`prism.html` 有完整的设计规范，但当前实现未完全对齐
+3. **与原型不完全一致**：`docs/archive/dirty-data-2026-05-30/history/prism.html` 有完整的设计规范，但当前实现未完全对齐
 
 本次精修的目标是建立完整的设计 token 体系，让所有组件使用统一的视觉语言。
 
@@ -21,7 +21,7 @@
 
 ### 1. 圆角 Token
 
-从 `prism.html` 提取的圆角规范：
+从 `docs/archive/dirty-data-2026-05-30/history/prism.html` 提取的圆角规范：
 
 ```css
 :root {
@@ -242,7 +242,7 @@ grep -r "rgba(" src --include="*.css"
 - ✅ 业务组件至少 80% 使用 token
 - ✅ 浅色/深色模式视觉正常
 - ✅ TypeScript 编译通过
-- ✅ 视觉效果与 `prism.html` 原型一致
+- ✅ 视觉效果与 `docs/archive/dirty-data-2026-05-30/history/prism.html` 原型一致
 
 ---
 

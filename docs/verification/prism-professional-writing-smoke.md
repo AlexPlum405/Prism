@@ -2,7 +2,7 @@
 
 > 日期：2026-05-15  
 > 目标：验证 Prism 的第一版专业写作能力在不引入数据库、图谱、云同步或完整 WYSIWYG 的前提下，能支持引用占位、Pandoc 回退和中文排版诊断。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 8 节“专业写作扩展”。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 8 节“专业写作扩展”。
 
 ## 1. 覆盖范围
 

@@ -1,8 +1,8 @@
 # Prism 1.0.x 核心本地写作体验闭环审计
 
-> 日期：2026-05-15  
-> 本批目标：只做审计，不改运行时代码。  
-> 计划来源：`docs/prism-product-optimization-plan.md`  
+> 日期：2026-05-15
+> 本批目标：只做审计，不改运行时代码。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md`
 > 设计约束：`AGENTS.md`、`CONTEXT.md`、`docs/adr/`、`docs/prism-openai-redesign.html`
 
 ## 1. 目标与范围
@@ -22,7 +22,7 @@
 
 | 要求 | 证据 | 状态 |
 | --- | --- | --- |
-| 先读项目约束与计划 | `AGENTS.md`、`CONTEXT.md`、`docs/adr/`、`docs/prism-openai-redesign.html`、`docs/prism-product-optimization-plan.md` | 已完成 |
+| 先读项目约束与计划 | `AGENTS.md`、`CONTEXT.md`、`docs/adr/`、`docs/prism-openai-redesign.html`、`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` | 已完成 |
 | 保持单文档单窗口 | `CONTEXT.md` 明确无标签页；`src/domains/workspace/store.ts` 仍为 single/folder 工作区模型；`src/lib/fileActions.ts`、`src/domains/workspace/components/FileTree.tsx` 用“新窗口打开”而不是 tab | 已满足 |
 | 保持 OpenAI 极简方向 | `docs/adr/0001-adopt-openai-minimal-design.md`、`docs/adr/0002-css-token-naming.md`、`docs/prism-openai-redesign.html` | 已满足，本文档未改 UI |
 | 不引入禁用能力 | `rg` 未发现插件市场、云同步、移动端、图谱或完整 WYSIWYG 实现入口；计划中仍标为非目标 | 已满足 |
@@ -47,7 +47,7 @@
 
 | 成功条件 | 当前证据 | 判定 |
 | --- | --- | --- |
-| 基于本地计划持续推进 v1.4.0 优化 | `docs/prism-product-optimization-plan.md`、本审计、各 smoke 文档、多个已完成自动化切片；本机可完成项已推进到只剩外部 / 人工阻塞 | 满足新版 goal 停止条件 |
+| 基于本地计划持续推进 v1.4.0 优化 | `docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md`、本审计、各 smoke 文档、多个已完成自动化切片；本机可完成项已推进到只剩外部 / 人工阻塞 | 满足新版 goal 停止条件 |
 | 保持单文档单窗口与 OpenAI 极简方向 | `CONTEXT.md`、ADR、原型约束；本轮未引入 tab、图谱、云同步、移动端、插件市场或 WYSIWYG | 已满足 |
 | 文件安全与发布可信核心路径有证据 | 保存状态、外部修改冲突、recovery、App 层 recovery modal 接线、macOS App-only 真实 crash / restart recovery smoke、fs scope、macOS Prism UI 文件树删除到废纸篓、release checklist、updater manifest、macOS fallback DMG、Windows release smoke 文档 | 自动化与 macOS 运行时 smoke 较强，但正式签名 / 公证 / Windows release 环境未闭环 |
 | 写作效率核心路径有证据 | 图片 helper、Markdown 链接补全/诊断、轻量 `[[note]]` 工作区内链补全、表格、列表、模板、快速打开、字数统计、CodeMirror 全局命令事件接线、paste / normal-drop / Alt-drop DOM 接线测试、Alt-drop 缺路径提示、列表 keymap 组件级回归、链接补全上下文组件回归、macOS 真实 `.app` 系统剪贴板图片粘贴、快速打开、链接补全/诊断、表格命令、列表续写/退出、PRD 模板插入、大纲搜索和选区统计 smoke | 自动化较强，macOS 主要写作路径已补真实桌面证据；macOS Finder 拖拽已尝试但当前自动化工具无法安全完成，Finder / Explorer 拖拽、Option / Alt 原路径和 Windows 桌面路径仍未闭环 |
@@ -88,10 +88,10 @@
 - `src/domains/document/hooks/useRecoveryQueue.ts` 把启动扫描 recovery 快照、当前提示队列、恢复/丢弃动作从 `App.tsx` 抽成可测 hook；`useRecoveryQueue.test.tsx` 覆盖启动列出快照、恢复后移除当前快照、丢弃只移除当前快照、恢复失败 / 丢弃失败保留快照和卸载后不更新状态。
 - `src/App.tsx` 通过 `shouldShowRecoveryPrompt()` 明确 recovery modal 的 App 级遮挡规则：有启动快照、没有保存对话框、没有保存冲突时才显示；`src/App.recovery.test.tsx` 覆盖 App 接入 `RecoveryModal`、恢复 / 丢弃动作转发、保存冲突优先展示 `SaveConflictModal`，以及 save dialog 遮挡规则。
 - `docs/verification/prism-recovery-crash-smoke.md` 记录 macOS App-only 真实 crash / restart recovery smoke：关闭自动保存后真实编辑已保存文档，recovery 快照包含 marker 且原文件不含 marker；`kill -9` 后重启显示“恢复文档”modal；点击恢复后内容回到编辑器且状态为“已编辑 / 未保存”；`Cmd+S` 后原文件写入 marker、recovery 目录清理，再次重启不再提示同一快照。
-- `src-tauri/capabilities/default.json` 只列出 fs 默认、read/write files、appData 递归读写等能力；`docs/prism-p0-runtime-smoke.md` 记录 `rg '"path": "\\*\\*"' src-tauri/capabilities` 无命中。
+- `src-tauri/capabilities/default.json` 只列出 fs 默认、read/write files、appData 递归读写等能力；`docs/archive/dirty-data-2026-05-30/historical-docs/prism-p0-runtime-smoke.md` 记录 `rg '"path": "\\*\\*"' src-tauri/capabilities` 无命中。
 - `src/lib/fileSystemScope.ts` 调用 `grant_markdown_file_scope`；`src-tauri/src/lib.rs` 通过 `FsExt` scope 授权非对话框打开的 Markdown 文件。
 - `src-tauri/src/lib.rs` 新增 `move_path_to_trash` Tauri command；`src/lib/fileActions.ts` 删除文件时优先移到系统废纸篓，失败后才二次确认永久删除。macOS Finder AppleScript 已从直接 `POSIX file` 修正为 `POSIX file ... as alias`；真实 Prism `.app` smoke 暴露 Finder 在 App 进程内 8 秒超时后，已补 `~/.Trash` 唯一路径 fallback。2026-05-15 真实 UI 复测右键删除临时 Markdown 文件通过：Prism 文件树移除目标，编辑区进入安全空状态，toast 显示已移到系统废纸篓，源文件消失，`~/.Trash/ui-delete-20260515175002.md` 存在，`keep.md` 未受影响。
-- `docs/prism-p0-runtime-smoke.md` 记录真实 macOS release bundle 文件打开 smoke、updater manifest 生成与校验、`npm run tauri:build` 到 `.app.tar.gz` / `.sig` 的验证。
+- `docs/archive/dirty-data-2026-05-30/historical-docs/prism-p0-runtime-smoke.md` 记录真实 macOS release bundle 文件打开 smoke、updater manifest 生成与校验、`npm run tauri:build` 到 `.app.tar.gz` / `.sig` 的验证。
 - `docs/verification/prism-macos-dmg-packaging-smoke.md` 记录 DMG Finder AppleScript 超时 `(-1712)` 的真实诊断，以及 `npm run release:mac-dmg:skip-finder` fallback 生成 DMG 并通过 `hdiutil verify` 的证据。
 - `src-tauri/tauri.local-smoke.conf.json` 和 `npm run tauri:build:app-smoke` 提供本机 App-only runtime smoke 构建，关闭 updater artifacts 并跳过 DMG 生成；2026-05-15 已返回 0 并生成 `src-tauri/target/release/bundle/macos/Prism.app`。
 - `docs/prism-release-checklist.md`、`docs/prism-macos-release.md`、`docs/prism-updater-manifest.example.json`、`.github/ISSUE_TEMPLATE/export_bug.yml` 构成发布和反馈入口。

@@ -2,7 +2,7 @@
 
 > 日期：2026-05-15  
 > 目标：记录 Prism macOS DMG 打包 gate 的真实失败点和可复现 fallback。  
-> 计划来源：`docs/prism-product-optimization-plan.md` 第 2 节“产品信任与发布治理”。
+> 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 2 节“产品信任与发布治理”。
 
 ## 1. 背景
 
