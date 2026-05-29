@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="200" viewBox="0 0 480 200" role="img" aria-label="导出保真验收示意图">
+  <rect width="480" height="200" fill="#f6f5f1"/>
+  <rect x="0" y="0" width="480" height="200" fill="none" stroke="#d8d4ca" stroke-width="2"/>
+  <text x="240" y="60" font-family="-apple-system, 'PingFang SC', sans-serif" font-size="22" font-weight="600" fill="#2b2a26" text-anchor="middle">Prism 导出保真验收</text>
+  <text x="240" y="100" font-family="-apple-system, 'PingFang SC', sans-serif" font-size="15" fill="#6b675d" text-anchor="middle">HTML · PDF · PNG · DOCX</text>
+  <line x1="80" y1="130" x2="400" y2="130" stroke="#c0392b" stroke-width="3"/>
+  <circle cx="80" cy="130" r="6" fill="#c0392b"/>
+  <circle cx="240" cy="130" r="6" fill="#e08e0b"/>
+  <circle cx="400" cy="130" r="6" fill="#2e8b57"/>
+  <text x="240" y="170" font-family="-apple-system, 'PingFang SC', sans-serif" font-size="13" fill="#8a857a" text-anchor="middle">本地 SVG 图片 · 用于验证导出内联与清晰度</text>
+</svg>
