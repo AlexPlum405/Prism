@@ -1,7 +1,7 @@
 import { t, useI18n } from '../../i18n';
 import type { DocumentSaveIssue } from '../types';
 
-export type SaveConflictAction = 'reload' | 'saveAs' | 'overwrite';
+export type SaveConflictAction = 'reload' | 'saveAs' | 'overwrite' | 'discard';
 
 interface SaveConflictModalProps {
   visible: boolean;
@@ -12,12 +12,14 @@ interface SaveConflictModalProps {
   onReload: () => void;
   onSaveAs: () => void;
   onOverwrite: () => void;
+  onDiscard: () => void;
 }
 
 function getBusyLabel(action: SaveConflictAction | null, fallback: string) {
   if (!action) return fallback;
   if (action === 'reload') return t('conflict.reloading');
   if (action === 'saveAs') return t('conflict.savingAs');
+  if (action === 'discard') return t('conflict.missingDiscarding');
   return t('conflict.overwriting');
 }
 
@@ -27,9 +29,13 @@ function getModalCopy(issueKind?: DocumentSaveIssue | null) {
       title: t('conflict.missingTitle'),
       kicker: t('conflict.missingKicker'),
       body: t('conflict.missingBody'),
+      saveAs: t('conflict.missingSaveAs'),
+      discard: t('conflict.missingDiscard'),
       overwrite: t('conflict.missingRecreate'),
       overwriting: t('conflict.missingRecreating'),
       showReload: false,
+      showDiscard: true,
+      isOverwriteDanger: false,
     };
   }
 
@@ -37,9 +43,13 @@ function getModalCopy(issueKind?: DocumentSaveIssue | null) {
     title: t('conflict.title'),
     kicker: t('conflict.kicker'),
     body: t('conflict.body'),
+    saveAs: t('conflict.saveAs'),
+    discard: '',
     overwrite: t('conflict.overwrite'),
     overwriting: t('conflict.overwriting'),
     showReload: true,
+    showDiscard: false,
+    isOverwriteDanger: true,
   };
 }
 
@@ -52,6 +62,7 @@ export function SaveConflictModal({
   onReload,
   onSaveAs,
   onOverwrite,
+  onDiscard,
 }: SaveConflictModalProps) {
   useI18n();
   if (!visible) return null;
@@ -75,17 +86,38 @@ export function SaveConflictModal({
           {error && <div className="prism-conflict-error">{error}</div>}
         </div>
         <div className="prism-conflict-actions">
-          {copy.showReload && (
-            <button type="button" onClick={onReload} disabled={isBusy}>
-              {busyAction === 'reload' ? getBusyLabel(busyAction, t('conflict.reload')) : t('conflict.reload')}
-            </button>
+          {copy.showDiscard ? (
+            <>
+              <button type="button" className="danger" onClick={onDiscard} disabled={isBusy}>
+                {busyAction === 'discard' ? getBusyLabel(busyAction, copy.discard) : copy.discard}
+              </button>
+              <button type="button" onClick={onOverwrite} disabled={isBusy}>
+                {busyAction === 'overwrite' ? copy.overwriting : copy.overwrite}
+              </button>
+              <button type="button" className="primary" onClick={onSaveAs} disabled={isBusy}>
+                {busyAction === 'saveAs' ? getBusyLabel(busyAction, copy.saveAs) : copy.saveAs}
+              </button>
+            </>
+          ) : (
+            <>
+              {copy.showReload && (
+                <button type="button" onClick={onReload} disabled={isBusy}>
+                  {busyAction === 'reload' ? getBusyLabel(busyAction, t('conflict.reload')) : t('conflict.reload')}
+                </button>
+              )}
+              <button type="button" className="primary" onClick={onSaveAs} disabled={isBusy}>
+                {busyAction === 'saveAs' ? getBusyLabel(busyAction, copy.saveAs) : copy.saveAs}
+              </button>
+              <button
+                type="button"
+                className={copy.isOverwriteDanger ? 'danger' : undefined}
+                onClick={onOverwrite}
+                disabled={isBusy}
+              >
+                {busyAction === 'overwrite' ? copy.overwriting : copy.overwrite}
+              </button>
+            </>
           )}
-          <button type="button" className="primary" onClick={onSaveAs} disabled={isBusy}>
-            {busyAction === 'saveAs' ? getBusyLabel(busyAction, t('conflict.saveAs')) : t('conflict.saveAs')}
-          </button>
-          <button type="button" className="danger" onClick={onOverwrite} disabled={isBusy}>
-            {busyAction === 'overwrite' ? copy.overwriting : copy.overwrite}
-          </button>
         </div>
       </div>
     </>

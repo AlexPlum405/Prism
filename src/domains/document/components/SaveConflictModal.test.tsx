@@ -13,6 +13,7 @@ describe('SaveConflictModal', () => {
         onReload={vi.fn()}
         onSaveAs={vi.fn()}
         onOverwrite={vi.fn()}
+        onDiscard={vi.fn()}
       />,
     );
 
@@ -23,6 +24,7 @@ describe('SaveConflictModal', () => {
     const onReload = vi.fn();
     const onSaveAs = vi.fn();
     const onOverwrite = vi.fn();
+    const onDiscard = vi.fn();
 
     render(
       <SaveConflictModal
@@ -33,6 +35,7 @@ describe('SaveConflictModal', () => {
         onReload={onReload}
         onSaveAs={onSaveAs}
         onOverwrite={onOverwrite}
+        onDiscard={onDiscard}
       />,
     );
 
@@ -47,12 +50,14 @@ describe('SaveConflictModal', () => {
     expect(onReload).toHaveBeenCalledTimes(1);
     expect(onSaveAs).toHaveBeenCalledTimes(1);
     expect(onOverwrite).toHaveBeenCalledTimes(1);
+    expect(onDiscard).not.toHaveBeenCalled();
   });
 
-  it('shows missing-file actions without offering reload', () => {
+  it('shows missing-file actions with an explicit discard choice and without reload', () => {
     const onReload = vi.fn();
     const onSaveAs = vi.fn();
     const onOverwrite = vi.fn();
+    const onDiscard = vi.fn();
 
     render(
       <SaveConflictModal
@@ -64,6 +69,7 @@ describe('SaveConflictModal', () => {
         onReload={onReload}
         onSaveAs={onSaveAs}
         onOverwrite={onOverwrite}
+        onDiscard={onDiscard}
       />,
     );
 
@@ -71,10 +77,12 @@ describe('SaveConflictModal', () => {
     expect(screen.queryByRole('button', { name: '重新加载磁盘版本' })).not.toBeInTheDocument();
     expect(screen.getByText('原文件不存在：/tmp/missing.md')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '保留我的版本并另存为' }));
-    fireEvent.click(screen.getByRole('button', { name: '在原路径重新创建' }));
+    fireEvent.click(screen.getByRole('button', { name: '不保存并关闭' }));
+    fireEvent.click(screen.getByRole('button', { name: '另存为...' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存回原位置' }));
 
     expect(onReload).not.toHaveBeenCalled();
+    expect(onDiscard).toHaveBeenCalledTimes(1);
     expect(onSaveAs).toHaveBeenCalledTimes(1);
     expect(onOverwrite).toHaveBeenCalledTimes(1);
   });
@@ -89,11 +97,32 @@ describe('SaveConflictModal', () => {
         onReload={vi.fn()}
         onSaveAs={vi.fn()}
         onOverwrite={vi.fn()}
+        onDiscard={vi.fn()}
       />,
     );
 
     expect(screen.getByRole('button', { name: '重新加载磁盘版本' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '保留我的版本并另存为' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '正在覆盖...' })).toBeDisabled();
+  });
+
+  it('shows missing-file discard progress while discarding the local copy', () => {
+    render(
+      <SaveConflictModal
+        visible
+        documentName="missing.md"
+        error={null}
+        issueKind="missing"
+        busyAction="discard"
+        onReload={vi.fn()}
+        onSaveAs={vi.fn()}
+        onOverwrite={vi.fn()}
+        onDiscard={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '正在关闭...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '另存为...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '保存回原位置' })).toBeDisabled();
   });
 });

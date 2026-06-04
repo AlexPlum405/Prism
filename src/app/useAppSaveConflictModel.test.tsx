@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  discardConflictedDocument,
   overwriteConflictedDocument,
   reloadConflictedDocument,
   saveConflictedDocumentAs,
@@ -10,6 +11,7 @@ import type { OpenDocument } from '../domains/document/types';
 import { useAppSaveConflictModel } from './useAppSaveConflictModel';
 
 vi.mock('../domains/document/services/conflictResolution', () => ({
+  discardConflictedDocument: vi.fn(),
   overwriteConflictedDocument: vi.fn(),
   reloadConflictedDocument: vi.fn(),
   saveConflictedDocumentAs: vi.fn(),
@@ -43,6 +45,7 @@ describe('useAppSaveConflictModel', () => {
     vi.mocked(reloadConflictedDocument).mockResolvedValue({ resolved: true });
     vi.mocked(saveConflictedDocumentAs).mockResolvedValue({ resolved: true, path: '/repo/copy.md' });
     vi.mocked(overwriteConflictedDocument).mockResolvedValue({ resolved: true });
+    vi.mocked(discardConflictedDocument).mockResolvedValue({ resolved: true });
   });
 
   it('reloads the disk version for reload conflict actions', async () => {
@@ -89,7 +92,23 @@ describe('useAppSaveConflictModel', () => {
     });
 
     expect(overwriteConflictedDocument).toHaveBeenCalledTimes(1);
-    expect(showToast).toHaveBeenCalledWith('已在原路径重新创建文件');
+    expect(showToast).toHaveBeenCalledWith('已保存回原位置');
+  });
+
+  it('discards the local copy for missing-file conflict actions', async () => {
+    useDocumentStore.setState({ currentDocument: createDocument({ saveIssue: 'missing' }) });
+    const { result } = renderHook(() => useAppSaveConflictModel({
+      currentDocument: createDocument({ saveIssue: 'missing' }),
+      requestMarkdownSavePath,
+      showToast,
+    }));
+
+    await act(async () => {
+      await result.current.runConflictAction('discard');
+    });
+
+    expect(discardConflictedDocument).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith('已关闭，未保存当前副本');
   });
 
   it('reports conflict resolution failures as toast messages', async () => {

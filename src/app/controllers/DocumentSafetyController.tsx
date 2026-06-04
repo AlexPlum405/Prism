@@ -74,6 +74,7 @@ export function DocumentSafetyController({
         onReload={() => onRunConflictAction('reload')}
         onSaveAs={() => onRunConflictAction('saveAs')}
         onOverwrite={() => onRunConflictAction('overwrite')}
+        onDiscard={() => onRunConflictAction('discard')}
       />
     </>
   );

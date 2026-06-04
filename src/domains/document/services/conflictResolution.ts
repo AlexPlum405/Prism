@@ -86,6 +86,15 @@ export async function saveConflictedDocumentAs(
   }
 }
 
+export async function discardConflictedDocument(): Promise<ConflictResolutionResult> {
+  const doc = getCurrentConflictDocument();
+  if (!doc) return { resolved: false };
+
+  useDocumentStore.getState().closeDocument();
+  await recoverySnapshotStore.clearForDocument(doc.path).catch(() => undefined);
+  return { resolved: true, path: doc.path };
+}
+
 export async function overwriteConflictedDocument(): Promise<ConflictResolutionResult> {
   const doc = getCurrentConflictDocument();
   if (!doc) return { resolved: false };

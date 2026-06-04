@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SaveConflictAction } from '../domains/document/components/SaveConflictModal';
 import {
+  discardConflictedDocument,
   overwriteConflictedDocument,
   reloadConflictedDocument,
   saveConflictedDocumentAs,
@@ -41,6 +42,9 @@ export function useAppSaveConflictModel({
       } else if (action === 'saveAs') {
         result = await saveConflictedDocumentAs(requestMarkdownSavePath);
         if (result.resolved) showToast(t('app.savedCurrentVersionAs'));
+      } else if (action === 'discard') {
+        result = await discardConflictedDocument();
+        if (result.resolved) showToast(t('app.discardedMissingFileCopy'));
       } else {
         result = await overwriteConflictedDocument();
         if (result.resolved) {

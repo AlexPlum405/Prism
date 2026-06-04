@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 import { useDocumentStore } from '../store';
 import {
+  discardConflictedDocument,
   getConflictCopyFilename,
   overwriteConflictedDocument,
   reloadConflictedDocument,
@@ -115,6 +116,18 @@ describe('conflictResolution', () => {
       isDirty: true,
       saveStatus: 'conflict',
     });
+  });
+
+  it('discards the conflicted local copy without writing to disk', async () => {
+    openConflictedDocument();
+
+    const result = await discardConflictedDocument();
+
+    expect(result).toEqual({ resolved: true, path: '/tmp/a.md' });
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(addRecentFile).not.toHaveBeenCalled();
+    expect(clearRecoverySnapshotsForDocument).toHaveBeenCalledWith('/tmp/a.md');
+    expect(useDocumentStore.getState().currentDocument).toBeNull();
   });
 
   it('overwrites the disk version and clears the conflict', async () => {
