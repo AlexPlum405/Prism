@@ -1,0 +1,19 @@
+task_name,status,completion_pct,notes
+状态栏降噪,已完成,100,两段式结构+ERROR n聚合+字数行列紧凑显示
+命令面板整理,已完成,100,命令注册分类重构+i18n资源
+斜杠菜单,已完成,100,Markdown片段插入+键盘导航+输入过滤
+Callout/Toggle渲染与导出,已完成,100,四种Callout类型+Toggle折叠块+DOCX/HTML/PDF适配
+工作区索引,已完成,100,大目录分批读取+未保存文稿覆盖索引
+快速打开/全文搜索/最近文档,已完成,100,Cmd+P+Cmd+Shift+F+共用workspaceIndex
+[[页面链接与反链,已完成,100,文件/标题搜索+标准Markdown链接+同文档锚点跳转
+轻量关系图谱,已完成,100,RelationGraphPanel+1-2跳关系+命令面板入口
+Front Matter属性面板,已完成,100,文档属性状态模型+命令面板入口+7个字段
+模板系统,已完成,100,空文档整篇模板+已有文档插入+占位符支持
+块级操作,已完成,100,段落操作+选区转换+标题章节操作
+导出保真与稳定专项,已完成,100,分页保护+四格式验证+DOCX富内容+诊断分层+黄金样本
+架构重构(模型/控制器抽出),已完成,100,30+模型和控制器抽出
+Rust Core Modernization Phase 1,已完成,100,文件IO/索引/导出/设置/错误模型Rust接入
+预览渲染异步化,已完成,100,Web Worker+主线程降级+stale包丢弃
+性能分层优化,已完成,100,size-aware debounce+Mermaid分批+preview-only补齐
+文件安全增强,已完成,100,dirty切换保护+clean文稿外部修改刷新+Finder同步
+发布可信链路,已完成(本机),100,版本审计+manifest+DMG校验;签名/公证外部阻塞

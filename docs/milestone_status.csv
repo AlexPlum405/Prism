@@ -1,0 +1,6 @@
+milestone,target_date,key_deliverables,current_progress,status,risk_items
+v1.2.0 架构重构+写作器基础功能,2026-05-15,模型抽出/命令面板/斜杠菜单/Callout+Toggle,100%,按时,无
+v1.4.0 全功能+导出保真,2026-05-22,工作区索引/页面链接/反链/模板/块操作/导出保真二期,100%,按时,无
+v1.4.1 发布收口+品牌素材,2026-05-30,产品视频/图标更新/性能基线/预览异步化/Rust Core Phase 1,100%,按时,无
+macOS Stable 签名+公证,待定,签名DMG+Gatekeeper通过,0%,外部阻塞,缺少Apple Developer ID和签名凭据
+Linux Release Build,2026下半年,Linux安装包,0%,Later,需Linux构建环境评估

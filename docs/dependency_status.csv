@@ -1,0 +1,6 @@
+dependency,type,provider,needed_date,status,risk_level
+Apple Developer ID + 签名凭据,外部,Apple,待定,阻塞中,高
+Windows CI 验证环境,外部,自备/CI,待定,阻塞中,中
+大文档 KaTeX 渲染耗时(1万行~2128ms),技术,内部,Q3,已识别,中
+主 chunk 体积警告,技术,内部,Q3+,已识别,低
+Web Worker 真实 Tauri WebView 验证,技术,内部,Q3,已识别,低
