@@ -655,6 +655,15 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     useEffect(() => {
       const handleGlobalKeyDown = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && key === 'c' && !e.shiftKey && !e.altKey && viewModeRef.current === 'preview') {
+          const selectedText = getPreviewRawSelectedText();
+          if (selectedText) {
+            e.preventDefault();
+            e.stopPropagation();
+            void copyText(selectedText);
+            return;
+          }
+        }
         if ((e.ctrlKey || e.metaKey) && key === 'f') {
           e.preventDefault();
           e.stopPropagation();
@@ -674,7 +683,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         window.removeEventListener('keydown', handleGlobalKeyDown, true);
         unsubscribeSearch();
       };
-    }, [activateSearch]);
+    }, [activateSearch, getPreviewRawSelectedText]);
 
     const handleSearch = (action: SearchAction, params: SearchParams) => {
       const localMatchState = countMatches(content, params.query, params.matchCase, params.regexp, params.wholeWord);

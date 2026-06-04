@@ -73,14 +73,16 @@ vi.mock('./PreviewPane', () => ({
     onOpenDocumentLink?: (target: string, options: { kind: 'markdown' | 'wiki'; sourcePath?: string }) => void;
   }) => (
     <div data-testid="preview-pane" data-render-strategy={renderStrategy}>
-      <p data-source-line="6">{content}</p>
-      <button type="button" data-preview-source-line="9">跳到源码</button>
-      <button
-        type="button"
-        onClick={() => onOpenDocumentLink?.('manual-test', { kind: 'wiki', sourcePath: '/repo/current.md' })}
-      >
-        manual-test
-      </button>
+      <div id="write">
+        <p data-source-line="6">{content}</p>
+        <button type="button" data-preview-source-line="9">跳到源码</button>
+        <button
+          type="button"
+          onClick={() => onOpenDocumentLink?.('manual-test', { kind: 'wiki', sourcePath: '/repo/current.md' })}
+        >
+          manual-test
+        </button>
+      </div>
     </div>
   ),
 }));
@@ -241,6 +243,45 @@ describe('SplitView editor lifecycle', () => {
     fireEvent.click(screen.getByTestId('editor-selection'));
 
     expect(onSelectionTextChange).toHaveBeenCalledWith('选中文本 selected text');
+  });
+
+  it('copies selected preview text with Cmd+C in preview mode', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <SplitView
+        content="Preview selected text"
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    const paragraph = screen.getByTestId('preview-pane').querySelector('p') as HTMLParagraphElement;
+    const textNode = paragraph.firstChild;
+    expect(textNode).not.toBeNull();
+    const range = document.createRange();
+    range.setStart(textNode!, 0);
+    range.setEnd(textNode!, 'Preview selected text'.length);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      code: 'KeyC',
+      key: 'c',
+      metaKey: true,
+    });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(writeText).toHaveBeenCalledWith('Preview selected text');
   });
 });
 
