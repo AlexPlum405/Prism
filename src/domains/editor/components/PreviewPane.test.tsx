@@ -15,6 +15,9 @@ const openerMock = vi.hoisted(() => ({
 const fsMock = vi.hoisted(() => ({
   readFile: vi.fn(),
 }));
+const renderServiceMock = vi.hoisted(() => ({
+  render: vi.fn(),
+}));
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: fsMock.readFile,
@@ -32,6 +35,10 @@ vi.mock('../../../lib/markdownToHtml', () => ({
   markdownToHtml: vi.fn(() => '<p>Hello preview</p>'),
 }));
 
+vi.mock('../../../lib/markdownRenderService', () => ({
+  markdownRenderService: renderServiceMock,
+}));
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (error: unknown) => void;
@@ -40,6 +47,12 @@ function deferred<T>() {
     reject = rej;
   });
   return { promise, reject, resolve };
+}
+
+async function flushPreviewRender() {
+  await act(async () => {
+    await Promise.resolve();
+  });
 }
 
 describe('PreviewPane theme switching', () => {
@@ -51,6 +64,13 @@ describe('PreviewPane theme switching', () => {
     });
     vi.mocked(markdownToHtml).mockReset();
     vi.mocked(markdownToHtml).mockReturnValue('<p>Hello preview</p>');
+    renderServiceMock.render.mockReset();
+    renderServiceMock.render.mockImplementation((content: string, options: any) => (
+      Promise.resolve({
+        html: vi.mocked(markdownToHtml)(content, options),
+        stale: false,
+      })
+    ));
     mermaidMock.initialize.mockReset();
     mermaidMock.render.mockReset();
     mermaidMock.render.mockResolvedValue({ svg: '<svg viewBox="0 0 10 10"></svg>' });
@@ -137,7 +157,7 @@ describe('PreviewPane theme switching', () => {
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(11)).toBe(3);
   });
 
-  it('throttles large-document preview updates and shows a lightweight pending status', () => {
+  it('throttles large-document preview updates and shows a lightweight pending status', async () => {
     vi.useFakeTimers();
     const first = `# First\n${'一'.repeat(310 * 1024)}`;
     const second = `# Second\n${'二'.repeat(310 * 1024)}`;
@@ -161,10 +181,11 @@ describe('PreviewPane theme switching', () => {
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
     expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
+    await flushPreviewRender();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('flushes pending preview work immediately when preview-only mode needs the final render', () => {
+  it('flushes pending preview work immediately when preview-only mode needs the final render', async () => {
     vi.useFakeTimers();
     const first = `# First\n${'一'.repeat(310 * 1024)}`;
     const second = `# Second\n${'二'.repeat(310 * 1024)}`;
@@ -179,6 +200,7 @@ describe('PreviewPane theme switching', () => {
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
     expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
+    await flushPreviewRender();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
     act(() => {
@@ -187,7 +209,7 @@ describe('PreviewPane theme switching', () => {
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
   });
 
-  it('refreshes source-line anchors after debounced content changes', () => {
+  it('refreshes source-line anchors after debounced content changes', async () => {
     vi.useFakeTimers();
     vi.mocked(markdownToHtml).mockImplementation((content) => (
       content.includes('Updated')
@@ -197,6 +219,7 @@ describe('PreviewPane theme switching', () => {
 
     const { rerender } = render(<PreviewPane content="## Initial section" />);
 
+    await flushPreviewRender();
     expect(document.querySelector('[data-source-line="20"]')).toHaveTextContent('Initial section');
 
     rerender(<PreviewPane content="## Updated section" />);
@@ -207,6 +230,7 @@ describe('PreviewPane theme switching', () => {
       vi.advanceTimersByTime(120);
     });
 
+    await flushPreviewRender();
     expect(document.querySelector('[data-source-line="20"]')).not.toBeInTheDocument();
     expect(document.querySelector('[data-source-line="80"]')).toHaveTextContent('Updated section');
     expect(document.querySelector('[data-source-line="81"]')).toHaveTextContent('Fresh preview');
@@ -386,14 +410,14 @@ describe('PreviewPane theme switching', () => {
     }
   });
 
-  it('enhances KaTeX errors with source navigation actions', () => {
+  it('enhances KaTeX errors with source navigation actions', async () => {
     vi.mocked(markdownToHtml).mockReturnValueOnce(
       '<p data-source-line="7"><span class="katex-error" title="KaTeX parse error: bad command">\\bad</span></p>',
     );
 
     render(<PreviewPane content="$\\bad$" />);
 
-    expect(screen.getByText('\\bad')).toHaveClass('preview-katex-error');
+    expect(await screen.findByText('\\bad')).toHaveClass('preview-katex-error');
     expect(screen.getByText('\\bad')).toHaveAttribute('data-preview-source-line', '7');
     expect(screen.getByRole('button', { name: '跳到源码' })).toHaveAttribute('data-preview-source-line', '7');
   });
@@ -402,7 +426,7 @@ describe('PreviewPane theme switching', () => {
     vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="https://example.com/docs">外部链接</a>');
 
     render(<PreviewPane content="[外部链接](https://example.com/docs)" />);
-    fireEvent.click(screen.getByText('外部链接'));
+    fireEvent.click(await screen.findByText('外部链接'));
 
     await waitFor(() => {
       expect(openerMock.openUrl).toHaveBeenCalledWith('https://example.com/docs');
@@ -413,30 +437,30 @@ describe('PreviewPane theme switching', () => {
     vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="//example.com/docs">协议相对外链</a>');
 
     render(<PreviewPane content="[协议相对外链](//example.com/docs)" />);
-    fireEvent.click(screen.getByText('协议相对外链'));
+    fireEvent.click(await screen.findByText('协议相对外链'));
 
     await waitFor(() => {
       expect(openerMock.openUrl).toHaveBeenCalledWith(expect.stringMatching(/^https?:\/\/example\.com\/docs$/));
     });
   });
 
-  it('blocks non-http preview links such as javascript urls', () => {
+  it('blocks non-http preview links such as javascript urls', async () => {
     const onNotice = vi.fn();
     vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="javascript:alert(1)">危险链接</a>');
 
     render(<PreviewPane content="[危险链接](javascript:alert(1))" onNotice={onNotice} />);
-    fireEvent.click(screen.getByText('危险链接'));
+    fireEvent.click(await screen.findByText('危险链接'));
 
     expect(openerMock.openUrl).not.toHaveBeenCalled();
     expect(onNotice).toHaveBeenCalledWith('预览中的链接不可打开');
   });
 
-  it('blocks local preview links and reports a notice', () => {
+  it('blocks local preview links and reports a notice', async () => {
     const onNotice = vi.fn();
     vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="docs/local.md">本地链接</a>');
 
     render(<PreviewPane content="[本地链接](docs/local.md)" onNotice={onNotice} />);
-    fireEvent.click(screen.getByText('本地链接'));
+    fireEvent.click(await screen.findByText('本地链接'));
 
     expect(openerMock.openUrl).not.toHaveBeenCalled();
     expect(onNotice).toHaveBeenCalledWith('预览中的本地链接已拦截，请通过文件树打开');
@@ -453,7 +477,7 @@ describe('PreviewPane theme switching', () => {
         onOpenDocumentLink={onOpenDocumentLink}
       />,
     );
-    fireEvent.click(screen.getByText('本地链接'));
+    fireEvent.click(await screen.findByText('本地链接'));
 
     await waitFor(() => {
       expect(onOpenDocumentLink).toHaveBeenCalledWith('docs/local.md', {
@@ -476,7 +500,7 @@ describe('PreviewPane theme switching', () => {
         onOpenDocumentLink={onOpenDocumentLink}
       />,
     );
-    fireEvent.click(screen.getByText('manual-test'));
+    fireEvent.click(await screen.findByText('manual-test'));
 
     await waitFor(() => {
       expect(onOpenDocumentLink).toHaveBeenCalledWith('manual-test', {

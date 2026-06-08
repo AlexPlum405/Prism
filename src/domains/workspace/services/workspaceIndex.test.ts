@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FileNode } from '../types';
 import {
+  applyWorkspaceIndexOverlay,
   buildWorkspaceIndex,
+  buildWorkspaceIndexIncremental,
   getWorkspaceIndexBacklinks,
   getWorkspaceIndexLinkFiles,
   rankWorkspaceIndexDocuments,
@@ -170,5 +172,70 @@ describe('workspace index', () => {
       match: 'title',
       document: expect.objectContaining({ relativePath: 'docs/guide.md' }),
     });
+  });
+
+  it('applies current-document and recent-file overlays without changing the base index', () => {
+    const baseIndex = buildWorkspaceIndex({
+      fileTree,
+      workspaceRoot: '/repo',
+      documents: [
+        { path: '/repo/docs/guide.md', content: '# Stale guide' },
+        { path: '/repo/docs/api.md', content: '# API 设计' },
+        { path: '/repo/index.md', content: '# 首页\n\n[Guide](docs/guide.md)' },
+      ],
+    });
+
+    const overlaid = applyWorkspaceIndexOverlay(baseIndex, {
+      currentDocument: {
+        path: '/repo/docs/guide.md',
+        content: '# Fresh guide\n\n[[api]]',
+      },
+      recentFiles: [{ path: '/repo/docs/guide.md', lastOpened: 300 }],
+    });
+
+    expect(baseIndex.documentByPath.get('/repo/docs/guide.md')?.title).toBe('Stale guide');
+    expect(overlaid.documentByPath.get('/repo/docs/guide.md')).toMatchObject({
+      title: 'Fresh guide',
+      lastOpened: 300,
+      recentRank: 0,
+    });
+    expect(overlaid.recentDocuments.map((document) => document.relativePath)).toEqual(['docs/guide.md']);
+    expect(overlaid.backlinksByPath.get('/repo/docs/api.md')).toEqual([
+      expect.objectContaining({
+        path: '/repo/docs/guide.md',
+        title: 'Fresh guide',
+      }),
+    ]);
+    expect(overlaid.backlinksByPath.get('/repo/docs/guide.md')).toEqual([
+      expect.objectContaining({
+        path: '/repo/index.md',
+        title: '首页',
+      }),
+    ]);
+  });
+
+  it('keeps incremental index output correct when unchanged metadata can be reused', () => {
+    const first = buildWorkspaceIndexIncremental({
+      fileTree,
+      workspaceRoot: '/repo',
+      documents: [
+        { path: '/repo/docs/guide.md', content: '# Guide v1' },
+        { path: '/repo/docs/api.md', content: '# API v1' },
+        { path: '/repo/index.md', content: '# Index v1' },
+      ],
+    });
+    const second = buildWorkspaceIndexIncremental({
+      fileTree,
+      workspaceRoot: '/repo',
+      previousIndex: first,
+      documents: [
+        { path: '/repo/docs/guide.md', content: '# Guide v1' },
+        { path: '/repo/docs/api.md', content: '# API v2' },
+        { path: '/repo/index.md', content: '# Index v1' },
+      ],
+    });
+
+    expect(second.documentByPath.get('/repo/docs/guide.md')?.title).toBe('Guide v1');
+    expect(second.documentByPath.get('/repo/docs/api.md')?.title).toBe('API v2');
   });
 });

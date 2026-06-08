@@ -1,6 +1,6 @@
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { readFile } from '../../../platform/tauri/fileSystem';
-import { markdownToHtml } from '../../../lib/markdownToHtml';
+import { markdownRenderService } from '../../../lib/markdownRenderService';
 import { openExternalUrl } from '../../../platform/tauri/opener';
 import { ContentTheme, DEFAULT_SETTINGS, isContentTheme } from '../../settings/types';
 import { useSettingsStore } from '../../settings/store';
@@ -297,6 +297,8 @@ export function PreviewPane({
   const [contentTheme, setContentTheme] = useState<ContentTheme>(getCurrentContentTheme);
   const [renderContent, setRenderContent] = useState(content);
   const [renderPending, setRenderPending] = useState(false);
+  const [htmlRenderPending, setHtmlRenderPending] = useState(false);
+  const [html, setHtml] = useState('');
   const previewFontFamily = useSettingsStore((s) => s.previewFontFamily);
   const previewFontSize = useSettingsStore((s) => s.previewFontSize);
 
@@ -318,12 +320,26 @@ export function PreviewPane({
     return () => window.clearTimeout(timer);
   }, [content, renderContent, renderStrategy]);
 
-  const html = useMemo(() => {
-    try {
-      return markdownToHtml(renderContent, { frontMatterMode: 'metadata' });
-    } catch {
-      return `<p>${t('editor.preview.renderFailed')}</p>`;
-    }
+  useEffect(() => {
+    let cancelled = false;
+    setHtmlRenderPending(true);
+
+    markdownRenderService
+      .render(renderContent, { frontMatterMode: 'metadata' })
+      .then((result) => {
+        if (cancelled || result.stale) return;
+        setHtml(result.html);
+        setHtmlRenderPending(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHtml(`<p>${t('editor.preview.renderFailed')}</p>`);
+        setHtmlRenderPending(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [locale, renderContent]);
 
   useEffect(() => {
@@ -495,13 +511,13 @@ export function PreviewPane({
     };
   }, [html, contentTheme]);
 
-  const showRenderPendingStatus = renderPending && shouldShowPreviewUpdatingStatus(content.length);
+  const showRenderPendingStatus = (renderPending || htmlRenderPending) && shouldShowPreviewUpdatingStatus(content.length);
 
   return (
     <div
       ref={containerRef}
       className={`preview-compat preview-compat--${contentTheme}`}
-      data-preview-render-pending={renderPending ? 'true' : undefined}
+      data-preview-render-pending={renderPending || htmlRenderPending ? 'true' : undefined}
     >
       {showRenderPendingStatus && (
         <div className="preview-render-status" role="status">

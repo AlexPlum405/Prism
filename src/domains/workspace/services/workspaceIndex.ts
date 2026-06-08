@@ -6,7 +6,7 @@ import type { FileNode } from '../types';
 import { resolveDocumentLinkTarget, type DocumentLinkKind } from './documentLinks';
 import { flattenFiles } from './fileTree';
 import { isSupportedMarkdownPath } from './fileAssociation';
-import { basename, normalizePathForCompare } from './path';
+import { basename, isSamePath, normalizePathForCompare } from './path';
 
 export interface WorkspaceIndexSourceDocument {
   content: string;
@@ -22,6 +22,7 @@ export interface WorkspaceIndexRecentFile {
 export interface WorkspaceIndexBuildInput {
   documents?: WorkspaceIndexSourceDocument[];
   fileTree: FileNode[];
+  previousIndex?: WorkspaceIndex | null;
   recentFiles?: WorkspaceIndexRecentFile[];
   workspaceRoot?: string | null;
 }
@@ -91,6 +92,8 @@ export interface WorkspaceIndexSearchResult {
 
 const MARKDOWN_EXTENSION_RE = /\.(md|markdown|txt)$/i;
 
+type WorkspaceIndexFile = Pick<FileNode, 'modifiedAt' | 'name' | 'path' | 'preview' | 'size'>;
+
 function stripMarkdownExtension(value: string) {
   return value.replace(MARKDOWN_EXTENSION_RE, '');
 }
@@ -130,60 +133,123 @@ function fallbackTitleForDocument(name: string, headings: WorkspaceIndexHeading[
   return headings[0]?.title || stripMarkdownExtension(basename(name));
 }
 
-export function buildWorkspaceIndex(input: WorkspaceIndexBuildInput): WorkspaceIndex {
-  const rootPath = input.workspaceRoot ?? null;
-  const contentByPath = buildContentMap(input.documents);
-  const recentByPath = buildRecentRankMap(input.recentFiles);
-  const files = flattenFiles(input.fileTree, rootPath)
+function getWorkspaceIndexFiles(fileTree: FileNode[], rootPath: string | null) {
+  return flattenFiles(fileTree, rootPath)
     .map(({ node }) => node)
     .filter((node) => isSupportedMarkdownPath(node.path));
-  const workspaceFiles = files.map((file) => ({ name: file.name, path: file.path }));
+}
 
-  const documents = files.map((file) => {
-    const normalizedPath = normalizePathForCompare(file.path);
-    const hasContent = contentByPath.has(normalizedPath);
-    const content = contentByPath.get(normalizedPath) ?? file.preview ?? '';
-    const model = parseMarkdownDocumentModel(content);
-    const links = model.links.map((link) => ({
+function hasStableMetadata(file: WorkspaceIndexFile) {
+  return file.modifiedAt !== undefined || file.size !== undefined;
+}
+
+function canReuseIndexedDocument(file: WorkspaceIndexFile, document: WorkspaceIndexedDocument, content?: string) {
+  if (!hasStableMetadata(file)) return false;
+  if (!isSamePath(file.path, document.path)) return false;
+  if (file.modifiedAt !== document.modifiedAt || file.size !== document.size) return false;
+  return content === undefined || content === document.content;
+}
+
+function applyRecentMetadata(
+  document: WorkspaceIndexedDocument,
+  recent: { lastOpened: number; rank: number } | undefined,
+): WorkspaceIndexedDocument {
+  if (document.lastOpened === recent?.lastOpened && document.recentRank === recent?.rank) {
+    return document;
+  }
+
+  return {
+    ...document,
+    lastOpened: recent?.lastOpened,
+    recentRank: recent?.rank,
+  };
+}
+
+function buildUnresolvedDocument(input: {
+  content: string;
+  file: WorkspaceIndexFile;
+  hasContent: boolean;
+  recent?: { lastOpened: number; rank: number };
+  rootPath: string | null;
+}): WorkspaceIndexedDocument {
+  const {
+    content,
+    file,
+    hasContent,
+    recent,
+    rootPath,
+  } = input;
+  const model = parseMarkdownDocumentModel(content);
+  const title = model.frontMatter.title || fallbackTitleForDocument(file.name, model.headings);
+
+  return {
+    content,
+    frontMatter: model.frontMatter,
+    headings: model.headings,
+    hasContent,
+    lastOpened: recent?.lastOpened,
+    links: model.links.map((link) => ({
+      ...link,
+      resolvedPath: null,
+    })),
+    modifiedAt: file.modifiedAt,
+    name: file.name,
+    path: file.path,
+    recentRank: recent?.rank,
+    relativePath: getWorkspaceRelativePath(file.path, rootPath),
+    size: file.size,
+    title,
+  };
+}
+
+function sortWorkspaceDocuments(documents: WorkspaceIndexedDocument[]) {
+  return [...documents].sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  }));
+}
+
+function resolveWorkspaceDocumentLinks(
+  documents: WorkspaceIndexedDocument[],
+  rootPath: string | null,
+) {
+  const workspaceFiles = documents.map((document) => ({
+    headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
+    name: document.name,
+    path: document.path,
+    title: document.title,
+  }));
+
+  return documents.map((document) => ({
+    ...document,
+    links: document.links.map((link) => ({
       ...link,
       resolvedPath: resolveDocumentLinkTarget({
         kind: link.kind,
-        sourcePath: file.path,
+        sourcePath: document.path,
         target: link.target,
         workspaceFiles,
         workspaceRoot: rootPath,
       })?.path ?? null,
-    }));
-    const recent = recentByPath.get(normalizedPath);
-    const title = model.frontMatter.title || fallbackTitleForDocument(file.name, model.headings);
-
-    return {
-      content,
-      frontMatter: model.frontMatter,
-      headings: model.headings,
-      hasContent,
-      lastOpened: recent?.lastOpened,
-      links,
-      modifiedAt: file.modifiedAt,
-      name: file.name,
-      path: file.path,
-      recentRank: recent?.rank,
-      relativePath: getWorkspaceRelativePath(file.path, rootPath),
-      size: file.size,
-      title,
-    } satisfies WorkspaceIndexedDocument;
-  }).sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, {
-    numeric: true,
-    sensitivity: 'base',
+    })),
   }));
+}
 
-  const documentByPath = new Map(documents.map((document) => [
+function createWorkspaceIndexFromDocuments(
+  documents: WorkspaceIndexedDocument[],
+  rootPath: string | null,
+  generatedAt = Date.now(),
+): WorkspaceIndex {
+  const sortedDocuments = sortWorkspaceDocuments(documents);
+  const resolvedDocuments = resolveWorkspaceDocumentLinks(sortedDocuments, rootPath);
+
+  const documentByPath = new Map(resolvedDocuments.map((document) => [
     normalizePathForCompare(document.path),
     document,
   ]));
   const backlinksByPath = new Map<string, WorkspaceIndexBacklink[]>();
 
-  documents.forEach((document) => {
+  resolvedDocuments.forEach((document) => {
     document.links.forEach((link) => {
       if (!link.resolvedPath) return;
       const targetKey = normalizePathForCompare(link.resolvedPath);
@@ -208,18 +274,110 @@ export function buildWorkspaceIndex(input: WorkspaceIndexBuildInput): WorkspaceI
     ));
   });
 
-  const recentDocuments = documents
+  const recentDocuments = resolvedDocuments
     .filter((document) => document.recentRank !== undefined)
     .sort((a, b) => (a.recentRank ?? 0) - (b.recentRank ?? 0));
 
   return {
     backlinksByPath,
     documentByPath,
-    documents,
-    generatedAt: Date.now(),
+    documents: resolvedDocuments,
+    generatedAt,
     recentDocuments,
     rootPath,
   };
+}
+
+export function buildWorkspaceIndex(input: WorkspaceIndexBuildInput): WorkspaceIndex {
+  const rootPath = input.workspaceRoot ?? null;
+  const contentByPath = buildContentMap(input.documents);
+  const recentByPath = buildRecentRankMap(input.recentFiles);
+  const files = getWorkspaceIndexFiles(input.fileTree, rootPath);
+  const documents = files.map((file) => {
+    const normalizedPath = normalizePathForCompare(file.path);
+    const hasContent = contentByPath.has(normalizedPath);
+    const content = contentByPath.get(normalizedPath) ?? file.preview ?? '';
+    const recent = recentByPath.get(normalizedPath);
+
+    return buildUnresolvedDocument({
+      content,
+      file,
+      hasContent,
+      recent,
+      rootPath,
+    });
+  });
+
+  return createWorkspaceIndexFromDocuments(documents, rootPath);
+}
+
+export function buildWorkspaceIndexIncremental(input: WorkspaceIndexBuildInput): WorkspaceIndex {
+  const rootPath = input.workspaceRoot ?? null;
+  const contentByPath = buildContentMap(input.documents);
+  const recentByPath = buildRecentRankMap(input.recentFiles);
+  const files = getWorkspaceIndexFiles(input.fileTree, rootPath);
+  const previousIndex = input.previousIndex ?? null;
+  const documents = files.map((file) => {
+    const normalizedPath = normalizePathForCompare(file.path);
+    const hasContent = contentByPath.has(normalizedPath);
+    const content = contentByPath.get(normalizedPath);
+    const recent = recentByPath.get(normalizedPath);
+    const previousDocument = previousIndex?.documentByPath.get(normalizedPath);
+
+    if (previousDocument && canReuseIndexedDocument(file, previousDocument, content)) {
+      return applyRecentMetadata(previousDocument, recent);
+    }
+
+    return buildUnresolvedDocument({
+      content: content ?? file.preview ?? '',
+      file,
+      hasContent,
+      recent,
+      rootPath,
+    });
+  });
+
+  return createWorkspaceIndexFromDocuments(documents, rootPath);
+}
+
+export function applyWorkspaceIndexOverlay(
+  baseIndex: WorkspaceIndex,
+  input: {
+    currentDocument?: WorkspaceIndexSourceDocument | null;
+    recentFiles?: WorkspaceIndexRecentFile[];
+  },
+): WorkspaceIndex {
+  const recentByPath = buildRecentRankMap(input.recentFiles);
+  const currentDocument = input.currentDocument?.path && MARKDOWN_EXTENSION_RE.test(input.currentDocument.path)
+    ? input.currentDocument
+    : null;
+  const currentDocumentKey = currentDocument
+    ? normalizePathForCompare(currentDocument.path)
+    : null;
+
+  const documents = baseIndex.documents.map((document) => {
+    const normalizedPath = normalizePathForCompare(document.path);
+    const recent = recentByPath.get(normalizedPath);
+
+    if (currentDocumentKey && normalizedPath === currentDocumentKey) {
+      return buildUnresolvedDocument({
+        content: currentDocument?.content ?? '',
+        file: {
+          modifiedAt: document.modifiedAt,
+          name: document.name,
+          path: document.path,
+          size: document.size,
+        },
+        hasContent: true,
+        recent,
+        rootPath: baseIndex.rootPath,
+      });
+    }
+
+    return applyRecentMetadata(document, recent);
+  });
+
+  return createWorkspaceIndexFromDocuments(documents, baseIndex.rootPath, baseIndex.generatedAt);
 }
 
 function contentSnippet(content: string, query: string) {

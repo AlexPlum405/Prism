@@ -57,7 +57,9 @@ export {
   type ResolvedDocumentLink,
 } from './documentLinks';
 export {
+  applyWorkspaceIndexOverlay,
   buildWorkspaceIndex,
+  buildWorkspaceIndexIncremental,
   getWorkspaceIndexBacklinks,
   getWorkspaceIndexLinkFiles,
   rankWorkspaceIndexDocuments,

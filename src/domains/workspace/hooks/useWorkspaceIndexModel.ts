@@ -1,23 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { readTextFile } from '../../../platform/tauri/fileSystem';
 import type { OpenDocument } from '../../document/types';
 import type { RecentFileEntry } from '../../settings/types';
 import type { FileNode } from '../types';
 import {
-  buildWorkspaceIndex,
+  applyWorkspaceIndexOverlay,
+  buildWorkspaceIndexIncremental,
   flattenFiles,
-  isSamePath,
+  isSupportedMarkdownPath,
+  normalizePathForCompare,
   type WorkspaceIndex,
   type WorkspaceIndexSourceDocument,
 } from '../services';
 import { buildWorkspaceIndexNativeModel } from '../services/workspaceIndexNative';
 import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
-const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
 const INDEX_BATCH_THRESHOLD = 40;
 const INDEX_BATCH_SIZE = 20;
 
-type WorkspaceIndexFile = Pick<FileNode, 'path'>;
+type WorkspaceIndexFile = Pick<FileNode, 'modifiedAt' | 'path' | 'size'>;
+
+export interface WorkspaceIndexSourceCacheEntry extends WorkspaceIndexSourceDocument {
+  modifiedAt?: number;
+  size?: number;
+}
 
 interface ReadWorkspaceIndexSourcesOptions {
   batchSize?: number;
@@ -70,6 +76,70 @@ export async function readWorkspaceIndexSources(
   return documents;
 }
 
+function hasStableSourceMetadata(file: WorkspaceIndexFile) {
+  return file.modifiedAt !== undefined || file.size !== undefined;
+}
+
+function isCachedWorkspaceIndexSourceFresh(
+  file: WorkspaceIndexFile,
+  cached: WorkspaceIndexSourceCacheEntry | undefined,
+) {
+  return Boolean(
+    cached
+    && hasStableSourceMetadata(file)
+    && cached.modifiedAt === file.modifiedAt
+    && cached.size === file.size,
+  );
+}
+
+export async function readWorkspaceIndexSourcesIncremental(
+  files: WorkspaceIndexFile[],
+  cache: Map<string, WorkspaceIndexSourceCacheEntry>,
+  options: ReadWorkspaceIndexSourcesOptions = {},
+): Promise<WorkspaceIndexSourceDocument[]> {
+  const activeKeys = new Set<string>();
+  const filesToRead: WorkspaceIndexFile[] = [];
+
+  files.forEach((file) => {
+    const key = normalizePathForCompare(file.path);
+    activeKeys.add(key);
+    if (!isCachedWorkspaceIndexSourceFresh(file, cache.get(key))) {
+      filesToRead.push(file);
+    }
+  });
+
+  const changedSources = await readWorkspaceIndexSources(filesToRead, options);
+  const changedSourceByPath = new Map(changedSources.map((source) => [
+    normalizePathForCompare(source.path),
+    source,
+  ]));
+
+  filesToRead.forEach((file) => {
+    const key = normalizePathForCompare(file.path);
+    const source = changedSourceByPath.get(key);
+    if (!source) {
+      cache.delete(key);
+      return;
+    }
+
+    cache.set(key, {
+      ...source,
+      modifiedAt: file.modifiedAt,
+      size: file.size,
+    });
+  });
+
+  [...cache.keys()].forEach((key) => {
+    if (!activeKeys.has(key)) {
+      cache.delete(key);
+    }
+  });
+
+  return files
+    .map((file) => cache.get(normalizePathForCompare(file.path)))
+    .filter((item): item is WorkspaceIndexSourceCacheEntry => Boolean(item));
+}
+
 export function useWorkspaceIndexModel(input: {
   currentDocument: OpenDocument | null;
   fileTree: FileNode[];
@@ -85,9 +155,17 @@ export function useWorkspaceIndexModel(input: {
     rootPath,
     recentFiles,
   } = input;
-  const [workspaceIndexSources, setWorkspaceIndexSources] = useState<WorkspaceIndexSourceDocument[]>([]);
-  const [nativeWorkspaceIndex, setNativeWorkspaceIndex] = useState<WorkspaceIndex | null>(null);
+  const [baseWorkspaceIndex, setBaseWorkspaceIndex] = useState<WorkspaceIndex | null>(null);
   const [workspaceIndexing, setWorkspaceIndexing] = useState(false);
+  const fallbackIndexCacheRef = useRef<{
+    index: WorkspaceIndex | null;
+    rootPath: string | null;
+    sources: Map<string, WorkspaceIndexSourceCacheEntry>;
+  }>({
+    index: null,
+    rootPath: null,
+    sources: new Map(),
+  });
   const recentFilesKey = useMemo(
     () => recentFiles.map((file) => `${file.path}:${file.lastOpened}`).join('\n'),
     [recentFiles],
@@ -98,8 +176,12 @@ export function useWorkspaceIndexModel(input: {
 
     const run = async () => {
       if (!rootPath) {
-        setWorkspaceIndexSources([]);
-        setNativeWorkspaceIndex(null);
+        setBaseWorkspaceIndex(null);
+        fallbackIndexCacheRef.current = {
+          index: null,
+          rootPath: null,
+          sources: new Map(),
+        };
         setWorkspaceIndexing(false);
         return;
       }
@@ -109,14 +191,11 @@ export function useWorkspaceIndexModel(input: {
       try {
         const nativeIndex = await buildWorkspaceIndexNativeModel({
           rootPath,
-          currentDocumentOverride: currentDocument?.path && MARKDOWN_FILE_RE.test(currentDocument.path)
-            ? { path: currentDocument.path, content: currentDocument.content }
-            : null,
-          recentFiles,
+          currentDocumentOverride: null,
+          recentFiles: [],
         });
         if (!cancelled && nativeIndex) {
-          setNativeWorkspaceIndex(nativeIndex);
-          setWorkspaceIndexSources([]);
+          setBaseWorkspaceIndex(nativeIndex);
           setWorkspaceIndexing(false);
           return;
         }
@@ -128,20 +207,36 @@ export function useWorkspaceIndexModel(input: {
 
       const files = flattenFiles(fileTree, rootPath)
         .map(({ node }) => node)
-        .filter((node) => MARKDOWN_FILE_RE.test(node.path));
+        .filter((node) => isSupportedMarkdownPath(node.path));
 
       if (files.length === 0) {
-        setWorkspaceIndexSources([]);
-        setNativeWorkspaceIndex(null);
+        setBaseWorkspaceIndex(null);
         setWorkspaceIndexing(false);
         return;
       }
 
-      const documents = await readWorkspaceIndexSources(files);
+      if (fallbackIndexCacheRef.current.rootPath !== rootPath) {
+        fallbackIndexCacheRef.current = {
+          index: null,
+          rootPath,
+          sources: new Map(),
+        };
+      }
+
+      const documents = await readWorkspaceIndexSourcesIncremental(
+        files,
+        fallbackIndexCacheRef.current.sources,
+      );
+      const fallbackIndex = buildWorkspaceIndexIncremental({
+        documents,
+        fileTree,
+        previousIndex: fallbackIndexCacheRef.current.index,
+        workspaceRoot: rootPath,
+      });
+      fallbackIndexCacheRef.current.index = fallbackIndex;
 
       if (!cancelled) {
-        setNativeWorkspaceIndex(null);
-        setWorkspaceIndexSources(documents);
+        setBaseWorkspaceIndex(fallbackIndex);
         setWorkspaceIndexing(false);
       }
     };
@@ -151,29 +246,17 @@ export function useWorkspaceIndexModel(input: {
     return () => {
       cancelled = true;
     };
-  }, [currentDocument?.content, currentDocument?.path, fileTree, recentFilesKey, rootPath]);
-
-  const workspaceIndexDocuments = useMemo(() => {
-    if (!currentDocument?.path || !MARKDOWN_FILE_RE.test(currentDocument.path)) {
-      return workspaceIndexSources;
-    }
-
-    return [
-      ...workspaceIndexSources.filter((document) => !isSamePath(document.path, currentDocument.path!)),
-      { path: currentDocument.path, content: currentDocument.content },
-    ];
-  }, [currentDocument?.content, currentDocument?.path, workspaceIndexSources]);
+  }, [fileTree, rootPath]);
 
   const workspaceIndex = useMemo<WorkspaceIndex | null>(() => {
-    if (nativeWorkspaceIndex) return nativeWorkspaceIndex;
-    if (!rootPath) return null;
-    return buildWorkspaceIndex({
-      fileTree,
-      workspaceRoot: rootPath,
-      documents: workspaceIndexDocuments,
+    if (!baseWorkspaceIndex) return null;
+    return applyWorkspaceIndexOverlay(baseWorkspaceIndex, {
+      currentDocument: currentDocument?.path
+        ? { path: currentDocument.path, content: currentDocument.content }
+        : null,
       recentFiles,
     });
-  }, [fileTree, nativeWorkspaceIndex, recentFiles, rootPath, workspaceIndexDocuments]);
+  }, [baseWorkspaceIndex, currentDocument?.content, currentDocument?.path, recentFiles, recentFilesKey]);
 
   return {
     workspaceIndex,

@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::error::{PrismCommandError, PrismResult};
@@ -117,6 +118,25 @@ struct ParsedDocument {
     body: String,
     front_matter: FrontMatterDto,
     front_matter_line_offset: usize,
+}
+
+#[derive(Debug, Clone)]
+struct CachedIndexedDocument {
+    document: WorkspaceIndexedDocumentDto,
+    modified_at: Option<f64>,
+    size: Option<u64>,
+}
+
+#[derive(Debug, Default)]
+struct WorkspaceIndexCache {
+    documents_by_path: HashMap<String, CachedIndexedDocument>,
+}
+
+static WORKSPACE_INDEX_CACHE: OnceLock<Mutex<HashMap<String, WorkspaceIndexCache>>> =
+    OnceLock::new();
+
+fn workspace_index_cache() -> &'static Mutex<HashMap<String, WorkspaceIndexCache>> {
+    WORKSPACE_INDEX_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 fn now_ms() -> u64 {
@@ -569,6 +589,25 @@ fn build_document(
     }
 }
 
+fn has_stable_metadata(file: &WorkspaceFile) -> bool {
+    file.modified_at.is_some() || file.size.is_some()
+}
+
+fn cached_document_matches(file: &WorkspaceFile, cached: &CachedIndexedDocument) -> bool {
+    has_stable_metadata(file)
+        && cached.modified_at == file.modified_at
+        && cached.size == file.size
+}
+
+fn apply_recent_to_document(
+    mut document: WorkspaceIndexedDocumentDto,
+    recent: Option<(f64, usize)>,
+) -> WorkspaceIndexedDocumentDto {
+    document.last_opened = recent.map(|item| item.0);
+    document.recent_rank = recent.map(|item| item.1);
+    document
+}
+
 pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<WorkspaceIndexDto> {
     let root = canonicalize_existing_path(&input.root_path, "build_workspace_index")?;
     ensure_directory(&root, "build_workspace_index")?;
@@ -596,19 +635,53 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
     collect_workspace_files(&root, &root, &mut files)?;
     files.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
 
-    let mut documents: Vec<WorkspaceIndexedDocumentDto> = files
-        .iter()
-        .map(|file| {
-            let key = normalize_path(&path_to_string(&file.path));
-            let content = override_by_path
-                .as_ref()
-                .filter(|(path, _)| path == &key)
-                .map(|(_, content)| content.clone())
-                .or_else(|| fs::read_to_string(&file.path).ok())
-                .unwrap_or_default();
-            build_document(file, content, recent_by_path.get(&key).copied())
-        })
-        .collect();
+    let root_key = normalize_path(&path_to_string(&root));
+    let cache_mutex = workspace_index_cache();
+    let mut cache_by_root = cache_mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let workspace_cache = cache_by_root.entry(root_key).or_default();
+    let mut active_cache_keys = HashSet::new();
+
+    let mut documents: Vec<WorkspaceIndexedDocumentDto> = Vec::with_capacity(files.len());
+    for file in &files {
+        let key = normalize_path(&path_to_string(&file.path));
+        active_cache_keys.insert(key.clone());
+        let recent = recent_by_path.get(&key).copied();
+        let override_content = override_by_path
+            .as_ref()
+            .filter(|(path, _)| path == &key)
+            .map(|(_, content)| content.clone());
+
+        let base_document = if let Some(content) = override_content {
+            build_document(file, content, None)
+        } else if let Some(cached) = workspace_cache
+            .documents_by_path
+            .get(&key)
+            .filter(|cached| cached_document_matches(file, cached))
+        {
+            cached.document.clone()
+        } else {
+            let content = fs::read_to_string(&file.path).unwrap_or_default();
+            let document = build_document(file, content, None);
+            if has_stable_metadata(file) {
+                workspace_cache.documents_by_path.insert(
+                    key.clone(),
+                    CachedIndexedDocument {
+                        document: document.clone(),
+                        modified_at: file.modified_at,
+                        size: file.size,
+                    },
+                );
+            }
+            document
+        };
+
+        documents.push(apply_recent_to_document(base_document, recent));
+    }
+
+    workspace_cache
+        .documents_by_path
+        .retain(|key, _| active_cache_keys.contains(key));
+    drop(cache_by_root);
 
     let document_paths: Vec<String> = documents
         .iter()
@@ -729,6 +802,42 @@ mod tests {
                 .path,
             path_to_string(&other.canonicalize().expect("canonical other"))
         );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn current_document_override_does_not_poison_metadata_cache() {
+        let root = temp_dir("override-cache");
+        let current = root.join("current.md");
+        fs::write(&current, "# Disk").expect("write current");
+
+        let disk_index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("build disk index");
+        assert_eq!(disk_index.documents[0].title, "Disk");
+
+        let override_index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: Some(CurrentDocumentOverride {
+                path: path_to_string(&current),
+                content: "# Unsaved".to_string(),
+            }),
+            recent_files: vec![],
+        })
+        .expect("build override index");
+        assert_eq!(override_index.documents[0].title, "Unsaved");
+
+        let cached_disk_index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("build cached disk index");
+        assert_eq!(cached_disk_index.documents[0].title, "Disk");
 
         let _ = fs::remove_dir_all(root);
     }
