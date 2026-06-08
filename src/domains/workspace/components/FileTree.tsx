@@ -3,9 +3,10 @@ import { FileNode } from '../types';
 import { useWorkspaceStore } from '../store';
 import { ContextMenu, ContextMenuItem } from '../../../components/shell/ContextMenu';
 import {
-  collectDirectoryPaths,
+  collectAncestorDirectoryPaths,
   flattenFiles,
   isDirectoryNode,
+  pruneExpandedDirectoryPaths,
   sortFileNodes,
 } from '../services';
 import { createFileTreeContextMenuItems } from './fileTreeContextMenu';
@@ -88,16 +89,20 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
   const fileSortMode = useWorkspaceStore((s) => s.fileSortMode);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, items: ContextMenuItem[] } | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => collectDirectoryPaths(nodes));
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    setExpandedPaths(collectDirectoryPaths(nodes));
+    setExpandedPaths((prev) => pruneExpandedDirectoryPaths(nodes, prev));
   }, [nodes]);
 
   useEffect(() => {
     return onAppEvent('file.renameRequest', ({ path }) => {
       if (!path) return;
-      setExpandedPaths(collectDirectoryPaths(nodes));
+      setExpandedPaths((prev) => {
+        const next = pruneExpandedDirectoryPaths(nodes, prev);
+        collectAncestorDirectoryPaths(nodes, path).forEach((ancestorPath) => next.add(ancestorPath));
+        return next;
+      });
       setRenamingPath(path);
       setContextMenu(null);
     });

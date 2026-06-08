@@ -4,9 +4,11 @@ export {
   isSupportedMarkdownPath,
 } from './fileAssociation';
 export {
+  collectAncestorDirectoryPaths,
   collectDirectoryPaths,
   flattenFiles,
   isDirectoryNode,
+  pruneExpandedDirectoryPaths,
   searchWorkspaceNodes,
   sortFileNodes,
   type FlatFileNode,

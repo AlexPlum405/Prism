@@ -1,5 +1,5 @@
 import type { FileNode, FileSortMode } from '../types';
-import { dirname } from './path';
+import { dirname, isSamePath } from './path';
 
 export interface FlatFileNode {
   node: FileNode;
@@ -18,6 +18,33 @@ export function collectDirectoryPaths(nodes: FileNode[], out = new Set<string>()
     }
   }
   return out;
+}
+
+export function pruneExpandedDirectoryPaths(nodes: FileNode[], expandedPaths: Set<string>): Set<string> {
+  const directoryPaths = collectDirectoryPaths(nodes);
+  return new Set([...expandedPaths].filter((path) => directoryPaths.has(path)));
+}
+
+export function collectAncestorDirectoryPaths(nodes: FileNode[], targetPath: string): Set<string> {
+  const ancestorPaths = new Set<string>();
+
+  const walk = (currentNodes: FileNode[], ancestors: string[]): boolean => {
+    for (const node of currentNodes) {
+      if (isSamePath(node.path, targetPath)) {
+        ancestors.forEach((path) => ancestorPaths.add(path));
+        return true;
+      }
+
+      if (isDirectoryNode(node) && walk(node.children ?? [], [...ancestors, node.path])) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  walk(nodes, []);
+  return ancestorPaths;
 }
 
 function compareNumberDesc(a: number | undefined, b: number | undefined): number {

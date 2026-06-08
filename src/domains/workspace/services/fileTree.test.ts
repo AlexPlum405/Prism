@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { FileNode } from '../types';
-import { flattenFiles, searchWorkspaceNodes, sortFileNodes } from './fileTree';
+import {
+  collectAncestorDirectoryPaths,
+  flattenFiles,
+  pruneExpandedDirectoryPaths,
+  searchWorkspaceNodes,
+  sortFileNodes,
+} from './fileTree';
 import { rankQuickOpenFiles } from './quickOpen';
 
 const nodes: FileNode[] = [
@@ -51,5 +57,47 @@ describe('workspace file tree services', () => {
 
     expect(rankQuickOpenFiles(nodes, '', 20, '/notes', recent)[0].node.name).toBe('z.md');
     expect(rankQuickOpenFiles(nodes, 'md', 20, '/notes', recent)[0].node.name).toBe('z.md');
+  });
+
+  it('collects only directory ancestors for a target path', () => {
+    const nestedNodes: FileNode[] = [
+      {
+        path: '/notes/projects',
+        name: 'projects',
+        kind: 'directory',
+        children: [
+          {
+            path: '/notes/projects/archive',
+            name: 'archive',
+            kind: 'directory',
+            children: [
+              { path: '/notes/projects/archive/old.md', name: 'old.md', kind: 'file' },
+            ],
+          },
+        ],
+      },
+      {
+        path: '/notes/ideas',
+        name: 'ideas',
+        kind: 'directory',
+        children: [
+          { path: '/notes/ideas/raw.md', name: 'raw.md', kind: 'file' },
+        ],
+      },
+    ];
+
+    expect([...collectAncestorDirectoryPaths(nestedNodes, '/notes/projects/archive/old.md')]).toEqual([
+      '/notes/projects',
+      '/notes/projects/archive',
+    ]);
+    expect([...collectAncestorDirectoryPaths(nestedNodes, '/notes/projects/archive')]).toEqual([
+      '/notes/projects',
+    ]);
+  });
+
+  it('keeps only expanded paths that still exist in the file tree', () => {
+    const expandedPaths = new Set(['/notes/b', '/notes/missing']);
+
+    expect([...pruneExpandedDirectoryPaths(nodes, expandedPaths)]).toEqual(['/notes/b']);
   });
 });
