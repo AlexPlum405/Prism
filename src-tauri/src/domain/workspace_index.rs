@@ -8,19 +8,6 @@ use super::error::{PrismCommandError, PrismResult};
 use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
 
 const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown", "txt"];
-const IGNORE_DIRS: &[&str] = &[
-    "node_modules",
-    ".git",
-    "dist",
-    "build",
-    "target",
-    ".next",
-    ".cache",
-    "__pycache__",
-    "venv",
-    ".venv",
-];
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CurrentDocumentOverride {
@@ -170,10 +157,6 @@ fn is_supported_markdown_path(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-fn is_ignored_dir(name: &str) -> bool {
-    name.starts_with('.') || IGNORE_DIRS.contains(&name)
-}
-
 fn relative_path(path: &Path, root: &Path) -> String {
     path.strip_prefix(root)
         .map(path_to_string)
@@ -202,9 +185,7 @@ fn collect_workspace_files(
             continue;
         };
         if file_type.is_dir() {
-            if !is_ignored_dir(&name) {
-                collect_workspace_files(root, &path, out)?;
-            }
+            collect_workspace_files(root, &path, out)?;
             continue;
         }
         if !file_type.is_file() || !is_supported_markdown_path(&path) {
@@ -747,6 +728,66 @@ mod tests {
                 .expect("backlink")[0]
                 .path,
             path_to_string(&other.canonicalize().expect("canonical other"))
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn indexes_supported_documents_inside_dot_and_tool_directories() {
+        let root = temp_dir("agent-dirs");
+        fs::create_dir_all(root.join(".agents")).expect("create agents");
+        fs::write(root.join(".agents").join("SKILL.md"), "# Skill").expect("write skill");
+        fs::create_dir_all(root.join(".cache")).expect("create cache");
+        fs::write(root.join(".cache").join("cached.md"), "# Cache").expect("write cache");
+        fs::create_dir_all(root.join(".codex").join("agents")).expect("create codex agents");
+        fs::write(
+            root.join(".codex").join("agents").join("oec-dev.md"),
+            "# Dev Agent",
+        )
+        .expect("write codex agent");
+        fs::create_dir_all(root.join(".claude")).expect("create claude");
+        fs::write(root.join(".claude").join("README.md"), "# Claude").expect("write claude");
+        fs::create_dir_all(root.join(".git")).expect("create git");
+        fs::write(root.join(".git").join("notes.md"), "# Git Notes").expect("write git");
+        fs::create_dir_all(root.join(".idea")).expect("create idea");
+        fs::write(root.join(".idea").join("notes.md"), "# Idea Notes").expect("write idea");
+        fs::create_dir_all(root.join(".venv")).expect("create venv");
+        fs::write(root.join(".venv").join("notes.md"), "# Venv Notes").expect("write venv");
+        fs::create_dir_all(root.join("node_modules")).expect("create node_modules");
+        fs::write(
+            root.join("node_modules").join("notes.md"),
+            "# Dependency Notes",
+        )
+        .expect("write node_modules");
+        fs::create_dir_all(root.join("empty")).expect("create empty");
+        fs::write(root.join("image.png"), "png").expect("write image");
+
+        let index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("build index");
+
+        let relative_paths = index
+            .documents
+            .iter()
+            .map(|document| document.relative_path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            relative_paths,
+            [
+                ".agents/SKILL.md",
+                ".cache/cached.md",
+                ".claude/README.md",
+                ".codex/agents/oec-dev.md",
+                ".git/notes.md",
+                ".idea/notes.md",
+                ".venv/notes.md",
+                "node_modules/notes.md",
+            ]
         );
 
         let _ = fs::remove_dir_all(root);

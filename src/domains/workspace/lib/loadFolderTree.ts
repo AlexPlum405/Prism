@@ -4,19 +4,6 @@ import { isSupportedMarkdownPath, joinPath } from '../services';
 import { loadWorkspaceTreeNative } from '../../../platform/tauri/workspaceTree';
 import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
-const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.git',
-  'dist',
-  'build',
-  'target',
-  '.next',
-  '.cache',
-  '__pycache__',
-  'venv',
-  '.venv',
-]);
-
 const MAX_DEPTH = 8;
 
 function stripFrontmatter(content: string): string {
@@ -103,10 +90,8 @@ async function readFolderChildren(folderPath: string, depth: number): Promise<Fi
   }
 
   const visibleEntries = entries
-    .filter((entry) => !entry.name.startsWith('.'))
     .filter((entry) => {
-      if (!entry.isDirectory) return entry.isFile && isSupportedMarkdownPath(entry.name);
-      return !IGNORE_DIRS.has(entry.name);
+      return entry.isDirectory || (entry.isFile && isSupportedMarkdownPath(entry.name));
     })
     .sort((a, b) => {
       if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;

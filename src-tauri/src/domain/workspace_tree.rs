@@ -8,19 +8,6 @@ use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
 
 const DEFAULT_MAX_DEPTH: usize = 8;
 const PREVIEW_MAX_CHARS: usize = 100;
-const IGNORE_DIRS: &[&str] = &[
-    "node_modules",
-    ".git",
-    "dist",
-    "build",
-    "target",
-    ".next",
-    ".cache",
-    "__pycache__",
-    "venv",
-    ".venv",
-];
-
 #[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct LoadWorkspaceTreeOptions {
@@ -57,10 +44,6 @@ fn is_supported_markdown_path(path: &Path) -> bool {
             )
         })
         .unwrap_or(false)
-}
-
-fn is_ignored_directory(name: &str) -> bool {
-    name.starts_with('.') || IGNORE_DIRS.contains(&name)
 }
 
 fn is_invalid_workspace_root(path: &Path) -> bool {
@@ -273,9 +256,6 @@ fn read_folder_children(
         };
 
         if file_type.is_dir() {
-            if is_ignored_directory(&name) {
-                continue;
-            }
             entries.push((name, path, true));
         } else if file_type.is_file() && is_supported_markdown_path(&path) {
             entries.push((name, path, false));
@@ -374,9 +354,32 @@ mod tests {
         fs::write(root.join("root.md"), "# Root").expect("write root");
         fs::create_dir_all(root.join("docs")).expect("create docs");
         fs::write(root.join("docs").join("a.txt"), "Alpha").expect("write txt");
+        fs::create_dir_all(root.join(".agents")).expect("create agents");
+        fs::write(root.join(".agents").join("SKILL.md"), "# Agent Skill")
+            .expect("write agent skill");
+        fs::create_dir_all(root.join(".codex").join("agents")).expect("create codex agents");
+        fs::write(
+            root.join(".codex").join("agents").join("oec-dev.md"),
+            "# Codex Agent",
+        )
+        .expect("write codex agent");
+        fs::create_dir_all(root.join(".claude")).expect("create claude");
+        fs::write(root.join(".claude").join("notes.md"), "# Claude Notes").expect("write claude");
+        fs::create_dir_all(root.join(".cache")).expect("create cache");
+        fs::write(root.join(".cache").join("cached.md"), "# Cache").expect("write cache");
+        fs::create_dir_all(root.join(".git")).expect("create git");
+        fs::write(root.join(".git").join("notes.md"), "# Git Notes").expect("write git");
+        fs::create_dir_all(root.join(".idea")).expect("create idea");
+        fs::write(root.join(".idea").join("notes.md"), "# Idea Notes").expect("write idea");
+        fs::create_dir_all(root.join(".venv")).expect("create venv");
+        fs::write(root.join(".venv").join("notes.md"), "# Venv Notes").expect("write venv");
         fs::create_dir_all(root.join("empty")).expect("create empty");
-        fs::create_dir_all(root.join("node_modules")).expect("create ignored");
-        fs::write(root.join("node_modules").join("skip.md"), "Skip").expect("write ignored");
+        fs::create_dir_all(root.join("node_modules")).expect("create node_modules");
+        fs::write(
+            root.join("node_modules").join("notes.md"),
+            "# Dependency Notes",
+        )
+        .expect("write node_modules");
         fs::write(root.join("image.png"), "png").expect("write png");
 
         let tree = load_workspace_tree(path_to_string(&root), None).expect("load tree");
@@ -385,13 +388,62 @@ mod tests {
             tree.iter()
                 .map(|node| node.name.as_str())
                 .collect::<Vec<_>>(),
-            ["docs", "root.md"]
+            [
+                ".agents",
+                ".cache",
+                ".claude",
+                ".codex",
+                ".git",
+                ".idea",
+                ".venv",
+                "docs",
+                "node_modules",
+                "root.md"
+            ]
         );
         assert_eq!(
-            tree[0].children.as_ref().expect("children")[0].name,
+            tree.iter()
+                .find(|node| node.name == "docs")
+                .expect("docs")
+                .children
+                .as_ref()
+                .expect("children")[0]
+                .name,
             "a.txt"
         );
-        assert_eq!(tree[1].preview.as_deref(), Some("Root"));
+        assert_eq!(
+            tree.iter()
+                .find(|node| node.name == ".agents")
+                .expect("agents")
+                .children
+                .as_ref()
+                .expect("children")[0]
+                .name,
+            "SKILL.md"
+        );
+        assert_eq!(
+            tree.iter()
+                .find(|node| node.name == ".codex")
+                .expect("codex")
+                .children
+                .as_ref()
+                .expect("children")[0]
+                .name,
+            "agents"
+        );
+        assert!(tree.iter().any(|node| node.name == ".git"));
+        assert!(tree.iter().any(|node| node.name == ".cache"));
+        assert!(tree.iter().any(|node| node.name == ".venv"));
+        assert!(tree.iter().any(|node| node.name == "node_modules"));
+        assert!(tree.iter().all(|node| node.name != "empty"));
+        assert_eq!(
+            tree.iter()
+                .find(|node| node.name == "root.md")
+                .expect("root")
+                .preview
+                .as_deref(),
+            Some("Root")
+        );
 
         let _ = fs::remove_dir_all(root);
     }
