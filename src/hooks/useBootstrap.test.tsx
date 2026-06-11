@@ -80,6 +80,9 @@ describe('useBootstrap', () => {
       await Promise.resolve();
     });
 
+    expect(useWorkspaceStore.getState().rootPath).toBeNull();
+    expect(useWorkspaceStore.getState().fileTree).toEqual([]);
+
     await act(async () => {
       resolveTree(mockTree);
       await Promise.resolve();

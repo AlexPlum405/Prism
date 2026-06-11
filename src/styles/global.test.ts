@@ -56,3 +56,44 @@ describe('global Windows visual compensation', () => {
     expect(css.slice(windowsMiaoyanOverlay)).toContain('backdrop-filter: blur(3px)');
   });
 });
+
+describe('file tree visual rules', () => {
+  const css = readCssWithImports('global.css');
+
+  it('keeps file tree items free of per-row hairline separators', () => {
+    expect(css).not.toContain('.file-tree-item::after');
+    expect(css).toContain("html[data-content-theme='miaoyan'] .file-tree-item[data-active='true']");
+    expect(css).toContain('box-shadow: inset 2px 0 0 var(--miaoyan-accent)');
+  });
+});
+
+describe('modal visual rules', () => {
+  const css = readCssWithImports('global.css');
+
+  it('keeps Miaoyan modal corners aligned with the window radius token', () => {
+    const baseModalRuleStart = css.indexOf('.modal {');
+    const baseModalRuleEnd = css.indexOf('}', baseModalRuleStart);
+    const baseModalRule = css.slice(baseModalRuleStart, baseModalRuleEnd);
+    const modalRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .modal {");
+    const modalRuleEnd = css.indexOf('}', modalRuleStart);
+    const modalRule = css.slice(modalRuleStart, modalRuleEnd);
+    const commandPaletteRuleStart = css.indexOf('.cmdk {');
+    const commandPaletteRuleEnd = css.indexOf('}', commandPaletteRuleStart);
+    const commandPaletteRule = css.slice(commandPaletteRuleStart, commandPaletteRuleEnd);
+    const shortcutPanelRuleStart = css.indexOf('.sp {');
+    const shortcutPanelRuleEnd = css.indexOf('}', shortcutPanelRuleStart);
+    const shortcutPanelRule = css.slice(shortcutPanelRuleStart, shortcutPanelRuleEnd);
+
+    expect(baseModalRuleStart).toBeGreaterThan(-1);
+    expect(baseModalRule).toContain('border-radius: var(--radius-window)');
+    expect(modalRuleStart).toBeGreaterThan(-1);
+    expect(modalRule).toContain('border-radius: var(--radius-window)');
+    expect(modalRule).not.toContain('border-radius: 8px');
+    expect(commandPaletteRuleStart).toBeGreaterThan(-1);
+    expect(commandPaletteRule).toContain('border-radius: var(--r-card)');
+    expect(commandPaletteRule).not.toContain('border-radius: var(--radius-window)');
+    expect(shortcutPanelRuleStart).toBeGreaterThan(-1);
+    expect(shortcutPanelRule).toContain('border-radius: var(--r-card)');
+    expect(shortcutPanelRule).not.toContain('border-radius: var(--radius-window)');
+  });
+});

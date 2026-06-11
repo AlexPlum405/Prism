@@ -5,6 +5,7 @@ import type { RecentFileEntry } from '../../settings/types';
 import type { FileNode } from '../types';
 import {
   applyWorkspaceIndexOverlay,
+  buildWorkspaceIndex,
   buildWorkspaceIndexIncremental,
   flattenFiles,
   isSupportedMarkdownPath,
@@ -17,6 +18,7 @@ import { isNativeCommandUnavailableError } from '../../../platform/tauri/result'
 
 const INDEX_BATCH_THRESHOLD = 40;
 const INDEX_BATCH_SIZE = 20;
+const FULL_WORKSPACE_INDEX_FILE_LIMIT = 500;
 
 type WorkspaceIndexFile = Pick<FileNode, 'modifiedAt' | 'path' | 'size'>;
 
@@ -188,6 +190,35 @@ export function useWorkspaceIndexModel(input: {
 
       setWorkspaceIndexing(true);
 
+      const files = flattenFiles(fileTree, rootPath)
+        .map(({ node }) => node)
+        .filter((node) => isSupportedMarkdownPath(node.path));
+
+      if (fallbackIndexCacheRef.current.rootPath !== rootPath) {
+        fallbackIndexCacheRef.current = {
+          index: null,
+          rootPath,
+          sources: new Map(),
+        };
+      }
+
+      if (files.length === 0) {
+        setBaseWorkspaceIndex(null);
+        setWorkspaceIndexing(false);
+        return;
+      }
+
+      if (files.length > FULL_WORKSPACE_INDEX_FILE_LIMIT) {
+        setBaseWorkspaceIndex(buildWorkspaceIndex({
+          documents: [],
+          fileTree,
+          recentFiles: [],
+          workspaceRoot: rootPath,
+        }));
+        setWorkspaceIndexing(false);
+        return;
+      }
+
       try {
         const nativeIndex = await buildWorkspaceIndexNativeModel({
           rootPath,
@@ -203,24 +234,6 @@ export function useWorkspaceIndexModel(input: {
         if (!isNativeCommandUnavailableError(error)) {
           console.warn('[useWorkspaceIndexModel] Native workspace index unavailable, falling back to TypeScript:', error);
         }
-      }
-
-      const files = flattenFiles(fileTree, rootPath)
-        .map(({ node }) => node)
-        .filter((node) => isSupportedMarkdownPath(node.path));
-
-      if (files.length === 0) {
-        setBaseWorkspaceIndex(null);
-        setWorkspaceIndexing(false);
-        return;
-      }
-
-      if (fallbackIndexCacheRef.current.rootPath !== rootPath) {
-        fallbackIndexCacheRef.current = {
-          index: null,
-          rootPath,
-          sources: new Map(),
-        };
       }
 
       const documents = await readWorkspaceIndexSourcesIncremental(

@@ -21,6 +21,14 @@ interface WorkerLike {
 
 export type WorkerFactory = () => WorkerLike | null;
 
+interface PendingRender {
+  content: string;
+  options: MarkdownRenderOptions;
+  requestSeq: number;
+  resolve: (result: MarkdownRenderResult) => void;
+  reject: (error: unknown) => void;
+}
+
 /** 默认 Worker 工厂：仅在浏览器且支持 Worker 时创建，否则返回 null 触发主线程降级。 */
 function defaultWorkerFactory(): WorkerLike | null {
   if (typeof Worker === 'undefined') return null;
@@ -43,23 +51,29 @@ function defaultWorkerFactory(): WorkerLike | null {
 export function createMarkdownRenderService(workerFactory: WorkerFactory = defaultWorkerFactory) {
   let worker: WorkerLike | null | undefined; // undefined = 未初始化
   let seq = 0;
-  const pending = new Map<number, (result: MarkdownRenderResult) => void>();
+  const pending = new Map<number, PendingRender>();
 
   function ensureWorker(): WorkerLike | null {
     if (worker === undefined) {
       worker = workerFactory();
       if (worker) {
         worker.onmessage = (event) => {
-          const { seq: responseSeq, html } = event.data;
-          const resolve = pending.get(responseSeq);
-          if (!resolve) return; // 已被更晚请求取代或不存在
+          const { seq: responseSeq, html, error } = event.data;
+          const request = pending.get(responseSeq);
+          if (!request) return; // 已被更晚请求取代或不存在
           pending.delete(responseSeq);
-          resolve({ html, stale: responseSeq !== seq });
+          if (error) {
+            renderOnMainThread(request.content, request.options, request.requestSeq)
+              .then(request.resolve, request.reject);
+            return;
+          }
+          request.resolve({ html, stale: responseSeq !== seq });
         };
         worker.onerror = () => {
-          // Worker 运行期出错：丢弃 worker，后续请求走主线程降级。
+          // Worker 运行期出错：丢弃 worker，并把已发出的请求转到主线程降级。
           worker?.terminate();
           worker = null;
+          fallbackPendingRequestsToMainThread();
         };
       }
     }
@@ -78,6 +92,16 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
     }));
   }
 
+  function fallbackPendingRequestsToMainThread(): void {
+    const pendingRequests = Array.from(pending.values());
+    pending.clear();
+
+    for (const request of pendingRequests) {
+      renderOnMainThread(request.content, request.options, request.requestSeq)
+        .then(request.resolve, request.reject);
+    }
+  }
+
   return {
     render(content: string, options: MarkdownRenderOptions = {}): Promise<MarkdownRenderResult> {
       seq += 1;
@@ -89,15 +113,21 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
       }
 
       const locale: AppLocale = getCurrentLocale();
-      return new Promise<MarkdownRenderResult>((resolve) => {
-        pending.set(requestSeq, resolve);
+      return new Promise<MarkdownRenderResult>((resolve, reject) => {
+        pending.set(requestSeq, {
+          content,
+          options,
+          requestSeq,
+          resolve,
+          reject,
+        });
         try {
           activeWorker.postMessage({ seq: requestSeq, content, options, locale });
         } catch {
           // postMessage 失败：清理并降级主线程。
           pending.delete(requestSeq);
           worker = null;
-          renderOnMainThread(content, options, requestSeq).then(resolve);
+          renderOnMainThread(content, options, requestSeq).then(resolve, reject);
         }
       });
     },

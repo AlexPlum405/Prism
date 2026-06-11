@@ -9,7 +9,7 @@ import { useI18n } from '../../i18n';
 export function OpenFolderButton() {
   const { t } = useI18n();
   const currentDocument = useDocumentStore((s) => s.currentDocument);
-  const { setRootPath, setFileTree } = useWorkspaceStore();
+  const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
 
   const handleOpen = async () => {
     try {
@@ -23,9 +23,8 @@ export function OpenFolderButton() {
       await grantWorkspaceDirectoryScope(selected);
 
       if (!currentDocument) {
-        setRootPath(selected);
         const tree = await loadFolderTree(selected);
-        setFileTree(tree);
+        setWorkspace(selected, tree);
       } else {
         await openPrismWindow({ folderPath: selected });
       }

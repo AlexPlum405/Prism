@@ -120,24 +120,8 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   transition: background 120ms ease, color 120ms ease !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item::after {
-  content: '';
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 0;
-  height: 1px;
-  background: var(--theme-hairline);
-  opacity: 1;
-}
-
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item:hover {
   background: var(--theme-panel-secondary) !important;
-}
-
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item:hover::after,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item[data-active='true']::after {
-  opacity: 0;
 }
 
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item .file-name,
@@ -333,25 +317,10 @@ html[data-content-theme='miaoyan'] .file-tree-item {
   transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease !important;
 }
 
-html[data-content-theme='miaoyan'] .file-tree-item::after {
-  content: '';
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 0;
-  height: 1px;
-  background: var(--miaoyan-hairline);
-  opacity: 1;
-}
-
 html[data-content-theme='miaoyan'] .file-tree-item:hover {
   background: rgba(0, 0, 0, 0.035) !important;
 }
 
-html[data-content-theme='miaoyan'] .file-tree-item:hover::after,
-html[data-content-theme='miaoyan'] .file-tree-item[data-active='true']::after {
-  opacity: 0;
-}
 html[data-content-theme='miaoyan'] .file-tree-item .file-name,
 html[data-content-theme='miaoyan'] .file-tree-item [class*='file-name'] {
   font-weight: 400 !important;
@@ -654,7 +623,6 @@ html[data-content-theme='miaoyan'] .cmdk-overlay {
 
 html[data-content-theme='miaoyan'] .cmdk,
 html[data-content-theme='miaoyan'] .sp,
-html[data-content-theme='miaoyan'] .modal,
 html[data-content-theme='miaoyan'] .cm-tooltip-autocomplete,
 html[data-content-theme='miaoyan'] .cm-tooltip.cm-completionInfo,
 html[data-content-theme='miaoyan'] .custom-context-menu,
@@ -663,6 +631,16 @@ html[data-content-theme='miaoyan'] .prism-callout-picker {
   background: var(--miaoyan-main-bg);
   border: 1px solid var(--miaoyan-divider);
   border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: var(--miaoyan-text);
+  font-family: var(--miaoyan-font);
+  letter-spacing: 0.6px;
+}
+
+html[data-content-theme='miaoyan'] .modal {
+  background: var(--miaoyan-main-bg);
+  border: 1px solid var(--miaoyan-divider);
+  border-radius: var(--radius-window);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   color: var(--miaoyan-text);
   font-family: var(--miaoyan-font);

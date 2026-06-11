@@ -178,7 +178,7 @@ body.dark {
   --radius-md: var(--r-card);
   --radius-lg: var(--r-card);
   --radius-xl: var(--r-card);
-  --radius-window: var(--r-card);
+  --radius-window: 10px;
 
   --font-ui: var(--font-sans);
 

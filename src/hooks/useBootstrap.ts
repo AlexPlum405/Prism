@@ -17,7 +17,7 @@ export function useBootstrap(enabled = true) {
   const updateScrollState = useDocumentStore((s) => s.updateScrollState);
   const restoreLastSession = useSettingsStore((s) => s.restoreLastSession);
   const lastSession = useSettingsStore((s) => s.lastSession);
-  const { setRootPath, setFileTree, setSidebarVisible, setSidebarTab } = useWorkspaceStore();
+  const { setSidebarVisible, setSidebarTab, setWorkspace } = useWorkspaceStore();
 
   useEffect(() => {
     if (!enabled) return;
@@ -45,20 +45,18 @@ export function useBootstrap(enabled = true) {
       addRecentFile(session.path, session.name);
 
       const parentDir = dirname(session.path);
-      setRootPath(parentDir);
       const tree = await loadFolderTree(parentDir);
       if (cancelled) return true;
-      setFileTree(tree);
+      setWorkspace(parentDir, tree);
       return true;
     };
 
     const openFolder = async (path: string) => {
       await grantWorkspaceDirectoryScope(path);
       if (!(await exists(path))) return false;
-      setRootPath(path);
       const tree = await loadFolderTree(path);
       if (cancelled) return true;
-      setFileTree(tree);
+      setWorkspace(path, tree);
       return true;
     };
 
@@ -117,10 +115,9 @@ export function useBootstrap(enabled = true) {
     lastSession,
     openDocument,
     restoreLastSession,
-    setFileTree,
-    setRootPath,
     setSidebarTab,
     setSidebarVisible,
+    setWorkspace,
     setViewMode,
     updateScrollState,
   ]);

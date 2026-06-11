@@ -154,6 +154,7 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       isAlwaysOnTop: false,
       setRootPath: vi.fn(),
       setFileTree: vi.fn(),
+      setWorkspace: vi.fn(),
       setFileTreeMode: vi.fn(),
       setFileSortMode: vi.fn(),
       toggleSidebar: vi.fn(),

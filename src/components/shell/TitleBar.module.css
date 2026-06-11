@@ -9,8 +9,6 @@
   user-select: none;
   border-bottom: 1px solid var(--c-fog);
   background: var(--c-canvas);
-  -webkit-app-region: drag;
-  app-region: drag;
 }
 
 .titlebar.macos {

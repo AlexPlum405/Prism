@@ -115,9 +115,8 @@ async function handleOpen(context: CommandContext): Promise<void> {
 
     try {
       const parentDir = dirname(selected);
-      context.workspaceStore.setRootPath(parentDir);
       const tree = await loadFolderTree(parentDir);
-      context.workspaceStore.setFileTree(tree);
+      context.workspaceStore.setWorkspace(parentDir, tree);
     } catch (err) {
       console.error('[Command] Failed to load parent folder tree:', err);
     }

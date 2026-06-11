@@ -6,6 +6,10 @@ import { isNativeCommandUnavailableError } from '../../../platform/tauri/result'
 
 const MAX_DEPTH = 8;
 
+interface LoadFolderTreeOptions {
+  includePreview?: boolean;
+}
+
 function stripFrontmatter(content: string): string {
   if (content.startsWith('---')) {
     const end = content.indexOf('\n---', 3);
@@ -43,7 +47,7 @@ function extractPreview(content: string): string {
   return lines.join(' ').slice(0, 100);
 }
 
-async function buildFileNode(path: string, name: string): Promise<FileNode> {
+async function buildFileNode(path: string, name: string, includePreview: boolean): Promise<FileNode> {
   let preview = '';
   let size: number | undefined;
   let createdAt: number | undefined;
@@ -60,11 +64,13 @@ async function buildFileNode(path: string, name: string): Promise<FileNode> {
     modifiedAt = undefined;
   }
 
-  try {
-    const content = await readTextFile(path);
-    preview = extractPreview(content);
-  } catch {
-    preview = '';
+  if (includePreview) {
+    try {
+      const content = await readTextFile(path);
+      preview = extractPreview(content);
+    } catch {
+      preview = '';
+    }
   }
 
   return {
@@ -78,7 +84,11 @@ async function buildFileNode(path: string, name: string): Promise<FileNode> {
   };
 }
 
-async function readFolderChildren(folderPath: string, depth: number): Promise<FileNode[]> {
+async function readFolderChildren(
+  folderPath: string,
+  depth: number,
+  includePreview: boolean,
+): Promise<FileNode[]> {
   if (depth >= MAX_DEPTH) return [];
 
   let entries;
@@ -103,7 +113,7 @@ async function readFolderChildren(folderPath: string, depth: number): Promise<Fi
       const fullPath = joinPath(folderPath, entry.name);
 
       if (entry.isDirectory) {
-        const children = await readFolderChildren(fullPath, depth + 1);
+        const children = await readFolderChildren(fullPath, depth + 1, includePreview);
         // 只保留包含文件的目录（递归后 children 非空）
         if (children.length === 0) return null;
         return {
@@ -114,23 +124,28 @@ async function readFolderChildren(folderPath: string, depth: number): Promise<Fi
         };
       }
 
-      return buildFileNode(fullPath, entry.name);
+      return buildFileNode(fullPath, entry.name, includePreview);
     }),
   );
 
   return nodes.filter((n): n is FileNode => n !== null);
 }
 
-export async function loadFolderTree(folderPath: string): Promise<FileNode[]> {
+export async function loadFolderTree(
+  folderPath: string,
+  options: LoadFolderTreeOptions = {},
+): Promise<FileNode[]> {
+  const includePreview = options.includePreview ?? false;
+
   try {
     const tree = await loadWorkspaceTreeNative(folderPath, {
       maxDepth: MAX_DEPTH,
-      includePreview: true,
+      includePreview,
     });
     if (Array.isArray(tree)) return tree;
   } catch (error) {
     if (!isNativeCommandUnavailableError(error)) throw error;
   }
 
-  return readFolderChildren(folderPath, 0);
+  return readFolderChildren(folderPath, 0, includePreview);
 }

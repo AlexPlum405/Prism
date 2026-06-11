@@ -12,7 +12,7 @@ export function OpenFileButton() {
   const { t } = useI18n();
   const currentDocument = useDocumentStore((s) => s.currentDocument);
   const openDocument = useDocumentStore((s) => s.openDocument);
-  const { setRootPath, setFileTree } = useWorkspaceStore();
+  const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
 
   const handleOpen = async () => {
     try {
@@ -29,9 +29,8 @@ export function OpenFileButton() {
         openDocument(session.path, session.name, session.content, session.knownSnapshot);
 
         const parentDir = dirname(selected);
-        setRootPath(parentDir);
         const tree = await loadFolderTree(parentDir);
-        setFileTree(tree);
+        setWorkspace(parentDir, tree);
       } else {
         await openPrismWindow({ filePath: selected });
       }

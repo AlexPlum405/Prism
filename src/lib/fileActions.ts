@@ -191,8 +191,8 @@ async function syncWorkspaceForOpenedFile(path: string, context: FileActionConte
   const rootPath = context.workspaceStore.rootPath;
   if (!rootPath || !isPathInside(path, rootPath)) {
     const parentDir = dirname(path);
-    context.workspaceStore.setRootPath(parentDir);
-    await refreshWorkspace(context, parentDir);
+    const tree = await loadFolderTree(parentDir);
+    context.workspaceStore.setWorkspace(parentDir, tree);
     return;
   }
 

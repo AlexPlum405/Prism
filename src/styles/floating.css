@@ -234,7 +234,7 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   max-height: 80vh;
   background: var(--c-canvas);
   border: 1px solid var(--c-fog);
-  border-radius: var(--r-card);
+  border-radius: var(--radius-window);
   box-shadow: var(--shadow-flyout);
   z-index: 2901;
   display: flex;

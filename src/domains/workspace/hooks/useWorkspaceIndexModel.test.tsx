@@ -199,4 +199,32 @@ describe('useWorkspaceIndexModel', () => {
       .toEqual(['/workspace/other.md']);
     expect(nativeIndexMock.buildWorkspaceIndexNativeModel).toHaveBeenCalledTimes(1);
   });
+
+  it('uses a lightweight metadata index for large workspaces without reading every document', async () => {
+    const fileTree = Array.from({ length: 501 }, (_, index) => ({
+      path: `/workspace/doc-${index + 1}.md`,
+      name: `doc-${index + 1}.md`,
+      kind: 'file' as const,
+      modifiedAt: index + 1,
+      size: 10,
+    }));
+
+    const { result } = renderHook(() => useWorkspaceIndexModel({
+      currentDocument: null,
+      rootPath: '/workspace',
+      fileTree,
+      recentFiles: [],
+    }));
+
+    await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
+
+    expect(nativeIndexMock.buildWorkspaceIndexNativeModel).not.toHaveBeenCalled();
+    expect(fsMock.readTextFile).not.toHaveBeenCalled();
+    expect(result.current.workspaceIndex?.documents).toHaveLength(501);
+    expect(result.current.workspaceIndex?.documents[0]).toMatchObject({
+      name: 'doc-1.md',
+      title: 'doc-1',
+      hasContent: false,
+    });
+  });
 });

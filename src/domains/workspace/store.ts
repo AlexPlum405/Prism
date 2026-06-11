@@ -4,6 +4,7 @@ import { WorkspaceState, FileNode, SidebarTab, FileTreeMode, FileSortMode } from
 interface WorkspaceStore extends WorkspaceState {
   setRootPath: (path: string) => void;
   setFileTree: (tree: FileNode[]) => void;
+  setWorkspace: (path: string, tree: FileNode[]) => void;
   setFileTreeMode: (mode: FileTreeMode) => void;
   setFileSortMode: (mode: FileSortMode) => void;
   toggleSidebar: () => void;
@@ -36,6 +37,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   setFileTree: (tree) => {
     set({ fileTree: tree });
+  },
+
+  setWorkspace: (path, tree) => {
+    set({ rootPath: path, fileTree: tree, mode: 'folder' });
   },
 
   setFileTreeMode: (fileTreeMode) => {

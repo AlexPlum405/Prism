@@ -40,6 +40,40 @@ function createFakeWorkerFactory(options: { delayMs?: number } = {}): WorkerFact
   };
 }
 
+function createErroredWorkerFactory(kind: 'runtime-error' | 'message-error'): WorkerFactory {
+  return () => {
+    const worker = {
+      onmessage: null as null | ((event: { data: { seq: number; html: string; error?: string } }) => void),
+      onerror: null as null | ((event: unknown) => void),
+      postMessage(message: { seq: number }) {
+        queueMicrotask(() => {
+          if (kind === 'runtime-error') {
+            worker.onerror?.(new Error('worker failed'));
+            return;
+          }
+
+          worker.onmessage?.({
+            data: {
+              seq: message.seq,
+              html: '',
+              error: 'worker render failed',
+            },
+          });
+        });
+      },
+      terminate() {},
+    };
+    return worker;
+  };
+}
+
+async function raceWithTimeout<T>(promise: Promise<T>, timeoutMs = 30): Promise<T | 'timeout'> {
+  return Promise.race([
+    promise,
+    new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), timeoutMs)),
+  ]);
+}
+
 afterEach(() => {
   setLocaleForTesting('zh-CN');
 });
@@ -92,6 +126,29 @@ describe('createMarkdownRenderService — Worker 路径', () => {
     // 最后一个是最新
     expect(r3.stale).toBe(false);
     expect(r3.html).toBe(markdownToHtml('# 第三次'));
+  });
+
+  it('Worker 运行期失败时会释放首个 pending 请求并降级主线程渲染', async () => {
+    const service = createMarkdownRenderService(createErroredWorkerFactory('runtime-error'));
+    const result = await raceWithTimeout(service.render('# 默认预览\n\n正文', { frontMatterMode: 'metadata' }));
+
+    expect(result).not.toBe('timeout');
+    expect(result).toMatchObject({
+      html: markdownToHtml('# 默认预览\n\n正文', { frontMatterMode: 'metadata' }),
+      stale: false,
+    });
+    expect(service.isUsingWorker()).toBe(false);
+  });
+
+  it('Worker 回包错误时会用原请求内容降级主线程渲染', async () => {
+    const service = createMarkdownRenderService(createErroredWorkerFactory('message-error'));
+    const result = await raceWithTimeout(service.render('# 回包失败\n\n正文', { frontMatterMode: 'metadata' }));
+
+    expect(result).not.toBe('timeout');
+    expect(result).toMatchObject({
+      html: markdownToHtml('# 回包失败\n\n正文', { frontMatterMode: 'metadata' }),
+      stale: false,
+    });
   });
 });
 

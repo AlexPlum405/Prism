@@ -86,6 +86,7 @@ function renderController(overrides: Partial<Parameters<typeof AppWorkspaceViewC
       setFileTreeMode: vi.fn(),
       setFullscreen: vi.fn(),
       setRootPath: vi.fn(),
+      setWorkspace: vi.fn(),
       setSidebarTab: vi.fn(),
       setSidebarVisible: vi.fn(),
       toggleFocusMode: vi.fn(),
