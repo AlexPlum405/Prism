@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { readFile } from '../../../platform/tauri/fileSystem';
+import { readFile, stat } from '../../../platform/tauri/fileSystem';
 import { markdownRenderService } from '../../../lib/markdownRenderService';
 import { openExternalUrl } from '../../../platform/tauri/opener';
 import { ContentTheme, DEFAULT_SETTINGS, isContentTheme } from '../../settings/types';
@@ -26,7 +26,15 @@ const PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS = 220;
 const PREVIEW_RENDER_LARGE_DEBOUNCE_MS = 600;
 const PREVIEW_MERMAID_BATCH_THRESHOLD = 10;
 const PREVIEW_MERMAID_BATCH_SIZE = 3;
+const PREVIEW_MEDIA_CACHE_LIMIT = 96;
 const mermaidSvgCache = new Map<string, string>();
+
+interface PreviewMediaCacheEntry {
+  objectUrl: string;
+  signature: string;
+}
+
+const previewMediaCache = new Map<string, PreviewMediaCacheEntry>();
 
 function getPreviewRenderDebounceMs(contentLength: number) {
   if (contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT) return PREVIEW_RENDER_LARGE_DEBOUNCE_MS;
@@ -88,6 +96,54 @@ function getPreviewMediaMimeType(filePath: string) {
   return 'application/octet-stream';
 }
 
+function fileInfoSignature(info: Awaited<ReturnType<typeof stat>>) {
+  const mtime = info.mtime instanceof Date
+    ? info.mtime.getTime()
+    : info.mtime
+      ? new Date(info.mtime).getTime()
+      : 0;
+  return `${info.size}:${Number.isFinite(mtime) ? mtime : 0}`;
+}
+
+async function getPreviewMediaSignature(filePath: string) {
+  try {
+    return fileInfoSignature(await stat(filePath));
+  } catch {
+    return null;
+  }
+}
+
+function rememberPreviewMedia(filePath: string, entry: PreviewMediaCacheEntry) {
+  const previous = previewMediaCache.get(filePath);
+  if (previous?.objectUrl && previous.objectUrl !== entry.objectUrl) {
+    URL.revokeObjectURL(previous.objectUrl);
+  }
+  previewMediaCache.delete(filePath);
+  previewMediaCache.set(filePath, entry);
+
+  while (previewMediaCache.size > PREVIEW_MEDIA_CACHE_LIMIT) {
+    const oldest = previewMediaCache.keys().next().value as string | undefined;
+    if (!oldest) break;
+    const removed = previewMediaCache.get(oldest);
+    if (removed) URL.revokeObjectURL(removed.objectUrl);
+    previewMediaCache.delete(oldest);
+  }
+}
+
+function applyPreviewMediaObjectUrl(
+  mediaElements: Array<HTMLImageElement | HTMLSourceElement>,
+  rawSrcByElement: Map<HTMLImageElement | HTMLSourceElement, string>,
+  filePath: string,
+  objectUrl: string,
+) {
+  mediaElements.forEach((media) => {
+    const rawSrc = rawSrcByElement.get(media) ?? '';
+    media.dataset.prismOriginalSrc = rawSrc;
+    media.dataset.prismFileSrc = filePath;
+    media.setAttribute('src', objectUrl);
+  });
+}
+
 async function resolveLocalPreviewMedia(
   container: HTMLElement,
   documentPath: string | undefined,
@@ -99,23 +155,49 @@ async function resolveLocalPreviewMedia(
   if (!documentPath) return;
 
   const mediaElements = Array.from(container.querySelectorAll<HTMLImageElement | HTMLSourceElement>('img[src], source[src]'));
+  const mediaByPath = new Map<string, Array<HTMLImageElement | HTMLSourceElement>>();
+  const rawSrcByElement = new Map<HTMLImageElement | HTMLSourceElement, string>();
 
-  await Promise.all(mediaElements.map(async (media) => {
+  mediaElements.forEach((media) => {
     const rawSrc = media.getAttribute('src') ?? '';
     const filePath = resolvePreviewMediaPath(rawSrc, documentPath);
     if (!filePath) return;
+    rawSrcByElement.set(media, rawSrc);
+    const entries = mediaByPath.get(filePath);
+    if (entries) {
+      entries.push(media);
+    } else {
+      mediaByPath.set(filePath, [media]);
+    }
+  });
+
+  await Promise.all(Array.from(mediaByPath.entries()).map(async ([filePath, elements]) => {
+    const signature = await getPreviewMediaSignature(filePath);
+    if (options.isCancelled()) return;
+
+    const cached = previewMediaCache.get(filePath);
+    if (signature !== null && cached && cached.signature === signature) {
+      previewMediaCache.delete(filePath);
+      previewMediaCache.set(filePath, cached);
+      applyPreviewMediaObjectUrl(elements, rawSrcByElement, filePath, cached.objectUrl);
+      return;
+    }
 
     try {
       const bytes = await readFile(filePath);
       if (options.isCancelled()) return;
 
       const objectUrl = URL.createObjectURL(new Blob([bytes], { type: getPreviewMediaMimeType(filePath) }));
-      options.trackObjectUrl(objectUrl);
-      media.dataset.prismOriginalSrc = rawSrc;
-      media.dataset.prismFileSrc = filePath;
-      media.setAttribute('src', objectUrl);
+      if (signature === null) {
+        options.trackObjectUrl(objectUrl);
+      } else {
+        rememberPreviewMedia(filePath, { objectUrl, signature });
+      }
+      applyPreviewMediaObjectUrl(elements, rawSrcByElement, filePath, objectUrl);
     } catch (error) {
-      media.dataset.prismMediaError = error instanceof Error ? error.message : String(error);
+      elements.forEach((media) => {
+        media.dataset.prismMediaError = error instanceof Error ? error.message : String(error);
+      });
     }
   }));
 }
@@ -194,6 +276,10 @@ function renderMermaidError(container: HTMLElement, error: unknown) {
 
 export const __previewPaneTesting = {
   clearMermaidCache: () => mermaidSvgCache.clear(),
+  clearPreviewMediaCache: () => {
+    previewMediaCache.forEach((entry) => URL.revokeObjectURL(entry.objectUrl));
+    previewMediaCache.clear();
+  },
   getMermaidPreviewBatchSize,
   getPreviewRenderDebounceMs,
   shouldShowPreviewUpdatingStatus,

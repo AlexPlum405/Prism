@@ -14,6 +14,7 @@ const openerMock = vi.hoisted(() => ({
 }));
 const fsMock = vi.hoisted(() => ({
   readFile: vi.fn(),
+  stat: vi.fn(),
 }));
 const renderServiceMock = vi.hoisted(() => ({
   render: vi.fn(),
@@ -21,6 +22,7 @@ const renderServiceMock = vi.hoisted(() => ({
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: fsMock.readFile,
+  stat: fsMock.stat,
 }));
 
 vi.mock('@tauri-apps/plugin-opener', () => ({
@@ -74,10 +76,20 @@ describe('PreviewPane theme switching', () => {
     mermaidMock.initialize.mockReset();
     mermaidMock.render.mockReset();
     mermaidMock.render.mockResolvedValue({ svg: '<svg viewBox="0 0 10 10"></svg>' });
-    __previewPaneTesting.clearMermaidCache();
     openerMock.openUrl.mockReset();
     fsMock.readFile.mockReset();
     fsMock.readFile.mockResolvedValue(new Uint8Array([60, 115, 118, 103, 62]));
+    fsMock.stat.mockReset();
+    fsMock.stat.mockResolvedValue({
+      atime: null,
+      birthtime: null,
+      isDirectory: false,
+      isFile: true,
+      isSymlink: false,
+      mtime: new Date('2026-06-12T00:00:00Z'),
+      readonly: false,
+      size: 5,
+    });
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:prism-preview-media'),
@@ -86,6 +98,8 @@ describe('PreviewPane theme switching', () => {
       configurable: true,
       value: vi.fn(),
     });
+    __previewPaneTesting.clearMermaidCache();
+    __previewPaneTesting.clearPreviewMediaCache();
   });
 
   afterEach(() => {
@@ -257,6 +271,29 @@ describe('PreviewPane theme switching', () => {
     expect(screen.getByAltText('local')).toHaveAttribute('src', 'blob:prism-preview-media');
     expect(screen.getByAltText('absolute')).toHaveAttribute('src', 'blob:prism-preview-media');
     expect(screen.getByAltText('remote')).toHaveAttribute('src', 'https://example.com/preview-3.png');
+  });
+
+  it('reuses cached local preview images when the file signature is unchanged', async () => {
+    vi.mocked(markdownToHtml).mockReturnValue(
+      '<p><img alt="local" src="assets/preview-1.png"></p>',
+    );
+
+    const first = render(<PreviewPane content="images" documentPath="/Users/Alex/Notes/Plan.md" />);
+
+    await waitFor(() => {
+      expect(fsMock.readFile).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByAltText('local')).toHaveAttribute('src', 'blob:prism-preview-media');
+    first.unmount();
+
+    render(<PreviewPane content="images" documentPath="/Users/Alex/Notes/Plan.md" />);
+
+    await waitFor(() => {
+      expect(screen.getByAltText('local')).toHaveAttribute('src', 'blob:prism-preview-media');
+    });
+    expect(fsMock.stat).toHaveBeenCalledTimes(2);
+    expect(fsMock.readFile).toHaveBeenCalledTimes(1);
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
   });
 
   it('renders Mermaid failures as source-locatable diagnostics', async () => {
