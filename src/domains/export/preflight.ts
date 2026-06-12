@@ -23,6 +23,10 @@ interface ExportPreflightInput {
   workspaceRoot?: string | null;
 }
 
+interface RenderDiagnosticsOptions {
+  includePreviewRenderCheck?: boolean;
+}
+
 interface MermaidFence {
   code: string;
   line: number;
@@ -99,9 +103,13 @@ function scanKatexSourceDiagnostics(content: string): PrismDiagnostic[] {
   return diagnostics;
 }
 
-export function scanMarkdownKatexDiagnostics(content: string): PrismDiagnostic[] {
+export function scanMarkdownKatexDiagnostics(
+  content: string,
+  options: RenderDiagnosticsOptions = {},
+): PrismDiagnostic[] {
   const sourceDiagnostics = scanKatexSourceDiagnostics(content);
   if (sourceDiagnostics.length > 0) return sourceDiagnostics;
+  if (options.includePreviewRenderCheck === false) return [];
 
   try {
     const html = markdownToHtml(content, { frontMatterMode: 'metadata' });
@@ -203,9 +211,12 @@ async function scanMarkdownMermaidDiagnostics(content: string): Promise<PrismDia
   return diagnostics;
 }
 
-export async function scanMarkdownRenderDiagnostics(content: string): Promise<PrismDiagnostic[]> {
+export async function scanMarkdownRenderDiagnostics(
+  content: string,
+  options: RenderDiagnosticsOptions = {},
+): Promise<PrismDiagnostic[]> {
   return [
-    ...scanMarkdownKatexDiagnostics(content),
+    ...scanMarkdownKatexDiagnostics(content, options),
     ...await scanMarkdownMermaidDiagnostics(content),
   ];
 }

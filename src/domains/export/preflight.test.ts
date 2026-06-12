@@ -8,12 +8,18 @@ const mermaidMock = vi.hoisted(() => ({
 const fsMock = vi.hoisted(() => ({
   exists: vi.fn(async () => true),
 }));
+const markdownToHtmlMock = vi.hoisted(() => vi.fn(() => ''));
 
 vi.mock('mermaid', () => ({ default: mermaidMock }));
 vi.mock('@tauri-apps/plugin-fs', () => fsMock);
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+vi.mock('../../lib/markdownToHtml', () => ({ markdownToHtml: markdownToHtmlMock }));
 
-import { buildExportPreflightDiagnostics, scanMarkdownKatexDiagnostics } from './preflight';
+import {
+  buildExportPreflightDiagnostics,
+  scanMarkdownKatexDiagnostics,
+  scanMarkdownRenderDiagnostics,
+} from './preflight';
 
 describe('export preflight diagnostics', () => {
   beforeEach(() => {
@@ -22,6 +28,7 @@ describe('export preflight diagnostics', () => {
     mermaidMock.render.mockResolvedValue({ svg: '<svg></svg>' });
     fsMock.exists.mockReset();
     fsMock.exists.mockResolvedValue(true);
+    markdownToHtmlMock.mockClear();
   });
 
   it('blocks export when local images are missing', async () => {
@@ -106,5 +113,14 @@ describe('export preflight diagnostics', () => {
       severity: 'error',
       source: 'render-diagnostics',
     });
+  });
+
+  it('skips full preview rendering in lightweight live diagnostics', async () => {
+    const diagnostics = await scanMarkdownRenderDiagnostics('# 正文\n\n没有公式的普通内容', {
+      includePreviewRenderCheck: false,
+    });
+
+    expect(diagnostics).toEqual([]);
+    expect(markdownToHtmlMock).not.toHaveBeenCalled();
   });
 });

@@ -86,7 +86,9 @@ export function useDocumentDiagnosticsModel({
     }
 
     const timer = window.setTimeout(() => {
-      void scanMarkdownRenderDiagnostics(currentDocument.content)
+      void scanMarkdownRenderDiagnostics(currentDocument.content, {
+        includePreviewRenderCheck: false,
+      })
         .then((diagnostics) => {
           if (!cancelled) setRenderDiagnostics(diagnostics);
         })

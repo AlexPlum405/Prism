@@ -263,24 +263,16 @@ function getCursorColumnIndex(line: ParsedTableLine, cursor: number, columnCount
   return Math.max(0, Math.min(columnCount - 1, line.cells.length - 1));
 }
 
-export function findMarkdownTableBlock(doc: string, cursor: number): MarkdownTableBlock | null {
-  if (!doc) return null;
-  const lines = getSourceLines(doc);
-  const currentLine = getLineAt(lines, cursor);
-  if (!currentLine || !hasTablePipe(currentLine.text)) return null;
-
-  let first = currentLine.number;
-  let last = currentLine.number;
-  while (first > 0 && hasTablePipe(lines[first - 1].text)) first -= 1;
-  while (last < lines.length - 1 && hasTablePipe(lines[last + 1].text)) last += 1;
-
-  const tableLines = lines.slice(first, last + 1);
-  const separatorIndex = tableLines.findIndex((line) => isSeparatorLine(line.text));
+function buildMarkdownTableBlockFromLines(
+  tableLines: SourceLine[],
+  separatorIndex: number,
+  currentLine: SourceLine,
+): MarkdownTableBlock | null {
   if (separatorIndex <= 0) return null;
 
   const headerLine = tableLines[separatorIndex - 1];
   const separatorLine = tableLines[separatorIndex];
-  if (currentLine.number < headerLine.number) return null;
+  if (!headerLine || !separatorLine || currentLine.number < headerLine.number) return null;
 
   const bodySourceLines = tableLines.slice(separatorIndex + 1);
   const parsedHeader = splitTableCells(headerLine.text, headerLine.from);
@@ -305,7 +297,7 @@ export function findMarkdownTableBlock(doc: string, cursor: number): MarkdownTab
     alignments,
     bodyRows: parsedBodyRows.map((row) => normalizeRow(row.map((cell) => cell.value), columnCount)),
     columnCount,
-    cursorColumnIndex: getCursorColumnIndex(currentParsedLine, cursor, columnCount),
+    cursorColumnIndex: getCursorColumnIndex(currentParsedLine, currentLine.from, columnCount),
     cursorRowIndex: currentLine.number === headerLine.number
       ? -1
       : currentLine.number === separatorLine.number
@@ -319,6 +311,30 @@ export function findMarkdownTableBlock(doc: string, cursor: number): MarkdownTab
     rawSeparatorColumnCount: parsedSeparator.length,
     separatorLine: separatorLine.number + 1,
     to: tableLines[tableLines.length - 1].to,
+  };
+}
+
+export function findMarkdownTableBlock(doc: string, cursor: number): MarkdownTableBlock | null {
+  if (!doc) return null;
+  const lines = getSourceLines(doc);
+  const currentLine = getLineAt(lines, cursor);
+  if (!currentLine || !hasTablePipe(currentLine.text)) return null;
+
+  let first = currentLine.number;
+  let last = currentLine.number;
+  while (first > 0 && hasTablePipe(lines[first - 1].text)) first -= 1;
+  while (last < lines.length - 1 && hasTablePipe(lines[last + 1].text)) last += 1;
+
+  const tableLines = lines.slice(first, last + 1);
+  const separatorIndex = tableLines.findIndex((line) => isSeparatorLine(line.text));
+  const block = buildMarkdownTableBlockFromLines(tableLines, separatorIndex, currentLine);
+  if (!block) return null;
+  return {
+    ...block,
+    cursorColumnIndex: getCursorColumnIndex({
+      cells: splitTableCells(currentLine.text, currentLine.from),
+      line: currentLine,
+    }, cursor, block.columnCount),
   };
 }
 
@@ -1014,27 +1030,42 @@ function createTableDiagnostic(input: Omit<TableDiagnostic, 'action' | 'message'
 export function scanMarkdownTableDiagnostics(content: string): TableDiagnostic[] {
   const diagnostics: TableDiagnostic[] = [];
   const lines = getSourceLines(content);
-  const visited = new Set<number>();
 
-  lines.forEach((line, index) => {
-    if (!hasTablePipe(line.text)) return;
-
-    if (isInvalidSeparatorLine(line.text)) {
-      diagnostics.push(createTableDiagnostic({
-        action: t('diagnostics.table.invalidAlignment.action'),
-        column: 1,
-        kind: 'invalid-alignment',
-        line: line.number + 1,
-        message: t('diagnostics.table.invalidAlignment.message'),
-        reason: t('diagnostics.table.invalidAlignment.reason'),
-      }));
+  for (let index = 0; index < lines.length;) {
+    const line = lines[index];
+    if (!hasTablePipe(line.text)) {
+      index += 1;
+      continue;
     }
 
-    if (visited.has(index)) return;
-    const block = findMarkdownTableBlock(content, line.from);
+    let last = index;
+    while (last + 1 < lines.length && hasTablePipe(lines[last + 1].text)) {
+      last += 1;
+    }
+
+    const tableLines = lines.slice(index, last + 1);
+
+    tableLines.forEach((tableLine) => {
+      if (isInvalidSeparatorLine(tableLine.text)) {
+        diagnostics.push(createTableDiagnostic({
+          action: t('diagnostics.table.invalidAlignment.action'),
+          column: 1,
+          kind: 'invalid-alignment',
+          line: tableLine.number + 1,
+          message: t('diagnostics.table.invalidAlignment.message'),
+          reason: t('diagnostics.table.invalidAlignment.reason'),
+        }));
+      }
+    });
+
+    const separatorIndex = tableLines.findIndex((entry) => isSeparatorLine(entry.text));
+    const block = buildMarkdownTableBlockFromLines(
+      tableLines,
+      separatorIndex,
+      tableLines[Math.max(0, separatorIndex)] ?? line,
+    );
     if (!block) {
-      const next = lines[index + 1];
-      if (next && hasTablePipe(next.text) && line.text.trim().startsWith('|')) {
+      if (tableLines.length > 1 && line.text.trim().startsWith('|')) {
         diagnostics.push(createTableDiagnostic({
           action: t('diagnostics.table.missingSeparator.action'),
           column: 1,
@@ -1044,11 +1075,8 @@ export function scanMarkdownTableDiagnostics(content: string): TableDiagnostic[]
           reason: t('diagnostics.table.missingSeparator.reason'),
         }));
       }
-      return;
-    }
-
-    for (let row = block.headerLine - 1; row <= block.headerLine + block.bodyRows.length; row += 1) {
-      visited.add(row);
+      index = last + 1;
+      continue;
     }
 
     const rawCounts = [block.rawHeaderColumnCount, block.rawSeparatorColumnCount, ...block.rawBodyColumnCounts];
@@ -1075,7 +1103,7 @@ export function scanMarkdownTableDiagnostics(content: string): TableDiagnostic[]
       }));
     }
 
-    if (block.columnCount > WIDE_TABLE_COLUMN_LIMIT || content.slice(block.from, block.to).split('\n').some((text) => text.length > WIDE_TABLE_WIDTH_LIMIT)) {
+    if (block.columnCount > WIDE_TABLE_COLUMN_LIMIT || tableLines.some((entry) => entry.text.length > WIDE_TABLE_WIDTH_LIMIT)) {
       diagnostics.push(createTableDiagnostic({
         action: t('diagnostics.table.tooWide.action'),
         column: 1,
@@ -1097,7 +1125,8 @@ export function scanMarkdownTableDiagnostics(content: string): TableDiagnostic[]
         reason: t('diagnostics.table.unescapedPipe.reason'),
       }));
     }
-  });
+    index = last + 1;
+  }
 
   return diagnostics;
 }
