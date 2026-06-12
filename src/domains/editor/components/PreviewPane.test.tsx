@@ -358,6 +358,94 @@ describe('PreviewPane theme switching', () => {
       expect(document.querySelector('.mermaid-placeholder svg')).toBeInTheDocument();
     });
     expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+    expect(mermaidMock.initialize).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies cached Mermaid SVGs without waiting for frame batches', async () => {
+    const mermaidHtml = Array.from({ length: 11 }, (_, index) => (
+      `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(`graph TD; A${index}-->B${index}`)}" data-source-line="${index + 1}"></div>`
+    )).join('');
+    vi.mocked(markdownToHtml).mockReturnValue(mermaidHtml);
+    mermaidMock.render.mockResolvedValue({ svg: '<svg data-testid="cached-mermaid"></svg>' });
+
+    const first = render(<PreviewPane content="many diagrams" />);
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.mermaid-placeholder svg')).toHaveLength(11);
+    });
+    expect(mermaidMock.render).toHaveBeenCalledTimes(11);
+    first.unmount();
+    mermaidMock.render.mockClear();
+
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const frameCallbacks: FrameRequestCallback[] = [];
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: vi.fn((callback: FrameRequestCallback) => {
+        frameCallbacks.push(callback);
+        return frameCallbacks.length;
+      }),
+    });
+
+    try {
+      render(<PreviewPane content="many diagrams" />);
+
+      await waitFor(() => {
+        expect(document.querySelectorAll('.mermaid-placeholder svg')).toHaveLength(11);
+      });
+      expect(mermaidMock.render).not.toHaveBeenCalled();
+      expect(frameCallbacks.length).toBeGreaterThanOrEqual(11);
+    } finally {
+      if (originalRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+    }
+  });
+
+  it('waits for the Mermaid preview font only once per theme', async () => {
+    const originalFontsDescriptor = Object.getOwnPropertyDescriptor(document, 'fonts');
+    const fontLoad = vi.fn(() => Promise.resolve([]));
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: {
+        load: fontLoad,
+        ready: Promise.resolve(),
+      },
+    });
+    vi.mocked(markdownToHtml)
+      .mockReturnValueOnce(
+        `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent('graph TD; A-->B')}" data-source-line="2"></div>`,
+      )
+      .mockReturnValueOnce(
+        `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent('graph TD; B-->C')}" data-source-line="2"></div>`,
+      );
+
+    try {
+      const first = render(<PreviewPane content="first diagram" />);
+
+      await waitFor(() => {
+        expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+      });
+      first.unmount();
+
+      render(<PreviewPane content="second diagram" />);
+
+      await waitFor(() => {
+        expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+      });
+      expect(fontLoad).toHaveBeenCalledTimes(1);
+    } finally {
+      if (originalFontsDescriptor) {
+        Object.defineProperty(document, 'fonts', originalFontsDescriptor);
+      } else {
+        Reflect.deleteProperty(document, 'fonts');
+      }
+    }
   });
 
   it('renders multiple Mermaid diagrams sequentially instead of starting them all at once', async () => {

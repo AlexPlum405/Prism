@@ -28,6 +28,8 @@ const PREVIEW_MERMAID_BATCH_THRESHOLD = 10;
 const PREVIEW_MERMAID_BATCH_SIZE = 3;
 const PREVIEW_MEDIA_CACHE_LIMIT = 96;
 const mermaidSvgCache = new Map<string, string>();
+const mermaidFontReadyCache = new Map<string, Promise<void>>();
+let lastMermaidConfigSignature: string | null = null;
 
 interface PreviewMediaCacheEntry {
   objectUrl: string;
@@ -241,6 +243,22 @@ function createMermaidRenderSandbox() {
   return sandbox;
 }
 
+function initializeMermaidForPreview(
+  mermaid: typeof import('mermaid').default,
+  mermaidConfig: ReturnType<typeof getMermaidThemeConfig>,
+) {
+  const nextConfig = {
+    startOnLoad: false,
+    ...mermaidConfig,
+    suppressErrorRendering: true,
+  };
+  const signature = JSON.stringify(nextConfig);
+  if (lastMermaidConfigSignature === signature) return;
+
+  mermaid.initialize(nextConfig);
+  lastMermaidConfigSignature = signature;
+}
+
 function renderMermaidSvg(container: HTMLElement, svg: string) {
   container.classList.remove('mermaid-placeholder--failed');
   container.innerHTML = svg;
@@ -275,7 +293,11 @@ function renderMermaidError(container: HTMLElement, error: unknown) {
 }
 
 export const __previewPaneTesting = {
-  clearMermaidCache: () => mermaidSvgCache.clear(),
+  clearMermaidCache: () => {
+    mermaidSvgCache.clear();
+    mermaidFontReadyCache.clear();
+    lastMermaidConfigSignature = null;
+  },
   clearPreviewMediaCache: () => {
     previewMediaCache.forEach((entry) => URL.revokeObjectURL(entry.objectUrl));
     previewMediaCache.clear();
@@ -315,14 +337,16 @@ function enhanceKatexErrors(container: HTMLElement) {
 async function waitForDiagramFont(contentTheme: ContentTheme) {
   if (!('fonts' in document)) return;
   const fontLoadFamily = getThemeContract(contentTheme).mermaid.fontLoadFamily;
-  try {
-    await Promise.all([
+  const cacheKey = `${contentTheme}:${fontLoadFamily}`;
+  let ready = mermaidFontReadyCache.get(cacheKey);
+  if (!ready) {
+    ready = Promise.all([
       document.fonts.load(`15px ${fontLoadFamily}`),
       document.fonts.ready,
-    ]);
-  } catch {
-    // Font loading is a visual enhancement; Mermaid can still render with fallbacks.
+    ]).then(() => undefined, () => undefined);
+    mermaidFontReadyCache.set(cacheKey, ready);
   }
+  await ready;
 }
 
 function waitForPreviewRenderSlot() {
@@ -535,11 +559,7 @@ export function PreviewPane({
     const cancelScheduledRender = scheduleRender(() => {
       import('mermaid').then(({ default: mermaid }) => {
         if (cancelled) return;
-        mermaid.initialize({
-          startOnLoad: false,
-          ...mermaidConfig,
-          suppressErrorRendering: true,
-        });
+        initializeMermaidForPreview(mermaid, mermaidConfig);
 
         const placeholderList = Array.from(placeholders);
         const batchSize = getMermaidPreviewBatchSize(placeholderList.length);
@@ -553,39 +573,45 @@ export function PreviewPane({
         };
 
         void (async () => {
-          await waitForDiagramFont(contentTheme);
+          let renderSandbox: HTMLElement | null = null;
 
-          for (const [i, placeholder] of placeholderList.entries()) {
-            if (cancelled) return;
-            const el = placeholder as HTMLElement;
-            const encoded = el.getAttribute('data-mermaid');
-            if (!encoded) continue;
+          try {
+            await waitForDiagramFont(contentTheme);
 
-            const code = decodeURIComponent(encoded);
-            const cacheKey = getMermaidCacheKey(contentTheme, code);
-            const cachedSvg = mermaidSvgCache.get(cacheKey);
-            if (cachedSvg) {
-              renderMermaidSvg(el, cachedSvg);
+            for (const [i, placeholder] of placeholderList.entries()) {
+              if (cancelled) return;
+              const el = placeholder as HTMLElement;
+              const encoded = el.getAttribute('data-mermaid');
+              if (!encoded) continue;
+
+              const code = decodeURIComponent(encoded);
+              const cacheKey = getMermaidCacheKey(contentTheme, code);
+              const cachedSvg = mermaidSvgCache.get(cacheKey);
+              if (cachedSvg) {
+                renderMermaidSvg(el, cachedSvg);
+                continue;
+              }
+
+              const id = `mermaid-${Date.now()}-${i}`;
+              renderSandbox ??= createMermaidRenderSandbox();
+              renderSandbox.replaceChildren();
+
+              try {
+                const { svg } = await mermaid.render(id, code, renderSandbox);
+                if (cancelled) return;
+                mermaidSvgCache.set(cacheKey, svg);
+                renderMermaidSvg(el, svg);
+              } catch (err) {
+                if (cancelled) return;
+                renderMermaidError(el, err);
+              } finally {
+                renderSandbox.replaceChildren();
+              }
+
               await yieldAfterBatch(i);
-              continue;
             }
-
-            const id = `mermaid-${Date.now()}-${i}`;
-            const renderSandbox = createMermaidRenderSandbox();
-
-            try {
-              const { svg } = await mermaid.render(id, code, renderSandbox);
-              if (cancelled) return;
-              mermaidSvgCache.set(cacheKey, svg);
-              renderMermaidSvg(el, svg);
-            } catch (err) {
-              if (cancelled) return;
-              renderMermaidError(el, err);
-            } finally {
-              renderSandbox.remove();
-            }
-
-            await yieldAfterBatch(i);
+          } finally {
+            renderSandbox?.remove();
           }
         })();
       });
