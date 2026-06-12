@@ -4,8 +4,8 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkRehype from 'remark-rehype';
 import rehypeRaw from 'rehype-raw';
-import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
+import katex from 'katex';
 import { visit } from 'unist-util-visit';
 import { findPandocCitations } from '../domains/editor/extensions/citations';
 import { applyCalloutMetadataToMdastBlockquote } from '../domains/editor/extensions/callouts';
@@ -54,20 +54,6 @@ function remarkCollectMathLines(mathLines: number[]) {
     visit(tree, 'math', (node: any) => {
       const line = node.position?.start?.line;
       if (Number.isFinite(line)) mathLines.push(line);
-    });
-  };
-}
-
-function rehypeDisplayMathLines(mathLines: number[]) {
-  return (tree: any) => {
-    visit(tree, 'element', (node: any) => {
-      const className = node.properties?.className;
-      if (!Array.isArray(className) || !className.includes('katex-display')) return;
-      const line = mathLines.shift();
-      if (!Number.isFinite(line)) return;
-      node.properties = node.properties || {};
-      node.properties['data-source-line'] = String(line);
-      node.properties['data-line'] = String(line);
     });
   };
 }
@@ -200,6 +186,87 @@ function highlightHtmlToHastChildren(html: string) {
 
   appendText(html.slice(lastIndex));
   return root.children;
+}
+
+function getElementClassNames(node: any): string[] {
+  const className = node?.properties?.className;
+  return Array.isArray(className) ? className.map(String) : [];
+}
+
+function nodeHasClass(node: any, className: string) {
+  return getElementClassNames(node).includes(className);
+}
+
+function getMathRenderTarget(node: any) {
+  if (node?.type !== 'element') return null;
+
+  if (node.tagName === 'pre') {
+    const code = Array.isArray(node.children)
+      ? node.children.find((child: any) => child?.type === 'element' && child.tagName === 'code')
+      : undefined;
+    if (!code) return null;
+    const isMathCode = nodeHasClass(code, 'language-math') || nodeHasClass(code, 'math-display');
+    return isMathCode ? { scope: node, value: getHastText(code), displayMode: true } : null;
+  }
+
+  const isMath = nodeHasClass(node, 'language-math')
+    || nodeHasClass(node, 'math-display')
+    || nodeHasClass(node, 'math-inline');
+  if (!isMath) return null;
+
+  return {
+    scope: node,
+    value: getHastText(node),
+    displayMode: nodeHasClass(node, 'math-display'),
+  };
+}
+
+function withDisplayMathLineAttributes(html: string, line: number | undefined) {
+  if (!Number.isFinite(line)) return html;
+  const escapedLine = escapeGeneratedHtml(String(line));
+  return html.replace(
+    '<span class="katex-display"',
+    `<span class="katex-display" data-source-line="${escapedLine}" data-line="${escapedLine}"`,
+  );
+}
+
+function renderKatexHtml(value: string, displayMode: boolean, line: number | undefined) {
+  let html: string;
+
+  try {
+    html = katex.renderToString(value, {
+      displayMode,
+      throwOnError: true,
+    });
+  } catch (error) {
+    try {
+      html = katex.renderToString(value, {
+        displayMode,
+        strict: 'ignore',
+        throwOnError: false,
+      });
+    } catch {
+      html = `<span class="katex-error" style="color:#cc0000" title="${escapeGeneratedHtml(String(error))}">${escapeGeneratedHtml(value)}</span>`;
+    }
+  }
+
+  return displayMode ? withDisplayMathLineAttributes(html, line) : html;
+}
+
+function rehypeKatexRaw(mathLines: number[]) {
+  return (tree: any) => {
+    visit(tree, 'element', (node: any, index, parent: any) => {
+      if (!parent || typeof index !== 'number') return;
+      const target = getMathRenderTarget(node);
+      if (!target || target.scope !== node) return;
+      const line = target.displayMode ? mathLines.shift() : undefined;
+      parent.children.splice(index, 1, {
+        type: 'raw',
+        value: renderKatexHtml(target.value, target.displayMode, line),
+      });
+      return ['skip', index] as any;
+    });
+  };
 }
 
 function rehypePrismCodeHighlight() {
@@ -416,7 +483,23 @@ interface MarkdownToHtmlOptions {
   stripFrontMatter?: boolean;
 }
 
+interface MarkdownPreviewFeatureHints {
+  callouts: boolean;
+  citations: boolean;
+  code: boolean;
+  mark: boolean;
+  math: boolean;
+  mermaid: boolean;
+  rawHtml: boolean;
+  wikiLinks: boolean;
+}
+
 const FRONT_MATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
+const HTML_CANDIDATE_PATTERN = /<\/?[A-Za-z][A-Za-z0-9:-]*(?:\s|>|\/>)/;
+const CODE_CANDIDATE_PATTERN = /(^|\n)(```|~~~)|<pre(?:\s|>)|<code(?:\s|>)/i;
+const MERMAID_FENCE_PATTERN = /(^|\n)(```|~~~)\s*mermaid(?:\s|\n|$)/i;
+const MATH_FENCE_PATTERN = /(^|\n)(```|~~~)\s*math(?:\s|\n|$)/i;
+const CALLOUT_PATTERN = /(^|\n)\s*>\s*\[![A-Za-z]+\]/;
 const FRONT_MATTER_FIELDS: Array<{
   className: string;
   key: keyof DocumentFrontMatterProperties;
@@ -521,6 +604,19 @@ function frontMatterModeForOptions(options: MarkdownToHtmlOptions) {
   return options.stripFrontMatter ? 'hide' : 'plain';
 }
 
+function detectMarkdownPreviewFeatures(content: string): MarkdownPreviewFeatureHints {
+  return {
+    callouts: content.includes('[!') && CALLOUT_PATTERN.test(content),
+    citations: content.includes('@') && content.includes('['),
+    code: CODE_CANDIDATE_PATTERN.test(content),
+    mark: content.includes('=='),
+    math: content.includes('$') || content.includes('\\(') || content.includes('\\[') || MATH_FENCE_PATTERN.test(content),
+    mermaid: MERMAID_FENCE_PATTERN.test(content),
+    rawHtml: HTML_CANDIDATE_PATTERN.test(content),
+    wikiLinks: content.includes('[['),
+  };
+}
+
 function stripFrontMatterForPreview(content: string) {
   const match = FRONT_MATTER_PATTERN.exec(content);
   if (!match) return content;
@@ -543,27 +639,36 @@ function renderFrontMatterForPreview(content: string, mode: 'plain' | 'hide' | '
 export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
   const displayMathLines: number[] = [];
   const renderContent = renderFrontMatterForPreview(content, frontMatterModeForOptions(options));
-  const processor = unified()
+  const featureHints = detectMarkdownPreviewFeatures(renderContent);
+  let processor: any = unified()
     .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkMath)
-    .use(() => remarkCollectMathLines(displayMathLines))
-    .use(remarkMark)
-    .use(remarkWikiLinks)
-    .use(remarkCitations)
-    .use(remarkBlockLines)
-    .use(remarkCallouts)
-    .use(remarkMermaid)
-    .use(remarkRehype, { allowDangerousHtml: true })
-    .use(rehypeRaw)
+    .use(remarkGfm);
+
+  if (featureHints.math) {
+    processor = processor
+      .use(remarkMath)
+      .use(() => remarkCollectMathLines(displayMathLines));
+  }
+  if (featureHints.mark) processor = processor.use(remarkMark);
+  if (featureHints.wikiLinks) processor = processor.use(remarkWikiLinks);
+  if (featureHints.citations) processor = processor.use(remarkCitations);
+  processor = processor.use(remarkBlockLines);
+  if (featureHints.callouts) processor = processor.use(remarkCallouts);
+  if (featureHints.mermaid) processor = processor.use(remarkMermaid);
+
+  processor = processor.use(remarkRehype, { allowDangerousHtml: featureHints.rawHtml });
+  if (featureHints.rawHtml) processor = processor.use(rehypeRaw);
+  if (featureHints.math) {
+    processor = processor.use(() => rehypeKatexRaw(displayMathLines));
+  }
+  if (featureHints.code) {
     // MiaoYan hands unlabeled fenced blocks to Highlightr for auto detection.
-    .use(rehypePrismCodeHighlight);
+    processor = processor.use(rehypePrismCodeHighlight);
+  }
 
   const result = processor
-    .use(rehypeKatex)
-    .use(() => rehypeDisplayMathLines(displayMathLines))
     .use(rehypePreviewUrlSafety)
-    .use(rehypeStringify)
+    .use(rehypeStringify, { allowDangerousHtml: true })
     .processSync(renderContent);
 
   return String(result);
