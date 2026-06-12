@@ -88,6 +88,28 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('hljs-string');
   });
 
+  it('can skip auto-detecting unlabeled fenced blocks for large preview renders', () => {
+    const html = markdownToHtml('```\nconst answer = "42";\n```', {
+      autoDetectUnlabeledCode: false,
+      compatibilityMode: 'miaoyan',
+    });
+
+    expect(html).toContain('class="hljs"');
+    expect(html).toContain('const answer = "42";');
+    expect(html).not.toContain('hljs-string');
+    expect(html).not.toContain('language-javascript');
+  });
+
+  it('still highlights explicit code languages when unlabeled auto-detect is disabled', () => {
+    const html = markdownToHtml('```ts\nconst answer = "42";\n```', {
+      autoDetectUnlabeledCode: false,
+      compatibilityMode: 'miaoyan',
+    });
+
+    expect(html).toContain('class="hljs language-ts"');
+    expect(html).toContain('hljs-string');
+  });
+
   it('marks preview blocks with source line attributes for scroll and click mapping', () => {
     const html = markdownToHtml('# Title\n\nParagraph');
 

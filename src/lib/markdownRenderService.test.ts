@@ -23,7 +23,7 @@ const FRONT_MATTER_DOC = [
 function createFakeWorkerFactory(options: { delayMs?: number } = {}): WorkerFactory {
   return () => {
     const worker = {
-      onmessage: null as null | ((event: { data: { seq: number; html: string } }) => void),
+      onmessage: null as null | ((event: { data: ReturnType<typeof handleMarkdownRenderRequest> }) => void),
       onerror: null as null | ((event: unknown) => void),
       postMessage(message: { seq: number; content: string; options: any; locale: any }) {
         const response = handleMarkdownRenderRequest(message);
@@ -95,6 +95,9 @@ describe('createMarkdownRenderService — 降级路径（无 Worker）', () => {
     const result = await service.render('# 标题\n\n正文 **加粗**。', { frontMatterMode: 'metadata' });
     expect(result.html).toBe(markdownToHtml('# 标题\n\n正文 **加粗**。', { frontMatterMode: 'metadata' }));
     expect(result.stale).toBe(false);
+    expect(result.timing.mode).toBe('main');
+    expect(result.timing.markdownToHtmlMs).toBeGreaterThanOrEqual(0);
+    expect(result.timing.elapsedMs).toBeGreaterThanOrEqual(result.timing.markdownToHtmlMs);
   });
 
   it('降级路径正确渲染富内容（表格/代码/KaTeX/Callout）', async () => {
@@ -112,6 +115,9 @@ describe('createMarkdownRenderService — Worker 路径', () => {
     const doc = '# 标题\n\n正文 `代码`。';
     const result = await service.render(doc, { frontMatterMode: 'metadata' });
     expect(result.html).toBe(markdownToHtml(doc, { frontMatterMode: 'metadata' }));
+    expect(result.timing.mode).toBe('worker');
+    expect(result.timing.markdownToHtmlMs).toBeGreaterThanOrEqual(0);
+    expect(result.timing.elapsedMs).toBeGreaterThanOrEqual(result.timing.markdownToHtmlMs);
   });
 
   it('过期回包被标记 stale，只有最新请求 stale=false', async () => {

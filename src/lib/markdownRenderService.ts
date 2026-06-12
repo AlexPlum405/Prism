@@ -2,6 +2,7 @@ import { markdownToHtml } from './markdownToHtml';
 import {
   type MarkdownRenderOptions,
   type MarkdownRenderRequest,
+  type MarkdownRenderResponse,
 } from './markdownRenderCore';
 import { getCurrentLocale } from '../domains/i18n';
 import type { AppLocale } from '../domains/i18n';
@@ -10,11 +11,20 @@ export interface MarkdownRenderResult {
   html: string;
   /** 该结果是否已过期（有更晚的请求发出）。调用方应忽略 stale 结果。 */
   stale: boolean;
+  timing: MarkdownRenderTiming;
+}
+
+export interface MarkdownRenderTiming {
+  mode: 'worker' | 'main';
+  /** markdownToHtml 本体耗时；Worker 模式下来自 Worker 内部。 */
+  markdownToHtmlMs: number;
+  /** 从 render() 发起到结果可用的总耗时，包含 Worker 往返或主线程降级等待。 */
+  elapsedMs: number;
 }
 
 interface WorkerLike {
   postMessage(message: MarkdownRenderRequest): void;
-  onmessage: ((event: { data: { seq: number; html: string; error?: string } }) => void) | null;
+  onmessage: ((event: { data: MarkdownRenderResponse & { error?: string } }) => void) | null;
   onerror?: ((event: unknown) => void) | null;
   terminate(): void;
 }
@@ -25,8 +35,13 @@ interface PendingRender {
   content: string;
   options: MarkdownRenderOptions;
   requestSeq: number;
+  requestedAtMs: number;
   resolve: (result: MarkdownRenderResult) => void;
   reject: (error: unknown) => void;
+}
+
+function nowMs() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
 /** 默认 Worker 工厂：仅在浏览器且支持 Worker 时创建，否则返回 null 触发主线程降级。 */
@@ -63,11 +78,20 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
           if (!request) return; // 已被更晚请求取代或不存在
           pending.delete(responseSeq);
           if (error) {
-            renderOnMainThread(request.content, request.options, request.requestSeq)
+            renderOnMainThread(request.content, request.options, request.requestSeq, request.requestedAtMs)
               .then(request.resolve, request.reject);
             return;
           }
-          request.resolve({ html, stale: responseSeq !== seq });
+          const finishedAt = nowMs();
+          request.resolve({
+            html,
+            stale: responseSeq !== seq,
+            timing: {
+              mode: 'worker',
+              markdownToHtmlMs: event.data.timing?.markdownToHtmlMs ?? finishedAt - request.requestedAtMs,
+              elapsedMs: finishedAt - request.requestedAtMs,
+            },
+          });
         };
         worker.onerror = () => {
           // Worker 运行期出错：丢弃 worker，并把已发出的请求转到主线程降级。
@@ -84,12 +108,23 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
     content: string,
     options: MarkdownRenderOptions,
     requestSeq: number,
+    requestedAtMs = nowMs(),
   ): Promise<MarkdownRenderResult> {
     // 主线程 locale 本就正确，直接调用 markdownToHtml，避免 setLocale 副作用。
-    return Promise.resolve().then(() => ({
-      html: markdownToHtml(content, options),
-      stale: requestSeq !== seq,
-    }));
+    return Promise.resolve().then(() => {
+      const renderStartedAt = nowMs();
+      const html = markdownToHtml(content, options);
+      const finishedAt = nowMs();
+      return {
+        html,
+        stale: requestSeq !== seq,
+        timing: {
+          mode: 'main' as const,
+          markdownToHtmlMs: finishedAt - renderStartedAt,
+          elapsedMs: finishedAt - requestedAtMs,
+        },
+      };
+    });
   }
 
   function fallbackPendingRequestsToMainThread(): void {
@@ -106,10 +141,11 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
     render(content: string, options: MarkdownRenderOptions = {}): Promise<MarkdownRenderResult> {
       seq += 1;
       const requestSeq = seq;
+      const requestedAtMs = nowMs();
       const activeWorker = ensureWorker();
 
       if (!activeWorker) {
-        return renderOnMainThread(content, options, requestSeq);
+        return renderOnMainThread(content, options, requestSeq, requestedAtMs);
       }
 
       const locale: AppLocale = getCurrentLocale();
@@ -118,6 +154,7 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
           content,
           options,
           requestSeq,
+          requestedAtMs,
           resolve,
           reject,
         });
@@ -127,7 +164,7 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
           // postMessage 失败：清理并降级主线程。
           pending.delete(requestSeq);
           worker = null;
-          renderOnMainThread(content, options, requestSeq).then(resolve, reject);
+          renderOnMainThread(content, options, requestSeq, requestedAtMs).then(resolve, reject);
         }
       });
     },

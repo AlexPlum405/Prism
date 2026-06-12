@@ -71,6 +71,11 @@ describe('PreviewPane theme switching', () => {
       Promise.resolve({
         html: vi.mocked(markdownToHtml)(content, options),
         stale: false,
+        timing: {
+          elapsedMs: 1,
+          markdownToHtmlMs: 1,
+          mode: 'main',
+        },
       })
     ));
     mermaidMock.initialize.mockReset();
@@ -167,6 +172,11 @@ describe('PreviewPane theme switching', () => {
     expect(__previewPaneTesting.getPreviewRenderDebounceMs(80 * 1024)).toBe(220);
     expect(__previewPaneTesting.getPreviewRenderDebounceMs(360 * 1024)).toBe(600);
     expect(__previewPaneTesting.shouldShowPreviewUpdatingStatus(360 * 1024)).toBe(true);
+    expect(__previewPaneTesting.getPreviewMarkdownRenderOptions(80 * 1024)).toEqual({ frontMatterMode: 'metadata' });
+    expect(__previewPaneTesting.getPreviewMarkdownRenderOptions(360 * 1024)).toEqual({
+      autoDetectUnlabeledCode: false,
+      frontMatterMode: 'metadata',
+    });
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(10)).toBe(1);
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(11)).toBe(3);
   });
@@ -194,7 +204,10 @@ describe('PreviewPane theme switching', () => {
     });
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
-    expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
+    expect(markdownToHtml).toHaveBeenLastCalledWith(second, {
+      autoDetectUnlabeledCode: false,
+      frontMatterMode: 'metadata',
+    });
     await flushPreviewRender();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
@@ -213,7 +226,10 @@ describe('PreviewPane theme switching', () => {
     rerender(<PreviewPane content={second} renderStrategy="immediate" />);
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
-    expect(markdownToHtml).toHaveBeenLastCalledWith(second, { frontMatterMode: 'metadata' });
+    expect(markdownToHtml).toHaveBeenLastCalledWith(second, {
+      autoDetectUnlabeledCode: false,
+      frontMatterMode: 'metadata',
+    });
     await flushPreviewRender();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
 

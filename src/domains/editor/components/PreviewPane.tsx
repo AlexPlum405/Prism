@@ -21,6 +21,7 @@ interface PreviewPaneProps {
 
 const PREVIEW_RENDER_SMALL_DOC_LIMIT = 30 * 1024;
 const PREVIEW_RENDER_LARGE_DOC_LIMIT = 300 * 1024;
+const PREVIEW_AUTO_CODE_HIGHLIGHT_LIMIT = PREVIEW_RENDER_LARGE_DOC_LIMIT;
 const PREVIEW_RENDER_SMALL_DEBOUNCE_MS = 120;
 const PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS = 220;
 const PREVIEW_RENDER_LARGE_DEBOUNCE_MS = 600;
@@ -48,8 +49,48 @@ function shouldShowPreviewUpdatingStatus(contentLength: number) {
   return contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT;
 }
 
+function getPreviewMarkdownRenderOptions(contentLength: number) {
+  const options: { frontMatterMode: 'metadata'; autoDetectUnlabeledCode?: boolean } = {
+    frontMatterMode: 'metadata',
+  };
+  if (contentLength > PREVIEW_AUTO_CODE_HIGHLIGHT_LIMIT) {
+    options.autoDetectUnlabeledCode = false;
+  }
+  return options;
+}
+
 function getMermaidPreviewBatchSize(placeholderCount: number) {
   return placeholderCount > PREVIEW_MERMAID_BATCH_THRESHOLD ? PREVIEW_MERMAID_BATCH_SIZE : 1;
+}
+
+function nowMs() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+function roundTimingMs(value: number | undefined) {
+  if (value === undefined || !Number.isFinite(value)) return undefined;
+  return Math.round(value * 10) / 10;
+}
+
+function shouldLogPreviewPerformance() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage?.getItem('prism.previewPerf') === '1';
+  } catch {
+    return false;
+  }
+}
+
+function logPreviewPerformance(stage: string, data: Record<string, unknown>) {
+  if (!shouldLogPreviewPerformance()) return;
+
+  const normalized = Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [
+      key,
+      typeof value === 'number' ? roundTimingMs(value) : value,
+    ]),
+  );
+  console.debug('[Prism preview perf]', { stage, ...normalized });
 }
 
 function getCurrentContentTheme(): ContentTheme {
@@ -303,6 +344,7 @@ export const __previewPaneTesting = {
     previewMediaCache.clear();
   },
   getMermaidPreviewBatchSize,
+  getPreviewMarkdownRenderOptions,
   getPreviewRenderDebounceMs,
   shouldShowPreviewUpdatingStatus,
 };
@@ -433,11 +475,20 @@ export function PreviewPane({
   useEffect(() => {
     let cancelled = false;
     setHtmlRenderPending(true);
+    const renderStartedAt = nowMs();
 
     markdownRenderService
-      .render(renderContent, { frontMatterMode: 'metadata' })
+      .render(renderContent, getPreviewMarkdownRenderOptions(renderContent.length))
       .then((result) => {
         if (cancelled || result.stale) return;
+        logPreviewPerformance('markdown', {
+          contentLength: renderContent.length,
+          htmlLength: result.html.length,
+          mode: result.timing.mode,
+          markdownToHtmlMs: result.timing.markdownToHtmlMs,
+          renderElapsedMs: result.timing.elapsedMs,
+          requestToStateMs: nowMs() - renderStartedAt,
+        });
         setHtml(result.html);
         setHtmlRenderPending(false);
       })
@@ -473,11 +524,27 @@ export function PreviewPane({
         cancelled = true;
       };
     }
+    const postProcessStartedAt = nowMs();
+    const mediaCount = write.querySelectorAll('img[src], source[src]').length;
+    const katexErrorCount = write.querySelectorAll('.katex-error').length;
+    const katexStartedAt = nowMs();
+    enhanceKatexErrors(write);
+    const katexMs = nowMs() - katexStartedAt;
+    const mediaStartedAt = nowMs();
     void resolveLocalPreviewMedia(write, documentPath, {
       isCancelled: () => cancelled,
       trackObjectUrl: (url) => objectUrls.push(url),
+    }).finally(() => {
+      if (cancelled) return;
+      logPreviewPerformance('dom-postprocess', {
+        htmlLength: html.length,
+        mediaCount,
+        katexErrorCount,
+        katexMs,
+        mediaMs: nowMs() - mediaStartedAt,
+        elapsedMs: nowMs() - postProcessStartedAt,
+      });
     });
-    enhanceKatexErrors(write);
     return () => {
       cancelled = true;
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -574,9 +641,16 @@ export function PreviewPane({
 
         void (async () => {
           let renderSandbox: HTMLElement | null = null;
+          const mermaidStartedAt = nowMs();
+          let fontWaitMs = 0;
+          let cachedCount = 0;
+          let renderedCount = 0;
+          let failedCount = 0;
 
           try {
+            const fontStartedAt = nowMs();
             await waitForDiagramFont(contentTheme);
+            fontWaitMs = nowMs() - fontStartedAt;
 
             for (const [i, placeholder] of placeholderList.entries()) {
               if (cancelled) return;
@@ -588,6 +662,7 @@ export function PreviewPane({
               const cacheKey = getMermaidCacheKey(contentTheme, code);
               const cachedSvg = mermaidSvgCache.get(cacheKey);
               if (cachedSvg) {
+                cachedCount += 1;
                 renderMermaidSvg(el, cachedSvg);
                 continue;
               }
@@ -600,9 +675,11 @@ export function PreviewPane({
                 const { svg } = await mermaid.render(id, code, renderSandbox);
                 if (cancelled) return;
                 mermaidSvgCache.set(cacheKey, svg);
+                renderedCount += 1;
                 renderMermaidSvg(el, svg);
               } catch (err) {
                 if (cancelled) return;
+                failedCount += 1;
                 renderMermaidError(el, err);
               } finally {
                 renderSandbox.replaceChildren();
@@ -610,6 +687,16 @@ export function PreviewPane({
 
               await yieldAfterBatch(i);
             }
+
+            logPreviewPerformance('mermaid', {
+              contentTheme,
+              diagramCount: placeholderList.length,
+              cachedCount,
+              renderedCount,
+              failedCount,
+              fontWaitMs,
+              elapsedMs: nowMs() - mermaidStartedAt,
+            });
           } finally {
             renderSandbox?.remove();
           }

@@ -269,7 +269,7 @@ function rehypeKatexRaw(mathLines: number[]) {
   };
 }
 
-function rehypePrismCodeHighlight() {
+function rehypePrismCodeHighlight(options: { autoDetectUnlabeledCode: boolean }) {
   return (tree: any) => {
     visit(tree, 'element', (node: any, _index, parent: any) => {
       if (
@@ -290,6 +290,8 @@ function rehypePrismCodeHighlight() {
         className.unshift('hljs');
       }
       node.properties.className = className;
+
+      if (!language && !options.autoDetectUnlabeledCode) return;
 
       const code = getHastText(node);
 
@@ -479,6 +481,8 @@ function remarkCitations() {
 
 interface MarkdownToHtmlOptions {
   compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne';
+  /** 对无语言代码块是否自动猜语言。大文档预览可关闭以避免 highlightAuto 放大耗时。 */
+  autoDetectUnlabeledCode?: boolean;
   frontMatterMode?: 'plain' | 'hide' | 'metadata';
   stripFrontMatter?: boolean;
 }
@@ -663,7 +667,9 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   }
   if (featureHints.code) {
     // MiaoYan hands unlabeled fenced blocks to Highlightr for auto detection.
-    processor = processor.use(rehypePrismCodeHighlight);
+    processor = processor.use(rehypePrismCodeHighlight, {
+      autoDetectUnlabeledCode: options.autoDetectUnlabeledCode !== false,
+    });
   }
 
   const result = processor

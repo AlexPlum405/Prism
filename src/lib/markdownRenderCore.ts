@@ -14,9 +14,18 @@ export interface MarkdownRenderRequest {
   locale: AppLocale;
 }
 
+export interface MarkdownRenderWorkerTiming {
+  markdownToHtmlMs: number;
+}
+
 export interface MarkdownRenderResponse {
   seq: number;
   html: string;
+  timing: MarkdownRenderWorkerTiming;
+}
+
+function nowMs() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
 /**
@@ -43,8 +52,13 @@ export function renderMarkdownWithLocale(
 
 /** 处理一条渲染请求，返回带相同序号的响应。Worker 与单测共用。 */
 export function handleMarkdownRenderRequest(request: MarkdownRenderRequest): MarkdownRenderResponse {
+  const startedAt = nowMs();
+  const html = renderMarkdownWithLocale(request.content, request.options, request.locale);
   return {
     seq: request.seq,
-    html: renderMarkdownWithLocale(request.content, request.options, request.locale),
+    html,
+    timing: {
+      markdownToHtmlMs: nowMs() - startedAt,
+    },
   };
 }
