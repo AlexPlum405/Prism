@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
+import {
+  collectPreviewDomPostProcessTargets,
+  getPreviewDomTargetHints,
+} from './previewDomTargets';
 
 interface PreviewBenchmarkSample {
   markdownToHtmlMs: number;
@@ -122,11 +126,17 @@ function runFullPreviewBenchmark(iterations = 3) {
       write.innerHTML = markdown.value;
     });
 
-    const domTargetScan = measure(() => ({
-      mediaTargetCount: write.querySelectorAll('img[src], source[src]').length,
-      katexErrorCount: write.querySelectorAll('.katex-error').length,
-      mermaidPlaceholderCount: write.querySelectorAll('.mermaid-placeholder').length,
-    }));
+    const domTargetScan = measure(() => {
+      const targets = collectPreviewDomPostProcessTargets(
+        write,
+        getPreviewDomTargetHints(markdown.value, '/Users/Alex/Notes/preview-benchmark.md'),
+      );
+      return {
+        mediaTargetCount: targets.mediaElements.length,
+        katexErrorCount: targets.katexErrorElements.length,
+        mermaidPlaceholderCount: targets.mermaidPlaceholders.length,
+      };
+    });
 
     samples.push({
       markdownToHtmlMs: markdown.elapsedMs,
@@ -167,4 +177,3 @@ describe.skipIf(!RUN_PREVIEW_BENCHMARK)('PreviewPane 1MB full preview benchmark'
     expect(result.summary.mermaidPlaceholderCount).toBeGreaterThan(0);
   }, 120_000);
 });
-

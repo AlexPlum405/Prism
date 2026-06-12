@@ -7,6 +7,11 @@ import { useSettingsStore } from '../../settings/store';
 import { getMermaidThemeConfig, getThemeContract } from '../../themes';
 import { dirname, joinPath } from '../../workspace/services/path';
 import { t, useI18n } from '../../i18n';
+import {
+  collectPreviewDomPostProcessTargets,
+  getPreviewDomTargetHints,
+  type PreviewDomPostProcessTargets,
+} from './previewDomTargets';
 
 interface PreviewPaneProps {
   content: string;
@@ -199,16 +204,15 @@ function applyPreviewMediaObjectUrl(
 }
 
 async function resolveLocalPreviewMedia(
-  container: HTMLElement,
+  mediaElements: Array<HTMLImageElement | HTMLSourceElement>,
   documentPath: string | undefined,
   options: {
     isCancelled: () => boolean;
     trackObjectUrl: (url: string) => void;
   },
 ) {
-  if (!documentPath) return;
+  if (!documentPath || mediaElements.length === 0) return;
 
-  const mediaElements = Array.from(container.querySelectorAll<HTMLImageElement | HTMLSourceElement>('img[src], source[src]'));
   const mediaByPath = new Map<string, Array<HTMLImageElement | HTMLSourceElement>>();
   const rawSrcByElement = new Map<HTMLImageElement | HTMLSourceElement, string>();
 
@@ -366,8 +370,8 @@ function readClosestSourceLine(element: Element) {
   return sourceElement?.getAttribute('data-source-line') ?? sourceElement?.getAttribute('data-line') ?? '';
 }
 
-function enhanceKatexErrors(container: HTMLElement) {
-  container.querySelectorAll<HTMLElement>('.katex-error').forEach((errorElement) => {
+function enhanceKatexErrors(errorElements: HTMLElement[]) {
+  errorElements.forEach((errorElement) => {
     if (errorElement.dataset.previewKatexEnhanced === 'true') return;
 
     const sourceLine = readClosestSourceLine(errorElement);
@@ -463,6 +467,10 @@ export function PreviewPane({
   const [renderPending, setRenderPending] = useState(false);
   const [htmlRenderPending, setHtmlRenderPending] = useState(false);
   const [html, setHtml] = useState('');
+  const domTargetsRef = useRef<{
+    targets: PreviewDomPostProcessTargets;
+    write: HTMLElement;
+  } | null>(null);
   const previewFontFamily = useSettingsStore((s) => s.previewFontFamily);
   const previewFontSize = useSettingsStore((s) => s.previewFontSize);
 
@@ -537,13 +545,16 @@ export function PreviewPane({
       };
     }
     const postProcessStartedAt = nowMs();
-    const mediaCount = write.querySelectorAll('img[src], source[src]').length;
-    const katexErrorCount = write.querySelectorAll('.katex-error').length;
+    const targetHints = getPreviewDomTargetHints(html, documentPath);
+    const targets = collectPreviewDomPostProcessTargets(write, targetHints);
+    domTargetsRef.current = { write, targets };
+    const mediaCount = targets.mediaElements.length;
+    const katexErrorCount = targets.katexErrorElements.length;
     const katexStartedAt = nowMs();
-    enhanceKatexErrors(write);
+    enhanceKatexErrors(targets.katexErrorElements);
     const katexMs = nowMs() - katexStartedAt;
     const mediaStartedAt = nowMs();
-    void resolveLocalPreviewMedia(write, documentPath, {
+    void resolveLocalPreviewMedia(targets.mediaElements, documentPath, {
       isCancelled: () => cancelled,
       trackObjectUrl: (url) => objectUrls.push(url),
     }).finally(() => {
@@ -619,8 +630,18 @@ export function PreviewPane({
     const container = containerRef.current;
     if (!container) return;
 
-    const placeholders = container.querySelectorAll('.mermaid-placeholder');
-    if (placeholders.length === 0) return;
+    if (!getPreviewDomTargetHints(html).mermaid) return;
+    const write = container.querySelector<HTMLElement>('#write');
+    if (!write) return;
+    const targets = domTargetsRef.current?.write === write
+      ? domTargetsRef.current.targets
+      : collectPreviewDomPostProcessTargets(write, {
+          media: false,
+          katexErrors: false,
+          mermaid: true,
+        });
+    const placeholderList = targets.mermaidPlaceholders;
+    if (placeholderList.length === 0) return;
 
     const mermaidConfig = getMermaidThemeConfig(contentTheme);
     const mermaidModule = loadMermaidModule();
@@ -646,7 +667,6 @@ export function PreviewPane({
         if (cancelled) return;
         initializeMermaidForPreview(mermaid, mermaidConfig);
 
-        const placeholderList = Array.from(placeholders);
         const batchSize = getMermaidPreviewBatchSize(placeholderList.length);
         let renderedInBatch = 0;
 
