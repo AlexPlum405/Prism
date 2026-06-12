@@ -66,6 +66,7 @@ function defaultWorkerFactory(): WorkerLike | null {
 export function createMarkdownRenderService(workerFactory: WorkerFactory = defaultWorkerFactory) {
   let worker: WorkerLike | null | undefined; // undefined = 未初始化
   let seq = 0;
+  let warmupRequested = false;
   const pending = new Map<number, PendingRender>();
 
   function ensureWorker(): WorkerLike | null {
@@ -132,12 +133,33 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
     pending.clear();
 
     for (const request of pendingRequests) {
-      renderOnMainThread(request.content, request.options, request.requestSeq)
+      renderOnMainThread(request.content, request.options, request.requestSeq, request.requestedAtMs)
         .then(request.resolve, request.reject);
     }
   }
 
   return {
+    warmup(): boolean {
+      if (warmupRequested) return worker !== null;
+      const activeWorker = ensureWorker();
+      if (!activeWorker) return false;
+
+      warmupRequested = true;
+      try {
+        activeWorker.postMessage({
+          seq: 0,
+          content: '',
+          options: {},
+          locale: getCurrentLocale(),
+        });
+        return true;
+      } catch {
+        warmupRequested = false;
+        worker = null;
+        return false;
+      }
+    },
+
     render(content: string, options: MarkdownRenderOptions = {}): Promise<MarkdownRenderResult> {
       seq += 1;
       const requestSeq = seq;
@@ -177,6 +199,7 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
     dispose() {
       worker?.terminate();
       worker = null;
+      warmupRequested = false;
       pending.clear();
     },
   };

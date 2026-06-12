@@ -109,6 +109,56 @@ describe('createMarkdownRenderService — 降级路径（无 Worker）', () => {
 });
 
 describe('createMarkdownRenderService — Worker 路径', () => {
+  it('warmup 预热 Worker 但不污染后续真实渲染序号', async () => {
+    const postedMessages: Array<{ seq: number; content: string; options: any; locale: any }> = [];
+    const worker = {
+      onmessage: null as null | ((event: { data: ReturnType<typeof handleMarkdownRenderRequest> }) => void),
+      onerror: null as null | ((event: unknown) => void),
+      postMessage(message: { seq: number; content: string; options: any; locale: any }) {
+        postedMessages.push(message);
+        if (message.seq === 0) return;
+        const response = handleMarkdownRenderRequest(message);
+        queueMicrotask(() => worker.onmessage?.({ data: response }));
+      },
+      terminate() {},
+    };
+    const service = createMarkdownRenderService(() => worker);
+
+    expect(service.warmup()).toBe(true);
+    expect(postedMessages).toHaveLength(1);
+    expect(postedMessages[0]).toMatchObject({ seq: 0, content: '', options: {} });
+
+    const result = await service.render('# 真实预览', { frontMatterMode: 'metadata' });
+    expect(result.stale).toBe(false);
+    expect(result.html).toBe(markdownToHtml('# 真实预览', { frontMatterMode: 'metadata' }));
+    expect(postedMessages.map((message) => message.seq)).toEqual([0, 1]);
+  });
+
+  it('warmup 重复调用只发送一次预热请求', () => {
+    const postedMessages: Array<{ seq: number }> = [];
+    const service = createMarkdownRenderService(() => ({
+      onmessage: null,
+      onerror: null,
+      postMessage(message: { seq: number }) {
+        postedMessages.push(message);
+      },
+      terminate() {},
+    }));
+
+    expect(service.warmup()).toBe(true);
+    expect(service.warmup()).toBe(true);
+    expect(postedMessages.map((message) => message.seq)).toEqual([0]);
+  });
+
+  it('warmup 在 Worker 不可用时静默跳过，不触发主线程渲染', async () => {
+    const service = createMarkdownRenderService(() => null);
+
+    expect(service.warmup()).toBe(false);
+    const result = await service.render('# 后续降级渲染');
+    expect(result.timing.mode).toBe('main');
+    expect(result.html).toBe(markdownToHtml('# 后续降级渲染'));
+  });
+
   it('Worker 输出与 markdownToHtml 字节一致', async () => {
     const service = createMarkdownRenderService(createFakeWorkerFactory());
     expect(service.isUsingWorker()).toBe(true);
