@@ -377,4 +377,27 @@ describe('markdownToHtml compatibility modes', () => {
     expect(displayMathCount).toBe(20);
     expect(html).not.toContain('<script>');
   });
+
+  it('renders very large multiline pre tables as lightweight preview blocks', () => {
+    const rows = Array.from({ length: 90 }, (_, index) => [
+      `| \`0:${String(index + 1).padStart(2, '0')}\` | <pre>  █`,
+      ' █ ',
+      `</pre> | \`${index}\` |`,
+    ].join('\n'));
+    const markdown = [
+      '# 字符表',
+      '',
+      '| sel:cc | 字模 | 识别字符 |',
+      '|--------|------|----------|',
+      ...rows,
+    ].join('\n');
+
+    const html = markdownToHtml(markdown);
+
+    expect(html).toContain('class="prism-large-pre-table"');
+    expect(html).toContain('data-row-count="90"');
+    expect(html).toContain('class="prism-large-pre-table__glyph"');
+    expect(html).not.toContain('<table>');
+    expect(html).toContain('data-source-line="5"');
+  });
 });

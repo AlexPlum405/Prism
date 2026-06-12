@@ -104,3 +104,54 @@ npm test -- --run src/domains/editor/components/PreviewPane.test.tsx src/domains
 | 最新请求 | 完整渲染 | 完整渲染 |
 
 这项优化不改变单次完整渲染耗时；收益来自连续输入、快速切换视图或快速切换文档时减少 Worker 队列里的重复重活。
+
+## CHAR_REVIEW.md 超大字模校对表优化
+
+触发文件：
+
+```bash
+/Users/Alex/.qoderworkcn/workspace/mpz8o63iwqg7cqnc/phase19/annotation/CHAR_REVIEW.md
+```
+
+结构特征：
+
+- 文件约 926KB / 33,667 行。
+- 10 个 `Font Selector` 分区。
+- 2,098 行字符表数据。
+- 2,098 个跨 16 行的 `<pre>` 字模块嵌在 Markdown 表格单元格中。
+
+复跑命令：
+
+```bash
+PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspace/mpz8o63iwqg7cqnc/phase19/annotation/CHAR_REVIEW.md npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+定位：
+
+- 打开慢：主要来自浏览器构建/布局超长 Markdown 表格，jsdom 基线中 `domWriteMs` 中位数约 31,981 ms。
+- 滚动和菜单卡：preview-only 模式滚动时仍执行源码同步扫描，每次会扫约 4,389 个 source-line 节点，jsdom 基线中 `scrollSyncScanMs` 中位数约 2,304.6 ms；同时水平滚动条每 300ms 主动读取 `scrollWidth/clientWidth`，会在大 DOM 上反复触发布局测量。
+
+变更：
+
+- 对超过阈值的跨行 `<pre>` Markdown 表格，在预览阶段转成完整的轻量 block-grid HTML，保留全部行和字模内容，不做首屏虚拟化。
+- preview-only 滚动只记录 `previewRatio`，不再同步到隐藏编辑器，因此不再执行源码行号扫描。
+- 水平滚动条测量改为 `requestAnimationFrame` 合并，并移除 300ms 常驻轮询。
+
+结果：
+
+| 指标 | 优化前 | 优化后 | 变化 |
+|---|---:|---:|---:|
+| `markdownToHtmlMs` | 2,504.6 ms | 1,993.2 ms | -511.4 ms |
+| `domWriteMs` | 31,981.0 ms | 2,677.8 ms | -29,303.2 ms（约 -91.6%） |
+| `domTargetScanMs` | 0.5 ms | 1.5 ms | 仍可忽略 |
+| `scrollSyncScanMs` | 2,304.6 ms | preview-only 实际跳过 | 滚动热路径移除 |
+
+优化后单次样本：
+
+| 样本 | `markdownToHtmlMs` | `domWriteMs` | `scrollSyncScanMs` |
+|---:|---:|---:|---:|
+| 0 | 1,967.7 ms | 2,605.1 ms | 245.7 ms |
+| 1 | 1,993.2 ms | 2,677.8 ms | 229.3 ms |
+| 2 | 2,028.4 ms | 2,691.1 ms | 235.3 ms |
+
+注：`scrollSyncScanMs` 是测试保留的源码行映射扫描成本，用于 split 模式和诊断参考；preview-only 滚动路径已不调用该扫描。

@@ -54,6 +54,7 @@ function getScrollbarMetrics(input: {
 
 export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const measureFrameRef = useRef<number | null>(null);
   const dragRef = useRef<{
     maxScroll: number;
     startScrollLeft: number;
@@ -68,6 +69,7 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
   const [dragging, setDragging] = useState(false);
 
   const measure = useCallback(() => {
+    measureFrameRef.current = null;
     const scroller = getScroller();
     const track = trackRef.current;
     if (!scroller || !track) {
@@ -83,6 +85,11 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
       trackWidth,
     }));
   }, [getScroller]);
+
+  const scheduleMeasure = useCallback(() => {
+    if (measureFrameRef.current !== null) return;
+    measureFrameRef.current = window.requestAnimationFrame(measure);
+  }, [measure]);
 
   useEffect(() => {
     let currentScroller: HTMLElement | null = null;
@@ -104,7 +111,7 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
 
         const track = trackRef.current;
         if (track && typeof ResizeObserver !== 'undefined') {
-          trackResizeObserver = new ResizeObserver(measure);
+          trackResizeObserver = new ResizeObserver(scheduleMeasure);
           trackResizeObserver.observe(track);
           cleanupTrack = () => trackResizeObserver?.disconnect();
         } else {
@@ -112,7 +119,7 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
         }
 
         if (nextScroller) {
-          const handleScroll = () => measure();
+          const handleScroll = () => scheduleMeasure();
           const handleWheel = (event: WheelEvent) => {
             const maxScroll = nextScroller.scrollWidth - nextScroller.clientWidth;
             if (maxScroll <= 1) return;
@@ -126,7 +133,7 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
 
             event.preventDefault();
             nextScroller.scrollLeft = clamp(nextScroller.scrollLeft + horizontalDelta, 0, maxScroll);
-            measure();
+            scheduleMeasure();
           };
           nextScroller.addEventListener('scroll', handleScroll, { passive: true });
           nextScroller.addEventListener('wheel', handleWheel, { passive: false });
@@ -136,7 +143,7 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
           };
 
           if (typeof ResizeObserver !== 'undefined') {
-            scrollerResizeObserver = new ResizeObserver(measure);
+            scrollerResizeObserver = new ResizeObserver(scheduleMeasure);
             scrollerResizeObserver.observe(nextScroller);
             const firstChild = nextScroller.firstElementChild;
             if (firstChild instanceof HTMLElement) {
@@ -147,23 +154,25 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
           cleanupScroller = () => {};
         }
       }
-      measure();
+      scheduleMeasure();
     };
 
     const frame = window.requestAnimationFrame(bindScroller);
-    const interval = window.setInterval(bindScroller, 300);
-    window.addEventListener('resize', bindScroller);
+    window.addEventListener('resize', scheduleMeasure);
 
     return () => {
       window.cancelAnimationFrame(frame);
-      window.clearInterval(interval);
-      window.removeEventListener('resize', bindScroller);
+      if (measureFrameRef.current !== null) {
+        window.cancelAnimationFrame(measureFrameRef.current);
+        measureFrameRef.current = null;
+      }
+      window.removeEventListener('resize', scheduleMeasure);
       cleanupScroller();
       cleanupTrack();
       scrollerResizeObserver?.disconnect();
       trackResizeObserver?.disconnect();
     };
-  }, [getScroller, measure]);
+  }, [getScroller, scheduleMeasure]);
 
   const scrollToTrackPoint = useCallback((clientX: number) => {
     const scroller = getScroller();
@@ -177,7 +186,7 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
     const rect = track.getBoundingClientRect();
     const thumbLeft = clamp(clientX - rect.left - metrics.thumbWidth / 2, 0, travel);
     scroller.scrollLeft = (thumbLeft / travel) * maxScroll;
-    measure();
+    scheduleMeasure();
   }, [getScroller, measure, metrics.scrollable, metrics.thumbWidth]);
 
   const handleTrackPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
@@ -217,8 +226,8 @@ export function HorizontalScrollbar({ getScroller }: HorizontalScrollbarProps) {
       0,
       drag.maxScroll,
     );
-    measure();
-  }, [getScroller, measure]);
+    scheduleMeasure();
+  }, [getScroller, scheduleMeasure]);
 
   const handlePointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragRef.current) {

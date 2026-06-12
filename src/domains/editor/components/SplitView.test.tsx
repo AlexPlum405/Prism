@@ -8,6 +8,7 @@ import {
   collectCodeLineElements,
   lineToPreviewScrollTop,
   pageOffsetToLine,
+  shouldSyncPreviewScrollToEditor,
 } from './SplitView';
 
 const mockState = vi.hoisted(() => ({
@@ -228,6 +229,29 @@ describe('SplitView editor lifecycle', () => {
     expect(onScrollStateChange).toHaveBeenCalledWith({ previewRatio: 0.25 });
   });
 
+  it('does not scan source-line anchors while scrolling preview-only documents', () => {
+    const onScrollStateChange = vi.fn();
+    render(
+      <SplitView
+        content="Preview block"
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+        onScrollStateChange={onScrollStateChange}
+      />,
+    );
+
+    const previewScroller = screen.getByTestId('preview-pane').parentElement as HTMLElement;
+    const querySelectorAll = vi.spyOn(previewScroller, 'querySelectorAll');
+    Object.defineProperty(previewScroller, 'scrollHeight', { configurable: true, value: 300 });
+    Object.defineProperty(previewScroller, 'clientHeight', { configurable: true, value: 100 });
+    previewScroller.scrollTop = 50;
+    fireEvent.scroll(previewScroller);
+
+    expect(onScrollStateChange).toHaveBeenCalledWith({ previewRatio: 0.25 });
+    expect(querySelectorAll).not.toHaveBeenCalledWith('[data-source-line], [data-line]');
+  });
+
   it('forwards editor selection text changes', () => {
     const onSelectionTextChange = vi.fn();
     render(
@@ -323,6 +347,12 @@ function appendMappedBlock(
 }
 
 describe('SplitView preview scroll mapping', () => {
+  it('only syncs preview scroll back to the editor in split mode', () => {
+    expect(shouldSyncPreviewScrollToEditor('edit')).toBe(false);
+    expect(shouldSyncPreviewScrollToEditor('preview')).toBe(false);
+    expect(shouldSyncPreviewScrollToEditor('split')).toBe(true);
+  });
+
   it('maps long-document source lines and preview offsets without large drift', () => {
     const preview = document.createElement('div');
     setLayoutBox(preview, 0, 640);

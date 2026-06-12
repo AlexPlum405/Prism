@@ -1,21 +1,27 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
 import {
   collectPreviewDomPostProcessTargets,
   getPreviewDomTargetHints,
 } from './previewDomTargets';
+import { collectCodeLineElements } from './SplitView';
 
 interface PreviewBenchmarkSample {
   markdownToHtmlMs: number;
   domWriteMs: number;
   domTargetScanMs: number;
+  scrollSyncScanMs: number;
   htmlLength: number;
   mediaTargetCount: number;
   katexErrorCount: number;
   mermaidPlaceholderCount: number;
+  sourceLineElementCount: number;
+  codeLineElementCount: number;
 }
 
 const RUN_PREVIEW_BENCHMARK = process.env.PRISM_PREVIEW_BENCH === '1';
+const PREVIEW_BENCHMARK_FILE = process.env.PRISM_PREVIEW_BENCH_FILE;
 const ONE_MEGABYTE = 1024 * 1024;
 
 function buildPreviewBenchmarkSection(index: number) {
@@ -97,15 +103,24 @@ function summarize(samples: PreviewBenchmarkSample[]) {
     markdownToHtmlMs: roundMs(median(samples.map((sample) => sample.markdownToHtmlMs))),
     domWriteMs: roundMs(median(samples.map((sample) => sample.domWriteMs))),
     domTargetScanMs: roundMs(median(samples.map((sample) => sample.domTargetScanMs))),
+    scrollSyncScanMs: roundMs(median(samples.map((sample) => sample.scrollSyncScanMs))),
     htmlLength: samples.at(-1)?.htmlLength ?? 0,
     mediaTargetCount: samples.at(-1)?.mediaTargetCount ?? 0,
     katexErrorCount: samples.at(-1)?.katexErrorCount ?? 0,
     mermaidPlaceholderCount: samples.at(-1)?.mermaidPlaceholderCount ?? 0,
+    sourceLineElementCount: samples.at(-1)?.sourceLineElementCount ?? 0,
+    codeLineElementCount: samples.at(-1)?.codeLineElementCount ?? 0,
   };
 }
 
+function readBenchmarkContent() {
+  return PREVIEW_BENCHMARK_FILE
+    ? readFileSync(PREVIEW_BENCHMARK_FILE, 'utf8')
+    : buildPreviewBenchmarkMarkdown();
+}
+
 function runFullPreviewBenchmark(iterations = 3) {
-  const content = buildPreviewBenchmarkMarkdown();
+  const content = readBenchmarkContent();
   const samples: PreviewBenchmarkSample[] = [];
 
   // Warm up unified/highlight/katex module paths before recording medians.
@@ -138,11 +153,19 @@ function runFullPreviewBenchmark(iterations = 3) {
       };
     });
 
+    const scrollSyncScan = measure(() => ({
+      codeLineElements: collectCodeLineElements(write),
+      sourceLineElementCount: write.querySelectorAll('[data-source-line], [data-line]').length,
+    }));
+
     samples.push({
       markdownToHtmlMs: markdown.elapsedMs,
       domWriteMs: domWrite.elapsedMs,
       domTargetScanMs: domTargetScan.elapsedMs,
+      scrollSyncScanMs: scrollSyncScan.elapsedMs,
       htmlLength: markdown.value.length,
+      sourceLineElementCount: scrollSyncScan.value.sourceLineElementCount,
+      codeLineElementCount: scrollSyncScan.value.codeLineElements.length,
       ...domTargetScan.value,
     });
   }
@@ -156,6 +179,7 @@ function runFullPreviewBenchmark(iterations = 3) {
       markdownToHtmlMs: roundMs(sample.markdownToHtmlMs),
       domWriteMs: roundMs(sample.domWriteMs),
       domTargetScanMs: roundMs(sample.domTargetScanMs),
+      scrollSyncScanMs: roundMs(sample.scrollSyncScanMs),
     })),
   };
 }
@@ -170,6 +194,12 @@ describe.skipIf(!RUN_PREVIEW_BENCHMARK)('PreviewPane 1MB full preview benchmark'
       iterations: result.iterations,
       summary: result.summary,
     }, null, 2));
+
+    if (PREVIEW_BENCHMARK_FILE) {
+      expect(result.contentLength).toBeGreaterThan(100_000);
+      expect(result.summary.htmlLength).toBeGreaterThan(100_000);
+      return;
+    }
 
     expect(result.contentLength).toBeGreaterThanOrEqual(ONE_MEGABYTE);
     expect(result.summary.htmlLength).toBeGreaterThan(ONE_MEGABYTE);

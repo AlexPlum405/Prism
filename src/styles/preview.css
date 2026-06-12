@@ -71,6 +71,74 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   color: var(--preview-search-current-text) !important;
 }
 
+.preview-compat .prism-large-pre-table {
+  display: block;
+  width: 100%;
+  margin: 0.8em 0 1.6em;
+  border: 1px solid color-mix(in srgb, currentColor 13%, transparent);
+  border-radius: 6px;
+  overflow: clip;
+  contain: layout style paint;
+}
+
+.preview-compat .prism-large-pre-table__header,
+.preview-compat .prism-large-pre-table__row {
+  display: grid;
+  grid-template-columns: minmax(76px, 0.42fr) minmax(220px, 2fr) minmax(72px, 0.46fr);
+  align-items: stretch;
+}
+
+.preview-compat .prism-large-pre-table__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in srgb, currentColor 4%, var(--c-canvas, #fff));
+  color: color-mix(in srgb, currentColor 68%, transparent);
+  font-size: 0.86em;
+  font-weight: 600;
+}
+
+.preview-compat .prism-large-pre-table__header > span,
+.preview-compat .prism-large-pre-table__cell,
+.preview-compat .prism-large-pre-table__glyph {
+  min-width: 0;
+  padding: 6px 8px;
+  border-right: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.preview-compat .prism-large-pre-table__header > span:last-child,
+.preview-compat .prism-large-pre-table__cell:last-child {
+  border-right: 0;
+}
+
+.preview-compat .prism-large-pre-table__row {
+  content-visibility: auto;
+  contain: layout style paint;
+  contain-intrinsic-size: auto 260px;
+}
+
+.preview-compat .prism-large-pre-table__cell {
+  display: flex;
+  align-items: flex-start;
+  background: color-mix(in srgb, currentColor 2%, transparent);
+}
+
+.preview-compat .prism-large-pre-table__cell code {
+  white-space: pre-wrap;
+}
+
+.preview-compat .prism-large-pre-table__glyph {
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: auto;
+  background: transparent;
+  white-space: pre;
+  font-size: 0.9em;
+  line-height: 1.12;
+}
+
 .prism-citation {
   display: inline-flex;
   align-items: center;

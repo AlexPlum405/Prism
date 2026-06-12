@@ -504,6 +504,7 @@ const CODE_CANDIDATE_PATTERN = /(^|\n)(```|~~~)|<pre(?:\s|>)|<code(?:\s|>)/i;
 const MERMAID_FENCE_PATTERN = /(^|\n)(```|~~~)\s*mermaid(?:\s|\n|$)/i;
 const MATH_FENCE_PATTERN = /(^|\n)(```|~~~)\s*math(?:\s|\n|$)/i;
 const CALLOUT_PATTERN = /(^|\n)\s*>\s*\[![A-Za-z]+\]/;
+const LARGE_PRE_TABLE_ROW_THRESHOLD = 80;
 const FRONT_MATTER_FIELDS: Array<{
   className: string;
   key: keyof DocumentFrontMatterProperties;
@@ -526,6 +527,136 @@ function escapeGeneratedHtml(value: string) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function splitMarkdownTableRow(line: string) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return null;
+  return trimmed
+    .slice(1, -1)
+    .split('|')
+    .map((cell) => cell.trim());
+}
+
+function isMarkdownTableSeparator(line: string) {
+  const cells = splitMarkdownTableRow(line);
+  return Boolean(cells && cells.length >= 2 && cells.every((cell) => /^:?-{3,}:?$/.test(cell)));
+}
+
+function stripInlineCodeFence(value: string) {
+  const trimmed = value.trim();
+  const match = /^`([^`]*)`$/.exec(trimmed);
+  return match ? match[1] : trimmed;
+}
+
+function renderLargePreTableCell(value: string) {
+  return `<code>${escapeGeneratedHtml(stripInlineCodeFence(value))}</code>`;
+}
+
+interface LargePreTableRow {
+  firstCell: string;
+  preContent: string;
+  sourceLine: number;
+  trailingCell: string;
+}
+
+function parseLargePreTableRows(lines: string[], startIndex: number) {
+  const rows: LargePreTableRow[] = [];
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const startLine = lines[index];
+    const startMatch = /^\|\s*([^|]+?)\s*\|\s*<pre>(.*)$/.exec(startLine);
+    if (!startMatch) break;
+
+    const sourceLine = index + 1;
+    const preLines: string[] = [];
+    let trailingCell = '';
+    let rowClosed = false;
+    const firstPreLine = startMatch[2] ?? '';
+    const firstLineClose = /^(.*?)<\/pre>\s*\|\s*(.*?)\s*\|\s*$/.exec(firstPreLine);
+    if (firstLineClose) {
+      preLines.push(firstLineClose[1]);
+      trailingCell = firstLineClose[2];
+      rowClosed = true;
+    } else {
+      preLines.push(firstPreLine);
+      index += 1;
+      while (index < lines.length) {
+        const line = lines[index];
+        const closeMatch = /^(.*?)<\/pre>\s*\|\s*(.*?)\s*\|\s*$/.exec(line);
+        if (closeMatch) {
+          preLines.push(closeMatch[1]);
+          trailingCell = closeMatch[2];
+          rowClosed = true;
+          break;
+        }
+        preLines.push(line);
+        index += 1;
+      }
+    }
+
+    if (!rowClosed) break;
+
+    rows.push({
+      firstCell: startMatch[1],
+      preContent: preLines.join('\n'),
+      sourceLine,
+      trailingCell,
+    });
+    index += 1;
+  }
+
+  return { nextIndex: index, rows };
+}
+
+function renderLargePreTable(headers: string[], rows: LargePreTableRow[], sourceLine: number) {
+  const normalizedHeaders = headers.map((header) => stripInlineCodeFence(header));
+  const headerHtml = normalizedHeaders
+    .map((header) => `<span>${escapeGeneratedHtml(header)}</span>`)
+    .join('');
+  const rowsHtml = rows
+    .map((row) => [
+      `<div class="prism-large-pre-table__row" data-source-line="${row.sourceLine}" data-line="${row.sourceLine}">`,
+      `<div class="prism-large-pre-table__cell prism-large-pre-table__cell--key" data-label="${escapeGeneratedHtml(normalizedHeaders[0] ?? '')}">${renderLargePreTableCell(row.firstCell)}</div>`,
+      `<pre class="prism-large-pre-table__glyph" data-label="${escapeGeneratedHtml(normalizedHeaders[1] ?? '')}">${escapeGeneratedHtml(row.preContent)}</pre>`,
+      `<div class="prism-large-pre-table__cell prism-large-pre-table__cell--value" data-label="${escapeGeneratedHtml(normalizedHeaders[2] ?? '')}">${renderLargePreTableCell(row.trailingCell)}</div>`,
+      '</div>',
+    ].join(''))
+    .join('\n');
+
+  return [
+    `<section class="prism-large-pre-table" data-source-line="${sourceLine}" data-line="${sourceLine}" data-row-count="${rows.length}">`,
+    `<div class="prism-large-pre-table__header">${headerHtml}</div>`,
+    rowsHtml,
+    '</section>',
+  ].join('\n');
+}
+
+function optimizeLargePreTablesForPreview(content: string) {
+  if (!content.includes('<pre>')) return content;
+
+  const lines = content.split(/\r?\n/);
+  const output: string[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const headers = splitMarkdownTableRow(lines[index]);
+    const nextLine = lines[index + 1];
+    if (headers && headers.length >= 3 && nextLine && isMarkdownTableSeparator(nextLine)) {
+      const parsed = parseLargePreTableRows(lines, index + 2);
+      if (parsed.rows.length >= LARGE_PRE_TABLE_ROW_THRESHOLD) {
+        output.push(renderLargePreTable(headers, parsed.rows, index + 1));
+        index = parsed.nextIndex;
+        continue;
+      }
+    }
+
+    output.push(lines[index]);
+    index += 1;
+  }
+
+  return output.join('\n');
 }
 
 function compactMetadataValue(value: string) {
@@ -642,7 +773,9 @@ function renderFrontMatterForPreview(content: string, mode: 'plain' | 'hide' | '
 
 export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
   const displayMathLines: number[] = [];
-  const renderContent = renderFrontMatterForPreview(content, frontMatterModeForOptions(options));
+  const renderContent = optimizeLargePreTablesForPreview(
+    renderFrontMatterForPreview(content, frontMatterModeForOptions(options)),
+  );
   const featureHints = detectMarkdownPreviewFeatures(renderContent);
   let processor: any = unified()
     .use(remarkParse)

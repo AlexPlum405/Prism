@@ -245,6 +245,10 @@ export function pageOffsetToLine(scrollTop: number, elements: CodeLineElement[],
   return previous.line;
 }
 
+export function shouldSyncPreviewScrollToEditor(viewMode: 'edit' | 'split' | 'preview') {
+  return viewMode === 'split';
+}
+
 function clearPreviewSearchMarks(preview: HTMLElement) {
   const marks = Array.from(preview.querySelectorAll<HTMLElement>('.preview-search-match'));
   for (const mark of marks) {
@@ -795,6 +799,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       const preview = previewContainerRef.current;
       if (!preview) return;
       onScrollStateChange?.({ previewRatio: getScrollRatio(preview) });
+      if (!shouldSyncPreviewScrollToEditor(viewModeRef.current)) return;
       if (syncingRef.current === 'editor') return; // 编辑器正在驱动预览，忽略
       const elements = collectCodeLineElements(preview);
       const line = pageOffsetToLine(preview.scrollTop, elements, preview);
