@@ -38,6 +38,7 @@ interface PreviewMediaCacheEntry {
 }
 
 const previewMediaCache = new Map<string, PreviewMediaCacheEntry>();
+let mermaidModulePromise: Promise<typeof import('mermaid')> | null = null;
 
 function getPreviewRenderDebounceMs(contentLength: number) {
   if (contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT) return PREVIEW_RENDER_LARGE_DEBOUNCE_MS;
@@ -61,6 +62,16 @@ function getPreviewMarkdownRenderOptions(contentLength: number) {
 
 function getMermaidPreviewBatchSize(placeholderCount: number) {
   return placeholderCount > PREVIEW_MERMAID_BATCH_THRESHOLD ? PREVIEW_MERMAID_BATCH_SIZE : 1;
+}
+
+function loadMermaidModule() {
+  if (!mermaidModulePromise) {
+    mermaidModulePromise = import('mermaid').catch((error) => {
+      mermaidModulePromise = null;
+      throw error;
+    });
+  }
+  return mermaidModulePromise;
 }
 
 function nowMs() {
@@ -337,6 +348,7 @@ export const __previewPaneTesting = {
   clearMermaidCache: () => {
     mermaidSvgCache.clear();
     mermaidFontReadyCache.clear();
+    mermaidModulePromise = null;
     lastMermaidConfigSignature = null;
   },
   clearPreviewMediaCache: () => {
@@ -611,9 +623,15 @@ export function PreviewPane({
     if (placeholders.length === 0) return;
 
     const mermaidConfig = getMermaidThemeConfig(contentTheme);
+    const mermaidModule = loadMermaidModule();
     let cancelled = false;
     const scheduleRender =
-      'requestIdleCallback' in window
+      renderStrategy === 'immediate'
+        ? (callback: () => void) => {
+            const id = window.setTimeout(callback, 0);
+            return () => window.clearTimeout(id);
+          }
+        : 'requestIdleCallback' in window
         ? (callback: () => void) => {
             const id = window.requestIdleCallback(callback, { timeout: 300 });
             return () => window.cancelIdleCallback(id);
@@ -624,7 +642,7 @@ export function PreviewPane({
           };
 
     const cancelScheduledRender = scheduleRender(() => {
-      import('mermaid').then(({ default: mermaid }) => {
+      mermaidModule.then(({ default: mermaid }) => {
         if (cancelled) return;
         initializeMermaidForPreview(mermaid, mermaidConfig);
 
@@ -708,7 +726,7 @@ export function PreviewPane({
       cancelled = true;
       cancelScheduledRender();
     };
-  }, [html, contentTheme]);
+  }, [html, contentTheme, renderStrategy]);
 
   const showRenderPendingStatus = (renderPending || htmlRenderPending) && shouldShowPreviewUpdatingStatus(content.length);
 

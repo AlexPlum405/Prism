@@ -506,6 +506,52 @@ describe('PreviewPane theme switching', () => {
     });
   });
 
+  it('starts Mermaid rendering without waiting for idle scheduling in immediate preview mode', async () => {
+    const originalRequestIdleCallback = window.requestIdleCallback;
+    const originalCancelIdleCallback = window.cancelIdleCallback;
+    const idleCallbacks: IdleRequestCallback[] = [];
+    Object.defineProperty(window, 'requestIdleCallback', {
+      configurable: true,
+      value: vi.fn((callback: IdleRequestCallback) => {
+        idleCallbacks.push(callback);
+        return idleCallbacks.length;
+      }),
+    });
+    Object.defineProperty(window, 'cancelIdleCallback', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    vi.mocked(markdownToHtml).mockReturnValue(
+      `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent('graph TD; A-->B')}" data-source-line="2"></div>`,
+    );
+
+    try {
+      render(<PreviewPane content="```mermaid\ngraph TD; A-->B\n```" renderStrategy="immediate" />);
+
+      await waitFor(() => {
+        expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+      });
+      expect(idleCallbacks).toHaveLength(0);
+    } finally {
+      if (originalRequestIdleCallback) {
+        Object.defineProperty(window, 'requestIdleCallback', {
+          configurable: true,
+          value: originalRequestIdleCallback,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestIdleCallback');
+      }
+      if (originalCancelIdleCallback) {
+        Object.defineProperty(window, 'cancelIdleCallback', {
+          configurable: true,
+          value: originalCancelIdleCallback,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelIdleCallback');
+      }
+    }
+  });
+
   it('yields a frame between Mermaid batches for diagram-heavy previews', async () => {
     const originalRequestAnimationFrame = window.requestAnimationFrame;
     const frameCallbacks: FrameRequestCallback[] = [];
