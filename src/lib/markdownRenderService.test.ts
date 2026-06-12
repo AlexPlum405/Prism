@@ -67,6 +67,32 @@ function createErroredWorkerFactory(kind: 'runtime-error' | 'message-error'): Wo
   };
 }
 
+function createManualWorkerFactory(): {
+  factory: WorkerFactory;
+  postedMessages: Array<{ seq: number; content: string; options: any; locale: any }>;
+  deliverNext: () => void;
+} {
+  const postedMessages: Array<{ seq: number; content: string; options: any; locale: any }> = [];
+  const worker = {
+    onmessage: null as null | ((event: { data: ReturnType<typeof handleMarkdownRenderRequest> }) => void),
+    onerror: null as null | ((event: unknown) => void),
+    postMessage(message: { seq: number; content: string; options: any; locale: any }) {
+      postedMessages.push(message);
+    },
+    terminate() {},
+  };
+
+  return {
+    factory: () => worker,
+    postedMessages,
+    deliverNext() {
+      const message = postedMessages.shift();
+      if (!message) throw new Error('No worker message to deliver');
+      worker.onmessage?.({ data: handleMarkdownRenderRequest(message) });
+    },
+  };
+}
+
 async function raceWithTimeout<T>(promise: Promise<T>, timeoutMs = 30): Promise<T | 'timeout'> {
   return Promise.race([
     promise,
@@ -182,6 +208,28 @@ describe('createMarkdownRenderService — Worker 路径', () => {
     // 最后一个是最新
     expect(r3.stale).toBe(false);
     expect(r3.html).toBe(markdownToHtml('# 第三次'));
+  });
+
+  it('Worker 繁忙时只保留最新的排队渲染请求', async () => {
+    const manualWorker = createManualWorkerFactory();
+    const service = createMarkdownRenderService(manualWorker.factory);
+
+    const p1 = service.render('# 第一次');
+    const p2 = service.render('# 第二次');
+    const p3 = service.render('# 第三次');
+
+    expect(manualWorker.postedMessages.map((message) => message.seq)).toEqual([1]);
+    await expect(p2).resolves.toMatchObject({ html: '', stale: true });
+
+    manualWorker.deliverNext();
+    await expect(p1).resolves.toMatchObject({ stale: true });
+    expect(manualWorker.postedMessages.map((message) => message.seq)).toEqual([3]);
+
+    manualWorker.deliverNext();
+    await expect(p3).resolves.toMatchObject({
+      html: markdownToHtml('# 第三次'),
+      stale: false,
+    });
   });
 
   it('Worker 运行期失败时会释放首个 pending 请求并降级主线程渲染', async () => {

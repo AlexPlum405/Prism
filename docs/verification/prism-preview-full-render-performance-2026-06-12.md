@@ -78,3 +78,29 @@ PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPan
 | 0 | 4,869.7 ms | 3,274.0 ms | 549.6 ms |
 | 1 | 5,083.4 ms | 3,908.3 ms | 577.7 ms |
 | 2 | 5,008.9 ms | 3,702.3 ms | 663.5 ms |
+
+## Worker 渲染 backpressure
+
+变更：
+
+- `markdownRenderService` 在 Worker 已有请求执行时，不继续把每个中间版本都 `postMessage` 到 Worker。
+- Worker 繁忙期间只保留最后一次排队请求；新的请求到来时，被替换的旧排队请求立即以 `stale=true` 完成。
+- 正在执行的请求仍允许自然结束；结束后只发送最新排队请求，保证最终仍是完整预览。
+- 排队请求保留发起时的 locale，避免等待 Worker 空闲期间语言设置变化导致文案不一致。
+
+验证：
+
+```bash
+npm test -- --run src/lib/markdownRenderService.test.ts
+npm test -- --run src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/previewDomTargets.test.ts
+```
+
+结果：
+
+| 场景 | 优化前 | 优化后 |
+|---|---:|---:|
+| Worker 繁忙时连续请求 `# 第一次` / `# 第二次` / `# 第三次` | 3 次 Worker `postMessage` | 2 次 Worker `postMessage` |
+| 中间请求处理方式 | 等 Worker 计算后回 stale | 立即返回 `stale=true` |
+| 最新请求 | 完整渲染 | 完整渲染 |
+
+这项优化不改变单次完整渲染耗时；收益来自连续输入、快速切换视图或快速切换文档时减少 Worker 队列里的重复重活。

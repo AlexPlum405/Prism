@@ -33,6 +33,7 @@ export type WorkerFactory = () => WorkerLike | null;
 
 interface PendingRender {
   content: string;
+  locale: AppLocale;
   options: MarkdownRenderOptions;
   requestSeq: number;
   requestedAtMs: number;
@@ -67,6 +68,8 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
   let worker: WorkerLike | null | undefined; // undefined = 未初始化
   let seq = 0;
   let warmupRequested = false;
+  let activeWorkerRequestSeq: number | null = null;
+  let queuedWorkerRequest: PendingRender | null = null;
   const pending = new Map<number, PendingRender>();
 
   function ensureWorker(): WorkerLike | null {
@@ -78,9 +81,13 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
           const request = pending.get(responseSeq);
           if (!request) return; // 已被更晚请求取代或不存在
           pending.delete(responseSeq);
+          if (activeWorkerRequestSeq === responseSeq) {
+            activeWorkerRequestSeq = null;
+          }
           if (error) {
             renderOnMainThread(request.content, request.options, request.requestSeq, request.requestedAtMs)
-              .then(request.resolve, request.reject);
+              .then(request.resolve, request.reject)
+              .finally(flushQueuedWorkerRequest);
             return;
           }
           const finishedAt = nowMs();
@@ -93,11 +100,13 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
               elapsedMs: finishedAt - request.requestedAtMs,
             },
           });
+          flushQueuedWorkerRequest();
         };
         worker.onerror = () => {
           // Worker 运行期出错：丢弃 worker，并把已发出的请求转到主线程降级。
           worker?.terminate();
           worker = null;
+          activeWorkerRequestSeq = null;
           fallbackPendingRequestsToMainThread();
         };
       }
@@ -131,11 +140,63 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
   function fallbackPendingRequestsToMainThread(): void {
     const pendingRequests = Array.from(pending.values());
     pending.clear();
+    queuedWorkerRequest = null;
+    activeWorkerRequestSeq = null;
 
     for (const request of pendingRequests) {
       renderOnMainThread(request.content, request.options, request.requestSeq, request.requestedAtMs)
         .then(request.resolve, request.reject);
     }
+  }
+
+  function resolveSupersededWorkerRequest(request: PendingRender): void {
+    pending.delete(request.requestSeq);
+    const finishedAt = nowMs();
+    request.resolve({
+      html: '',
+      stale: true,
+      timing: {
+        mode: 'worker',
+        markdownToHtmlMs: 0,
+        elapsedMs: finishedAt - request.requestedAtMs,
+      },
+    });
+  }
+
+  function postWorkerRequest(activeWorker: WorkerLike, request: PendingRender): void {
+    activeWorkerRequestSeq = request.requestSeq;
+    try {
+      activeWorker.postMessage({
+        seq: request.requestSeq,
+        content: request.content,
+        options: request.options,
+        locale: request.locale,
+      });
+    } catch {
+      // postMessage 失败：清理并降级主线程。
+      pending.delete(request.requestSeq);
+      activeWorkerRequestSeq = null;
+      worker = null;
+      renderOnMainThread(request.content, request.options, request.requestSeq, request.requestedAtMs)
+        .then(request.resolve, request.reject)
+        .finally(flushQueuedWorkerRequest);
+    }
+  }
+
+  function flushQueuedWorkerRequest(): void {
+    if (activeWorkerRequestSeq !== null || !queuedWorkerRequest) return;
+
+    const request = queuedWorkerRequest;
+    queuedWorkerRequest = null;
+    const activeWorker = ensureWorker();
+    if (!activeWorker) {
+      pending.delete(request.requestSeq);
+      renderOnMainThread(request.content, request.options, request.requestSeq, request.requestedAtMs)
+        .then(request.resolve, request.reject)
+        .finally(flushQueuedWorkerRequest);
+      return;
+    }
+    postWorkerRequest(activeWorker, request);
   }
 
   return {
@@ -164,30 +225,34 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
       seq += 1;
       const requestSeq = seq;
       const requestedAtMs = nowMs();
+      const locale: AppLocale = getCurrentLocale();
       const activeWorker = ensureWorker();
 
       if (!activeWorker) {
         return renderOnMainThread(content, options, requestSeq, requestedAtMs);
       }
 
-      const locale: AppLocale = getCurrentLocale();
       return new Promise<MarkdownRenderResult>((resolve, reject) => {
-        pending.set(requestSeq, {
+        const request: PendingRender = {
           content,
+          locale,
           options,
           requestSeq,
           requestedAtMs,
           resolve,
           reject,
-        });
-        try {
-          activeWorker.postMessage({ seq: requestSeq, content, options, locale });
-        } catch {
-          // postMessage 失败：清理并降级主线程。
-          pending.delete(requestSeq);
-          worker = null;
-          renderOnMainThread(content, options, requestSeq, requestedAtMs).then(resolve, reject);
+        };
+        pending.set(requestSeq, request);
+
+        if (activeWorkerRequestSeq !== null) {
+          if (queuedWorkerRequest) {
+            resolveSupersededWorkerRequest(queuedWorkerRequest);
+          }
+          queuedWorkerRequest = request;
+          return;
         }
+
+        postWorkerRequest(activeWorker, request);
       });
     },
 
@@ -200,6 +265,8 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
       worker?.terminate();
       worker = null;
       warmupRequested = false;
+      activeWorkerRequestSeq = null;
+      queuedWorkerRequest = null;
       pending.clear();
     },
   };
