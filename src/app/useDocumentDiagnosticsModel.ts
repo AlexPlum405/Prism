@@ -12,7 +12,6 @@ import {
   imageDiagnosticsToPrismDiagnostics,
   linkDiagnosticsToPrismDiagnostics,
   tableDiagnosticsToPrismDiagnostics,
-  typographyDiagnosticsToPrismDiagnostics,
 } from '../domains/diagnostics/adapters';
 import { getActionableErrorDiagnostics, type PrismDiagnostic } from '../domains/diagnostics/types';
 import { scanMarkdownRenderDiagnostics } from '../domains/export/preflight';
@@ -39,6 +38,7 @@ export function useDocumentDiagnosticsModel({
   const [imageDiagnostics, setImageDiagnostics] = useState<ImageDiagnostic[]>([]);
   const [renderDiagnostics, setRenderDiagnostics] = useState<PrismDiagnostic[]>([]);
   const [preflightDiagnostics, setPreflightDiagnostics] = useState<PrismDiagnostic[] | null>(null);
+  const [typographyDiagnostics, setTypographyDiagnostics] = useState<ReturnType<typeof scanChineseTypography>>([]);
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
 
   const linkDiagnostics = useMemo(() => {
@@ -139,10 +139,6 @@ export function useDocumentDiagnosticsModel({
     setPreflightDiagnostics(null);
   }, [currentDocument?.content, currentDocument?.path]);
 
-  const typographyDiagnostics = useMemo(
-    () => currentDocument ? scanChineseTypography(currentDocument.content) : [],
-    [currentDocument?.content],
-  );
   const tableDiagnostics = useMemo(
     () => currentDocument ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
     [currentDocument?.content],
@@ -154,8 +150,7 @@ export function useDocumentDiagnosticsModel({
     ...imageDiagnosticsToPrismDiagnostics(imageDiagnostics),
     ...renderDiagnostics,
     ...tableDiagnosticsToPrismDiagnostics(tableDiagnostics),
-    ...typographyDiagnosticsToPrismDiagnostics(typographyDiagnostics),
-  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics, typographyDiagnostics]);
+  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics]);
 
   const actionableDiagnostics = useMemo(
     () => getActionableErrorDiagnostics(documentDiagnostics),
@@ -163,9 +158,9 @@ export function useDocumentDiagnosticsModel({
   );
 
   const handleTypographyDiagnosticsClick = useCallback(() => {
-    if (typographyDiagnostics.length === 0) return;
+    if (!currentDocument) return;
     setTypographyDiagnosticsVisible(true);
-  }, [typographyDiagnostics.length]);
+  }, [currentDocument]);
 
   const handleSelectTypographyDiagnostic = useCallback((line: number) => {
     setTypographyDiagnosticsVisible(false);
@@ -173,10 +168,21 @@ export function useDocumentDiagnosticsModel({
   }, [jumpToLine]);
 
   useEffect(() => {
-    if (typographyDiagnostics.length === 0) {
+    if (!currentDocument) {
+      setTypographyDiagnostics([]);
+      setTypographyDiagnosticsVisible(false);
+      return;
+    }
+    if (!typographyDiagnosticsVisible) {
+      setTypographyDiagnostics([]);
+      return;
+    }
+    const diagnostics = scanChineseTypography(currentDocument.content);
+    setTypographyDiagnostics(diagnostics);
+    if (diagnostics.length === 0) {
       setTypographyDiagnosticsVisible(false);
     }
-  }, [typographyDiagnostics.length]);
+  }, [currentDocument?.content, currentDocument?.path, typographyDiagnosticsVisible]);
 
   return {
     actionableDiagnostics,

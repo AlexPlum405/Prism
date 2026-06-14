@@ -6,7 +6,6 @@ import {
 import {
   basename,
   dirname,
-  isSamePath,
   joinPath,
   normalizePathForCompare,
 } from './path';
@@ -34,8 +33,14 @@ export interface ResolvedDocumentLink {
 
 export type DocumentLinkReference = MarkdownDocumentLinkReference;
 
+interface DocumentLinkLookup {
+  byAlias: Map<string, DocumentLinkFile>;
+  byPath: Map<string, DocumentLinkFile>;
+}
+
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
+const lookupCache = new WeakMap<DocumentLinkFile[], Map<string, DocumentLinkLookup>>();
 
 function normalizePathParts(path: string) {
   const parts: string[] = [];
@@ -108,11 +113,46 @@ function wikiAliases(file: DocumentLinkFile, rootPath?: string | null) {
     .map((value) => normalizePathForCompare(normalizePathParts(value))));
 }
 
+function normalizedLookupKey(path: string) {
+  return normalizePathForCompare(normalizePathParts(path));
+}
+
+function getDocumentLinkLookup(
+  workspaceFiles: DocumentLinkFile[],
+  rootPath?: string | null,
+): DocumentLinkLookup {
+  const rootKey = rootPath ?? '';
+  const cachedByRoot = lookupCache.get(workspaceFiles);
+  const cached = cachedByRoot?.get(rootKey);
+  if (cached) return cached;
+
+  const lookup: DocumentLinkLookup = {
+    byAlias: new Map(),
+    byPath: new Map(),
+  };
+
+  workspaceFiles.forEach((file) => {
+    lookup.byPath.set(normalizedLookupKey(file.path), file);
+    wikiAliases(file, rootPath).forEach((alias) => {
+      if (!lookup.byAlias.has(alias)) {
+        lookup.byAlias.set(alias, file);
+      }
+    });
+  });
+
+  const nextByRoot = cachedByRoot ?? new Map<string, DocumentLinkLookup>();
+  nextByRoot.set(rootKey, lookup);
+  if (!cachedByRoot) lookupCache.set(workspaceFiles, nextByRoot);
+  return lookup;
+}
+
 function resolveMarkdownLink(input: ResolveDocumentLinkInput): ResolvedDocumentLink | null {
   const candidates = markdownCandidates(input);
-  const match = input.workspaceFiles.find((file) => (
-    candidates.some((candidate) => isSamePath(file.path, candidate))
-  ));
+  if (candidates.length === 0) return null;
+  const lookup = getDocumentLinkLookup(input.workspaceFiles, input.workspaceRoot);
+  const match = candidates
+    .map((candidate) => lookup.byPath.get(normalizedLookupKey(candidate)))
+    .find(Boolean);
   return match ? { path: match.path } : null;
 }
 
@@ -121,7 +161,8 @@ function resolveWikiLink(input: ResolveDocumentLinkInput): ResolvedDocumentLink 
   if (!target || isExternalTarget(target)) return null;
 
   const normalizedTarget = normalizePathForCompare(normalizePathParts(stripMarkdownExtension(target)));
-  const match = input.workspaceFiles.find((file) => wikiAliases(file, input.workspaceRoot).has(normalizedTarget));
+  const lookup = getDocumentLinkLookup(input.workspaceFiles, input.workspaceRoot);
+  const match = lookup.byAlias.get(normalizedTarget);
   return match ? { path: match.path } : null;
 }
 

@@ -90,7 +90,16 @@ export interface WorkspaceIndexSearchResult {
   snippet: string;
 }
 
+interface WorkspaceDocumentSearchCache {
+  content: string;
+  headings: Array<{ normalizedTitle: string; title: string }>;
+  name: string;
+  relativePath: string;
+  title: string;
+}
+
 const MARKDOWN_EXTENSION_RE = /\.(md|markdown|txt)$/i;
+const workspaceDocumentSearchCache = new WeakMap<WorkspaceIndexedDocument, WorkspaceDocumentSearchCache>();
 
 type WorkspaceIndexFile = Pick<FileNode, 'modifiedAt' | 'name' | 'path' | 'preview' | 'size'>;
 
@@ -111,8 +120,8 @@ function getWorkspaceRelativePath(path: string, rootPath?: string | null) {
     : normalizedPath;
 }
 
-function excerptForLine(content: string, line: number) {
-  return content.split(/\r?\n/)[line - 1]?.trim().slice(0, 160) ?? '';
+function excerptForLine(lines: string[], line: number) {
+  return lines[line - 1]?.trim().slice(0, 160) ?? '';
 }
 
 function buildContentMap(documents: WorkspaceIndexSourceDocument[] = []) {
@@ -250,6 +259,7 @@ function createWorkspaceIndexFromDocuments(
   const backlinksByPath = new Map<string, WorkspaceIndexBacklink[]>();
 
   resolvedDocuments.forEach((document) => {
+    const lines = document.links.length > 0 ? document.content.split(/\r?\n/) : [];
     document.links.forEach((link) => {
       if (!link.resolvedPath) return;
       const targetKey = normalizePathForCompare(link.resolvedPath);
@@ -257,7 +267,7 @@ function createWorkspaceIndexFromDocuments(
       const backlinks = backlinksByPath.get(targetKey) ?? [];
       backlinks.push({
         column: link.column,
-        excerpt: excerptForLine(document.content, link.line),
+        excerpt: excerptForLine(lines, link.line),
         line: link.line,
         path: document.path,
         title: document.title,
@@ -380,8 +390,25 @@ export function applyWorkspaceIndexOverlay(
   return createWorkspaceIndexFromDocuments(documents, baseIndex.rootPath, baseIndex.generatedAt);
 }
 
-function contentSnippet(content: string, query: string) {
-  const normalizedContent = content.toLowerCase();
+function getWorkspaceDocumentSearchCache(document: WorkspaceIndexedDocument): WorkspaceDocumentSearchCache {
+  const cached = workspaceDocumentSearchCache.get(document);
+  if (cached) return cached;
+
+  const next = {
+    content: document.content.toLowerCase(),
+    headings: document.headings.map((item) => ({
+      normalizedTitle: item.title.toLowerCase(),
+      title: item.title,
+    })),
+    name: document.name.toLowerCase(),
+    relativePath: document.relativePath.toLowerCase(),
+    title: document.title.toLowerCase(),
+  };
+  workspaceDocumentSearchCache.set(document, next);
+  return next;
+}
+
+function contentSnippet(content: string, normalizedContent: string, query: string) {
   const normalizedQuery = query.toLowerCase();
   const index = normalizedContent.indexOf(normalizedQuery);
   if (index < 0) return '';
@@ -406,26 +433,24 @@ export function searchWorkspaceIndex(
 
   return index.documents
     .map((document): WorkspaceIndexSearchResult | null => {
-      const name = document.name.toLowerCase();
-      const title = document.title.toLowerCase();
-      const relativePath = document.relativePath.toLowerCase();
-      const heading = document.headings.find((item) => item.title.toLowerCase().includes(normalizedQuery));
-      const contentMatch = document.content.toLowerCase().includes(normalizedQuery);
+      const search = getWorkspaceDocumentSearchCache(document);
+      const heading = search.headings.find((item) => item.normalizedTitle.includes(normalizedQuery));
+      const contentMatch = search.content.includes(normalizedQuery);
       const recentBoost = document.recentRank === undefined ? 0 : Math.max(1, 12 - document.recentRank);
 
-      if (title === normalizedQuery) {
+      if (search.title === normalizedQuery) {
         return { document, match: 'title' as const, score: 120 + recentBoost, snippet: document.title };
       }
-      if (name === normalizedQuery) {
+      if (search.name === normalizedQuery) {
         return { document, match: 'name' as const, score: 110 + recentBoost, snippet: document.name };
       }
-      if (title.includes(normalizedQuery)) {
+      if (search.title.includes(normalizedQuery)) {
         return { document, match: 'title' as const, score: 90 + recentBoost, snippet: document.title };
       }
-      if (name.includes(normalizedQuery)) {
+      if (search.name.includes(normalizedQuery)) {
         return { document, match: 'name' as const, score: 80 + recentBoost, snippet: document.name };
       }
-      if (relativePath.includes(normalizedQuery)) {
+      if (search.relativePath.includes(normalizedQuery)) {
         return { document, match: 'path' as const, score: 55 + recentBoost, snippet: document.relativePath };
       }
       if (heading) {
@@ -436,7 +461,7 @@ export function searchWorkspaceIndex(
           document,
           match: 'content' as const,
           score: 25 + recentBoost,
-          snippet: contentSnippet(document.content, query),
+          snippet: contentSnippet(document.content, search.content, query),
         };
       }
       return null;
@@ -470,25 +495,23 @@ export function rankWorkspaceIndexDocuments(
 
   return index.documents
     .map((document): WorkspaceIndexSearchResult | null => {
-      const name = document.name.toLowerCase();
-      const title = document.title.toLowerCase();
-      const relativePath = document.relativePath.toLowerCase();
-      const heading = document.headings.find((item) => item.title.toLowerCase().includes(normalizedQuery));
+      const search = getWorkspaceDocumentSearchCache(document);
+      const heading = search.headings.find((item) => item.normalizedTitle.includes(normalizedQuery));
       const recentBoost = document.recentRank === undefined ? 0 : Math.max(1, 12 - document.recentRank);
 
-      if (title === normalizedQuery) {
+      if (search.title === normalizedQuery) {
         return { document, match: 'title' as const, score: 120 + recentBoost, snippet: document.relativePath };
       }
-      if (name === normalizedQuery) {
+      if (search.name === normalizedQuery) {
         return { document, match: 'name' as const, score: 110 + recentBoost, snippet: document.relativePath };
       }
-      if (title.includes(normalizedQuery)) {
+      if (search.title.includes(normalizedQuery)) {
         return { document, match: 'title' as const, score: 90 + recentBoost, snippet: document.relativePath };
       }
-      if (name.includes(normalizedQuery)) {
+      if (search.name.includes(normalizedQuery)) {
         return { document, match: 'name' as const, score: 80 + recentBoost, snippet: document.relativePath };
       }
-      if (relativePath.includes(normalizedQuery)) {
+      if (search.relativePath.includes(normalizedQuery)) {
         return { document, match: 'path' as const, score: 55 + recentBoost, snippet: document.relativePath };
       }
       if (heading) {

@@ -19,6 +19,10 @@ interface LinkScanContext {
   workspaceRoot?: string | null;
 }
 
+interface NormalizedLinkScanContext extends LinkScanContext {
+  normalizedWorkspaceFiles?: Set<string>;
+}
+
 const MARKDOWN_LINK_RE = /!?\[[^\]\n]*\]\(([^)\n]*)\)/g;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 
@@ -83,20 +87,28 @@ function isExternalTarget(target: string): boolean {
   return URL_SCHEME_RE.test(target) || target.startsWith('//');
 }
 
-function targetExists(targetPath: string, context: LinkScanContext): boolean {
-  if (!context.workspaceFiles?.length) return true;
+function normalizeLinkScanContext(context: LinkScanContext): NormalizedLinkScanContext {
+  if (!context.workspaceFiles?.length) return context;
+  return {
+    ...context,
+    normalizedWorkspaceFiles: new Set(context.workspaceFiles.map(normalizePath)),
+  };
+}
+
+function targetExists(targetPath: string, context: NormalizedLinkScanContext): boolean {
+  if (!context.normalizedWorkspaceFiles?.size) return true;
 
   const candidates = new Set<string>();
   candidates.add(normalizePath(targetPath));
   if (context.currentPath) candidates.add(normalizePath(joinPath(dirname(context.currentPath), targetPath)));
   if (context.workspaceRoot) candidates.add(normalizePath(joinPath(context.workspaceRoot, targetPath)));
 
-  const workspaceFiles = new Set(context.workspaceFiles.map(normalizePath));
-  return [...candidates].some((candidate) => workspaceFiles.has(candidate));
+  return [...candidates].some((candidate) => context.normalizedWorkspaceFiles?.has(candidate));
 }
 
 export function scanMarkdownLinks(content: string, context: LinkScanContext = {}): LinkDiagnostic[] {
   const diagnostics: LinkDiagnostic[] = [];
+  const normalizedContext = normalizeLinkScanContext(context);
   const headingSlugs = collectHeadingSlugs(content);
   const lines = content.split('\n');
 
@@ -136,7 +148,7 @@ export function scanMarkdownLinks(content: string, context: LinkScanContext = {}
 
       if (isImageLink && !context.validateImageTargets) continue;
 
-      if (path && !targetExists(safeDecodeURIComponent(path), context)) {
+      if (path && !targetExists(safeDecodeURIComponent(path), normalizedContext)) {
         diagnostics.push({
           column,
           kind: 'missing-file',
