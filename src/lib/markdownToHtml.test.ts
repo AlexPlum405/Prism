@@ -390,14 +390,19 @@ describe('markdownToHtml compatibility modes', () => {
       '| sel:cc | 字模 | 识别字符 |',
       '|--------|------|----------|',
       ...rows,
+      '',
+      '## 后续章节',
     ].join('\n');
 
     const html = markdownToHtml(markdown);
+    const nextHeadingLine = 3 + 2 + rows.length * 3 + 1;
 
     expect(html).toContain('class="prism-large-pre-table"');
     expect(html).toContain('data-row-count="90"');
-    expect(html).toContain('class="prism-large-pre-table__glyph"');
+    expect(html).toContain('<pre>');
     expect(html).not.toContain('<table>');
     expect(html).toContain('data-source-line="5"');
+    expect(html).toContain(`<h2 data-source-line="${nextHeadingLine}"`);
+    expect(html).not.toContain('PrismLargePreTablePlaceholder');
   });
 });

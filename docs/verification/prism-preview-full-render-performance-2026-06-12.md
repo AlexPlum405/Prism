@@ -155,3 +155,54 @@ PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspac
 | 2 | 2,028.4 ms | 2,691.1 ms | 235.3 ms |
 
 注：`scrollSyncScanMs` 是测试保留的源码行映射扫描成本，用于 split 模式和诊断参考；preview-only 滚动路径已不调用该扫描。
+
+## 2026-06-15 CHAR_REVIEW.md 继续优化
+
+复跑同一目标文件后，热路径已经从原始 Markdown 表格降到轻量 block-grid，但仍有两类成本：
+
+- 生成后的超大 HTML 会再次进入 unified/rehype raw HTML 解析和序列化。
+- 每行仍带多层 wrapper、重复 class 和重复 line 属性，放大 HTML 字符串与 DOM 写入成本。
+
+变更：
+
+- 将超大 `<pre>` 表格抽取为 Markdown 占位符，先让 unified 处理轻量占位内容，最终 HTML 字符串阶段再注入已转义的大表格 HTML。
+- 抽取时保留原始行数的空行，避免表格后续章节的 `data-source-line` 前移。
+- 精简大表格行 HTML：行节点只保留必要 `data-source-line`，单元格直接使用 `code/pre`，去掉每行 wrapper、`data-line`、`data-label` 和重复 class。
+- HTML 转义先做候选检测，仅在存在 `& < > " '` 时执行替换。
+
+结果：
+
+| 指标 | 上一轮优化后 | 本轮优化后 | 变化 |
+|---|---:|---:|---:|
+| HTML 长度 | 1,564,133 | 742,544 | -821,589（约 -52.5%） |
+| `markdownToHtmlMs` | 2,137.5 ms | 221.8 ms | -1,915.7 ms（约 -89.6%） |
+| `domWriteMs` | 3,135.7 ms | 201.7 ms | -2,934.0 ms（约 -93.6%） |
+| `domTargetScanMs` | 1.4 ms | 0.2 ms | 仍可忽略 |
+| `scrollSyncScanMs` | 284.0 ms | 43.8 ms | -240.2 ms（约 -84.6%） |
+| source-line 节点数 | 4,397 | 2,227 | -2,170 |
+
+本轮优化后单次样本：
+
+| 样本 | `markdownToHtmlMs` | `domWriteMs` | `scrollSyncScanMs` |
+|---:|---:|---:|---:|
+| 0 | 225.8 ms | 225.5 ms | 56.6 ms |
+| 1 | 221.8 ms | 201.7 ms | 43.8 ms |
+| 2 | 198.3 ms | 175.5 ms | 39.2 ms |
+
+最终测试输出摘要：
+
+```json
+{
+  "contentLength": 634623,
+  "iterations": 3,
+  "summary": {
+    "markdownToHtmlMs": 221.8,
+    "domWriteMs": 201.7,
+    "domTargetScanMs": 0.2,
+    "scrollSyncScanMs": 43.8,
+    "htmlLength": 742544,
+    "sourceLineElementCount": 2227,
+    "codeLineElementCount": 2226
+  }
+}
+```

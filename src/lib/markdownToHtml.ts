@@ -505,6 +505,16 @@ const MERMAID_FENCE_PATTERN = /(^|\n)(```|~~~)\s*mermaid(?:\s|\n|$)/i;
 const MATH_FENCE_PATTERN = /(^|\n)(```|~~~)\s*math(?:\s|\n|$)/i;
 const CALLOUT_PATTERN = /(^|\n)\s*>\s*\[![A-Za-z]+\]/;
 const LARGE_PRE_TABLE_ROW_THRESHOLD = 80;
+const LARGE_PRE_TABLE_PLACEHOLDER_BASE = 'PrismLargePreTablePlaceholder';
+const HTML_ESCAPE_CANDIDATE_PATTERN = /[&<>"']/;
+const HTML_ESCAPE_PATTERN = /[&<>"']/g;
+const HTML_ESCAPE_REPLACEMENTS: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
 const FRONT_MATTER_FIELDS: Array<{
   className: string;
   key: keyof DocumentFrontMatterProperties;
@@ -521,12 +531,8 @@ const FRONT_MATTER_FIELDS: Array<{
 ];
 
 function escapeGeneratedHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  if (!HTML_ESCAPE_CANDIDATE_PATTERN.test(value)) return value;
+  return value.replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPE_REPLACEMENTS[char] ?? char);
 }
 
 function splitMarkdownTableRow(line: string) {
@@ -558,6 +564,11 @@ interface LargePreTableRow {
   preContent: string;
   sourceLine: number;
   trailingCell: string;
+}
+
+interface LargePreTablePlaceholder {
+  replacementHtml: string;
+  token: string;
 }
 
 function parseLargePreTableRows(lines: string[], startIndex: number) {
@@ -617,27 +628,50 @@ function renderLargePreTable(headers: string[], rows: LargePreTableRow[], source
     .join('');
   const rowsHtml = rows
     .map((row) => [
-      `<div class="prism-large-pre-table__row" data-source-line="${row.sourceLine}" data-line="${row.sourceLine}">`,
-      `<div class="prism-large-pre-table__cell prism-large-pre-table__cell--key" data-label="${escapeGeneratedHtml(normalizedHeaders[0] ?? '')}">${renderLargePreTableCell(row.firstCell)}</div>`,
-      `<pre class="prism-large-pre-table__glyph" data-label="${escapeGeneratedHtml(normalizedHeaders[1] ?? '')}">${escapeGeneratedHtml(row.preContent)}</pre>`,
-      `<div class="prism-large-pre-table__cell prism-large-pre-table__cell--value" data-label="${escapeGeneratedHtml(normalizedHeaders[2] ?? '')}">${renderLargePreTableCell(row.trailingCell)}</div>`,
+      `<div data-source-line="${row.sourceLine}">`,
+      renderLargePreTableCell(row.firstCell),
+      `<pre>${escapeGeneratedHtml(row.preContent)}</pre>`,
+      renderLargePreTableCell(row.trailingCell),
       '</div>',
     ].join(''))
     .join('\n');
 
   return [
-    `<section class="prism-large-pre-table" data-source-line="${sourceLine}" data-line="${sourceLine}" data-row-count="${rows.length}">`,
+    `<section class="prism-large-pre-table" data-source-line="${sourceLine}" data-row-count="${rows.length}">`,
     `<div class="prism-large-pre-table__header">${headerHtml}</div>`,
     rowsHtml,
     '</section>',
   ].join('\n');
 }
 
-function optimizeLargePreTablesForPreview(content: string) {
-  if (!content.includes('<pre>')) return content;
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function createLargePreTablePlaceholderPrefix(content: string) {
+  let prefix = LARGE_PRE_TABLE_PLACEHOLDER_BASE;
+  while (content.includes(prefix)) {
+    prefix += 'X';
+  }
+  return prefix;
+}
+
+function injectLargePreTablePlaceholders(html: string, placeholders: LargePreTablePlaceholder[]) {
+  if (placeholders.length === 0) return html;
+
+  return placeholders.reduce((result, placeholder) => {
+    const token = escapeRegExp(placeholder.token);
+    return result.replace(new RegExp(`<p(?:\\s+[^>]*)?>${token}</p>`, 'g'), placeholder.replacementHtml);
+  }, html);
+}
+
+function extractLargePreTablesForPreview(content: string) {
+  if (!content.includes('<pre>')) return { content, placeholders: [] };
 
   const lines = content.split(/\r?\n/);
   const output: string[] = [];
+  const placeholders: LargePreTablePlaceholder[] = [];
+  const placeholderPrefix = createLargePreTablePlaceholderPrefix(content);
   let index = 0;
 
   while (index < lines.length) {
@@ -646,7 +680,15 @@ function optimizeLargePreTablesForPreview(content: string) {
     if (headers && headers.length >= 3 && nextLine && isMarkdownTableSeparator(nextLine)) {
       const parsed = parseLargePreTableRows(lines, index + 2);
       if (parsed.rows.length >= LARGE_PRE_TABLE_ROW_THRESHOLD) {
-        output.push(renderLargePreTable(headers, parsed.rows, index + 1));
+        const token = `${placeholderPrefix}${placeholders.length}`;
+        placeholders.push({
+          replacementHtml: renderLargePreTable(headers, parsed.rows, index + 1),
+          token,
+        });
+        output.push(token);
+        for (let line = index + 1; line < parsed.nextIndex; line += 1) {
+          output.push('');
+        }
         index = parsed.nextIndex;
         continue;
       }
@@ -656,7 +698,10 @@ function optimizeLargePreTablesForPreview(content: string) {
     index += 1;
   }
 
-  return output.join('\n');
+  return {
+    content: output.join('\n'),
+    placeholders,
+  };
 }
 
 function compactMetadataValue(value: string) {
@@ -773,10 +818,10 @@ function renderFrontMatterForPreview(content: string, mode: 'plain' | 'hide' | '
 
 export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
   const displayMathLines: number[] = [];
-  const renderContent = optimizeLargePreTablesForPreview(
+  const largePreTablePreview = extractLargePreTablesForPreview(
     renderFrontMatterForPreview(content, frontMatterModeForOptions(options)),
   );
-  const featureHints = detectMarkdownPreviewFeatures(renderContent);
+  const featureHints = detectMarkdownPreviewFeatures(largePreTablePreview.content);
   let processor: any = unified()
     .use(remarkParse)
     .use(remarkGfm);
@@ -808,7 +853,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   const result = processor
     .use(rehypePreviewUrlSafety)
     .use(rehypeStringify, { allowDangerousHtml: true })
-    .processSync(renderContent);
+    .processSync(largePreTablePreview.content);
 
-  return String(result);
+  return injectLargePreTablePlaceholders(String(result), largePreTablePreview.placeholders);
 }
