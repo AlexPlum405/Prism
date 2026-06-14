@@ -206,3 +206,56 @@ PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspac
   }
 }
 ```
+
+## 2026-06-15 CHAR_REVIEW.md 第二轮继续优化
+
+在上一轮之后继续复查，发现仍有三个可压缩点：
+
+- 最后一个 `Font Selector` 表只有 79 行，低于原先 80 行阈值，仍落回 GFM 表格解析路径。
+- 为保持后续源码行号正确，抽取表格后保留了大量空行，占用 Markdown parser 时间。
+- 大表格注入逐个替换占位符，会反复扫描已经膨胀后的 HTML；每个字模 `<pre>` 也被设置成独立 `overflow:auto` 滚动区域。
+
+变更：
+
+- 将跨行 `<pre>` 表格轻量化阈值从 80 行降到 24 行，覆盖尾部中型字模表，同时普通小表格不受影响。
+- 抽取大表格时不再保留空行，而是在 remark 阶段按压缩偏移修正节点 `position`，保持后续 `data-source-line` 准确。
+- GFM 插件改为按内容特征启用；无表格、任务列表、删除线、脚注、裸链接时跳过。
+- 占位符注入改为单次正则替换所有 token。
+- 大字模 `<pre>` 从 `overflow:auto` 改成 `overflow:hidden`，避免 2,000 多个内部滚动容器。
+
+结果：
+
+| 指标 | 上一轮优化后 | 本轮优化后 | 变化 |
+|---|---:|---:|---:|
+| HTML 长度 | 742,544 | 738,407 | -4,137 |
+| `markdownToHtmlMs` | 223.7 ms | 8.7 ms | -215.0 ms（约 -96.1%） |
+| `domWriteMs` | 204.5 ms | 149.7 ms | -54.8 ms（约 -26.8%） |
+| `domTargetScanMs` | 0.2 ms | 0.3 ms | 仍可忽略 |
+| `scrollSyncScanMs` | 59.8 ms | 38.7 ms | -21.1 ms（约 -35.3%） |
+| source-line 节点数 | 2,227 | 2,145 | -82 |
+
+本轮优化后单次样本：
+
+| 样本 | `markdownToHtmlMs` | `domWriteMs` | `scrollSyncScanMs` |
+|---:|---:|---:|---:|
+| 0 | 9.9 ms | 176.0 ms | 38.7 ms |
+| 1 | 7.4 ms | 148.3 ms | 34.5 ms |
+| 2 | 8.7 ms | 149.7 ms | 43.5 ms |
+
+最终测试输出摘要：
+
+```json
+{
+  "contentLength": 634623,
+  "iterations": 3,
+  "summary": {
+    "markdownToHtmlMs": 8.7,
+    "domWriteMs": 149.7,
+    "domTargetScanMs": 0.3,
+    "scrollSyncScanMs": 38.7,
+    "htmlLength": 738407,
+    "sourceLineElementCount": 2145,
+    "codeLineElementCount": 2144
+  }
+}
+```

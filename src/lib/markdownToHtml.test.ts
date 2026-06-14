@@ -203,6 +203,32 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).not.toContain('<script>');
   });
 
+  it('renders GFM tables when table syntax is present', () => {
+    const html = markdownToHtml([
+      '| 项目 | 状态 |',
+      '| --- | --- |',
+      '| 预览 | 通过 |',
+    ].join('\n'));
+
+    expect(html).toContain('<table');
+    expect(html).toContain('<th>项目</th>');
+    expect(html).toContain('<td>通过</td>');
+  });
+
+  it('renders common GFM inline and list syntax only when needed', () => {
+    const html = markdownToHtml([
+      '- [x] 完成',
+      '- [ ] 待办',
+      '',
+      '~~删除~~ https://example.com',
+    ].join('\n'));
+
+    expect(html).toContain('type="checkbox" checked disabled');
+    expect(html).toContain('type="checkbox" disabled');
+    expect(html).toContain('<del>删除</del>');
+    expect(html).toContain('<a href="https://example.com">https://example.com</a>');
+  });
+
   it('renders Pandoc citekeys as preview citation placeholders', () => {
     const html = markdownToHtml('研究结论参考 [@doe2024; @smith-2023, p. 12]。');
 
@@ -404,5 +430,53 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('data-source-line="5"');
     expect(html).toContain(`<h2 data-source-line="${nextHeadingLine}"`);
     expect(html).not.toContain('PrismLargePreTablePlaceholder');
+  });
+
+  it('renders medium multiline pre tables as lightweight preview blocks', () => {
+    const rows = Array.from({ length: 24 }, (_, index) => [
+      `| \`9:${String(index).padStart(2, '0')}\` | <pre>  █`,
+      ' █ ',
+      `</pre> | \`${index}\` |`,
+    ].join('\n'));
+    const html = markdownToHtml([
+      '| sel:cc | 字模 | 识别字符 |',
+      '|--------|------|----------|',
+      ...rows,
+    ].join('\n'));
+
+    expect(html).toContain('class="prism-large-pre-table"');
+    expect(html).toContain('data-row-count="24"');
+    expect(html).not.toContain('<table>');
+  });
+
+  it('preserves source line offsets after multiple compacted multiline pre tables', () => {
+    const buildRows = (prefix: string) => Array.from({ length: 24 }, (_, index) => [
+      `| \`${prefix}:${String(index).padStart(2, '0')}\` | <pre>  █`,
+      ' █ ',
+      `</pre> | \`${index}\` |`,
+    ].join('\n'));
+    const firstRows = buildRows('a');
+    const secondRows = buildRows('b');
+    const markdown = [
+      '# 字符表',
+      '',
+      '| sel:cc | 字模 | 识别字符 |',
+      '|--------|------|----------|',
+      ...firstRows,
+      '',
+      '## 第二组',
+      '',
+      '| sel:cc | 字模 | 识别字符 |',
+      '|--------|------|----------|',
+      ...secondRows,
+      '',
+      '## 后续章节',
+    ].join('\n');
+
+    const html = markdownToHtml(markdown);
+    const finalHeadingLine = markdown.split('\n').findIndex((line) => line === '## 后续章节') + 1;
+
+    expect(html.match(/class="prism-large-pre-table"/g)).toHaveLength(2);
+    expect(html).toContain(`<h2 data-source-line="${finalHeadingLine}"`);
   });
 });

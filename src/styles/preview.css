@@ -132,7 +132,7 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   margin: 0;
   border-radius: 0;
   box-shadow: none;
-  overflow: auto;
+  overflow: hidden;
   background: transparent;
   white-space: pre;
   font-size: 0.9em;

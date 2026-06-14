@@ -491,6 +491,7 @@ interface MarkdownPreviewFeatureHints {
   callouts: boolean;
   citations: boolean;
   code: boolean;
+  gfm: boolean;
   mark: boolean;
   math: boolean;
   mermaid: boolean;
@@ -504,7 +505,11 @@ const CODE_CANDIDATE_PATTERN = /(^|\n)(```|~~~)|<pre(?:\s|>)|<code(?:\s|>)/i;
 const MERMAID_FENCE_PATTERN = /(^|\n)(```|~~~)\s*mermaid(?:\s|\n|$)/i;
 const MATH_FENCE_PATTERN = /(^|\n)(```|~~~)\s*math(?:\s|\n|$)/i;
 const CALLOUT_PATTERN = /(^|\n)\s*>\s*\[![A-Za-z]+\]/;
-const LARGE_PRE_TABLE_ROW_THRESHOLD = 80;
+const GFM_TABLE_SEPARATOR_PATTERN = /(^|\n)\s{0,3}\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*(?:\n|$)/;
+const GFM_TASK_LIST_PATTERN = /(^|\n)\s{0,3}(?:[-+*]|\d+[.)])\s+\[[ xX]\]\s/;
+const GFM_FOOTNOTE_PATTERN = /(^|\n)\s{0,3}\[\^[^\]\n]+]:|\[\^[^\]\n]+\]/;
+const GFM_AUTOLINK_LITERAL_PATTERN = /(^|[\s(])(?:https?:\/\/|www\.)[^\s<]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/;
+const LARGE_PRE_TABLE_ROW_THRESHOLD = 24;
 const LARGE_PRE_TABLE_PLACEHOLDER_BASE = 'PrismLargePreTablePlaceholder';
 const HTML_ESCAPE_CANDIDATE_PATTERN = /[&<>"']/;
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
@@ -569,6 +574,11 @@ interface LargePreTableRow {
 interface LargePreTablePlaceholder {
   replacementHtml: string;
   token: string;
+}
+
+interface SourceLineOffset {
+  afterLine: number;
+  delta: number;
 }
 
 function parseLargePreTableRows(lines: string[], startIndex: number) {
@@ -658,19 +668,51 @@ function createLargePreTablePlaceholderPrefix(content: string) {
 
 function injectLargePreTablePlaceholders(html: string, placeholders: LargePreTablePlaceholder[]) {
   if (placeholders.length === 0) return html;
+  const replacementByToken = new Map(
+    placeholders.map((placeholder) => [placeholder.token, placeholder.replacementHtml]),
+  );
+  const tokenPattern = placeholders
+    .map((placeholder) => escapeRegExp(placeholder.token))
+    .join('|');
 
-  return placeholders.reduce((result, placeholder) => {
-    const token = escapeRegExp(placeholder.token);
-    return result.replace(new RegExp(`<p(?:\\s+[^>]*)?>${token}</p>`, 'g'), placeholder.replacementHtml);
-  }, html);
+  return html.replace(new RegExp(`<p(?:\\s+[^>]*)?>(${tokenPattern})</p>`, 'g'), (_, token: string) => {
+    return replacementByToken.get(token) ?? token;
+  });
+}
+
+function mapCompactedSourceLine(line: number, offsets: SourceLineOffset[]) {
+  let mappedLine = line;
+  for (const offset of offsets) {
+    if (line <= offset.afterLine) break;
+    mappedLine += offset.delta;
+  }
+  return mappedLine;
+}
+
+function remarkApplySourceLineOffsets(offsets: SourceLineOffset[]) {
+  return (tree: any) => {
+    if (offsets.length === 0) return;
+
+    visit(tree, (node: any) => {
+      const position = node.position;
+      if (!position) return;
+      if (Number.isFinite(position.start?.line)) {
+        position.start.line = mapCompactedSourceLine(position.start.line, offsets);
+      }
+      if (Number.isFinite(position.end?.line)) {
+        position.end.line = mapCompactedSourceLine(position.end.line, offsets);
+      }
+    });
+  };
 }
 
 function extractLargePreTablesForPreview(content: string) {
-  if (!content.includes('<pre>')) return { content, placeholders: [] };
+  if (!content.includes('<pre>')) return { content, placeholders: [], sourceLineOffsets: [] };
 
   const lines = content.split(/\r?\n/);
   const output: string[] = [];
   const placeholders: LargePreTablePlaceholder[] = [];
+  const sourceLineOffsets: SourceLineOffset[] = [];
   const placeholderPrefix = createLargePreTablePlaceholderPrefix(content);
   let index = 0;
 
@@ -680,15 +722,18 @@ function extractLargePreTablesForPreview(content: string) {
     if (headers && headers.length >= 3 && nextLine && isMarkdownTableSeparator(nextLine)) {
       const parsed = parseLargePreTableRows(lines, index + 2);
       if (parsed.rows.length >= LARGE_PRE_TABLE_ROW_THRESHOLD) {
+        const outputLine = output.length + 1;
+        const consumedLineCount = parsed.nextIndex - index;
         const token = `${placeholderPrefix}${placeholders.length}`;
         placeholders.push({
           replacementHtml: renderLargePreTable(headers, parsed.rows, index + 1),
           token,
         });
         output.push(token);
-        for (let line = index + 1; line < parsed.nextIndex; line += 1) {
-          output.push('');
-        }
+        sourceLineOffsets.push({
+          afterLine: outputLine,
+          delta: consumedLineCount - 1,
+        });
         index = parsed.nextIndex;
         continue;
       }
@@ -701,6 +746,7 @@ function extractLargePreTablesForPreview(content: string) {
   return {
     content: output.join('\n'),
     placeholders,
+    sourceLineOffsets,
   };
 }
 
@@ -785,10 +831,15 @@ function frontMatterModeForOptions(options: MarkdownToHtmlOptions) {
 }
 
 function detectMarkdownPreviewFeatures(content: string): MarkdownPreviewFeatureHints {
+  const hasAutolinkLiteralCandidate = content.includes('://') || content.includes('www.') || content.includes('@');
   return {
     callouts: content.includes('[!') && CALLOUT_PATTERN.test(content),
     citations: content.includes('@') && content.includes('['),
     code: CODE_CANDIDATE_PATTERN.test(content),
+    gfm: (content.includes('|') && GFM_TABLE_SEPARATOR_PATTERN.test(content))
+      || (content.includes('[') && (GFM_TASK_LIST_PATTERN.test(content) || GFM_FOOTNOTE_PATTERN.test(content)))
+      || content.includes('~')
+      || (hasAutolinkLiteralCandidate && GFM_AUTOLINK_LITERAL_PATTERN.test(content)),
     mark: content.includes('=='),
     math: content.includes('$') || content.includes('\\(') || content.includes('\\[') || MATH_FENCE_PATTERN.test(content),
     mermaid: MERMAID_FENCE_PATTERN.test(content),
@@ -823,14 +874,18 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   );
   const featureHints = detectMarkdownPreviewFeatures(largePreTablePreview.content);
   let processor: any = unified()
-    .use(remarkParse)
-    .use(remarkGfm);
+    .use(remarkParse);
+
+  if (featureHints.gfm) processor = processor.use(remarkGfm);
 
   if (featureHints.math) {
     processor = processor
-      .use(remarkMath)
-      .use(() => remarkCollectMathLines(displayMathLines));
+      .use(remarkMath);
   }
+  if (largePreTablePreview.sourceLineOffsets.length > 0) {
+    processor = processor.use(() => remarkApplySourceLineOffsets(largePreTablePreview.sourceLineOffsets));
+  }
+  if (featureHints.math) processor = processor.use(() => remarkCollectMathLines(displayMathLines));
   if (featureHints.mark) processor = processor.use(remarkMark);
   if (featureHints.wikiLinks) processor = processor.use(remarkWikiLinks);
   if (featureHints.citations) processor = processor.use(remarkCitations);
