@@ -25,3 +25,7 @@ scripts/*
 !scripts/package-macos-dmg-skip-finder.sh
 !scripts/run-app-smoke.mjs
 src-tauri/icons_backup/
+docs/assets/prism-app-icon-redesign-ai-v3-selected.png
+docs/assets/prism-logo-ai-v3/
+docs/assets/prism-logo-ai-v4/
+docs/assets/prism-logo-ai-v5-color/

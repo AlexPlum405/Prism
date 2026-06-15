@@ -5,11 +5,51 @@ import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
-import { addRecentFile, dirname } from '../domains/workspace/services';
+import { addRecentFile, dirname, getRuntimePlatform } from '../domains/workspace/services';
 import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
 import { readDocumentFileSession } from '../domains/document/services/fileSafety';
 
-export function useBootstrap(enabled = true) {
+const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800] as const;
+const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
+
+function delay(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function getDefaultPendingFilePollDelays() {
+  return getRuntimePlatform() === 'mac'
+    ? MACOS_PENDING_FILE_POLL_DELAYS
+    : DEFAULT_PENDING_FILE_POLL_DELAYS;
+}
+
+export interface UseBootstrapOptions {
+  enabled?: boolean;
+  pendingFilePollDelays?: readonly number[];
+  wait?: (ms: number) => Promise<unknown>;
+}
+
+function normalizeUseBootstrapInput(input: boolean | UseBootstrapOptions): Required<UseBootstrapOptions> {
+  if (typeof input === 'boolean') {
+    return {
+      enabled: input,
+      pendingFilePollDelays: getDefaultPendingFilePollDelays(),
+      wait: delay,
+    };
+  }
+
+  return {
+    enabled: input.enabled ?? true,
+    pendingFilePollDelays: input.pendingFilePollDelays ?? getDefaultPendingFilePollDelays(),
+    wait: input.wait ?? delay,
+  };
+}
+
+export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
+  const {
+    enabled,
+    pendingFilePollDelays,
+    wait,
+  } = normalizeUseBootstrapInput(input);
   const currentDocument = useDocumentStore((s) => s.currentDocument);
   const createNewDocument = useDocumentStore((s) => s.createNewDocument);
   const openDocument = useDocumentStore((s) => s.openDocument);
@@ -60,6 +100,28 @@ export function useBootstrap(enabled = true) {
       return true;
     };
 
+    const openPendingStartupFile = async () => {
+      const pendingFiles = await invokeNativeCommand<string[]>('get_pending_files');
+      if (cancelled || useDocumentStore.getState().currentDocument) return true;
+      return pendingFiles.length > 0 && await openFile(pendingFiles[0]);
+    };
+
+    const openPendingStartupFileBeforeSessionRestore = async () => {
+      for (const waitMs of pendingFilePollDelays) {
+        if (waitMs > 0) {
+          await wait(waitMs);
+        }
+        if (cancelled || useDocumentStore.getState().currentDocument) return true;
+
+        try {
+          if (await openPendingStartupFile()) return true;
+        } catch {
+          // Pending file integration is best effort.
+        }
+      }
+      return false;
+    };
+
     (async () => {
       if (filePath) {
         try {
@@ -82,13 +144,7 @@ export function useBootstrap(enabled = true) {
         return;
       }
 
-      try {
-        const pendingFiles = await invokeNativeCommand<string[]>('get_pending_files');
-        if (cancelled || useDocumentStore.getState().currentDocument) return;
-        if (pendingFiles.length > 0 && await openFile(pendingFiles[0])) return;
-      } catch {
-        // Pending file integration is best effort.
-      }
+      if (await openPendingStartupFileBeforeSessionRestore()) return;
 
       if (!restoreLastSession || !lastSession) return;
 
@@ -114,11 +170,13 @@ export function useBootstrap(enabled = true) {
     createNewDocument,
     lastSession,
     openDocument,
+    pendingFilePollDelays,
     restoreLastSession,
     setSidebarTab,
     setSidebarVisible,
     setWorkspace,
     setViewMode,
     updateScrollState,
+    wait,
   ]);
 }

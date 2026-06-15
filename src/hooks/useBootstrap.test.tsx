@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { useSettingsStore } from '../domains/settings/store';
@@ -151,6 +151,47 @@ describe('useBootstrap', () => {
     const doc = useDocumentStore.getState().currentDocument;
     expect(doc?.path).toBe('C:/docs/opened.md');
     expect(doc?.content).toBe('opened content');
+  });
+
+  it('waits for delayed pending startup files before restoring the last session', async () => {
+    window.history.replaceState({}, '', '/');
+    const wait = vi.fn(async () => undefined);
+    useSettingsStore.setState({
+      restoreLastSession: true,
+      lastSession: {
+        filePath: 'C:/docs/last.md',
+        viewMode: 'preview',
+        updatedAt: 1,
+      },
+      recentFiles: [],
+      saveSettings: vi.fn(),
+    });
+
+    let pendingPollCount = 0;
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(async (command: string) => {
+      if (command === 'get_pending_files') {
+        pendingPollCount += 1;
+        return pendingPollCount === 1 ? [] : ['C:/docs/opened.md'];
+      }
+      return undefined;
+    });
+    (readTextFile as ReturnType<typeof vi.fn>).mockImplementation(async (path: string) => (
+      path.endsWith('opened.md') ? 'opened content' : 'last session content'
+    ));
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    renderHook(() => useBootstrap({
+      enabled: true,
+      pendingFilePollDelays: [0, 200],
+      wait,
+    }));
+
+    await waitFor(() => {
+      expect(useDocumentStore.getState().currentDocument?.path).toBe('C:/docs/opened.md');
+    });
+    expect(useDocumentStore.getState().currentDocument?.content).toBe('opened content');
+    expect(readTextFile).not.toHaveBeenCalledWith('C:/docs/last.md');
+    expect(wait).toHaveBeenCalledWith(200);
   });
 
   it('creates a blank document for explicit new windows without restoring last session', async () => {

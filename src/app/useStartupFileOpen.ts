@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { getPendingStartupFiles, listenForStartupFiles } from '../platform/tauri/startupFiles';
 
-const DEFAULT_PENDING_FILE_POLL_DELAYS = [200, 800] as const;
+const DEFAULT_PENDING_FILE_POLL_DELAYS = [0, 200, 800, 1600] as const;
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -43,7 +43,9 @@ export function useStartupFileOpen({
 
     void (async () => {
       for (const waitMs of pendingFilePollDelays) {
-        await wait(waitMs);
+        if (waitMs > 0) {
+          await wait(waitMs);
+        }
         if (!mounted) return;
         if (await openPendingFiles()) return;
       }
