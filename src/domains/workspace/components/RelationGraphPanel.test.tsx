@@ -1,8 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileNode } from '../types';
 import { buildWorkspaceIndex } from '../services';
 import { RelationGraphPanel } from './RelationGraphPanel';
+
+const nativeWorkspaceIndexMock = vi.hoisted(() => ({
+  queryWorkspaceRelationGraphNativeModel: vi.fn(),
+}));
+
+vi.mock('../services/workspaceIndexNative', () => nativeWorkspaceIndexMock);
 
 const fileTree: FileNode[] = [
   { path: '/repo/a.md', name: 'a.md', kind: 'file' },
@@ -23,6 +29,11 @@ function createIndex() {
 }
 
 describe('RelationGraphPanel', () => {
+  beforeEach(() => {
+    nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel.mockReset();
+    nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel.mockResolvedValue(null);
+  });
+
   it('renders current document graph nodes and opens selected nodes', () => {
     const onSelect = vi.fn();
 
@@ -69,5 +80,42 @@ describe('RelationGraphPanel', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses native relation graph results when a workspace index job id is available', async () => {
+    nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel.mockResolvedValue({
+      nodes: [{
+        id: '/repo/native.md',
+        path: '/repo/native.md',
+        relativePath: 'native.md',
+        title: 'Native Node',
+        active: false,
+        depth: 1,
+        linkCount: 0,
+        backlinkCount: 1,
+      }],
+      edges: [],
+    });
+
+    render(
+      <RelationGraphPanel
+        visible
+        index={createIndex()}
+        workspaceIndexJobId="workspace-index-1"
+        currentPath="/repo/b.md"
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    expect((await screen.findAllByText('Native Node')).length).toBeGreaterThan(0);
+    expect(nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel).toHaveBeenCalledWith({
+      jobId: 'workspace-index-1',
+      currentPath: '/repo/b.md',
+      scope: 'current',
+      depth: 1,
+      query: '',
+      limit: 80,
+    });
   });
 });

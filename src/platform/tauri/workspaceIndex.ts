@@ -28,6 +28,23 @@ export interface QueryWorkspaceIndexInputDto {
   recentFiles: RecentFileDto[];
 }
 
+export interface QueryWorkspaceBacklinksInputDto {
+  jobId: string;
+  path: string;
+}
+
+export type RelationGraphScopeDto = 'current' | 'workspace';
+export type RelationGraphDepthDto = 1 | 2;
+
+export interface QueryWorkspaceRelationGraphInputDto {
+  jobId: string;
+  currentPath?: string | null;
+  depth: RelationGraphDepthDto;
+  limit: number;
+  query?: string | null;
+  scope: RelationGraphScopeDto;
+}
+
 export function buildWorkspaceIndexNative(input: BuildWorkspaceIndexInputDto) {
   return invokeNativeCommand<unknown>('build_workspace_index', { input });
 }
@@ -46,4 +63,12 @@ export function getWorkspaceIndexJobNative(jobId: string) {
 
 export function cancelWorkspaceIndexJobNative(jobId: string) {
   return invokeNativeCommand<unknown>('cancel_workspace_index_job', { jobId });
+}
+
+export function queryWorkspaceBacklinksNative(input: QueryWorkspaceBacklinksInputDto) {
+  return invokeNativeCommand<unknown>('query_workspace_backlinks', { input });
+}
+
+export function queryWorkspaceRelationGraphNative(input: QueryWorkspaceRelationGraphInputDto) {
+  return invokeNativeCommand<unknown>('query_workspace_relation_graph', { input });
 }

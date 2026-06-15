@@ -21,6 +21,7 @@ export function useAppDocumentInsightModel({
   rootPath,
   showToast,
   workspaceIndex,
+  workspaceIndexJobId,
 }: UseAppDocumentInsightModelInput) {
   const jumpToEditorLine = useCallback((line: number) => {
     editorRef.current?.jumpToLine(line);
@@ -42,6 +43,7 @@ export function useAppDocumentInsightModel({
     rootPath,
     showToast,
     workspaceIndex,
+    workspaceIndexJobId,
   });
 
   return {

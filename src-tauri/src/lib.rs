@@ -95,6 +95,8 @@ pub fn run() {
             commands::workspace_index::start_workspace_index_job,
             commands::workspace_index::get_workspace_index_job,
             commands::workspace_index::cancel_workspace_index_job,
+            commands::workspace_index::query_workspace_backlinks,
+            commands::workspace_index::query_workspace_relation_graph,
             commands::export_jobs::create_export_job,
             commands::export_jobs::update_export_job,
             commands::export_jobs::complete_export_job,

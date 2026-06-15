@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::error::{PrismCommandError, PrismResult};
 use super::workspace_index::{self, BuildWorkspaceIndexInput, WorkspaceIndexDto};
+use super::workspace_index::{BacklinkDto, BuildRelationGraphInput, RelationGraphDto};
 
 static NEXT_WORKSPACE_INDEX_JOB_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -231,6 +232,84 @@ pub fn cancel_workspace_index_job(
     Ok(entry.job.clone())
 }
 
+fn completed_workspace_index_for_job(
+    store: &WorkspaceIndexJobStore,
+    job_id: &str,
+    stage: &str,
+) -> PrismResult<WorkspaceIndexDto> {
+    let jobs = store.jobs.lock().map_err(|_| store_lock_error())?;
+    let job = jobs
+        .get(job_id)
+        .ok_or_else(|| missing_job_error(job_id))?
+        .job
+        .clone();
+    if job.status != "completed" {
+        return Err(PrismCommandError::new(
+            "workspace_index_job_not_ready",
+            "Workspace index job is not completed",
+        )
+        .with_hint("Wait for the workspace index job to complete and try again.")
+        .with_stage(stage)
+        .with_path(job_id));
+    }
+    job.index.ok_or_else(|| {
+        PrismCommandError::new(
+            "workspace_index_job_missing_index",
+            "Workspace index job completed without an index",
+        )
+        .with_stage(stage)
+        .with_path(job_id)
+    })
+}
+
+#[derive(Debug, serde::Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWorkspaceBacklinksInput {
+    pub job_id: String,
+    pub path: String,
+}
+
+#[derive(Debug, serde::Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWorkspaceRelationGraphInput {
+    pub job_id: String,
+    pub current_path: Option<String>,
+    pub depth: usize,
+    pub limit: usize,
+    pub query: Option<String>,
+    pub scope: workspace_index::RelationGraphScopeDto,
+}
+
+pub fn query_workspace_backlinks(
+    store: &WorkspaceIndexJobStore,
+    input: QueryWorkspaceBacklinksInput,
+) -> PrismResult<Vec<BacklinkDto>> {
+    let index =
+        completed_workspace_index_for_job(store, &input.job_id, "query_workspace_backlinks")?;
+    Ok(workspace_index::get_workspace_index_backlinks(
+        &index,
+        &input.path,
+    ))
+}
+
+pub fn query_workspace_relation_graph(
+    store: &WorkspaceIndexJobStore,
+    input: QueryWorkspaceRelationGraphInput,
+) -> PrismResult<RelationGraphDto> {
+    let index =
+        completed_workspace_index_for_job(store, &input.job_id, "query_workspace_relation_graph")?;
+    Ok(workspace_index::build_relation_graph(
+        &index,
+        BuildRelationGraphInput {
+            current_path: input.current_path,
+            depth: input.depth,
+            limit: input.limit,
+            query: input.query,
+            scope: input.scope,
+        },
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -348,5 +427,92 @@ mod tests {
         assert!(cancelled.index.is_some());
 
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn queries_backlinks_and_relation_graph_from_completed_job() {
+        let root = temp_dir("query-completed");
+        let current = root.join("current.md");
+        let source = root.join("source.md");
+        fs::write(&current, "# Current").expect("write current");
+        fs::write(&source, "# Source\n\n[Current](current.md)").expect("write source");
+        let store = WorkspaceIndexJobStore::default();
+
+        let job = start_workspace_index_job(
+            &store,
+            BuildWorkspaceIndexInput {
+                root_path: path_to_string(&root),
+                current_document_override: None,
+                recent_files: vec![],
+            },
+        )
+        .expect("start job");
+        let finished = wait_for_finished(&store, &job.id);
+
+        let backlinks = query_workspace_backlinks(
+            &store,
+            QueryWorkspaceBacklinksInput {
+                job_id: finished.id.clone(),
+                path: path_to_string(&current.canonicalize().expect("canonical current")),
+            },
+        )
+        .expect("query backlinks");
+        assert_eq!(backlinks[0].title, "Source");
+
+        let graph = query_workspace_relation_graph(
+            &store,
+            QueryWorkspaceRelationGraphInput {
+                job_id: finished.id,
+                current_path: Some(path_to_string(
+                    &current.canonicalize().expect("canonical current"),
+                )),
+                depth: 1,
+                limit: 80,
+                query: None,
+                scope: workspace_index::RelationGraphScopeDto::Current,
+            },
+        )
+        .expect("query graph");
+        assert_eq!(graph.nodes.len(), 2);
+        assert_eq!(graph.edges.len(), 1);
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn job_queries_reject_running_jobs() {
+        let store = WorkspaceIndexJobStore::default();
+        let now = now_ms();
+        store.jobs.lock().expect("lock store").insert(
+            "workspace-index-running".to_string(),
+            WorkspaceIndexJobEntry {
+                job: WorkspaceIndexJobDto {
+                    id: "workspace-index-running".to_string(),
+                    root_path: "/repo".to_string(),
+                    status: "running".to_string(),
+                    stage: "build".to_string(),
+                    message: "Building".to_string(),
+                    progress: 0.2,
+                    created_at: now,
+                    updated_at: now,
+                    completed_at: None,
+                    index: None,
+                    error: None,
+                    cancel_requested: false,
+                },
+                cancel_requested: Arc::new(AtomicBool::new(false)),
+            },
+        );
+
+        let error = query_workspace_backlinks(
+            &store,
+            QueryWorkspaceBacklinksInput {
+                job_id: "workspace-index-running".to_string(),
+                path: "/repo/current.md".to_string(),
+            },
+        )
+        .expect_err("running job should be rejected");
+
+        assert_eq!(error.code, "workspace_index_job_not_ready");
     }
 }

@@ -12,6 +12,7 @@ import {
   isSamePath,
   resolveDocumentLinkTarget,
 } from '../domains/workspace/services';
+import { queryWorkspaceBacklinksNativeModel } from '../domains/workspace/services/workspaceIndexNative';
 import type { FileNode } from '../domains/workspace/types';
 import type { FileActionInput } from '../lib/fileActions';
 import type { ToastInput } from '../lib/toast';
@@ -54,6 +55,7 @@ interface UseDocumentNavigationModelInput {
   rootPath: string | null;
   showToast: (toast: ToastInput) => void;
   workspaceIndex: WorkspaceIndex | null;
+  workspaceIndexJobId?: string | null;
 }
 
 export function useDocumentNavigationModel({
@@ -64,6 +66,7 @@ export function useDocumentNavigationModel({
   rootPath,
   showToast,
   workspaceIndex,
+  workspaceIndexJobId = null,
 }: UseDocumentNavigationModelInput) {
   const [documentLinksVisible, setDocumentLinksVisible] = useState(false);
   const [backlinksVisible, setBacklinksVisible] = useState(false);
@@ -80,13 +83,40 @@ export function useDocumentNavigationModel({
   );
 
   useEffect(() => {
-    if (!currentDocument?.path || !workspaceIndex) {
+    if (!currentDocument?.path) {
       setBacklinks([]);
       return;
     }
 
-    setBacklinks(getWorkspaceIndexBacklinks(workspaceIndex, currentDocument.path));
-  }, [currentDocument?.path, workspaceIndex]);
+    let cancelled = false;
+    const fallbackBacklinks = workspaceIndex
+      ? getWorkspaceIndexBacklinks(workspaceIndex, currentDocument.path)
+      : [];
+    setBacklinks(fallbackBacklinks);
+
+    if (!workspaceIndexJobId) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void queryWorkspaceBacklinksNativeModel({
+      jobId: workspaceIndexJobId,
+      path: currentDocument.path,
+    })
+      .then((nativeBacklinks) => {
+        if (!cancelled && nativeBacklinks) {
+          setBacklinks(nativeBacklinks);
+        }
+      })
+      .catch((error) => {
+        console.warn('[useDocumentNavigationModel] Native backlinks query unavailable, using TypeScript fallback:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDocument?.path, workspaceIndex, workspaceIndexJobId]);
 
   const openBacklinks = useCallback(() => {
     setBacklinksVisible(true);

@@ -160,6 +160,7 @@ export function useWorkspaceIndexModel(input: {
   recentFiles: RecentFileEntry[];
 }): {
   workspaceIndex: WorkspaceIndex | null;
+  workspaceIndexJobId: string | null;
   workspaceIndexing: boolean;
 } {
   const {
@@ -169,6 +170,7 @@ export function useWorkspaceIndexModel(input: {
     recentFiles,
   } = input;
   const [baseWorkspaceIndex, setBaseWorkspaceIndex] = useState<WorkspaceIndex | null>(null);
+  const [baseWorkspaceIndexJobId, setBaseWorkspaceIndexJobId] = useState<string | null>(null);
   const [workspaceIndexing, setWorkspaceIndexing] = useState(false);
   const fallbackIndexCacheRef = useRef<{
     index: WorkspaceIndex | null;
@@ -191,6 +193,7 @@ export function useWorkspaceIndexModel(input: {
     const run = async () => {
       if (!rootPath) {
         setBaseWorkspaceIndex(null);
+        setBaseWorkspaceIndexJobId(null);
         fallbackIndexCacheRef.current = {
           index: null,
           rootPath: null,
@@ -216,6 +219,7 @@ export function useWorkspaceIndexModel(input: {
 
       if (files.length === 0) {
         setBaseWorkspaceIndex(null);
+        setBaseWorkspaceIndexJobId(null);
         setWorkspaceIndexing(false);
         return;
       }
@@ -237,6 +241,7 @@ export function useWorkspaceIndexModel(input: {
 
         if (nativeJob?.status === 'completed' && nativeJob.index) {
           setBaseWorkspaceIndex(nativeJob.index);
+          setBaseWorkspaceIndexJobId(nativeJob.id);
           setWorkspaceIndexing(false);
           return;
         }
@@ -253,6 +258,7 @@ export function useWorkspaceIndexModel(input: {
           recentFiles: [],
           workspaceRoot: rootPath,
         }));
+        setBaseWorkspaceIndexJobId(null);
         setWorkspaceIndexing(false);
         return;
       }
@@ -271,6 +277,7 @@ export function useWorkspaceIndexModel(input: {
 
       if (!cancelled) {
         setBaseWorkspaceIndex(fallbackIndex);
+        setBaseWorkspaceIndexJobId(null);
         setWorkspaceIndexing(false);
       }
     };
@@ -297,6 +304,7 @@ export function useWorkspaceIndexModel(input: {
 
   return {
     workspaceIndex,
+    workspaceIndexJobId: baseWorkspaceIndexJobId,
     workspaceIndexing,
   };
 }

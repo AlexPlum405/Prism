@@ -3,7 +3,9 @@ import {
   buildWorkspaceIndexNativeModel,
   cancelWorkspaceIndexJobNativeModel,
   getWorkspaceIndexJobNativeModel,
+  queryWorkspaceBacklinksNativeModel,
   queryWorkspaceIndexNativeModel,
+  queryWorkspaceRelationGraphNativeModel,
   startWorkspaceIndexJobNativeModel,
 } from './workspaceIndexNative';
 
@@ -11,7 +13,9 @@ const nativeMock = vi.hoisted(() => ({
   buildWorkspaceIndexNative: vi.fn(),
   cancelWorkspaceIndexJobNative: vi.fn(),
   getWorkspaceIndexJobNative: vi.fn(),
+  queryWorkspaceBacklinksNative: vi.fn(),
   queryWorkspaceIndexNative: vi.fn(),
+  queryWorkspaceRelationGraphNative: vi.fn(),
   startWorkspaceIndexJobNative: vi.fn(),
 }));
 
@@ -22,7 +26,9 @@ describe('workspaceIndexNative', () => {
     nativeMock.buildWorkspaceIndexNative.mockReset();
     nativeMock.cancelWorkspaceIndexJobNative.mockReset();
     nativeMock.getWorkspaceIndexJobNative.mockReset();
+    nativeMock.queryWorkspaceBacklinksNative.mockReset();
     nativeMock.queryWorkspaceIndexNative.mockReset();
+    nativeMock.queryWorkspaceRelationGraphNative.mockReset();
     nativeMock.startWorkspaceIndexJobNative.mockReset();
   });
 
@@ -222,5 +228,72 @@ describe('workspaceIndexNative', () => {
       .resolves.toMatchObject({ status: 'running' });
     await expect(cancelWorkspaceIndexJobNativeModel('workspace-index-1'))
       .resolves.toMatchObject({ status: 'cancelled', cancelRequested: true });
+  });
+
+  it('normalizes native backlink query results', async () => {
+    nativeMock.queryWorkspaceBacklinksNative.mockResolvedValue([{
+      path: '/repo/source.md',
+      title: 'Source',
+      line: 3,
+      column: 5,
+      excerpt: '[Current](current.md)',
+    }]);
+
+    await expect(queryWorkspaceBacklinksNativeModel({
+      jobId: 'workspace-index-1',
+      path: '/repo/current.md',
+    })).resolves.toEqual([{
+      path: '/repo/source.md',
+      title: 'Source',
+      line: 3,
+      column: 5,
+      excerpt: '[Current](current.md)',
+    }]);
+    expect(nativeMock.queryWorkspaceBacklinksNative).toHaveBeenCalledWith({
+      jobId: 'workspace-index-1',
+      path: '/repo/current.md',
+    });
+  });
+
+  it('normalizes native relation graph query results', async () => {
+    nativeMock.queryWorkspaceRelationGraphNative.mockResolvedValue({
+      nodes: [{
+        id: '/repo/current.md',
+        path: '/repo/current.md',
+        relativePath: 'current.md',
+        title: 'Current',
+        active: true,
+        depth: 0,
+        linkCount: 1,
+        backlinkCount: 1,
+      }],
+      edges: [{
+        id: '/repo/current.md->/repo/target.md',
+        source: '/repo/current.md',
+        target: '/repo/target.md',
+      }],
+    });
+
+    const graph = await queryWorkspaceRelationGraphNativeModel({
+      jobId: 'workspace-index-1',
+      currentPath: '/repo/current.md',
+      depth: 1,
+      limit: 80,
+      query: '',
+      scope: 'current',
+    });
+
+    expect(graph?.nodes[0]).toMatchObject({
+      path: '/repo/current.md',
+      active: true,
+    });
+    expect(nativeMock.queryWorkspaceRelationGraphNative).toHaveBeenCalledWith({
+      jobId: 'workspace-index-1',
+      currentPath: '/repo/current.md',
+      depth: 1,
+      limit: 80,
+      query: '',
+      scope: 'current',
+    });
   });
 });

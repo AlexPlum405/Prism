@@ -72,6 +72,7 @@ function App() {
 
   const {
     workspaceIndex,
+    workspaceIndexJobId,
     workspaceIndexing,
   } = useWorkspaceIndexModel({
     currentDocument,
@@ -123,6 +124,7 @@ function App() {
     rootPath: workspace.rootPath,
     showToast,
     workspaceIndex,
+    workspaceIndexJobId,
   });
 
   const {
@@ -280,6 +282,7 @@ function App() {
         typographyDiagnostics={documentInsight.typographyDiagnostics}
         typographyDiagnosticsVisible={documentInsight.typographyDiagnosticsVisible}
         workspaceIndex={workspaceIndex}
+        workspaceIndexJobId={workspaceIndexJobId}
         onApplyDocumentProperties={handleApplyDocumentProperties}
         onBacklinkSelect={documentInsight.selectBacklink}
         onBacklinksClose={() => documentInsight.setBacklinksVisible(false)}

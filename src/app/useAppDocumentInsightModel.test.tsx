@@ -67,6 +67,7 @@ function createInput() {
     rootPath: '/workspace',
     showToast: vi.fn(),
     workspaceIndex: null,
+    workspaceIndexJobId: null,
   } as Parameters<typeof useAppDocumentInsightModel>[0];
 }
 
@@ -94,6 +95,7 @@ describe('useAppDocumentInsightModel', () => {
       rootPath: input.rootPath,
       showToast: input.showToast,
       workspaceIndex: input.workspaceIndex,
+      workspaceIndexJobId: input.workspaceIndexJobId,
     });
 
     diagnosticsInput.jumpToLine(12);

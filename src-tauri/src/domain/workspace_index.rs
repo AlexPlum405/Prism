@@ -133,6 +133,57 @@ pub struct WorkspaceIndexSearchResultDto {
     pub snippet: String,
 }
 
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RelationGraphNodeDto {
+    pub active: bool,
+    pub backlink_count: usize,
+    pub depth: usize,
+    pub id: String,
+    pub link_count: usize,
+    pub path: String,
+    pub relative_path: String,
+    pub title: String,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RelationGraphEdgeDto {
+    pub id: String,
+    pub source: String,
+    pub target: String,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RelationGraphDto {
+    pub edges: Vec<RelationGraphEdgeDto>,
+    pub nodes: Vec<RelationGraphNodeDto>,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum RelationGraphScopeDto {
+    Current,
+    Workspace,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildRelationGraphInput {
+    pub current_path: Option<String>,
+    pub depth: usize,
+    pub limit: usize,
+    pub query: Option<String>,
+    pub scope: RelationGraphScopeDto,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RawRelationEdge {
+    source_key: String,
+    target_key: String,
+}
+
 #[derive(Debug, Clone)]
 struct WorkspaceFile {
     path: PathBuf,
@@ -1003,6 +1054,207 @@ pub fn query_workspace_index(
     Ok(query_workspace_documents(&documents, &query, limit, &mode))
 }
 
+pub fn get_workspace_index_backlinks(index: &WorkspaceIndexDto, path: &str) -> Vec<BacklinkDto> {
+    index
+        .backlinks_by_path
+        .get(&normalize_path(path))
+        .cloned()
+        .unwrap_or_default()
+}
+
+fn normalize_relation_query(value: Option<&str>) -> String {
+    value.unwrap_or_default().trim().to_lowercase()
+}
+
+fn document_matches_relation_query(document: &WorkspaceIndexedDocumentDto, query: &str) -> bool {
+    if query.is_empty() {
+        return true;
+    }
+
+    document.title.to_lowercase().contains(query)
+        || document.name.to_lowercase().contains(query)
+        || document.relative_path.to_lowercase().contains(query)
+        || document
+            .headings
+            .iter()
+            .any(|heading| heading.title.to_lowercase().contains(query))
+}
+
+fn collect_relation_edges(index: &WorkspaceIndexDto) -> Vec<RawRelationEdge> {
+    let document_keys = index
+        .documents
+        .iter()
+        .map(|document| normalize_path(&document.path))
+        .collect::<HashSet<_>>();
+    let mut edges = Vec::new();
+
+    for document in &index.documents {
+        let source_key = normalize_path(&document.path);
+        for link in &document.links {
+            let Some(resolved_path) = link.resolved_path.as_ref() else {
+                continue;
+            };
+            let target_key = normalize_path(resolved_path);
+            if source_key == target_key || !document_keys.contains(&target_key) {
+                continue;
+            }
+            edges.push(RawRelationEdge {
+                source_key: source_key.clone(),
+                target_key,
+            });
+        }
+    }
+
+    edges
+}
+
+fn relation_adjacency(
+    edges: &[RawRelationEdge],
+) -> (
+    HashMap<String, HashSet<String>>,
+    HashMap<String, HashSet<String>>,
+) {
+    let mut outgoing: HashMap<String, HashSet<String>> = HashMap::new();
+    let mut incoming: HashMap<String, HashSet<String>> = HashMap::new();
+
+    for edge in edges {
+        outgoing
+            .entry(edge.source_key.clone())
+            .or_default()
+            .insert(edge.target_key.clone());
+        incoming
+            .entry(edge.target_key.clone())
+            .or_default()
+            .insert(edge.source_key.clone());
+    }
+
+    (outgoing, incoming)
+}
+
+fn collect_current_relation_keys(
+    current_key: &str,
+    depth: usize,
+    outgoing: &HashMap<String, HashSet<String>>,
+    incoming: &HashMap<String, HashSet<String>>,
+) -> HashMap<String, usize> {
+    let mut depths = HashMap::from([(current_key.to_string(), 0)]);
+    let mut frontier = HashSet::from([current_key.to_string()]);
+    let max_depth = depth.clamp(1, 2);
+
+    for current_depth in 1..=max_depth {
+        let mut next = HashSet::new();
+        for key in &frontier {
+            let mut neighbors = HashSet::new();
+            neighbors.extend(outgoing.get(key).cloned().unwrap_or_default());
+            neighbors.extend(incoming.get(key).cloned().unwrap_or_default());
+            for neighbor in neighbors {
+                if !depths.contains_key(&neighbor) {
+                    depths.insert(neighbor.clone(), current_depth);
+                    next.insert(neighbor);
+                }
+            }
+        }
+        frontier = next;
+    }
+
+    depths
+}
+
+pub fn build_relation_graph(
+    index: &WorkspaceIndexDto,
+    input: BuildRelationGraphInput,
+) -> RelationGraphDto {
+    let normalized_query = normalize_relation_query(input.query.as_deref());
+    let current_key = input
+        .current_path
+        .as_deref()
+        .map(normalize_path)
+        .unwrap_or_default();
+    let raw_edges = collect_relation_edges(index);
+    let (outgoing, incoming) = relation_adjacency(&raw_edges);
+    let document_by_key = index
+        .documents
+        .iter()
+        .map(|document| (normalize_path(&document.path), document))
+        .collect::<HashMap<_, _>>();
+    let current_document_exists =
+        !current_key.is_empty() && document_by_key.contains_key(&current_key);
+    let depth_by_key = if input.scope == RelationGraphScopeDto::Current && current_document_exists {
+        collect_current_relation_keys(&current_key, input.depth, &outgoing, &incoming)
+    } else {
+        index
+            .documents
+            .iter()
+            .map(|document| (normalize_path(&document.path), 0))
+            .collect::<HashMap<_, _>>()
+    };
+    let selected_keys = depth_by_key.keys().cloned().collect::<HashSet<_>>();
+    let mut filtered_documents = index
+        .documents
+        .iter()
+        .filter(|document| selected_keys.contains(&normalize_path(&document.path)))
+        .filter(|document| document_matches_relation_query(document, &normalized_query))
+        .collect::<Vec<_>>();
+    filtered_documents.sort_by(|a, b| {
+        let a_key = normalize_path(&a.path);
+        let b_key = normalize_path(&b.path);
+        (if a_key == current_key { -1 } else { 0 })
+            .cmp(&(if b_key == current_key { -1 } else { 0 }))
+            .then_with(|| {
+                depth_by_key
+                    .get(&a_key)
+                    .unwrap_or(&0)
+                    .cmp(depth_by_key.get(&b_key).unwrap_or(&0))
+            })
+            .then_with(|| compare_relative_path(a, b))
+    });
+    let limit = if input.limit == 0 { 80 } else { input.limit };
+    filtered_documents.truncate(limit);
+
+    let visible_keys = filtered_documents
+        .iter()
+        .map(|document| normalize_path(&document.path))
+        .collect::<HashSet<_>>();
+    let nodes = filtered_documents
+        .iter()
+        .map(|document| {
+            let key = normalize_path(&document.path);
+            RelationGraphNodeDto {
+                active: key == current_key,
+                backlink_count: incoming.get(&key).map(HashSet::len).unwrap_or(0),
+                depth: *depth_by_key.get(&key).unwrap_or(&0),
+                id: key,
+                link_count: outgoing
+                    .get(&normalize_path(&document.path))
+                    .map(HashSet::len)
+                    .unwrap_or(0),
+                path: document.path.clone(),
+                relative_path: document.relative_path.clone(),
+                title: document.title.clone(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let mut edge_ids = HashSet::new();
+    let mut edges = Vec::new();
+    for edge in raw_edges {
+        if !visible_keys.contains(&edge.source_key) || !visible_keys.contains(&edge.target_key) {
+            continue;
+        }
+        let id = format!("{}->{}", edge.source_key, edge.target_key);
+        if !edge_ids.insert(id.clone()) {
+            continue;
+        }
+        edges.push(RelationGraphEdgeDto {
+            id,
+            source: edge.source_key,
+            target: edge.target_key,
+        });
+    }
+
+    RelationGraphDto { edges, nodes }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1243,6 +1495,84 @@ mod tests {
 
         assert_eq!(results[0].match_kind, "title");
         assert_eq!(results[0].document.title, "Unsaved title");
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn queries_backlinks_and_relation_graph_from_index() {
+        let root = temp_dir("relation");
+        fs::create_dir_all(root.join("docs")).expect("create docs");
+        let alpha = root.join("docs").join("alpha.md");
+        let beta = root.join("docs").join("beta.md");
+        let gamma = root.join("docs").join("gamma.md");
+        fs::write(&alpha, "---\ntitle: Alpha\n---\n[Beta](beta.md)").expect("write alpha");
+        fs::write(&beta, "# Beta\n[[gamma]]").expect("write beta");
+        fs::write(&gamma, "# Gamma").expect("write gamma");
+
+        let index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("build index");
+        let beta_path = path_to_string(&beta.canonicalize().expect("canonical beta"));
+        let backlinks = get_workspace_index_backlinks(&index, &beta_path);
+
+        assert_eq!(backlinks.len(), 1);
+        assert_eq!(backlinks[0].title, "Alpha");
+
+        let graph = build_relation_graph(
+            &index,
+            BuildRelationGraphInput {
+                current_path: Some(beta_path),
+                depth: 1,
+                limit: 80,
+                query: None,
+                scope: RelationGraphScopeDto::Current,
+            },
+        );
+
+        assert_eq!(
+            graph
+                .nodes
+                .iter()
+                .map(|node| node.relative_path.as_str())
+                .collect::<Vec<_>>(),
+            ["docs/beta.md", "docs/alpha.md", "docs/gamma.md"]
+        );
+        assert_eq!(
+            graph
+                .edges
+                .iter()
+                .map(|edge| edge.id.as_str())
+                .collect::<Vec<_>>(),
+            [
+                normalize_path(&format!(
+                    "{}->{}",
+                    path_to_string(&alpha.canonicalize().expect("canonical alpha")),
+                    path_to_string(&beta.canonicalize().expect("canonical beta"))
+                )),
+                normalize_path(&format!(
+                    "{}->{}",
+                    path_to_string(&beta.canonicalize().expect("canonical beta")),
+                    path_to_string(&gamma.canonicalize().expect("canonical gamma"))
+                )),
+            ]
+        );
+
+        let filtered = build_relation_graph(
+            &index,
+            BuildRelationGraphInput {
+                current_path: None,
+                depth: 1,
+                limit: 80,
+                query: Some("Gamma".to_string()),
+                scope: RelationGraphScopeDto::Workspace,
+            },
+        );
+        assert_eq!(filtered.nodes[0].relative_path, "docs/gamma.md");
+        assert!(filtered.edges.is_empty());
 
         let _ = fs::remove_dir_all(root);
     }

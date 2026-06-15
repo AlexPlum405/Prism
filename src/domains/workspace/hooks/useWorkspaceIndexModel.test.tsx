@@ -200,6 +200,7 @@ describe('useWorkspaceIndexModel', () => {
     });
     expect(result.current.workspaceIndex?.documentByPath.get('/workspace/current.md')?.title)
       .toBe('Unsaved Current');
+    expect(result.current.workspaceIndexJobId).toBe('workspace-index-1');
 
     rerender({
       currentDocument: createDocument({
@@ -267,6 +268,7 @@ describe('useWorkspaceIndexModel', () => {
       title: 'Native doc-1.md',
       hasContent: true,
     });
+    expect(result.current.workspaceIndexJobId).toBe('workspace-index-large');
   });
 
   it('uses a lightweight metadata index for large workspaces when native jobs are unavailable', async () => {
@@ -295,6 +297,7 @@ describe('useWorkspaceIndexModel', () => {
       title: 'doc-1',
       hasContent: false,
     });
+    expect(result.current.workspaceIndexJobId).toBeNull();
   });
 
   it('polls a running native index job until it completes', async () => {
@@ -346,5 +349,6 @@ describe('useWorkspaceIndexModel', () => {
 
     expect(nativeIndexMock.getWorkspaceIndexJobNativeModel).toHaveBeenCalledWith('workspace-index-running');
     expect(result.current.workspaceIndex?.documents[0].title).toBe('Native Current');
+    expect(result.current.workspaceIndexJobId).toBe('workspace-index-running');
   });
 });

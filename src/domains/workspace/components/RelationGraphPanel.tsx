@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildRelationGraph,
+  type RelationGraph,
   type RelationGraphDepth,
   type RelationGraphNode,
   type RelationGraphScope,
   type WorkspaceIndex,
 } from '../services';
+import { queryWorkspaceRelationGraphNativeModel } from '../services/workspaceIndexNative';
 import { useI18n } from '../../i18n';
 
 interface RelationGraphPanelProps {
@@ -14,6 +16,7 @@ interface RelationGraphPanelProps {
   onClose: () => void;
   onSelect: (path: string) => void;
   visible: boolean;
+  workspaceIndexJobId?: string | null;
 }
 
 interface PositionedNode extends RelationGraphNode {
@@ -54,11 +57,13 @@ export function RelationGraphPanel({
   onClose,
   onSelect,
   visible,
+  workspaceIndexJobId = null,
 }: RelationGraphPanelProps) {
   const { t } = useI18n();
   const [scope, setScope] = useState<RelationGraphScope>('current');
   const [depth, setDepth] = useState<RelationGraphDepth>(1);
   const [query, setQuery] = useState('');
+  const [nativeGraph, setNativeGraph] = useState<{ graph: RelationGraph; key: string } | null>(null);
 
   // 1. 本地聚焦路径机制（单击仅在图谱内聚焦，双击跳转）
   const [localActivePath, setLocalActivePath] = useState<string | null>(currentPath || null);
@@ -72,6 +77,7 @@ export function RelationGraphPanel({
   const mousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const nativeGraphRequestRef = useRef(0);
 
   useEffect(() => {
     if (!visible) return;
@@ -107,8 +113,15 @@ export function RelationGraphPanel({
     }
   }, [visible]);
 
-  // 基于 localActivePath 构建关系图谱
-  const graph = useMemo(() => {
+  const graphQueryKey = [
+    workspaceIndexJobId ?? '',
+    localActivePath ?? '',
+    scope,
+    depth,
+    query,
+  ].join('\n');
+
+  const fallbackGraph = useMemo(() => {
     if (!index) return { nodes: [], edges: [] };
     return buildRelationGraph({
       index,
@@ -118,6 +131,52 @@ export function RelationGraphPanel({
       query,
     });
   }, [localActivePath, depth, index, query, scope]);
+  const graph = nativeGraph?.key === graphQueryKey ? nativeGraph.graph : fallbackGraph;
+
+  useEffect(() => {
+    if (!visible || !workspaceIndexJobId) {
+      setNativeGraph(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestId = nativeGraphRequestRef.current + 1;
+    nativeGraphRequestRef.current = requestId;
+
+    const run = async () => {
+      try {
+        const result = await queryWorkspaceRelationGraphNativeModel({
+          jobId: workspaceIndexJobId,
+          currentPath: localActivePath,
+          scope,
+          depth,
+          query,
+          limit: 80,
+        });
+        if (cancelled || nativeGraphRequestRef.current !== requestId) return;
+        setNativeGraph(result ? { graph: result, key: graphQueryKey } : null);
+      } catch (error) {
+        if (!cancelled && nativeGraphRequestRef.current === requestId) {
+          console.warn('[RelationGraphPanel] Native relation graph query unavailable, using TypeScript fallback:', error);
+          setNativeGraph(null);
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    depth,
+    graphQueryKey,
+    localActivePath,
+    query,
+    scope,
+    visible,
+    workspaceIndexJobId,
+  ]);
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 

@@ -2,11 +2,16 @@ import {
   buildWorkspaceIndexNative,
   cancelWorkspaceIndexJobNative,
   getWorkspaceIndexJobNative,
+  queryWorkspaceBacklinksNative,
   queryWorkspaceIndexNative,
+  queryWorkspaceRelationGraphNative,
   startWorkspaceIndexJobNative,
+  type RelationGraphDepthDto,
+  type RelationGraphScopeDto,
   type WorkspaceIndexQueryModeDto,
 } from '../../../platform/tauri/workspaceIndex';
 import type { PrismCommandError } from '../../../platform/tauri/result';
+import type { RelationGraph } from './relationGraph';
 import type {
   WorkspaceIndex,
   WorkspaceIndexBacklink,
@@ -34,6 +39,20 @@ export interface QueryWorkspaceIndexNativeInput extends BuildWorkspaceIndexNativ
   limit: number;
   mode: WorkspaceIndexQueryModeDto;
   query: string;
+}
+
+export interface QueryWorkspaceBacklinksNativeInput {
+  jobId: string;
+  path: string;
+}
+
+export interface QueryWorkspaceRelationGraphNativeInput {
+  jobId: string;
+  currentPath?: string | null;
+  depth: RelationGraphDepthDto;
+  limit: number;
+  query?: string | null;
+  scope: RelationGraphScopeDto;
 }
 
 export interface WorkspaceIndexJob {
@@ -85,6 +104,46 @@ function isNativeWorkspaceIndexSearchResult(value: unknown): value is WorkspaceI
     && ['title', 'name', 'path', 'heading', 'content'].includes(result.match ?? '')
     && typeof result.score === 'number'
     && typeof result.snippet === 'string',
+  );
+}
+
+function isNativeWorkspaceIndexBacklink(value: unknown): value is WorkspaceIndexBacklink {
+  if (!value || typeof value !== 'object') return false;
+  const backlink = value as Partial<WorkspaceIndexBacklink>;
+  return Boolean(
+    typeof backlink.path === 'string'
+    && typeof backlink.title === 'string'
+    && typeof backlink.line === 'number'
+    && typeof backlink.column === 'number'
+    && typeof backlink.excerpt === 'string',
+  );
+}
+
+function isNativeRelationGraph(value: unknown): value is RelationGraph {
+  if (!value || typeof value !== 'object') return false;
+  const graph = value as Partial<RelationGraph>;
+  return Boolean(
+    Array.isArray(graph.nodes)
+    && graph.nodes.every((node) => (
+      node
+      && typeof node === 'object'
+      && typeof node.id === 'string'
+      && typeof node.path === 'string'
+      && typeof node.relativePath === 'string'
+      && typeof node.title === 'string'
+      && typeof node.active === 'boolean'
+      && typeof node.depth === 'number'
+      && typeof node.linkCount === 'number'
+      && typeof node.backlinkCount === 'number'
+    ))
+    && Array.isArray(graph.edges)
+    && graph.edges.every((edge) => (
+      edge
+      && typeof edge === 'object'
+      && typeof edge.id === 'string'
+      && typeof edge.source === 'string'
+      && typeof edge.target === 'string'
+    )),
   );
 }
 
@@ -192,4 +251,20 @@ export async function cancelWorkspaceIndexJobNativeModel(jobId: string): Promise
   return dto && typeof dto === 'object'
     ? workspaceIndexJobFromNativeDto(dto as NativeWorkspaceIndexJobDto)
     : null;
+}
+
+export async function queryWorkspaceBacklinksNativeModel(
+  input: QueryWorkspaceBacklinksNativeInput,
+): Promise<WorkspaceIndexBacklink[] | null> {
+  const dto = await queryWorkspaceBacklinksNative(input);
+
+  return Array.isArray(dto) && dto.every(isNativeWorkspaceIndexBacklink) ? dto : null;
+}
+
+export async function queryWorkspaceRelationGraphNativeModel(
+  input: QueryWorkspaceRelationGraphNativeInput,
+): Promise<RelationGraph | null> {
+  const dto = await queryWorkspaceRelationGraphNative(input);
+
+  return isNativeRelationGraph(dto) ? dto : null;
 }

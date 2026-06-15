@@ -1,7 +1,14 @@
-import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpenDocument } from '../domains/document/types';
+import { buildWorkspaceIndex } from '../domains/workspace/services';
 import { useDocumentNavigationModel } from './useDocumentNavigationModel';
+
+const nativeWorkspaceIndexMock = vi.hoisted(() => ({
+  queryWorkspaceBacklinksNativeModel: vi.fn(),
+}));
+
+vi.mock('../domains/workspace/services/workspaceIndexNative', () => nativeWorkspaceIndexMock);
 
 function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
   return {
@@ -23,6 +30,8 @@ function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
 function renderNavigation(overrides: {
   currentDocument?: OpenDocument | null;
   rootPath?: string | null;
+  workspaceIndex?: ReturnType<typeof buildWorkspaceIndex> | null;
+  workspaceIndexJobId?: string | null;
 } = {}) {
   const handleFileAction = vi.fn();
   const jumpToLine = vi.fn();
@@ -34,7 +43,8 @@ function renderNavigation(overrides: {
     jumpToLine,
     rootPath: overrides.rootPath ?? null,
     showToast,
-    workspaceIndex: null,
+    workspaceIndex: overrides.workspaceIndex ?? null,
+    workspaceIndexJobId: overrides.workspaceIndexJobId ?? null,
   }));
 
   return {
@@ -46,6 +56,11 @@ function renderNavigation(overrides: {
 }
 
 describe('useDocumentNavigationModel', () => {
+  beforeEach(() => {
+    nativeWorkspaceIndexMock.queryWorkspaceBacklinksNativeModel.mockReset();
+    nativeWorkspaceIndexMock.queryWorkspaceBacklinksNativeModel.mockResolvedValue(null);
+  });
+
   it('jumps to same-document heading links without requiring a workspace', async () => {
     const { handleFileAction, jumpToLine, result, showToast } = renderNavigation();
 
@@ -95,5 +110,44 @@ describe('useDocumentNavigationModel', () => {
 
     expect(jumpToLine).toHaveBeenCalledWith(1);
     expect(handleFileAction).not.toHaveBeenCalled();
+  });
+
+  it('uses native backlinks when a workspace index job id is available', async () => {
+    const workspaceIndex = buildWorkspaceIndex({
+      fileTree: [
+        { path: '/repo/current.md', name: 'current.md', kind: 'file' },
+        { path: '/repo/fallback.md', name: 'fallback.md', kind: 'file' },
+      ],
+      workspaceRoot: '/repo',
+      documents: [
+        { path: '/repo/current.md', content: '# Current' },
+        { path: '/repo/fallback.md', content: '# Fallback\n[Current](current.md)' },
+      ],
+    });
+    nativeWorkspaceIndexMock.queryWorkspaceBacklinksNativeModel.mockResolvedValue([{
+      path: '/repo/native.md',
+      title: 'Native',
+      line: 7,
+      column: 2,
+      excerpt: 'native backlink',
+    }]);
+
+    const { result } = renderNavigation({
+      rootPath: '/repo',
+      workspaceIndex,
+      workspaceIndexJobId: 'workspace-index-1',
+    });
+
+    expect(result.current.backlinks[0].path).toBe('/repo/fallback.md');
+    await waitFor(() => {
+      expect(result.current.backlinks[0]).toMatchObject({
+        path: '/repo/native.md',
+        title: 'Native',
+      });
+    });
+    expect(nativeWorkspaceIndexMock.queryWorkspaceBacklinksNativeModel).toHaveBeenCalledWith({
+      jobId: 'workspace-index-1',
+      path: '/repo/current.md',
+    });
   });
 });

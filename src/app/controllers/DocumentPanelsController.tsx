@@ -29,6 +29,7 @@ interface DocumentPanelsControllerProps {
   typographyDiagnostics: TypographyDiagnostic[];
   typographyDiagnosticsVisible: boolean;
   workspaceIndex: WorkspaceIndex | null;
+  workspaceIndexJobId?: string | null;
   onApplyDocumentProperties: (content: string) => void;
   onBacklinkSelect: (reference: BacklinkReference) => void;
   onBacklinksClose: () => void;
@@ -58,6 +59,7 @@ export function DocumentPanelsController({
   typographyDiagnostics,
   typographyDiagnosticsVisible,
   workspaceIndex,
+  workspaceIndexJobId = null,
   onApplyDocumentProperties,
   onBacklinkSelect,
   onBacklinksClose,
@@ -100,6 +102,7 @@ export function DocumentPanelsController({
           <RelationGraphPanel
             visible={relationGraphVisible}
             index={workspaceIndex}
+            workspaceIndexJobId={workspaceIndexJobId}
             currentPath={currentDocumentPath}
             onClose={onRelationGraphClose}
             onSelect={(path) => {

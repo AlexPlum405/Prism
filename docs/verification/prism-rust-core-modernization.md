@@ -2235,3 +2235,82 @@ npm test -- --run src/domains/workspace/services/workspaceIndexNative.test.ts sr
 - job 取消目前是状态级取消：running job 会被标记 cancelled，构建线程完成后不会写回结果；但正在进行的底层文件扫描仍可能继续跑到本次 build 返回。后续可以把 cancel token 继续下传到 `collect_workspace_files` 与文档解析循环，实现更细粒度的抢占式取消。
 - `progress` 目前是阶段型进度（queued/build/completed），不是逐文件精确进度。后续可以在 `build_workspace_documents` 内部报告 scanned/parsed 计数。
 - 关系图谱、backlinks 查询仍消费完整 `WorkspaceIndex`；下一阶段应把 `query_workspace_backlinks` / `query_relation_graph` 也挂到同一个 Rust index session 上，避免重复跨 WebView 搬运大对象。
+
+
+## Rust Core Phase 4：反链与关系图谱查询下沉
+
+### 执行前评估
+
+结论：执行，收益为正。
+
+Phase 3 已经让 Rust 侧持有 completed workspace index job，但反链和关系图谱仍在前端消费完整 `WorkspaceIndex`：
+
+- `useDocumentNavigationModel` 从 `workspaceIndex.backlinksByPath` 同步读取当前文档反链。
+- `RelationGraphPanel` 在 WebView 中调用 `buildRelationGraph(index, ...)`，每次 scope/depth/query/local active path 变化都会遍历完整 documents/links。
+- 这两个能力属于 CONTEXT 中“页面链接、反向链接与关系图谱”和“快速打开与工作区搜索共用同一套工作区索引”的同一领域能力，应复用 Rust workspace index session。
+
+收益判断：
+
+- Leverage：同一个 Rust workspace index job 同时服务搜索、反链和图谱查询。
+- Locality：反链和图谱的 link adjacency、backlink count、depth/query 过滤集中到 Rust Module。
+- Interface 更小：前端从“持有完整 `WorkspaceIndex` 并计算”变为“传 `jobId/currentPath/scope/depth/query/limit`，收小 DTO”。
+- 风险可控：保留现有 TypeScript Implementation 作为 fallback；native DTO 校验失败或 native 不可用时 UI 行为不变。
+
+### 改动范围
+
+- `src-tauri/src/domain/workspace_index.rs`
+  - 新增 `get_workspace_index_backlinks(index, path)`。
+  - 新增 `build_relation_graph(index, input)`，对齐 TS `buildRelationGraph` 的 current/workspace scope、depth、query、limit、node/edge 输出。
+  - 新增 `RelationGraphDto` / node / edge / scope DTO。
+- `src-tauri/src/domain/workspace_index_job.rs`
+  - 新增 completed-job 查询入口，running job 返回 `workspace_index_job_not_ready`。
+  - 新增 `query_workspace_backlinks` 与 `query_workspace_relation_graph`。
+- `src-tauri/src/commands/workspace_index.rs` / `src-tauri/src/lib.rs`
+  - 注册 `query_workspace_backlinks` 与 `query_workspace_relation_graph` commands。
+- `src/platform/tauri/workspaceIndex.ts` / `src/domains/workspace/services/workspaceIndexNative.ts`
+  - 新增 native Adapter 与 DTO 校验。
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.ts`
+  - 暴露 `workspaceIndexJobId` 作为 Rust index session handle。
+- `src/app/useDocumentNavigationModel.ts`
+  - 反链查询 native-first；先设置 TS fallback，native 返回后替换。
+- `src/domains/workspace/components/RelationGraphPanel.tsx`
+  - 图谱数据 native-first；native 不可用或无 jobId 时继续使用 TS `buildRelationGraph`。
+- `src/App.tsx` / `src/app/controllers/DocumentPanelsController.tsx`
+  - 透传 `workspaceIndexJobId`。
+
+### 完成后对比
+
+| 项目 | Phase 4 前 | Phase 4 后 |
+|---|---|---|
+| 反链查询 | WebView 从完整 `WorkspaceIndex.backlinksByPath` 读当前 path | Rust completed job 返回当前 path 的 `BacklinkDto[]`，TS fallback 保留 |
+| 图谱查询 | WebView 每次从完整 documents/links 构建 raw edges、adjacency、depth、query filter | Rust completed job 返回当前面板需要的 `RelationGraphDto`，TS fallback 保留 |
+| 跨 Seam 数据 | 前端主路径依赖完整 `WorkspaceIndex` 对象 | 查询只传 `jobId/path` 或 `jobId/currentPath/scope/depth/query/limit` |
+| 测试表面 | TS service + panel 测试覆盖前端 Implementation | Rust domain/job 测试 + TS Adapter/hook/panel 测试覆盖 native-first 和 fallback |
+| 未完成点 | 图谱/反链未复用 Rust session | 已复用 Rust completed job；但 job 内部还不是逐文件可中断进度 |
+
+### 验证
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index
+npm test -- --run src/domains/workspace/services/workspaceIndexNative.test.ts src/app/useDocumentNavigationModel.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/domains/workspace/services/relationGraph.test.ts
+cargo test --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/app/useAppDocumentInsightModel.test.tsx src/app/controllers/DocumentPanelsController.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/domains/workspace/services/relationGraph.test.ts src/components/shell/CommandPalette.test.tsx
+npm run build
+git diff --check
+```
+
+当前已通过：
+
+- Rust workspace_index / workspace_index_job 聚焦测试：通过，11 个测试。
+- TS native Adapter / 反链导航 / 图谱面板 / 图谱 fallback 聚焦测试：通过，4 个测试文件、17 个测试。
+- Rust 全量测试：通过，42 个测试。
+- TS 工作区/导航/图谱/命令面板聚焦测试：通过，9 个测试文件、35 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 后续 Phase 评估
+
+- Phase 5（真正增量刷新）：收益为正，仍建议执行。Phase 4 解决“查询下沉”，Phase 5 解决“重复扫描/重复构建”。
+- Phase 6（细粒度进度与可中断）：收益为正，但依赖 Phase 5 的 manifest/loop 改造；建议 Phase 5 后执行。
+- Phase 7（`[[` 页面链接补全下沉）：收益为正，但依赖 Rust session 的 link-target 查询；建议 Phase 5/6 后执行。
+- Phase 8（清理前端旧索引实现）：当前不执行。现在仍需要 TS fallback；过早删除会降低可靠性，是负收益。
