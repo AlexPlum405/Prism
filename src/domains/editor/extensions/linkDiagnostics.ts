@@ -14,13 +14,14 @@ export interface LinkDiagnostic {
 
 interface LinkScanContext {
   currentPath?: string;
+  normalizedWorkspaceFiles?: ReadonlySet<string>;
   validateImageTargets?: boolean;
   workspaceFiles?: string[];
   workspaceRoot?: string | null;
 }
 
 interface NormalizedLinkScanContext extends LinkScanContext {
-  normalizedWorkspaceFiles?: Set<string>;
+  normalizedWorkspaceFiles?: ReadonlySet<string>;
 }
 
 const MARKDOWN_LINK_RE = /!?\[[^\]\n]*\]\(([^)\n]*)\)/g;
@@ -52,6 +53,10 @@ function normalizePath(path: string): string {
 }
 
 export { getMarkdownHeadingSlug };
+
+export function createMarkdownLinkWorkspaceFileSet(workspaceFiles: readonly string[]) {
+  return new Set(workspaceFiles.map(normalizePath));
+}
 
 function collectHeadingSlugs(content: string): Set<string> {
   return new Set(extractMarkdownDocumentHeadings(content).map((heading) => heading.slug));
@@ -88,10 +93,11 @@ function isExternalTarget(target: string): boolean {
 }
 
 function normalizeLinkScanContext(context: LinkScanContext): NormalizedLinkScanContext {
+  if (context.normalizedWorkspaceFiles) return context;
   if (!context.workspaceFiles?.length) return context;
   return {
     ...context,
-    normalizedWorkspaceFiles: new Set(context.workspaceFiles.map(normalizePath)),
+    normalizedWorkspaceFiles: createMarkdownLinkWorkspaceFileSet(context.workspaceFiles),
   };
 }
 

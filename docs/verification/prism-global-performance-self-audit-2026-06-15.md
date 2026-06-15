@@ -193,3 +193,31 @@ npm test -- --run
 npm run build
 git diff --check
 ```
+
+## 追加优化：连续编辑时链接诊断复用工作区文件集合
+
+追加自检风险：
+
+- 第 2 轮已把 `scanMarkdownLinks` 从“每条链接重建文件集合”优化为“每次扫描只建一次集合”。
+- 但 `useDocumentDiagnosticsModel` 在文档内容每次变化时仍会重新 `flattenFiles(fileTree)`，并让链接诊断为同一个工作区重复归一化文件路径。
+- 大工作区连续输入时，这部分成本会和每次编辑同步诊断叠加。
+
+修复：
+
+- `useDocumentDiagnosticsModel` 将工作区文件路径提升为 `useMemo`，只在 `fileTree/rootPath` 变化时重新拍平。
+- `linkDiagnostics` 增加 `createMarkdownLinkWorkspaceFileSet`，允许调用方复用预归一化文件集合。
+- 文档内容变化时仍重新扫描当前 Markdown 链接，但不再为同一个工作区重复准备文件集合。
+
+验证：
+
+```bash
+PRISM_LINK_DIAGNOSTICS_BENCH=1 npm test -- --run src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/extensions/linkDiagnostics.performance.test.ts --reporter verbose
+npm test -- --run src/app/useDocumentDiagnosticsModel.test.tsx src/app/documentDiagnostics.performance.test.ts
+```
+
+| 场景 | 优化前 | 优化后 |
+|---|---:|---:|
+| 30 次连续编辑 / 8000 workspace files | 103.1 ms | 0.4 ms |
+| 1200 links / 4000 workspace files 单次扫描 | 6.3-7.7 ms | 7.7 ms |
+
+结果：连续编辑路径显著减少重复工作；单次大量链接扫描仍保持毫秒级，没有出现数量级回退。

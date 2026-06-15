@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FileNode } from '../domains/workspace/types';
 import { flattenFiles } from '../domains/workspace/services';
 import type { useDocumentStore } from '../domains/document/store';
-import { scanMarkdownLinks } from '../domains/editor/extensions/linkDiagnostics';
+import {
+  createMarkdownLinkWorkspaceFileSet,
+  scanMarkdownLinks,
+} from '../domains/editor/extensions/linkDiagnostics';
 import { scanMarkdownImageDiagnostics, type ImageDiagnostic } from '../domains/editor/extensions/imageDiagnostics';
 import { scanHeadingAnchorDiagnostics } from '../domains/editor/extensions/headingDiagnostics';
 import { scanMarkdownTableDiagnostics } from '../domains/editor/extensions/tables';
@@ -41,14 +44,24 @@ export function useDocumentDiagnosticsModel({
   const [typographyDiagnostics, setTypographyDiagnostics] = useState<ReturnType<typeof scanChineseTypography>>([]);
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
 
+  const workspaceFilePaths = useMemo(
+    () => flattenFiles(fileTree, rootPath).map(({ node }) => node.path),
+    [fileTree, rootPath],
+  );
+
+  const normalizedWorkspaceFiles = useMemo(
+    () => createMarkdownLinkWorkspaceFileSet(workspaceFilePaths),
+    [workspaceFilePaths],
+  );
+
   const linkDiagnostics = useMemo(() => {
     if (!currentDocument) return [];
     return scanMarkdownLinks(currentDocument.content, {
       currentPath: currentDocument.path || undefined,
-      workspaceFiles: flattenFiles(fileTree, rootPath).map(({ node }) => node.path),
+      normalizedWorkspaceFiles,
       workspaceRoot: rootPath,
     });
-  }, [currentDocument, fileTree, rootPath]);
+  }, [currentDocument?.content, currentDocument?.path, normalizedWorkspaceFiles, rootPath]);
 
   const headingDiagnostics = useMemo(
     () => currentDocument ? scanHeadingAnchorDiagnostics(currentDocument.content) : [],
