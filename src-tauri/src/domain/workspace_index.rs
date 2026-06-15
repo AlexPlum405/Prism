@@ -207,9 +207,27 @@ struct CachedIndexedDocument {
     size: Option<u64>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct WorkspaceFileSignature {
+    modified_at: Option<f64>,
+    path: String,
+    size: Option<u64>,
+}
+
 #[derive(Debug, Default)]
 struct WorkspaceIndexCache {
+    base_index: Option<WorkspaceIndexDto>,
+    base_index_signature: Vec<WorkspaceFileSignature>,
     documents_by_path: HashMap<String, CachedIndexedDocument>,
+}
+
+#[derive(Debug)]
+struct WorkspaceDocumentsBuild {
+    can_reuse_base_index: bool,
+    documents: Vec<WorkspaceIndexedDocumentDto>,
+    manifest: Vec<WorkspaceFileSignature>,
+    root: PathBuf,
+    root_key: String,
 }
 
 static WORKSPACE_INDEX_CACHE: OnceLock<Mutex<HashMap<String, WorkspaceIndexCache>>> =
@@ -699,10 +717,53 @@ fn recent_documents_from_documents(
     recent_documents
 }
 
+fn workspace_manifest(files: &[WorkspaceFile]) -> Vec<WorkspaceFileSignature> {
+    files
+        .iter()
+        .map(|file| WorkspaceFileSignature {
+            modified_at: file.modified_at,
+            path: normalize_path(&path_to_string(&file.path)),
+            size: file.size,
+        })
+        .collect()
+}
+
+fn get_base_index_snapshot(
+    root_key: &str,
+    manifest: &[WorkspaceFileSignature],
+) -> Option<WorkspaceIndexDto> {
+    let cache_mutex = workspace_index_cache();
+    let cache_by_root = cache_mutex.lock().ok()?;
+    let workspace_cache = cache_by_root.get(root_key)?;
+    if workspace_cache.base_index_signature == manifest {
+        return workspace_cache.base_index.clone().map(|mut index| {
+            index.generated_at = now_ms();
+            index
+        });
+    }
+    None
+}
+
+fn store_base_index_snapshot(
+    root_key: String,
+    manifest: Vec<WorkspaceFileSignature>,
+    index: WorkspaceIndexDto,
+) {
+    let cache_mutex = workspace_index_cache();
+    let mut cache_by_root = cache_mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let workspace_cache = cache_by_root.entry(root_key.clone()).or_default();
+    workspace_cache.base_index_signature = manifest;
+    workspace_cache.base_index = Some(index);
+}
+
 fn build_workspace_documents(
     input: BuildWorkspaceIndexInput,
     stage: &str,
-) -> PrismResult<(PathBuf, Vec<WorkspaceIndexedDocumentDto>)> {
+) -> PrismResult<WorkspaceDocumentsBuild> {
+    let can_reuse_base_index =
+        input.current_document_override.is_none() && input.recent_files.is_empty();
     let root = canonicalize_existing_path(&input.root_path, stage)?;
     ensure_directory(&root, stage)?;
 
@@ -728,13 +789,14 @@ fn build_workspace_documents(
     let mut files = Vec::new();
     collect_workspace_files(&root, &root, &mut files, stage)?;
     files.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
+    let manifest = workspace_manifest(&files);
 
     let root_key = normalize_path(&path_to_string(&root));
     let cache_mutex = workspace_index_cache();
     let mut cache_by_root = cache_mutex
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let workspace_cache = cache_by_root.entry(root_key).or_default();
+    let workspace_cache = cache_by_root.entry(root_key.clone()).or_default();
     let mut active_cache_keys = HashSet::new();
 
     let mut documents: Vec<WorkspaceIndexedDocumentDto> = Vec::with_capacity(files.len());
@@ -779,11 +841,30 @@ fn build_workspace_documents(
         .retain(|key, _| active_cache_keys.contains(key));
     drop(cache_by_root);
 
-    Ok((root, documents))
+    Ok(WorkspaceDocumentsBuild {
+        can_reuse_base_index,
+        documents,
+        manifest,
+        root,
+        root_key,
+    })
 }
 
 pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<WorkspaceIndexDto> {
-    let (root, mut documents) = build_workspace_documents(input, "build_workspace_index")?;
+    let build = build_workspace_documents(input, "build_workspace_index")?;
+    if build.can_reuse_base_index {
+        if let Some(index) = get_base_index_snapshot(&build.root_key, &build.manifest) {
+            return Ok(index);
+        }
+    }
+
+    let WorkspaceDocumentsBuild {
+        can_reuse_base_index,
+        mut documents,
+        manifest,
+        root,
+        root_key,
+    } = build;
 
     let document_paths: Vec<String> = documents
         .iter()
@@ -833,13 +914,19 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
 
     let recent_documents = recent_documents_from_documents(&documents);
 
-    Ok(WorkspaceIndexDto {
+    let index = WorkspaceIndexDto {
         backlinks_by_path,
         documents,
         generated_at: now_ms(),
         recent_documents,
         root_path: path_to_string(&root),
-    })
+    };
+
+    if can_reuse_base_index {
+        store_base_index_snapshot(root_key, manifest, index.clone());
+    }
+
+    Ok(index)
 }
 
 fn compare_relative_path(
@@ -1042,7 +1129,7 @@ pub fn query_workspace_index(
         current_document_override,
         recent_files,
     } = input;
-    let (_, documents) = build_workspace_documents(
+    let build = build_workspace_documents(
         BuildWorkspaceIndexInput {
             root_path,
             current_document_override,
@@ -1051,7 +1138,12 @@ pub fn query_workspace_index(
         "query_workspace_index",
     )?;
 
-    Ok(query_workspace_documents(&documents, &query, limit, &mode))
+    Ok(query_workspace_documents(
+        &build.documents,
+        &query,
+        limit,
+        &mode,
+    ))
 }
 
 pub fn get_workspace_index_backlinks(index: &WorkspaceIndexDto, path: &str) -> Vec<BacklinkDto> {
@@ -1573,6 +1665,62 @@ mod tests {
         );
         assert_eq!(filtered.nodes[0].relative_path, "docs/gamma.md");
         assert!(filtered.edges.is_empty());
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn reuses_base_index_snapshot_until_manifest_changes() {
+        let root = temp_dir("base-snapshot");
+        let note = root.join("note.md");
+        fs::write(&note, "# Original").expect("write note");
+        let root_key = normalize_path(&path_to_string(
+            &root.canonicalize().expect("canonical root"),
+        ));
+
+        let first = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("first build");
+        assert_eq!(first.documents[0].title, "Original");
+
+        {
+            let mut cache_by_root = workspace_index_cache()
+                .lock()
+                .expect("lock workspace index cache");
+            let workspace_cache = cache_by_root.get_mut(&root_key).expect("workspace cache");
+            let note_key = normalize_path(&path_to_string(
+                &note.canonicalize().expect("canonical note"),
+            ));
+            workspace_cache
+                .documents_by_path
+                .get_mut(&note_key)
+                .expect("cached note")
+                .document
+                .title = "Poisoned document cache".to_string();
+        }
+
+        let second = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("second build");
+        assert_eq!(second.documents[0].title, "Original");
+
+        fs::write(&note, "# Changed title with different size").expect("rewrite note");
+        let changed = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("changed build");
+        assert_eq!(
+            changed.documents[0].title,
+            "Changed title with different size"
+        );
 
         let _ = fs::remove_dir_all(root);
     }

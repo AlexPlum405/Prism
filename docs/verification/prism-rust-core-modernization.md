@@ -2314,3 +2314,59 @@ git diff --check
 - Phase 6（细粒度进度与可中断）：收益为正，但依赖 Phase 5 的 manifest/loop 改造；建议 Phase 5 后执行。
 - Phase 7（`[[` 页面链接补全下沉）：收益为正，但依赖 Rust session 的 link-target 查询；建议 Phase 5/6 后执行。
 - Phase 8（清理前端旧索引实现）：当前不执行。现在仍需要 TS fallback；过早删除会降低可靠性，是负收益。
+
+
+## Rust Core Phase 5：Base index snapshot 增量刷新
+
+### 执行前评估
+
+结论：执行，收益为正，但不做过宽重构。
+
+Phase 3/4 后，Rust 已经承担 workspace index job、搜索、反链和图谱查询。现状仍有一个成本点：每次 base index job 即使文件 manifest 未变化，也会重新执行 link resolution、backlinks map、recent documents 等完整 index 组装。Rust 已有 per-document cache，可以避免重复读取和解析未变文件，但完整 `WorkspaceIndexDto` 仍会被重新组装。
+
+收益判断：
+
+- Leverage：在 Rust workspace index Module 内部增加 base snapshot cache，不改变外部 Interface，却能让 job/search/backlinks/graph 的共同基础索引复用同一份完整快照。
+- Locality：manifest 判断、snapshot 命中和失效逻辑集中在 Rust Module，不分散到 hook 或面板。
+- 风险控制：仅当 `currentDocumentOverride=null` 且 `recentFiles=[]` 的 base index 构建才启用 snapshot；带 overlay 的查询继续走现有路径，避免缓存未保存内容。
+
+### 改动范围
+
+- `src-tauri/src/domain/workspace_index.rs`
+  - `WorkspaceIndexCache` 增加 `base_index` 与 `base_index_signature`。
+  - 新增 `WorkspaceFileSignature` 和 `workspace_manifest(files)`。
+  - `build_workspace_index` 在 base input 且 manifest 未变化时直接返回上次 `WorkspaceIndexDto` 快照，并刷新 `generatedAt`。
+  - manifest 变化后重建完整 index 并更新 snapshot。
+
+### 完成后对比
+
+| 项目 | Phase 5 前 | Phase 5 后 |
+|---|---|---|
+| 未变化工作区二次 base job | 复用单文件 parse cache，但仍重算完整 index/backlinks | manifest 命中时直接返回完整 base index snapshot |
+| 带未保存文档或 recent overlay | 不走完整 snapshot | 仍不走完整 snapshot，避免未保存内容/最近文件污染 base cache |
+| manifest 变化 | 重新构建 | 重新构建并更新 snapshot |
+| Interface | `build_workspace_index` / job commands | 不变 |
+
+### 验证
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index::tests::reuses_base_index_snapshot_until_manifest_changes
+cargo test --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/app/useAppDocumentInsightModel.test.tsx src/app/controllers/DocumentPanelsController.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/domains/workspace/services/relationGraph.test.ts src/components/shell/CommandPalette.test.tsx
+npm run build
+git diff --check
+```
+
+当前已通过：
+
+- Rust snapshot 聚焦测试：通过，验证 manifest 未变时复用 base snapshot，文件大小变化后 snapshot 失效并重建。
+- Rust 全量测试：43 passed。
+- 前端 workspace/search/backlinks/graph/command palette 相关测试：9 files / 35 tests passed。
+- 生产构建：通过，仅保留既有 chunk size warning。
+- diff 空白检查：通过。
+
+### 后续 Phase 评估
+
+- Phase 6（细粒度进度与可中断）：收益为正，建议执行。Phase 5 已有 manifest 概念，但 progress 仍是阶段型，cancel 仍是状态级。
+- Phase 7（`[[` 页面链接补全下沉）：收益为正，建议在 Phase 6 后执行。
+- Phase 8（清理前端旧索引实现）：仍跳过。TS fallback 仍有价值，当前删除是负收益。
