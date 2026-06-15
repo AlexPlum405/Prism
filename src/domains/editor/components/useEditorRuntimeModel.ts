@@ -18,7 +18,7 @@ import {
 } from '@codemirror/view';
 import type { I18nKey, I18nParams } from '../../i18n/resources';
 import { markdownListKeymap } from '../extensions/markdownLists';
-import type { WorkspaceLinkFile } from '../extensions/linkCompletion';
+import type { QueryWorkspaceLinkTargets, WorkspaceLinkFile } from '../extensions/linkCompletion';
 import { findMarkdownTableBlock } from '../extensions/tables';
 import {
   compatibilityMarkdownPlugin,
@@ -77,6 +77,7 @@ interface UseEditorRuntimeModelInput {
   onScrollRef: MutableRefObject<(() => void) | undefined>;
   onSelectionTextChangeRef: MutableRefObject<((text: string) => void) | undefined>;
   onTopLineChangeRef: MutableRefObject<((line: number) => void) | undefined>;
+  queryWorkspaceLinkTargets?: QueryWorkspaceLinkTargets;
   showLineNumbers: boolean;
   t: EditorTranslate;
   typewriterModeRef: MutableRefObject<boolean>;
@@ -122,6 +123,7 @@ export function useEditorRuntimeModel({
   onScrollRef,
   onSelectionTextChangeRef,
   onTopLineChangeRef,
+  queryWorkspaceLinkTargets,
   showLineNumbers,
   t,
   typewriterModeRef,
@@ -221,6 +223,7 @@ export function useEditorRuntimeModel({
         closeBrackets(),
         editorLinkCompletionCompartment.of(getLinkCompletionExtension({
           currentDocumentPath,
+          queryWorkspaceLinkTargets,
           workspaceFiles: workspaceLinkFiles,
           workspaceRootPath,
         })),
@@ -414,11 +417,12 @@ export function useEditorRuntimeModel({
     view.dispatch({
       effects: editorLinkCompletionCompartment.reconfigure(getLinkCompletionExtension({
         currentDocumentPath,
+        queryWorkspaceLinkTargets,
         workspaceFiles: workspaceLinkFiles,
         workspaceRootPath,
       })),
     });
-  }, [currentDocumentPath, viewRef, workspaceLinkFiles, workspaceRootPath]);
+  }, [currentDocumentPath, queryWorkspaceLinkTargets, viewRef, workspaceLinkFiles, workspaceRootPath]);
 
   const getEditorScroller = useCallback(() => {
     return viewRef.current?.scrollDOM ?? null;

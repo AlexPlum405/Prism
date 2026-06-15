@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { CompletionContext } from '@codemirror/autocomplete';
+import { EditorState } from '@codemirror/state';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  createMarkdownLinkCompletionSource,
   getMarkdownHeadingCompletionOptions,
   getMarkdownLinkTrigger,
+  getWorkspaceLinkCompletionOptionsFromTargets,
   getWorkspaceFileCompletionOptions,
   getWikiHeadingCompletionOptions,
   getWikiLinkCompletionOptions,
@@ -152,5 +156,61 @@ describe('markdown link completion', () => {
     expect(change.to).toBe(to);
     expect(change.insert).toBe('[安装步骤](guide.md#安装步骤)');
     expect(change.insert).not.toContain('[[');
+  });
+
+  it('maps native wiki link targets to standard Markdown link completions', () => {
+    const options = getWorkspaceLinkCompletionOptionsFromTargets([{
+      label: '安装步骤',
+      kind: 'keyword',
+      detail: 'docs/guide.md#安装步骤',
+      target: 'guide.md#安装步骤',
+      title: '安装步骤',
+    }], 'wiki');
+    const dispatched: Array<Record<string, unknown>> = [];
+    const fakeView = { dispatch: (spec: Record<string, unknown>) => dispatched.push(spec) };
+
+    (options[0].apply as (view: unknown, completion: unknown, from: number, to: number) => void)(
+      fakeView,
+      options[0],
+      2,
+      4,
+    );
+
+    expect(options[0]).toMatchObject({
+      label: '安装步骤',
+      type: 'keyword',
+      detail: 'docs/guide.md#安装步骤',
+    });
+    expect((dispatched[0].changes as { insert: string }).insert).toBe('[安装步骤](guide.md#安装步骤)');
+  });
+
+  it('uses native link target provider for wiki-triggered completions when available', async () => {
+    const queryWorkspaceLinkTargets = vi.fn().mockResolvedValue([{
+      label: '安装步骤',
+      kind: 'keyword',
+      detail: 'docs/guide.md#安装步骤',
+      target: 'guide.md#安装步骤',
+      title: '安装步骤',
+    }]);
+    const source = createMarkdownLinkCompletionSource(() => ({
+      currentDocumentPath: '/repo/docs/current.md',
+      queryWorkspaceLinkTargets,
+      workspaceFiles: [],
+      workspaceRootPath: '/repo',
+    }));
+    const state = EditorState.create({ doc: '[[安' });
+
+    const result = await source(new CompletionContext(state, state.doc.length, true));
+
+    expect(queryWorkspaceLinkTargets).toHaveBeenCalledWith({
+      currentDocumentPath: '/repo/docs/current.md',
+      limit: 80,
+      mode: 'wiki',
+      query: '安',
+    });
+    expect(result?.options[0]).toMatchObject({
+      label: '安装步骤',
+      type: 'keyword',
+    });
   });
 });

@@ -13,6 +13,8 @@ import { useDocumentStore } from '../../document/store';
 import { useSettingsStore } from '../../settings/store';
 import { useWorkspaceStore } from '../../workspace/store';
 import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services';
+import { queryWorkspaceLinkTargetsNativeModel } from '../../workspace/services/workspaceIndexNative';
+import type { QueryWorkspaceLinkTargets } from '../extensions/linkCompletion';
 import type { SearchAction, SearchParams } from './SearchPanel';
 import { ContextMenu } from '../../../components/shell/ContextMenu';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
@@ -78,6 +80,7 @@ interface EditorPaneProps {
   onTopLineChange?: (line: number) => void;
   onScroll?: () => void;
   workspaceIndex?: WorkspaceIndex | null;
+  workspaceIndexJobId?: string | null;
 }
 
 function getSelectedText(view: EditorView) {
@@ -158,6 +161,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       onTopLineChange,
       onScroll,
       workspaceIndex,
+      workspaceIndexJobId,
     },
     ref,
   ) {
@@ -194,6 +198,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           })),
       [workspaceFileTree, workspaceIndex, workspaceRootPath],
     );
+    const queryWorkspaceLinkTargets = useMemo<QueryWorkspaceLinkTargets | undefined>(() => {
+      if (!workspaceIndexJobId) return undefined;
+      return (input) => queryWorkspaceLinkTargetsNativeModel({
+        jobId: workspaceIndexJobId,
+        currentPath: input.currentDocumentPath ?? null,
+        limit: input.limit,
+        mode: input.mode,
+        query: input.query,
+      });
+    }, [workspaceIndexJobId]);
     
     // 关键标记：用于拦截因同步内容触发的 onChange
     const isUpdatingFromPropsRef = useRef(false);
@@ -466,6 +480,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       onScrollRef,
       onSelectionTextChangeRef,
       onTopLineChangeRef,
+      queryWorkspaceLinkTargets,
       showLineNumbers,
       t,
       typewriterModeRef,

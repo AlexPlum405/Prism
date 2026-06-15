@@ -30,6 +30,7 @@ interface SplitViewProps {
   ) => void | Promise<void>;
   onScrollStateChange?: (scrollState: Partial<DocumentScrollState>) => void;
   workspaceIndex?: WorkspaceIndex | null;
+  workspaceIndexJobId?: string | null;
 }
 
 const DEFAULT_SEARCH_PARAMS: SearchParams = {
@@ -375,6 +376,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     onOpenDocumentLink,
     onScrollStateChange,
     workspaceIndex,
+    workspaceIndexJobId,
   }, ref) {
     const previewContainerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<EditorPaneHandle>(null);
@@ -838,6 +840,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
               onScrollRatioChange={handleEditorScrollRatioChange}
               onTopLineChange={isSplit ? syncPreviewByEditor : undefined}
               workspaceIndex={workspaceIndex}
+              workspaceIndexJobId={workspaceIndexJobId}
             />
           </div>
         </div>

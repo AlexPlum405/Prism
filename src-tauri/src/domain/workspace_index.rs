@@ -199,6 +199,32 @@ pub struct BuildRelationGraphInput {
     pub scope: RelationGraphScopeDto,
 }
 
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum WorkspaceLinkTargetModeDto {
+    Markdown,
+    Wiki,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWorkspaceLinkTargetsInput {
+    pub current_path: Option<String>,
+    pub limit: usize,
+    pub mode: WorkspaceLinkTargetModeDto,
+    pub query: String,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceLinkTargetDto {
+    pub detail: String,
+    pub kind: String,
+    pub label: String,
+    pub target: String,
+    pub title: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct RawRelationEdge {
     source_key: String,
@@ -1157,6 +1183,158 @@ pub fn build_workspace_index_with_options(
     Ok(index)
 }
 
+fn dirname_for_link_target(path: &str) -> String {
+    let normalized = path.replace('\\', "/");
+    let Some((dir, _)) = normalized.rsplit_once('/') else {
+        return String::new();
+    };
+    if dir.is_empty() {
+        "/".to_string()
+    } else {
+        dir.to_string()
+    }
+}
+
+fn path_segments(value: &str) -> Vec<String> {
+    normalize_path_parts(value)
+        .split('/')
+        .filter(|part| !part.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn relative_path_between(from_dir: &str, to_path: &str) -> String {
+    let mut from_parts = path_segments(from_dir);
+    let mut to_parts = path_segments(to_path);
+    while !from_parts.is_empty()
+        && !to_parts.is_empty()
+        && from_parts[0].eq_ignore_ascii_case(&to_parts[0])
+    {
+        from_parts.remove(0);
+        to_parts.remove(0);
+    }
+    format!("{}{}", "../".repeat(from_parts.len()), to_parts.join("/"))
+}
+
+fn link_target_for_document(
+    document: &WorkspaceIndexedDocumentDto,
+    current_path: Option<&str>,
+) -> String {
+    current_path
+        .map(dirname_for_link_target)
+        .filter(|current_dir| !current_dir.is_empty())
+        .map(|current_dir| relative_path_between(&current_dir, &document.path))
+        .filter(|target| !target.is_empty())
+        .unwrap_or_else(|| document.relative_path.clone())
+}
+
+fn link_target_matches_query(target: &WorkspaceLinkTargetDto, query: &str) -> bool {
+    query.is_empty()
+        || target.label.to_lowercase().contains(query)
+        || target.detail.to_lowercase().contains(query)
+        || target.target.to_lowercase().contains(query)
+        || target.title.to_lowercase().contains(query)
+}
+
+fn push_link_target(
+    targets: &mut Vec<WorkspaceLinkTargetDto>,
+    target: WorkspaceLinkTargetDto,
+    query: &str,
+    limit: usize,
+) {
+    if targets.len() >= limit || !link_target_matches_query(&target, query) {
+        return;
+    }
+    targets.push(target);
+}
+
+pub fn query_workspace_link_targets(
+    index: &WorkspaceIndexDto,
+    input: QueryWorkspaceLinkTargetsInput,
+) -> Vec<WorkspaceLinkTargetDto> {
+    let limit = if input.limit == 0 { 80 } else { input.limit };
+    let query = input.query.trim().to_lowercase();
+    let current_path = input.current_path.as_deref();
+    let mut targets = Vec::new();
+
+    for document in &index.documents {
+        let target = link_target_for_document(document, current_path);
+        match input.mode {
+            WorkspaceLinkTargetModeDto::Markdown => {
+                push_link_target(
+                    &mut targets,
+                    WorkspaceLinkTargetDto {
+                        detail: document.name.clone(),
+                        kind: "file".to_string(),
+                        label: target.clone(),
+                        target,
+                        title: document.title.clone(),
+                    },
+                    &query,
+                    limit,
+                );
+            }
+            WorkspaceLinkTargetModeDto::Wiki => {
+                let path_label = strip_markdown_extension(&document.relative_path);
+                let title = document.title.trim();
+                let title = if title.is_empty() {
+                    strip_markdown_extension(&document.name)
+                } else {
+                    title.to_string()
+                };
+
+                push_link_target(
+                    &mut targets,
+                    WorkspaceLinkTargetDto {
+                        detail: document.title.clone(),
+                        kind: "file".to_string(),
+                        label: path_label.clone(),
+                        target: target.clone(),
+                        title: title.clone(),
+                    },
+                    &query,
+                    limit,
+                );
+
+                if normalize_path(&title) != normalize_path(&path_label) {
+                    push_link_target(
+                        &mut targets,
+                        WorkspaceLinkTargetDto {
+                            detail: document.relative_path.clone(),
+                            kind: "file".to_string(),
+                            label: title.clone(),
+                            target: target.clone(),
+                            title: title.clone(),
+                        },
+                        &query,
+                        limit,
+                    );
+                }
+
+                for heading in &document.headings {
+                    if heading.title.is_empty() || heading.slug.is_empty() {
+                        continue;
+                    }
+                    push_link_target(
+                        &mut targets,
+                        WorkspaceLinkTargetDto {
+                            detail: format!("{}#{}", document.relative_path, heading.slug),
+                            kind: "keyword".to_string(),
+                            label: heading.title.clone(),
+                            target: format!("{}#{}", target, heading.slug),
+                            title: heading.title.clone(),
+                        },
+                        &query,
+                        limit,
+                    );
+                }
+            }
+        }
+    }
+
+    targets
+}
+
 fn compare_relative_path(
     a: &WorkspaceIndexedDocumentDto,
     b: &WorkspaceIndexedDocumentDto,
@@ -1895,6 +2073,60 @@ mod tests {
         );
         assert_eq!(filtered.nodes[0].relative_path, "docs/gamma.md");
         assert!(filtered.edges.is_empty());
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn queries_workspace_link_targets_for_markdown_and_wiki_completion() {
+        let root = temp_dir("link-targets");
+        fs::create_dir_all(root.join("docs")).expect("create docs");
+        let current = root.join("docs").join("current.md");
+        let guide = root.join("docs").join("guide.md");
+        let readme = root.join("README.md");
+        fs::write(&current, "# Current").expect("write current");
+        fs::write(&guide, "---\ntitle: 入门指南\n---\n# 安装步骤\n正文").expect("write guide");
+        fs::write(&readme, "# Readme").expect("write readme");
+
+        let index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("build index");
+        let current_path = path_to_string(&current.canonicalize().expect("canonical current"));
+
+        let wiki_targets = query_workspace_link_targets(
+            &index,
+            QueryWorkspaceLinkTargetsInput {
+                current_path: Some(current_path.clone()),
+                limit: 10,
+                mode: WorkspaceLinkTargetModeDto::Wiki,
+                query: "安装".to_string(),
+            },
+        );
+        assert_eq!(
+            wiki_targets[0],
+            WorkspaceLinkTargetDto {
+                detail: "docs/guide.md#安装步骤".to_string(),
+                kind: "keyword".to_string(),
+                label: "安装步骤".to_string(),
+                target: "guide.md#安装步骤".to_string(),
+                title: "安装步骤".to_string(),
+            }
+        );
+
+        let markdown_targets = query_workspace_link_targets(
+            &index,
+            QueryWorkspaceLinkTargetsInput {
+                current_path: Some(current_path),
+                limit: 10,
+                mode: WorkspaceLinkTargetModeDto::Markdown,
+                query: "README".to_string(),
+            },
+        );
+        assert_eq!(markdown_targets[0].label, "../README.md");
+        assert_eq!(markdown_targets[0].target, "../README.md");
 
         let _ = fs::remove_dir_all(root);
     }

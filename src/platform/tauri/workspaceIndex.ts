@@ -45,6 +45,16 @@ export interface QueryWorkspaceRelationGraphInputDto {
   scope: RelationGraphScopeDto;
 }
 
+export type WorkspaceLinkTargetModeDto = 'markdown' | 'wiki';
+
+export interface QueryWorkspaceLinkTargetsInputDto {
+  jobId: string;
+  currentPath?: string | null;
+  limit: number;
+  mode: WorkspaceLinkTargetModeDto;
+  query: string;
+}
+
 export function buildWorkspaceIndexNative(input: BuildWorkspaceIndexInputDto) {
   return invokeNativeCommand<unknown>('build_workspace_index', { input });
 }
@@ -71,4 +81,8 @@ export function queryWorkspaceBacklinksNative(input: QueryWorkspaceBacklinksInpu
 
 export function queryWorkspaceRelationGraphNative(input: QueryWorkspaceRelationGraphInputDto) {
   return invokeNativeCommand<unknown>('query_workspace_relation_graph', { input });
+}
+
+export function queryWorkspaceLinkTargetsNative(input: QueryWorkspaceLinkTargetsInputDto) {
+  return invokeNativeCommand<unknown>('query_workspace_link_targets', { input });
 }

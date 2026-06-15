@@ -232,6 +232,7 @@ function App() {
         typographyIssueCount={documentInsight.typographyDiagnostics.length}
         workspace={workspace}
         workspaceIndex={workspaceIndex}
+        workspaceIndexJobId={workspaceIndexJobId}
         writingStats={writingStats}
         onBacklinksClick={documentInsight.openBacklinks}
         onCloseContextMenu={closeGlobalContextMenu}

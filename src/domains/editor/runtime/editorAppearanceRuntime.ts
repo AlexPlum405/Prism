@@ -9,7 +9,11 @@ import { foldGutter } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { ContentTheme } from '../../settings/types';
 import { contentThemeFacet } from '../extensions/markdownHighlight';
-import { createMarkdownLinkCompletionSource, type WorkspaceLinkFile } from '../extensions/linkCompletion';
+import {
+  createMarkdownLinkCompletionSource,
+  type QueryWorkspaceLinkTargets,
+  type WorkspaceLinkFile,
+} from '../extensions/linkCompletion';
 import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 
 export const editorLineNumbersCompartment = new Compartment();
@@ -111,6 +115,7 @@ export function getTypographyExtension(
 
 export function getLinkCompletionExtension(input: {
   currentDocumentPath?: string;
+  queryWorkspaceLinkTargets?: QueryWorkspaceLinkTargets;
   workspaceFiles: WorkspaceLinkFile[];
   workspaceRootPath?: string | null;
 }) {

@@ -9,8 +9,26 @@ export interface WorkspaceLinkFile {
   title?: string;
 }
 
+export type WorkspaceLinkCompletionMode = 'markdown' | 'wiki';
+
+export interface WorkspaceLinkCompletionTarget {
+  detail: string;
+  kind: 'file' | 'keyword';
+  label: string;
+  target: string;
+  title: string;
+}
+
+export type QueryWorkspaceLinkTargets = (input: {
+  currentDocumentPath?: string;
+  limit: number;
+  mode: WorkspaceLinkCompletionMode;
+  query: string;
+}) => Promise<WorkspaceLinkCompletionTarget[] | null>;
+
 export interface MarkdownLinkCompletionContext {
   currentDocumentPath?: string;
+  queryWorkspaceLinkTargets?: QueryWorkspaceLinkTargets;
   workspaceFiles: WorkspaceLinkFile[];
   workspaceRootPath?: string | null;
 }
@@ -168,6 +186,29 @@ export function getWikiHeadingCompletionOptions(content: string): Completion[] {
   });
 }
 
+export function getWorkspaceLinkCompletionOptionsFromTargets(
+  targets: WorkspaceLinkCompletionTarget[],
+  mode: WorkspaceLinkCompletionMode,
+): Completion[] {
+  return targets.map((target) => {
+    if (mode === 'wiki') {
+      const title = target.title || target.label;
+      return {
+        label: target.label,
+        type: target.kind,
+        detail: target.detail,
+        apply: createWikiMarkdownLinkApply(`[${title}](${target.target})`),
+      } satisfies Completion;
+    }
+
+    return {
+      label: target.label,
+      type: target.kind,
+      detail: target.detail,
+    } satisfies Completion;
+  });
+}
+
 function createWikiMarkdownLinkApply(insert: string): Completion['apply'] {
   return (view: EditorView, _completion: Completion, from: number, to: number) => {
     const replaceFrom = Math.max(0, from - 2);
@@ -182,17 +223,46 @@ function createWikiMarkdownLinkApply(insert: string): Completion['apply'] {
 export function createMarkdownLinkCompletionSource(
   getContext: () => MarkdownLinkCompletionContext,
 ) {
-  return (context: CompletionContext): CompletionResult | null => {
+  return (context: CompletionContext): CompletionResult | Promise<CompletionResult> | null => {
     const line = context.state.doc.lineAt(context.pos);
     const linePrefix = line.text.slice(0, context.pos - line.from);
     const wikiTrigger = getWikiLinkTrigger(linePrefix);
     if (wikiTrigger) {
+      const completionContext = getContext();
+      const from = line.from + wikiTrigger.fromOffset;
+      const localHeadingOptions = getWikiHeadingCompletionOptions(context.state.doc.toString());
+      const fallbackOptions = () => [
+        ...getWikiLinkCompletionOptions(completionContext),
+        ...localHeadingOptions,
+      ];
+
+      if (completionContext.queryWorkspaceLinkTargets) {
+        return completionContext.queryWorkspaceLinkTargets({
+          currentDocumentPath: completionContext.currentDocumentPath,
+          limit: 80,
+          mode: 'wiki',
+          query: wikiTrigger.query,
+        })
+          .then((targets) => ({
+            from,
+            options: targets
+              ? [
+                  ...getWorkspaceLinkCompletionOptionsFromTargets(targets, 'wiki'),
+                  ...localHeadingOptions,
+                ]
+              : fallbackOptions(),
+            validFor: /^[^\]\n]*$/,
+          }))
+          .catch(() => ({
+            from,
+            options: fallbackOptions(),
+            validFor: /^[^\]\n]*$/,
+          }));
+      }
+
       return {
-        from: line.from + wikiTrigger.fromOffset,
-        options: [
-          ...getWikiLinkCompletionOptions(getContext()),
-          ...getWikiHeadingCompletionOptions(context.state.doc.toString()),
-        ],
+        from,
+        options: fallbackOptions(),
         validFor: /^[^\]\n]*$/,
       };
     }
@@ -201,14 +271,40 @@ export function createMarkdownLinkCompletionSource(
     if (!trigger) return null;
 
     const completionContext = getContext();
-    const options = [
+    const from = line.from + trigger.fromOffset;
+    const localHeadingOptions = getMarkdownHeadingCompletionOptions(context.state.doc.toString());
+    const fallbackOptions = () => [
       ...getWorkspaceFileCompletionOptions(completionContext),
-      ...getMarkdownHeadingCompletionOptions(context.state.doc.toString()),
+      ...localHeadingOptions,
     ];
 
+    if (completionContext.queryWorkspaceLinkTargets) {
+      return completionContext.queryWorkspaceLinkTargets({
+        currentDocumentPath: completionContext.currentDocumentPath,
+        limit: 80,
+        mode: 'markdown',
+        query: trigger.query,
+      })
+        .then((targets) => ({
+          from,
+          options: targets
+            ? [
+                ...getWorkspaceLinkCompletionOptionsFromTargets(targets, 'markdown'),
+                ...localHeadingOptions,
+              ]
+            : fallbackOptions(),
+          validFor: /^[^)\s]*$/,
+        }))
+        .catch(() => ({
+          from,
+          options: fallbackOptions(),
+          validFor: /^[^)\s]*$/,
+        }));
+    }
+
     return {
-      from: line.from + trigger.fromOffset,
-      options,
+      from,
+      options: fallbackOptions(),
       validFor: /^[^)\s]*$/,
     };
   };

@@ -4,10 +4,12 @@ import {
   getWorkspaceIndexJobNative,
   queryWorkspaceBacklinksNative,
   queryWorkspaceIndexNative,
+  queryWorkspaceLinkTargetsNative,
   queryWorkspaceRelationGraphNative,
   startWorkspaceIndexJobNative,
   type RelationGraphDepthDto,
   type RelationGraphScopeDto,
+  type WorkspaceLinkTargetModeDto,
   type WorkspaceIndexQueryModeDto,
 } from '../../../platform/tauri/workspaceIndex';
 import type { PrismCommandError } from '../../../platform/tauri/result';
@@ -53,6 +55,22 @@ export interface QueryWorkspaceRelationGraphNativeInput {
   limit: number;
   query?: string | null;
   scope: RelationGraphScopeDto;
+}
+
+export interface QueryWorkspaceLinkTargetsNativeInput {
+  jobId: string;
+  currentPath?: string | null;
+  limit: number;
+  mode: WorkspaceLinkTargetModeDto;
+  query: string;
+}
+
+export interface WorkspaceLinkTarget {
+  detail: string;
+  kind: 'file' | 'keyword';
+  label: string;
+  target: string;
+  title: string;
 }
 
 export interface WorkspaceIndexJob {
@@ -144,6 +162,18 @@ function isNativeRelationGraph(value: unknown): value is RelationGraph {
       && typeof edge.source === 'string'
       && typeof edge.target === 'string'
     )),
+  );
+}
+
+function isNativeWorkspaceLinkTarget(value: unknown): value is WorkspaceLinkTarget {
+  if (!value || typeof value !== 'object') return false;
+  const target = value as Partial<WorkspaceLinkTarget>;
+  return Boolean(
+    typeof target.detail === 'string'
+    && (target.kind === 'file' || target.kind === 'keyword')
+    && typeof target.label === 'string'
+    && typeof target.target === 'string'
+    && typeof target.title === 'string',
   );
 }
 
@@ -267,4 +297,12 @@ export async function queryWorkspaceRelationGraphNativeModel(
   const dto = await queryWorkspaceRelationGraphNative(input);
 
   return isNativeRelationGraph(dto) ? dto : null;
+}
+
+export async function queryWorkspaceLinkTargetsNativeModel(
+  input: QueryWorkspaceLinkTargetsNativeInput,
+): Promise<WorkspaceLinkTarget[] | null> {
+  const dto = await queryWorkspaceLinkTargetsNative(input);
+
+  return Array.isArray(dto) && dto.every(isNativeWorkspaceLinkTarget) ? dto : null;
 }

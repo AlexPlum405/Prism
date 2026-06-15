@@ -14,10 +14,18 @@ interface DocumentViewProps {
   onSelectionTextChange?: (text: string) => void;
   onNotice?: (message: string) => void;
   workspaceIndex?: WorkspaceIndex | null;
+  workspaceIndexJobId?: string | null;
 }
 
 export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
-  function DocumentView({ onCursorChange, onOpenDocumentLink, onSelectionTextChange, onNotice, workspaceIndex }, ref) {
+  function DocumentView({
+    onCursorChange,
+    onOpenDocumentLink,
+    onSelectionTextChange,
+    onNotice,
+    workspaceIndex,
+    workspaceIndexJobId,
+  }, ref) {
     const { t } = useI18n();
     const currentDocument = useDocumentStore((s) => s.currentDocument);
     const updateContent = useDocumentStore((s) => s.updateContent);
@@ -64,6 +72,7 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
           onNotice={onNotice}
           onScrollStateChange={updateScrollState}
           workspaceIndex={workspaceIndex}
+          workspaceIndexJobId={workspaceIndexJobId}
         />
       </div>
     );

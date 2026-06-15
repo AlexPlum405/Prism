@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use super::error::{PrismCommandError, PrismResult};
 use super::workspace_index::{
     self, BuildWorkspaceIndexInput, WorkspaceIndexBuildOptions, WorkspaceIndexBuildProgress,
-    WorkspaceIndexDto,
+    WorkspaceIndexDto, WorkspaceLinkTargetDto, WorkspaceLinkTargetModeDto,
 };
 use super::workspace_index::{BacklinkDto, BuildRelationGraphInput, RelationGraphDto};
 
@@ -315,6 +315,16 @@ pub struct QueryWorkspaceRelationGraphInput {
     pub scope: workspace_index::RelationGraphScopeDto,
 }
 
+#[derive(Debug, serde::Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWorkspaceLinkTargetsInput {
+    pub job_id: String,
+    pub current_path: Option<String>,
+    pub limit: usize,
+    pub mode: WorkspaceLinkTargetModeDto,
+    pub query: String,
+}
+
 pub fn query_workspace_backlinks(
     store: &WorkspaceIndexJobStore,
     input: QueryWorkspaceBacklinksInput,
@@ -341,6 +351,23 @@ pub fn query_workspace_relation_graph(
             limit: input.limit,
             query: input.query,
             scope: input.scope,
+        },
+    ))
+}
+
+pub fn query_workspace_link_targets(
+    store: &WorkspaceIndexJobStore,
+    input: QueryWorkspaceLinkTargetsInput,
+) -> PrismResult<Vec<WorkspaceLinkTargetDto>> {
+    let index =
+        completed_workspace_index_for_job(store, &input.job_id, "query_workspace_link_targets")?;
+    Ok(workspace_index::query_workspace_link_targets(
+        &index,
+        workspace_index::QueryWorkspaceLinkTargetsInput {
+            current_path: input.current_path,
+            limit: input.limit,
+            mode: input.mode,
+            query: input.query,
         },
     ))
 }
@@ -510,6 +537,47 @@ mod tests {
         .expect("query graph");
         assert_eq!(graph.nodes.len(), 2);
         assert_eq!(graph.edges.len(), 1);
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn queries_link_targets_from_completed_job() {
+        let root = temp_dir("query-link-targets");
+        fs::create_dir_all(root.join("docs")).expect("create docs");
+        let current = root.join("docs").join("current.md");
+        let guide = root.join("docs").join("guide.md");
+        fs::write(&current, "# Current").expect("write current");
+        fs::write(&guide, "---\ntitle: 入门指南\n---\n# 安装步骤").expect("write guide");
+        let store = WorkspaceIndexJobStore::default();
+
+        let job = start_workspace_index_job(
+            &store,
+            BuildWorkspaceIndexInput {
+                root_path: path_to_string(&root),
+                current_document_override: None,
+                recent_files: vec![],
+            },
+        )
+        .expect("start job");
+        let finished = wait_for_finished(&store, &job.id);
+
+        let targets = query_workspace_link_targets(
+            &store,
+            QueryWorkspaceLinkTargetsInput {
+                job_id: finished.id,
+                current_path: Some(path_to_string(
+                    &current.canonicalize().expect("canonical current"),
+                )),
+                limit: 10,
+                mode: WorkspaceLinkTargetModeDto::Wiki,
+                query: "安装".to_string(),
+            },
+        )
+        .expect("query link targets");
+
+        assert_eq!(targets[0].label, "安装步骤");
+        assert_eq!(targets[0].target, "guide.md#安装步骤");
 
         let _ = fs::remove_dir_all(root);
     }

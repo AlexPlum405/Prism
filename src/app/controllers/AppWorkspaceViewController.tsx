@@ -25,6 +25,7 @@ interface AppWorkspaceViewControllerProps {
   typographyIssueCount: number;
   workspace: ReturnType<typeof useWorkspaceStore.getState>;
   workspaceIndex: WorkspaceIndex | null;
+  workspaceIndexJobId?: string | null;
   writingStats: WritingStats;
   onBacklinksClick: () => void;
   onCloseContextMenu: () => void;
@@ -61,6 +62,7 @@ export function AppWorkspaceViewController({
   typographyIssueCount,
   workspace,
   workspaceIndex,
+  workspaceIndexJobId,
   writingStats,
   onBacklinksClick,
   onCloseContextMenu,
@@ -95,6 +97,7 @@ export function AppWorkspaceViewController({
           onSelectionTextChange={onSelectionTextChange}
           onNotice={onNotice}
           workspaceIndex={workspaceIndex}
+          workspaceIndexJobId={workspaceIndexJobId}
         />
       )}
       exportProgress={exportProgress}

@@ -2430,3 +2430,71 @@ git diff --check
 
 - Phase 7（`[[` 页面链接补全下沉）：收益为正，建议执行。当前 `[[` 补全仍依赖前端 overlay/index 数据，适合复用 Rust completed job 的 documents/headings。
 - Phase 8（清理前端旧索引实现）：仍跳过。当前 native 仍需要 TS fallback 兜底，删除 fallback 对可靠性是负收益。
+
+
+## Rust Core Phase 7：页面链接补全 native-first
+
+### 执行前评估
+
+结论：执行，收益为正。
+
+Phase 4 已让反链和图谱查询复用 Rust completed job，Phase 6 已让 job 进度和取消更细。剩余高频编辑链路中，`[[` 页面链接补全仍主要在前端把 `workspaceIndex.documents` 映射成候选；大工作区下这会把跨文档候选构造压力留在 WebView。
+
+收益判断：
+
+- Leverage：新增 completed-job link targets 查询，复用同一份 Rust index，不新增扫描或并行索引。
+- Locality：相对路径、标题/heading 候选和 query 过滤集中在 Rust workspace index Module；前端只负责 CodeMirror Completion Adapter 和 fallback。
+- 风险控制：当前文档本地 heading 仍同步计算；native 不可用或 payload 无效时继续走 TS workspaceIndex/fileTree fallback。
+
+### 改动范围
+
+- `src-tauri/src/domain/workspace_index.rs`
+  - 新增 `WorkspaceLinkTargetDto`、`WorkspaceLinkTargetModeDto`、`query_workspace_link_targets`。
+  - 支持 markdown link 与 wiki trigger 两种候选模式。
+  - 按当前文档输出相对 link target，heading 候选输出 `target#slug`。
+- `src-tauri/src/domain/workspace_index_job.rs`
+  - 新增 completed-job link targets 查询入口；running job 仍走 `workspace_index_job_not_ready`。
+- `src-tauri/src/commands/workspace_index.rs` / `src-tauri/src/lib.rs`
+  - 注册 `query_workspace_link_targets` Tauri command。
+- `src/platform/tauri/workspaceIndex.ts` / `src/domains/workspace/services/workspaceIndexNative.ts`
+  - 新增 native invoke wrapper、DTO 校验和 model 函数。
+- `src/domains/editor/extensions/linkCompletion.ts`
+  - CodeMirror link completion source 改为 native-first async source。
+  - native 查询失败或无 job 时回退到现有同步 TS 候选。
+- `src/App.tsx`、`DocumentView`、`SplitView`、`EditorPane`
+  - 沿现有视图链路传递 `workspaceIndexJobId`，只在有 completed job id 时启用 native provider。
+
+### 完成后对比
+
+| 项目 | Phase 7 前 | Phase 7 后 |
+|---|---|---|
+| `[[` 跨文档候选 | WebView 从 workspaceIndex/fileTree 构造全部候选 | 有 Rust job 时按 query 从 completed job 查询候选 |
+| Markdown link 文件候选 | WebView 构造文件候选 | 有 Rust job 时 native-first 查询文件候选 |
+| 当前文档 heading | 本地同步计算 | 保持本地同步计算，保证未保存内容可补全 |
+| fallback | TS workspaceIndex/fileTree | 保留 |
+| 外部 command Interface | 无 link-target query | 新增小 command，复用 completed job，不重扫文件 |
+
+### 验证
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index
+npm test -- --run src/domains/editor/extensions/linkCompletion.test.ts src/domains/workspace/services/workspaceIndexNative.test.ts
+cargo test --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/editor/extensions/linkCompletion.test.ts src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/app/useAppDocumentInsightModel.test.tsx src/app/controllers/DocumentPanelsController.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/domains/workspace/services/relationGraph.test.ts src/components/shell/CommandPalette.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
+npm run build
+git diff --check
+```
+
+当前已通过：
+
+- Rust workspace_index / workspace_index_job 聚焦测试：16 passed。
+- 前端 linkCompletion + workspaceIndexNative 聚焦测试：2 files / 18 tests passed。
+- Rust 全量测试：47 passed。
+- 前端编辑器补全、workspace/search/backlinks/graph/command palette 相关测试：11 files / 75 tests passed。
+- 生产构建：通过，仅保留既有 chunk size warning。
+- diff 空白检查：通过。
+
+### 后续 Phase 评估
+
+- Phase 8（清理前端旧索引实现）：跳过。TS fallback 仍是必要 Adapter；native command 不可用、payload 失效或 job 未完成时需要保留前端 Implementation。
+- Phase 9（进一步 Rust 化打开链接解析）：当前不执行。打开预览链接已经有 native backlinks/graph 查询辅助，但用户可见瓶颈不在这里，收益不如继续保留现状并观察真实大工作区数据。

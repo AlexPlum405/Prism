@@ -3,11 +3,11 @@ use tauri::State;
 use crate::domain::error::PrismResult;
 use crate::domain::workspace_index::{
     self, BacklinkDto, BuildWorkspaceIndexInput, QueryWorkspaceIndexInput, RelationGraphDto,
-    WorkspaceIndexDto, WorkspaceIndexSearchResultDto,
+    WorkspaceIndexDto, WorkspaceIndexSearchResultDto, WorkspaceLinkTargetDto,
 };
 use crate::domain::workspace_index_job::{
-    self, QueryWorkspaceBacklinksInput, QueryWorkspaceRelationGraphInput, WorkspaceIndexJobDto,
-    WorkspaceIndexJobStore,
+    self, QueryWorkspaceBacklinksInput, QueryWorkspaceLinkTargetsInput,
+    QueryWorkspaceRelationGraphInput, WorkspaceIndexJobDto, WorkspaceIndexJobStore,
 };
 
 #[tauri::command]
@@ -60,4 +60,12 @@ pub fn query_workspace_relation_graph(
     input: QueryWorkspaceRelationGraphInput,
 ) -> PrismResult<RelationGraphDto> {
     workspace_index_job::query_workspace_relation_graph(&store, input)
+}
+
+#[tauri::command]
+pub fn query_workspace_link_targets(
+    store: State<'_, WorkspaceIndexJobStore>,
+    input: QueryWorkspaceLinkTargetsInput,
+) -> PrismResult<Vec<WorkspaceLinkTargetDto>> {
+    workspace_index_job::query_workspace_link_targets(&store, input)
 }

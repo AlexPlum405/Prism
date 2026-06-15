@@ -5,6 +5,7 @@ import {
   getWorkspaceIndexJobNativeModel,
   queryWorkspaceBacklinksNativeModel,
   queryWorkspaceIndexNativeModel,
+  queryWorkspaceLinkTargetsNativeModel,
   queryWorkspaceRelationGraphNativeModel,
   startWorkspaceIndexJobNativeModel,
 } from './workspaceIndexNative';
@@ -15,6 +16,7 @@ const nativeMock = vi.hoisted(() => ({
   getWorkspaceIndexJobNative: vi.fn(),
   queryWorkspaceBacklinksNative: vi.fn(),
   queryWorkspaceIndexNative: vi.fn(),
+  queryWorkspaceLinkTargetsNative: vi.fn(),
   queryWorkspaceRelationGraphNative: vi.fn(),
   startWorkspaceIndexJobNative: vi.fn(),
 }));
@@ -28,6 +30,7 @@ describe('workspaceIndexNative', () => {
     nativeMock.getWorkspaceIndexJobNative.mockReset();
     nativeMock.queryWorkspaceBacklinksNative.mockReset();
     nativeMock.queryWorkspaceIndexNative.mockReset();
+    nativeMock.queryWorkspaceLinkTargetsNative.mockReset();
     nativeMock.queryWorkspaceRelationGraphNative.mockReset();
     nativeMock.startWorkspaceIndexJobNative.mockReset();
   });
@@ -294,6 +297,37 @@ describe('workspaceIndexNative', () => {
       limit: 80,
       query: '',
       scope: 'current',
+    });
+  });
+
+  it('normalizes native workspace link target query results', async () => {
+    nativeMock.queryWorkspaceLinkTargetsNative.mockResolvedValue([{
+      label: '安装步骤',
+      kind: 'keyword',
+      detail: 'docs/guide.md#install',
+      target: 'guide.md#install',
+      title: '安装步骤',
+    }]);
+
+    await expect(queryWorkspaceLinkTargetsNativeModel({
+      jobId: 'workspace-index-1',
+      currentPath: '/repo/docs/current.md',
+      query: '安装',
+      limit: 80,
+      mode: 'wiki',
+    })).resolves.toEqual([{
+      label: '安装步骤',
+      kind: 'keyword',
+      detail: 'docs/guide.md#install',
+      target: 'guide.md#install',
+      title: '安装步骤',
+    }]);
+    expect(nativeMock.queryWorkspaceLinkTargetsNative).toHaveBeenCalledWith({
+      jobId: 'workspace-index-1',
+      currentPath: '/repo/docs/current.md',
+      query: '安装',
+      limit: 80,
+      mode: 'wiki',
     });
   });
 });
