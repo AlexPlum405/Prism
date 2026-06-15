@@ -13,12 +13,17 @@ import {
   type WorkspaceIndex,
   type WorkspaceIndexSourceDocument,
 } from '../services';
-import { buildWorkspaceIndexNativeModel } from '../services/workspaceIndexNative';
+import {
+  cancelWorkspaceIndexJobNativeModel,
+  getWorkspaceIndexJobNativeModel,
+  startWorkspaceIndexJobNativeModel,
+} from '../services/workspaceIndexNative';
 import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
 const INDEX_BATCH_THRESHOLD = 40;
 const INDEX_BATCH_SIZE = 20;
 const FULL_WORKSPACE_INDEX_FILE_LIMIT = 500;
+const NATIVE_INDEX_JOB_POLL_INTERVAL_MS = 50;
 
 type WorkspaceIndexFile = Pick<FileNode, 'modifiedAt' | 'path' | 'size'>;
 
@@ -36,6 +41,12 @@ interface ReadWorkspaceIndexSourcesOptions {
 function nextIndexBatchFrame(): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, 0);
+  });
+}
+
+function delayWorkspaceIndexJobPoll(): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, NATIVE_INDEX_JOB_POLL_INTERVAL_MS);
   });
 }
 
@@ -175,6 +186,7 @@ export function useWorkspaceIndexModel(input: {
 
   useEffect(() => {
     let cancelled = false;
+    let nativeJobId: string | null = null;
 
     const run = async () => {
       if (!rootPath) {
@@ -208,6 +220,32 @@ export function useWorkspaceIndexModel(input: {
         return;
       }
 
+      try {
+        let nativeJob = await startWorkspaceIndexJobNativeModel({
+          rootPath,
+          currentDocumentOverride: null,
+          recentFiles: [],
+        });
+        nativeJobId = nativeJob?.id ?? null;
+        while (!cancelled && nativeJob?.status === 'running') {
+          await delayWorkspaceIndexJobPoll();
+          nativeJob = await getWorkspaceIndexJobNativeModel(nativeJob.id);
+        }
+
+        if (cancelled) return;
+        nativeJobId = null;
+
+        if (nativeJob?.status === 'completed' && nativeJob.index) {
+          setBaseWorkspaceIndex(nativeJob.index);
+          setWorkspaceIndexing(false);
+          return;
+        }
+      } catch (error) {
+        if (!isNativeCommandUnavailableError(error)) {
+          console.warn('[useWorkspaceIndexModel] Native workspace index job unavailable, falling back to TypeScript:', error);
+        }
+      }
+
       if (files.length > FULL_WORKSPACE_INDEX_FILE_LIMIT) {
         setBaseWorkspaceIndex(buildWorkspaceIndex({
           documents: [],
@@ -217,23 +255,6 @@ export function useWorkspaceIndexModel(input: {
         }));
         setWorkspaceIndexing(false);
         return;
-      }
-
-      try {
-        const nativeIndex = await buildWorkspaceIndexNativeModel({
-          rootPath,
-          currentDocumentOverride: null,
-          recentFiles: [],
-        });
-        if (!cancelled && nativeIndex) {
-          setBaseWorkspaceIndex(nativeIndex);
-          setWorkspaceIndexing(false);
-          return;
-        }
-      } catch (error) {
-        if (!isNativeCommandUnavailableError(error)) {
-          console.warn('[useWorkspaceIndexModel] Native workspace index unavailable, falling back to TypeScript:', error);
-        }
       }
 
       const documents = await readWorkspaceIndexSourcesIncremental(
@@ -258,6 +279,9 @@ export function useWorkspaceIndexModel(input: {
 
     return () => {
       cancelled = true;
+      if (nativeJobId) {
+        void cancelWorkspaceIndexJobNativeModel(nativeJobId).catch(() => {});
+      }
     };
   }, [fileTree, rootPath]);
 

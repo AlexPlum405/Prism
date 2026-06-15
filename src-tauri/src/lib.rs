@@ -64,6 +64,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(pending_files)
         .manage(domain::export_job::ExportJobStore::default())
+        .manage(domain::workspace_index_job::WorkspaceIndexJobStore::default())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -91,6 +92,9 @@ pub fn run() {
             commands::workspace_tree::load_workspace_tree,
             commands::workspace_index::build_workspace_index,
             commands::workspace_index::query_workspace_index,
+            commands::workspace_index::start_workspace_index_job,
+            commands::workspace_index::get_workspace_index_job,
+            commands::workspace_index::cancel_workspace_index_job,
             commands::export_jobs::create_export_job,
             commands::export_jobs::update_export_job,
             commands::export_jobs::complete_export_job,

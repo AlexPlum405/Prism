@@ -1,8 +1,12 @@
 import {
   buildWorkspaceIndexNative,
+  cancelWorkspaceIndexJobNative,
+  getWorkspaceIndexJobNative,
   queryWorkspaceIndexNative,
+  startWorkspaceIndexJobNative,
   type WorkspaceIndexQueryModeDto,
 } from '../../../platform/tauri/workspaceIndex';
+import type { PrismCommandError } from '../../../platform/tauri/result';
 import type {
   WorkspaceIndex,
   WorkspaceIndexBacklink,
@@ -32,6 +36,36 @@ export interface QueryWorkspaceIndexNativeInput extends BuildWorkspaceIndexNativ
   query: string;
 }
 
+export interface WorkspaceIndexJob {
+  id: string;
+  rootPath: string;
+  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  stage: string;
+  message: string;
+  progress: number;
+  createdAt: number;
+  updatedAt: number;
+  completedAt?: number | null;
+  index?: WorkspaceIndex | null;
+  error?: PrismCommandError | null;
+  cancelRequested: boolean;
+}
+
+interface NativeWorkspaceIndexJobDto {
+  id?: string;
+  rootPath?: string;
+  status?: string;
+  stage?: string;
+  message?: string;
+  progress?: number;
+  createdAt?: number;
+  updatedAt?: number;
+  completedAt?: number | null;
+  index?: NativeWorkspaceIndexDto | null;
+  error?: PrismCommandError | null;
+  cancelRequested?: boolean;
+}
+
 function isNativeWorkspaceIndexDto(value: unknown): value is NativeWorkspaceIndexDto {
   return Boolean(
     value
@@ -52,6 +86,43 @@ function isNativeWorkspaceIndexSearchResult(value: unknown): value is WorkspaceI
     && typeof result.score === 'number'
     && typeof result.snippet === 'string',
   );
+}
+
+function isNativeWorkspaceIndexJobStatus(value: unknown): value is WorkspaceIndexJob['status'] {
+  return value === 'running' || value === 'completed' || value === 'failed' || value === 'cancelled';
+}
+
+function workspaceIndexJobFromNativeDto(dto: NativeWorkspaceIndexJobDto): WorkspaceIndexJob | null {
+  if (
+    typeof dto.id !== 'string'
+    || typeof dto.rootPath !== 'string'
+    || !isNativeWorkspaceIndexJobStatus(dto.status)
+    || typeof dto.stage !== 'string'
+    || typeof dto.message !== 'string'
+    || typeof dto.progress !== 'number'
+    || typeof dto.createdAt !== 'number'
+    || typeof dto.updatedAt !== 'number'
+    || typeof dto.cancelRequested !== 'boolean'
+  ) {
+    return null;
+  }
+
+  return {
+    id: dto.id,
+    rootPath: dto.rootPath,
+    status: dto.status,
+    stage: dto.stage,
+    message: dto.message,
+    progress: dto.progress,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    completedAt: dto.completedAt ?? null,
+    index: dto.index && isNativeWorkspaceIndexDto(dto.index)
+      ? workspaceIndexFromNativeDto(dto.index)
+      : null,
+    error: dto.error ?? null,
+    cancelRequested: dto.cancelRequested,
+  };
 }
 
 export function workspaceIndexFromNativeDto(dto: NativeWorkspaceIndexDto): WorkspaceIndex {
@@ -91,4 +162,34 @@ export async function queryWorkspaceIndexNativeModel(
   });
 
   return Array.isArray(dto) && dto.every(isNativeWorkspaceIndexSearchResult) ? dto : null;
+}
+
+export async function startWorkspaceIndexJobNativeModel(
+  input: BuildWorkspaceIndexNativeInput,
+): Promise<WorkspaceIndexJob | null> {
+  const dto = await startWorkspaceIndexJobNative({
+    rootPath: input.rootPath,
+    currentDocumentOverride: input.currentDocumentOverride ?? null,
+    recentFiles: input.recentFiles,
+  });
+
+  return dto && typeof dto === 'object'
+    ? workspaceIndexJobFromNativeDto(dto as NativeWorkspaceIndexJobDto)
+    : null;
+}
+
+export async function getWorkspaceIndexJobNativeModel(jobId: string): Promise<WorkspaceIndexJob | null> {
+  const dto = await getWorkspaceIndexJobNative(jobId);
+
+  return dto && typeof dto === 'object'
+    ? workspaceIndexJobFromNativeDto(dto as NativeWorkspaceIndexJobDto)
+    : null;
+}
+
+export async function cancelWorkspaceIndexJobNativeModel(jobId: string): Promise<WorkspaceIndexJob | null> {
+  const dto = await cancelWorkspaceIndexJobNative(jobId);
+
+  return dto && typeof dto === 'object'
+    ? workspaceIndexJobFromNativeDto(dto as NativeWorkspaceIndexJobDto)
+    : null;
 }

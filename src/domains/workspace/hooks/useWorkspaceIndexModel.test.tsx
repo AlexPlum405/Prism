@@ -13,7 +13,9 @@ const fsMock = vi.hoisted(() => ({
   readTextFile: vi.fn(),
 }));
 const nativeIndexMock = vi.hoisted(() => ({
-  buildWorkspaceIndexNativeModel: vi.fn(),
+  cancelWorkspaceIndexJobNativeModel: vi.fn(),
+  getWorkspaceIndexJobNativeModel: vi.fn(),
+  startWorkspaceIndexJobNativeModel: vi.fn(),
 }));
 
 vi.mock('@tauri-apps/plugin-fs', () => fsMock);
@@ -39,8 +41,12 @@ function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
 describe('useWorkspaceIndexModel', () => {
   beforeEach(() => {
     fsMock.readTextFile.mockReset();
-    nativeIndexMock.buildWorkspaceIndexNativeModel.mockReset();
-    nativeIndexMock.buildWorkspaceIndexNativeModel.mockResolvedValue(null);
+    nativeIndexMock.cancelWorkspaceIndexJobNativeModel.mockReset();
+    nativeIndexMock.getWorkspaceIndexJobNativeModel.mockReset();
+    nativeIndexMock.startWorkspaceIndexJobNativeModel.mockReset();
+    nativeIndexMock.cancelWorkspaceIndexJobNativeModel.mockResolvedValue(null);
+    nativeIndexMock.getWorkspaceIndexJobNativeModel.mockResolvedValue(null);
+    nativeIndexMock.startWorkspaceIndexJobNativeModel.mockResolvedValue(null);
   });
 
   it('builds a workspace index from markdown files and overlays the current unsaved document', async () => {
@@ -142,7 +148,7 @@ describe('useWorkspaceIndexModel', () => {
     expect(fsMock.readTextFile).toHaveBeenLastCalledWith('/workspace/b.md');
   });
 
-  it('does not rebuild the native base index when only current document or recents change', async () => {
+  it('does not restart the native index job when only current document or recents change', async () => {
     const fileTree = [
       { path: '/workspace/current.md', name: 'current.md', kind: 'file' as const, modifiedAt: 1, size: 10 },
       { path: '/workspace/other.md', name: 'other.md', kind: 'file' as const, modifiedAt: 2, size: 20 },
@@ -155,7 +161,20 @@ describe('useWorkspaceIndexModel', () => {
         { path: '/workspace/other.md', content: '# Other\n\n[Current](current.md)' },
       ],
     });
-    nativeIndexMock.buildWorkspaceIndexNativeModel.mockResolvedValue(baseIndex);
+    nativeIndexMock.startWorkspaceIndexJobNativeModel.mockResolvedValue({
+      id: 'workspace-index-1',
+      rootPath: '/workspace',
+      status: 'completed',
+      stage: 'completed',
+      message: 'ready',
+      progress: 1,
+      createdAt: 1,
+      updatedAt: 2,
+      completedAt: 2,
+      index: baseIndex,
+      error: null,
+      cancelRequested: false,
+    });
 
     const { result, rerender } = renderHook((props: {
       currentDocument: OpenDocument;
@@ -173,8 +192,8 @@ describe('useWorkspaceIndexModel', () => {
     });
 
     await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
-    expect(nativeIndexMock.buildWorkspaceIndexNativeModel).toHaveBeenCalledTimes(1);
-    expect(nativeIndexMock.buildWorkspaceIndexNativeModel).toHaveBeenLastCalledWith({
+    expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenCalledTimes(1);
+    expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenLastCalledWith({
       rootPath: '/workspace',
       currentDocumentOverride: null,
       recentFiles: [],
@@ -197,10 +216,60 @@ describe('useWorkspaceIndexModel', () => {
     });
     expect(result.current.workspaceIndex?.recentDocuments.map((document) => document.path))
       .toEqual(['/workspace/other.md']);
-    expect(nativeIndexMock.buildWorkspaceIndexNativeModel).toHaveBeenCalledTimes(1);
+    expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenCalledTimes(1);
   });
 
-  it('uses a lightweight metadata index for large workspaces without reading every document', async () => {
+  it('uses a native index job for large workspaces instead of the metadata fallback', async () => {
+    const fileTree = Array.from({ length: 501 }, (_, index) => ({
+      path: `/workspace/doc-${index + 1}.md`,
+      name: `doc-${index + 1}.md`,
+      kind: 'file' as const,
+      modifiedAt: index + 1,
+      size: 10,
+    }));
+    const nativeIndex = buildWorkspaceIndex({
+      fileTree,
+      workspaceRoot: '/workspace',
+      documents: fileTree.map((file) => ({
+        path: file.path,
+        content: `# Native ${file.name}`,
+      })),
+    });
+    nativeIndexMock.startWorkspaceIndexJobNativeModel.mockResolvedValue({
+      id: 'workspace-index-large',
+      rootPath: '/workspace',
+      status: 'completed',
+      stage: 'completed',
+      message: 'ready',
+      progress: 1,
+      createdAt: 1,
+      updatedAt: 2,
+      completedAt: 2,
+      index: nativeIndex,
+      error: null,
+      cancelRequested: false,
+    });
+
+    const { result } = renderHook(() => useWorkspaceIndexModel({
+      currentDocument: null,
+      rootPath: '/workspace',
+      fileTree,
+      recentFiles: [],
+    }));
+
+    await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
+
+    expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenCalledTimes(1);
+    expect(fsMock.readTextFile).not.toHaveBeenCalled();
+    expect(result.current.workspaceIndex?.documents).toHaveLength(501);
+    expect(result.current.workspaceIndex?.documents[0]).toMatchObject({
+      name: 'doc-1.md',
+      title: 'Native doc-1.md',
+      hasContent: true,
+    });
+  });
+
+  it('uses a lightweight metadata index for large workspaces when native jobs are unavailable', async () => {
     const fileTree = Array.from({ length: 501 }, (_, index) => ({
       path: `/workspace/doc-${index + 1}.md`,
       name: `doc-${index + 1}.md`,
@@ -218,7 +287,7 @@ describe('useWorkspaceIndexModel', () => {
 
     await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
 
-    expect(nativeIndexMock.buildWorkspaceIndexNativeModel).not.toHaveBeenCalled();
+    expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenCalledTimes(1);
     expect(fsMock.readTextFile).not.toHaveBeenCalled();
     expect(result.current.workspaceIndex?.documents).toHaveLength(501);
     expect(result.current.workspaceIndex?.documents[0]).toMatchObject({
@@ -226,5 +295,56 @@ describe('useWorkspaceIndexModel', () => {
       title: 'doc-1',
       hasContent: false,
     });
+  });
+
+  it('polls a running native index job until it completes', async () => {
+    const fileTree = [
+      { path: '/workspace/current.md', name: 'current.md', kind: 'file' as const, modifiedAt: 1, size: 10 },
+    ];
+    const nativeIndex = buildWorkspaceIndex({
+      fileTree,
+      workspaceRoot: '/workspace',
+      documents: [{ path: '/workspace/current.md', content: '# Native Current' }],
+    });
+    nativeIndexMock.startWorkspaceIndexJobNativeModel.mockResolvedValue({
+      id: 'workspace-index-running',
+      rootPath: '/workspace',
+      status: 'running',
+      stage: 'build',
+      message: 'building',
+      progress: 0.2,
+      createdAt: 1,
+      updatedAt: 1,
+      completedAt: null,
+      index: null,
+      error: null,
+      cancelRequested: false,
+    });
+    nativeIndexMock.getWorkspaceIndexJobNativeModel.mockResolvedValue({
+      id: 'workspace-index-running',
+      rootPath: '/workspace',
+      status: 'completed',
+      stage: 'completed',
+      message: 'ready',
+      progress: 1,
+      createdAt: 1,
+      updatedAt: 2,
+      completedAt: 2,
+      index: nativeIndex,
+      error: null,
+      cancelRequested: false,
+    });
+
+    const { result } = renderHook(() => useWorkspaceIndexModel({
+      currentDocument: null,
+      rootPath: '/workspace',
+      fileTree,
+      recentFiles: [],
+    }));
+
+    await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
+
+    expect(nativeIndexMock.getWorkspaceIndexJobNativeModel).toHaveBeenCalledWith('workspace-index-running');
+    expect(result.current.workspaceIndex?.documents[0].title).toBe('Native Current');
   });
 });

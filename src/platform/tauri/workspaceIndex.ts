@@ -35,3 +35,15 @@ export function buildWorkspaceIndexNative(input: BuildWorkspaceIndexInputDto) {
 export function queryWorkspaceIndexNative(input: QueryWorkspaceIndexInputDto) {
   return invokeNativeCommand<unknown>('query_workspace_index', { input });
 }
+
+export function startWorkspaceIndexJobNative(input: BuildWorkspaceIndexInputDto) {
+  return invokeNativeCommand<unknown>('start_workspace_index_job', { input });
+}
+
+export function getWorkspaceIndexJobNative(jobId: string) {
+  return invokeNativeCommand<unknown>('get_workspace_index_job', { jobId });
+}
+
+export function cancelWorkspaceIndexJobNative(jobId: string) {
+  return invokeNativeCommand<unknown>('cancel_workspace_index_job', { jobId });
+}

@@ -2183,3 +2183,55 @@ git diff --check
 
 - Phase 2 当前只下沉快速打开和全文搜索；关系图谱与 backlink 面板仍使用前端 `WorkspaceIndex` 查询。
 - native 查询每次仍会重新扫描工作区文件列表来判断活跃文档，虽然文件内容与解析结果会复用 Rust cache；后续可继续把 root-level file manifest / query cache 做成更深的 Module。
+
+
+## Rust Core Phase 3：工作区索引后台 Job
+
+### 目标
+
+把工作区索引构建从“一次性 native command”推进为 Rust 侧有状态后台 job/session。前端 `useWorkspaceIndexModel` 只通过 `start / get / cancel` 这组小 Interface 管理索引状态；Rust Module 负责 job 状态、结果缓存、失败状态和同一 root 的旧 job 取消。大工作区不再因为超过 500 个 Markdown 文件就直接跳过 native 全文索引，只有 native job 不可用时才回退到轻量 metadata index。
+
+### 改动范围
+
+- 新增 `src-tauri/src/domain/workspace_index_job.rs`
+  - `WorkspaceIndexJobStore`
+  - `WorkspaceIndexJobDto`
+  - `start_workspace_index_job`
+  - `get_workspace_index_job`
+  - `cancel_workspace_index_job`
+  - 同一 root 新 job 会取消旧 running job，旧线程完成后不会覆盖取消状态。
+- `src-tauri/src/commands/workspace_index.rs` / `src-tauri/src/lib.rs`
+  - 注册 `WorkspaceIndexJobStore` Tauri state。
+  - 新增 `start_workspace_index_job`、`get_workspace_index_job`、`cancel_workspace_index_job` commands。
+- `src/platform/tauri/workspaceIndex.ts` / `src/domains/workspace/services/workspaceIndexNative.ts`
+  - 新增 workspace index job native Adapter。
+  - 校验并转换 native job DTO，完成态 job 的 `index` 继续复用 `workspaceIndexFromNativeDto`。
+- `src/domains/workspace/hooks/useWorkspaceIndexModel.ts`
+  - 从同步 native build 切换为 native job。
+  - running job 轮询到 completed 后设置 base index。
+  - effect cleanup 会请求取消未完成 job。
+  - large workspace fallback 从“直接 metadata”改为“native job 不可用才 metadata”。
+
+### 架构判断
+
+Phase 3 加深的是工作区索引 Module 的状态管理能力，而不是把异步轮询细节散到 UI。删除该 Module 后，job id、running/completed/failed/cancelled 状态、同 root 旧 job 取消、完成结果缓存、错误传播会重新出现在 hook 与多个 command 调用点中；因此这个 Module 通过更小 Interface 提供更高 Leverage，并把 Locality 集中在 Rust native 能力层。TypeScript 侧仍保留 Adapter Seam：native job 可用时走 Rust，native 不可用时走既有 TypeScript Implementation。
+
+### 验证
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index_job
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index
+npm test -- --run src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx
+```
+
+当前已通过：
+
+- Rust workspace_index_job 聚焦测试：通过，3 个测试。
+- Rust workspace_index / workspace_index_job 聚焦测试：通过，8 个测试。
+- TS workspaceIndexNative / useWorkspaceIndexModel 聚焦测试：通过，2 个测试文件、13 个测试。
+
+### 剩余风险
+
+- job 取消目前是状态级取消：running job 会被标记 cancelled，构建线程完成后不会写回结果；但正在进行的底层文件扫描仍可能继续跑到本次 build 返回。后续可以把 cancel token 继续下传到 `collect_workspace_files` 与文档解析循环，实现更细粒度的抢占式取消。
+- `progress` 目前是阶段型进度（queued/build/completed），不是逐文件精确进度。后续可以在 `build_workspace_documents` 内部报告 scanned/parsed 计数。
+- 关系图谱、backlinks 查询仍消费完整 `WorkspaceIndex`；下一阶段应把 `query_workspace_backlinks` / `query_relation_graph` 也挂到同一个 Rust index session 上，避免重复跨 WebView 搬运大对象。

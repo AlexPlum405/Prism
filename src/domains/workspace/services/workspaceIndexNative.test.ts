@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildWorkspaceIndexNativeModel,
+  cancelWorkspaceIndexJobNativeModel,
+  getWorkspaceIndexJobNativeModel,
   queryWorkspaceIndexNativeModel,
+  startWorkspaceIndexJobNativeModel,
 } from './workspaceIndexNative';
 
 const nativeMock = vi.hoisted(() => ({
   buildWorkspaceIndexNative: vi.fn(),
+  cancelWorkspaceIndexJobNative: vi.fn(),
+  getWorkspaceIndexJobNative: vi.fn(),
   queryWorkspaceIndexNative: vi.fn(),
+  startWorkspaceIndexJobNative: vi.fn(),
 }));
 
 vi.mock('../../../platform/tauri/workspaceIndex', () => nativeMock);
@@ -14,7 +20,10 @@ vi.mock('../../../platform/tauri/workspaceIndex', () => nativeMock);
 describe('workspaceIndexNative', () => {
   beforeEach(() => {
     nativeMock.buildWorkspaceIndexNative.mockReset();
+    nativeMock.cancelWorkspaceIndexJobNative.mockReset();
+    nativeMock.getWorkspaceIndexJobNative.mockReset();
     nativeMock.queryWorkspaceIndexNative.mockReset();
+    nativeMock.startWorkspaceIndexJobNative.mockReset();
   });
 
   it('normalizes a native workspace index dto', async () => {
@@ -119,5 +128,99 @@ describe('workspaceIndexNative', () => {
       currentDocumentOverride: null,
       recentFiles: [],
     })).resolves.toBeNull();
+  });
+
+  it('normalizes native workspace index job payloads', async () => {
+    nativeMock.startWorkspaceIndexJobNative.mockResolvedValue({
+      id: 'workspace-index-1',
+      rootPath: '/repo',
+      status: 'completed',
+      stage: 'completed',
+      message: 'ready',
+      progress: 1,
+      createdAt: 10,
+      updatedAt: 20,
+      completedAt: 20,
+      cancelRequested: false,
+      index: {
+        backlinksByPath: {},
+        documents: [{
+          content: '# Guide',
+          frontMatter: {
+            author: '',
+            date: '',
+            description: '',
+            error: null,
+            exportRaw: '',
+            hasFrontMatter: false,
+            status: '',
+            tags: [],
+            title: '',
+          },
+          hasContent: true,
+          headings: [],
+          links: [],
+          name: 'guide.md',
+          path: '/repo/guide.md',
+          relativePath: 'guide.md',
+          title: 'Guide',
+        }],
+        generatedAt: 123,
+        recentDocuments: [],
+        rootPath: '/repo',
+      },
+    });
+
+    const job = await startWorkspaceIndexJobNativeModel({
+      rootPath: '/repo',
+      currentDocumentOverride: null,
+      recentFiles: [],
+    });
+
+    expect(nativeMock.startWorkspaceIndexJobNative).toHaveBeenCalledWith({
+      rootPath: '/repo',
+      currentDocumentOverride: null,
+      recentFiles: [],
+    });
+    expect(job).toMatchObject({
+      id: 'workspace-index-1',
+      status: 'completed',
+      index: expect.any(Object),
+    });
+    expect(job?.index?.documents[0].title).toBe('Guide');
+  });
+
+  it('normalizes get and cancel workspace index job payloads', async () => {
+    nativeMock.getWorkspaceIndexJobNative.mockResolvedValue({
+      id: 'workspace-index-1',
+      rootPath: '/repo',
+      status: 'running',
+      stage: 'build',
+      message: 'building',
+      progress: 0.2,
+      createdAt: 10,
+      updatedAt: 11,
+      completedAt: null,
+      cancelRequested: false,
+      index: null,
+    });
+    nativeMock.cancelWorkspaceIndexJobNative.mockResolvedValue({
+      id: 'workspace-index-1',
+      rootPath: '/repo',
+      status: 'cancelled',
+      stage: 'cancel_requested',
+      message: 'cancelled',
+      progress: 1,
+      createdAt: 10,
+      updatedAt: 12,
+      completedAt: 12,
+      cancelRequested: true,
+      index: null,
+    });
+
+    await expect(getWorkspaceIndexJobNativeModel('workspace-index-1'))
+      .resolves.toMatchObject({ status: 'running' });
+    await expect(cancelWorkspaceIndexJobNativeModel('workspace-index-1'))
+      .resolves.toMatchObject({ status: 'cancelled', cancelRequested: true });
   });
 });
