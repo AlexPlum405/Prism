@@ -3,6 +3,8 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
+use std::sync::Arc;
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -31,6 +33,25 @@ pub struct BuildWorkspaceIndexInput {
     pub root_path: String,
     pub current_document_override: Option<CurrentDocumentOverride>,
     pub recent_files: Vec<RecentFileDto>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkspaceIndexBuildProgress {
+    pub message: String,
+    pub parsed_files: usize,
+    pub progress: f64,
+    pub scanned_files: usize,
+    pub stage: String,
+    pub total_files: usize,
+}
+
+pub type WorkspaceIndexProgressReporter =
+    Arc<dyn Fn(WorkspaceIndexBuildProgress) + Send + Sync + 'static>;
+
+#[derive(Clone, Default)]
+pub struct WorkspaceIndexBuildOptions {
+    pub cancel_requested: Option<Arc<AtomicBool>>,
+    pub progress_reporter: Option<WorkspaceIndexProgressReporter>,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -223,11 +244,13 @@ struct WorkspaceIndexCache {
 
 #[derive(Debug)]
 struct WorkspaceDocumentsBuild {
+    base_index_snapshot: Option<WorkspaceIndexDto>,
     can_reuse_base_index: bool,
     documents: Vec<WorkspaceIndexedDocumentDto>,
     manifest: Vec<WorkspaceFileSignature>,
     root: PathBuf,
     root_key: String,
+    scanned_files: usize,
 }
 
 static WORKSPACE_INDEX_CACHE: OnceLock<Mutex<HashMap<String, WorkspaceIndexCache>>> =
@@ -242,6 +265,60 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_millis().min(u128::from(u64::MAX)) as u64)
         .unwrap_or(0)
+}
+
+fn workspace_index_cancelled_error(stage: &str) -> PrismCommandError {
+    PrismCommandError::new(
+        "workspace_index_cancelled",
+        "Workspace index build was cancelled",
+    )
+    .with_stage(stage)
+}
+
+fn is_workspace_index_cancelled(options: &WorkspaceIndexBuildOptions) -> bool {
+    options
+        .cancel_requested
+        .as_ref()
+        .map(|cancel_requested| cancel_requested.load(AtomicOrdering::Relaxed))
+        .unwrap_or(false)
+}
+
+fn check_workspace_index_cancelled(
+    options: &WorkspaceIndexBuildOptions,
+    stage: &str,
+) -> PrismResult<()> {
+    if is_workspace_index_cancelled(options) {
+        Err(workspace_index_cancelled_error(stage))
+    } else {
+        Ok(())
+    }
+}
+
+fn report_workspace_index_progress(
+    options: &WorkspaceIndexBuildOptions,
+    stage: &str,
+    message: impl Into<String>,
+    progress: f64,
+    scanned_files: usize,
+    parsed_files: usize,
+    total_files: usize,
+) {
+    let Some(reporter) = options.progress_reporter.as_ref() else {
+        return;
+    };
+
+    reporter(WorkspaceIndexBuildProgress {
+        message: message.into(),
+        parsed_files,
+        progress: progress.clamp(0.0, 0.99),
+        scanned_files,
+        stage: stage.to_string(),
+        total_files,
+    });
+}
+
+fn should_report_workspace_index_count(count: usize, total: usize) -> bool {
+    count == 1 || count % 20 == 0 || (total > 0 && count == total)
 }
 
 fn metadata_time_ms(time: std::io::Result<std::time::SystemTime>) -> Option<f64> {
@@ -287,7 +364,11 @@ fn collect_workspace_files(
     dir: &Path,
     out: &mut Vec<WorkspaceFile>,
     stage: &str,
+    options: &WorkspaceIndexBuildOptions,
+    scanned_files: &mut usize,
 ) -> PrismResult<()> {
+    check_workspace_index_cancelled(options, stage)?;
+
     let entries = fs::read_dir(dir).map_err(|error| {
         PrismCommandError::new(
             "permission_denied",
@@ -298,13 +379,14 @@ fn collect_workspace_files(
     })?;
 
     for entry in entries.flatten() {
+        check_workspace_index_cancelled(options, stage)?;
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
         let Ok(file_type) = entry.file_type() else {
             continue;
         };
         if file_type.is_dir() {
-            collect_workspace_files(root, &path, out, stage)?;
+            collect_workspace_files(root, &path, out, stage, options, scanned_files)?;
             continue;
         }
         if !file_type.is_file() || !is_supported_markdown_path(&path) {
@@ -321,6 +403,19 @@ fn collect_workspace_files(
                 .as_ref()
                 .and_then(|metadata| metadata_time_ms(metadata.modified())),
         });
+        *scanned_files += 1;
+        if should_report_workspace_index_count(*scanned_files, 0) {
+            let progress = 0.05 + ((*scanned_files as f64).min(250.0) / 250.0) * 0.20;
+            report_workspace_index_progress(
+                options,
+                "scan",
+                format!("Scanning workspace files ({})", *scanned_files),
+                progress,
+                *scanned_files,
+                0,
+                0,
+            );
+        }
     }
 
     Ok(())
@@ -761,7 +856,20 @@ fn store_base_index_snapshot(
 fn build_workspace_documents(
     input: BuildWorkspaceIndexInput,
     stage: &str,
+    options: &WorkspaceIndexBuildOptions,
+    allow_base_index_snapshot: bool,
 ) -> PrismResult<WorkspaceDocumentsBuild> {
+    check_workspace_index_cancelled(options, stage)?;
+    report_workspace_index_progress(
+        options,
+        "prepare",
+        "Preparing workspace index",
+        0.02,
+        0,
+        0,
+        0,
+    );
+
     let can_reuse_base_index =
         input.current_document_override.is_none() && input.recent_files.is_empty();
     let root = canonicalize_existing_path(&input.root_path, stage)?;
@@ -787,11 +895,47 @@ fn build_workspace_documents(
     });
 
     let mut files = Vec::new();
-    collect_workspace_files(&root, &root, &mut files, stage)?;
+    let mut scanned_files = 0usize;
+    report_workspace_index_progress(options, "scan", "Scanning workspace files", 0.05, 0, 0, 0);
+    collect_workspace_files(&root, &root, &mut files, stage, options, &mut scanned_files)?;
     files.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
     let manifest = workspace_manifest(&files);
 
     let root_key = normalize_path(&path_to_string(&root));
+    report_workspace_index_progress(
+        options,
+        "scan",
+        format!("Found {} Markdown files", files.len()),
+        0.30,
+        scanned_files,
+        0,
+        files.len(),
+    );
+    check_workspace_index_cancelled(options, stage)?;
+
+    if allow_base_index_snapshot && can_reuse_base_index {
+        if let Some(index) = get_base_index_snapshot(&root_key, &manifest) {
+            report_workspace_index_progress(
+                options,
+                "cached",
+                "Reusing workspace index snapshot",
+                0.90,
+                scanned_files,
+                0,
+                files.len(),
+            );
+            return Ok(WorkspaceDocumentsBuild {
+                base_index_snapshot: Some(index),
+                can_reuse_base_index,
+                documents: Vec::new(),
+                manifest,
+                root,
+                root_key,
+                scanned_files,
+            });
+        }
+    }
+
     let cache_mutex = workspace_index_cache();
     let mut cache_by_root = cache_mutex
         .lock()
@@ -799,8 +943,20 @@ fn build_workspace_documents(
     let workspace_cache = cache_by_root.entry(root_key.clone()).or_default();
     let mut active_cache_keys = HashSet::new();
 
+    report_workspace_index_progress(
+        options,
+        "parse",
+        "Building document index",
+        0.32,
+        scanned_files,
+        0,
+        files.len(),
+    );
     let mut documents: Vec<WorkspaceIndexedDocumentDto> = Vec::with_capacity(files.len());
+    let total_files = files.len();
+    let mut parsed_files = 0usize;
     for file in &files {
+        check_workspace_index_cancelled(options, stage)?;
         let key = normalize_path(&path_to_string(&file.path));
         active_cache_keys.insert(key.clone());
         let recent = recent_by_path.get(&key).copied();
@@ -834,37 +990,85 @@ fn build_workspace_documents(
         };
 
         documents.push(apply_recent_to_document(base_document, recent));
+        parsed_files += 1;
+        if should_report_workspace_index_count(parsed_files, total_files) {
+            let progress = if total_files == 0 {
+                0.75
+            } else {
+                0.32 + (parsed_files as f64 / total_files as f64) * 0.43
+            };
+            report_workspace_index_progress(
+                options,
+                "parse",
+                format!("Building document index ({parsed_files}/{total_files})"),
+                progress,
+                scanned_files,
+                parsed_files,
+                total_files,
+            );
+        }
     }
 
     workspace_cache
         .documents_by_path
         .retain(|key, _| active_cache_keys.contains(key));
     drop(cache_by_root);
+    report_workspace_index_progress(
+        options,
+        "parse",
+        "Document index is ready",
+        0.75,
+        scanned_files,
+        parsed_files,
+        total_files,
+    );
+    check_workspace_index_cancelled(options, stage)?;
 
     Ok(WorkspaceDocumentsBuild {
+        base_index_snapshot: None,
         can_reuse_base_index,
         documents,
         manifest,
         root,
         root_key,
+        scanned_files,
     })
 }
 
 pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<WorkspaceIndexDto> {
-    let build = build_workspace_documents(input, "build_workspace_index")?;
-    if build.can_reuse_base_index {
-        if let Some(index) = get_base_index_snapshot(&build.root_key, &build.manifest) {
-            return Ok(index);
-        }
+    build_workspace_index_with_options(input, WorkspaceIndexBuildOptions::default())
+}
+
+pub fn build_workspace_index_with_options(
+    input: BuildWorkspaceIndexInput,
+    options: WorkspaceIndexBuildOptions,
+) -> PrismResult<WorkspaceIndexDto> {
+    let build = build_workspace_documents(input, "build_workspace_index", &options, true)?;
+    if let Some(index) = build.base_index_snapshot {
+        return Ok(index);
     }
 
     let WorkspaceDocumentsBuild {
+        base_index_snapshot: _,
         can_reuse_base_index,
         mut documents,
         manifest,
         root,
         root_key,
+        scanned_files,
     } = build;
+
+    let total_files = documents.len();
+    report_workspace_index_progress(
+        &options,
+        "resolve",
+        "Resolving workspace links",
+        0.80,
+        scanned_files,
+        total_files,
+        total_files,
+    );
+    check_workspace_index_cancelled(&options, "build_workspace_index")?;
 
     let document_paths: Vec<String> = documents
         .iter()
@@ -872,6 +1076,7 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
         .collect();
     let resolved_documents = documents.clone();
     for (index, document) in documents.iter_mut().enumerate() {
+        check_workspace_index_cancelled(&options, "build_workspace_index")?;
         for link in document.links.iter_mut() {
             link.resolved_path = if link.kind == "wiki" {
                 resolve_wiki_link(&link.target, &resolved_documents)
@@ -881,8 +1086,20 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
         }
     }
 
+    report_workspace_index_progress(
+        &options,
+        "backlinks",
+        "Building workspace backlinks",
+        0.88,
+        scanned_files,
+        total_files,
+        total_files,
+    );
+    check_workspace_index_cancelled(&options, "build_workspace_index")?;
+
     let mut backlinks_by_path: HashMap<String, Vec<BacklinkDto>> = HashMap::new();
     for document in &documents {
+        check_workspace_index_cancelled(&options, "build_workspace_index")?;
         for link in &document.links {
             let Some(resolved_path) = link.resolved_path.as_ref() else {
                 continue;
@@ -911,6 +1128,17 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
                 .then(a.column.cmp(&b.column))
         });
     }
+
+    report_workspace_index_progress(
+        &options,
+        "finalize",
+        "Finalizing workspace index",
+        0.94,
+        scanned_files,
+        total_files,
+        total_files,
+    );
+    check_workspace_index_cancelled(&options, "build_workspace_index")?;
 
     let recent_documents = recent_documents_from_documents(&documents);
 
@@ -1136,6 +1364,8 @@ pub fn query_workspace_index(
             recent_files,
         },
         "query_workspace_index",
+        &WorkspaceIndexBuildOptions::default(),
+        false,
     )?;
 
     Ok(query_workspace_documents(
@@ -1670,6 +1900,74 @@ mod tests {
     }
 
     #[test]
+    fn build_workspace_index_reports_fine_grained_progress() {
+        let root = temp_dir("progress");
+        let first = root.join("first.md");
+        let second = root.join("second.md");
+        fs::write(&first, "# First\n\n[Second](second.md)").expect("write first");
+        fs::write(&second, "# Second").expect("write second");
+        let events = Arc::new(Mutex::new(Vec::<WorkspaceIndexBuildProgress>::new()));
+        let events_for_reporter = events.clone();
+
+        let index = build_workspace_index_with_options(
+            BuildWorkspaceIndexInput {
+                root_path: path_to_string(&root),
+                current_document_override: None,
+                recent_files: vec![],
+            },
+            WorkspaceIndexBuildOptions {
+                cancel_requested: None,
+                progress_reporter: Some(Arc::new(move |progress| {
+                    events_for_reporter
+                        .lock()
+                        .expect("lock progress events")
+                        .push(progress);
+                })),
+            },
+        )
+        .expect("build index");
+
+        assert_eq!(index.documents.len(), 2);
+        let stages = events
+            .lock()
+            .expect("lock progress events")
+            .iter()
+            .map(|event| event.stage.clone())
+            .collect::<Vec<_>>();
+        assert!(stages.contains(&"scan".to_string()));
+        assert!(stages.contains(&"parse".to_string()));
+        assert!(stages.contains(&"resolve".to_string()));
+        assert!(stages.contains(&"backlinks".to_string()));
+        assert!(stages.contains(&"finalize".to_string()));
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn build_workspace_index_aborts_when_cancel_requested() {
+        let root = temp_dir("cancel");
+        fs::write(root.join("note.md"), "# Note").expect("write note");
+        let cancel_requested = Arc::new(AtomicBool::new(true));
+
+        let error = build_workspace_index_with_options(
+            BuildWorkspaceIndexInput {
+                root_path: path_to_string(&root),
+                current_document_override: None,
+                recent_files: vec![],
+            },
+            WorkspaceIndexBuildOptions {
+                cancel_requested: Some(cancel_requested),
+                progress_reporter: None,
+            },
+        )
+        .expect_err("cancelled build should fail");
+
+        assert_eq!(error.code, "workspace_index_cancelled");
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn reuses_base_index_snapshot_until_manifest_changes() {
         let root = temp_dir("base-snapshot");
         let note = root.join("note.md");
@@ -1702,13 +2000,34 @@ mod tests {
                 .title = "Poisoned document cache".to_string();
         }
 
-        let second = build_workspace_index(BuildWorkspaceIndexInput {
-            root_path: path_to_string(&root),
-            current_document_override: None,
-            recent_files: vec![],
-        })
+        let events = Arc::new(Mutex::new(Vec::<WorkspaceIndexBuildProgress>::new()));
+        let events_for_reporter = events.clone();
+        let second = build_workspace_index_with_options(
+            BuildWorkspaceIndexInput {
+                root_path: path_to_string(&root),
+                current_document_override: None,
+                recent_files: vec![],
+            },
+            WorkspaceIndexBuildOptions {
+                cancel_requested: None,
+                progress_reporter: Some(Arc::new(move |progress| {
+                    events_for_reporter
+                        .lock()
+                        .expect("lock progress events")
+                        .push(progress);
+                })),
+            },
+        )
         .expect("second build");
         assert_eq!(second.documents[0].title, "Original");
+        let stages = events
+            .lock()
+            .expect("lock progress events")
+            .iter()
+            .map(|event| event.stage.clone())
+            .collect::<Vec<_>>();
+        assert!(stages.contains(&"cached".to_string()));
+        assert!(!stages.contains(&"parse".to_string()));
 
         fs::write(&note, "# Changed title with different size").expect("rewrite note");
         let changed = build_workspace_index(BuildWorkspaceIndexInput {

@@ -6,7 +6,10 @@ use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::error::{PrismCommandError, PrismResult};
-use super::workspace_index::{self, BuildWorkspaceIndexInput, WorkspaceIndexDto};
+use super::workspace_index::{
+    self, BuildWorkspaceIndexInput, WorkspaceIndexBuildOptions, WorkspaceIndexBuildProgress,
+    WorkspaceIndexDto,
+};
 use super::workspace_index::{BacklinkDto, BuildRelationGraphInput, RelationGraphDto};
 
 static NEXT_WORKSPACE_INDEX_JOB_ID: AtomicU64 = AtomicU64::new(1);
@@ -96,9 +99,29 @@ fn update_running_stage(store: &WorkspaceIndexJobStore, job_id: &str) -> PrismRe
     if entry.job.status != "running" || entry.cancel_requested.load(Ordering::Relaxed) {
         return Ok(());
     }
-    entry.job.stage = "build".to_string();
-    entry.job.message = "Building workspace index".to_string();
-    entry.job.progress = 0.2;
+    entry.job.stage = "prepare".to_string();
+    entry.job.message = "Preparing workspace index".to_string();
+    entry.job.progress = 0.01;
+    entry.job.updated_at = now_ms();
+    Ok(())
+}
+
+fn update_workspace_index_job_progress(
+    store: &WorkspaceIndexJobStore,
+    job_id: &str,
+    progress: WorkspaceIndexBuildProgress,
+) -> PrismResult<()> {
+    let mut jobs = store.jobs.lock().map_err(|_| store_lock_error())?;
+    let Some(entry) = jobs.get_mut(job_id) else {
+        return Ok(());
+    };
+    if entry.job.status != "running" || entry.cancel_requested.load(Ordering::Relaxed) {
+        return Ok(());
+    }
+
+    entry.job.stage = progress.stage;
+    entry.job.message = progress.message;
+    entry.job.progress = progress.progress.clamp(0.0, 0.99);
     entry.job.updated_at = now_ms();
     Ok(())
 }
@@ -190,7 +213,19 @@ pub fn start_workspace_index_job(
     let thread_job_id = job.id.clone();
     thread::spawn(move || {
         let _ = update_running_stage(&thread_store, &thread_job_id);
-        let result = workspace_index::build_workspace_index(input);
+        let progress_store = thread_store.clone();
+        let progress_job_id = thread_job_id.clone();
+        let progress_reporter = Arc::new(move |progress| {
+            let _ =
+                update_workspace_index_job_progress(&progress_store, &progress_job_id, progress);
+        });
+        let result = workspace_index::build_workspace_index_with_options(
+            input,
+            WorkspaceIndexBuildOptions {
+                cancel_requested: Some(cancel_requested.clone()),
+                progress_reporter: Some(progress_reporter),
+            },
+        );
         let _ = finish_workspace_index_job(&thread_store, &thread_job_id, cancel_requested, result);
     });
 

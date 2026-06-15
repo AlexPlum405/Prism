@@ -2370,3 +2370,63 @@ git diff --check
 - Phase 6（细粒度进度与可中断）：收益为正，建议执行。Phase 5 已有 manifest 概念，但 progress 仍是阶段型，cancel 仍是状态级。
 - Phase 7（`[[` 页面链接补全下沉）：收益为正，建议在 Phase 6 后执行。
 - Phase 8（清理前端旧索引实现）：仍跳过。TS fallback 仍有价值，当前删除是负收益。
+
+
+## Rust Core Phase 6：细粒度进度与可中断索引构建
+
+### 执行前评估
+
+结论：执行，收益为正。
+
+Phase 3 已把工作区索引变成 Rust job，但当时的取消仍是状态级：前端取消后 job 会被标记 `cancelled`，但底层扫描/解析循环可能继续跑到本次 build 返回。进度也只有 `queued -> build -> completed` 这种阶段型状态，对大工作区没有足够可见性。
+
+收益判断：
+
+- Leverage：在 Rust workspace index Module 增加内部 `WorkspaceIndexBuildOptions`，不扩大 Tauri command Interface，却让 job progress、cancel 和后续索引构建都复用同一个内部 Seam。
+- Locality：取消检查、scan/parse/resolve/backlinks/finalize 进度集中在 Rust build Implementation，避免散落到 hook、panel 或 command polling。
+- 性能修正：Phase 5 的 base snapshot 命中提前到 manifest 扫描之后、文档解析之前；未变化工作区的二次 base job 不再进入 parse/resolve/backlinks。
+
+### 改动范围
+
+- `src-tauri/src/domain/workspace_index.rs`
+  - 新增 `WorkspaceIndexBuildOptions`、`WorkspaceIndexBuildProgress` 与 progress reporter。
+  - `collect_workspace_files`、document parse、link resolve、backlinks 构建阶段都检查 cancel token。
+  - base snapshot 命中提前到 manifest 后，命中时直接返回完整 index snapshot。
+  - 保留原 `build_workspace_index(input)` Interface，新增内部 `build_workspace_index_with_options(input, options)` 供 job Module 使用。
+- `src-tauri/src/domain/workspace_index_job.rs`
+  - job 启动时把 `cancel_requested` token 和 progress reporter 传入 Rust build。
+  - job progress 从粗 `build=0.2` 改成 scan/parse/resolve/backlinks/finalize 连续更新。
+
+### 完成后对比
+
+| 项目 | Phase 6 前 | Phase 6 后 |
+|---|---|---|
+| 取消 | 标记 job cancelled，但底层扫描/解析仍可能继续 | cancel token 下传到扫描、解析、解析链接和 backlinks 循环，能提前停止 |
+| 进度 | queued/build/completed 粗阶段 | scan/parse/resolve/backlinks/finalize 多阶段进度 |
+| 未变化 base job | snapshot 命中前仍会构建 documents | manifest 命中后直接返回 snapshot，跳过 parse/resolve/backlinks |
+| 外部 Interface | start/get/cancel job commands | 不变 |
+| 前端 fallback | TS fallback 保留 | 不变 |
+
+### 验证
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index
+cargo test --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/app/useAppDocumentInsightModel.test.tsx src/app/controllers/DocumentPanelsController.test.tsx src/domains/workspace/components/RelationGraphPanel.test.tsx src/domains/workspace/services/relationGraph.test.ts src/components/shell/CommandPalette.test.tsx
+npm run build
+git diff --check
+```
+
+当前已通过：
+
+- Rust workspace_index / workspace_index_job 聚焦测试：14 passed。
+- 新增覆盖：细粒度 progress 阶段、cancel token 中止、snapshot 命中跳过 parse。
+- Rust 全量测试：45 passed。
+- 前端 workspace/search/backlinks/graph/command palette 相关测试：9 files / 35 tests passed。
+- 生产构建：通过，仅保留既有 chunk size warning。
+- diff 空白检查：通过。
+
+### 后续 Phase 评估
+
+- Phase 7（`[[` 页面链接补全下沉）：收益为正，建议执行。当前 `[[` 补全仍依赖前端 overlay/index 数据，适合复用 Rust completed job 的 documents/headings。
+- Phase 8（清理前端旧索引实现）：仍跳过。当前 native 仍需要 TS fallback 兜底，删除 fallback 对可靠性是负收益。
