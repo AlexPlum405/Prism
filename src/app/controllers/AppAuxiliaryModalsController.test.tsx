@@ -55,6 +55,7 @@ function renderController(overrides: Partial<Parameters<typeof AppAuxiliaryModal
     aboutVisible: true,
     commandPaletteMode: 'files',
     commandPaletteVisible: true,
+    currentDocument: null,
     files: [],
     recentFiles: [],
     shortcutPanelVisible: true,

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -28,6 +29,24 @@ pub struct RecentFileDto {
 #[serde(rename_all = "camelCase")]
 pub struct BuildWorkspaceIndexInput {
     pub root_path: String,
+    pub current_document_override: Option<CurrentDocumentOverride>,
+    pub recent_files: Vec<RecentFileDto>,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum WorkspaceIndexQueryMode {
+    QuickOpen,
+    FullText,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWorkspaceIndexInput {
+    pub root_path: String,
+    pub query: String,
+    pub limit: usize,
+    pub mode: WorkspaceIndexQueryMode,
     pub current_document_override: Option<CurrentDocumentOverride>,
     pub recent_files: Vec<RecentFileDto>,
 }
@@ -102,6 +121,16 @@ pub struct WorkspaceIndexDto {
     pub generated_at: u64,
     pub recent_documents: Vec<WorkspaceIndexedDocumentDto>,
     pub root_path: String,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceIndexSearchResultDto {
+    pub document: WorkspaceIndexedDocumentDto,
+    #[serde(rename = "match")]
+    pub match_kind: String,
+    pub score: i64,
+    pub snippet: String,
 }
 
 #[derive(Debug, Clone)]
@@ -188,6 +217,7 @@ fn collect_workspace_files(
     root: &Path,
     dir: &Path,
     out: &mut Vec<WorkspaceFile>,
+    stage: &str,
 ) -> PrismResult<()> {
     let entries = fs::read_dir(dir).map_err(|error| {
         PrismCommandError::new(
@@ -195,7 +225,7 @@ fn collect_workspace_files(
             format!("Failed to read workspace: {error}"),
         )
         .with_path(path_to_string(dir))
-        .with_stage("build_workspace_index")
+        .with_stage(stage)
     })?;
 
     for entry in entries.flatten() {
@@ -205,7 +235,7 @@ fn collect_workspace_files(
             continue;
         };
         if file_type.is_dir() {
-            collect_workspace_files(root, &path, out)?;
+            collect_workspace_files(root, &path, out, stage)?;
             continue;
         }
         if !file_type.is_file() || !is_supported_markdown_path(&path) {
@@ -594,9 +624,7 @@ fn has_stable_metadata(file: &WorkspaceFile) -> bool {
 }
 
 fn cached_document_matches(file: &WorkspaceFile, cached: &CachedIndexedDocument) -> bool {
-    has_stable_metadata(file)
-        && cached.modified_at == file.modified_at
-        && cached.size == file.size
+    has_stable_metadata(file) && cached.modified_at == file.modified_at && cached.size == file.size
 }
 
 fn apply_recent_to_document(
@@ -608,16 +636,31 @@ fn apply_recent_to_document(
     document
 }
 
-pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<WorkspaceIndexDto> {
-    let root = canonicalize_existing_path(&input.root_path, "build_workspace_index")?;
-    ensure_directory(&root, "build_workspace_index")?;
+fn recent_documents_from_documents(
+    documents: &[WorkspaceIndexedDocumentDto],
+) -> Vec<WorkspaceIndexedDocumentDto> {
+    let mut recent_documents: Vec<WorkspaceIndexedDocumentDto> = documents
+        .iter()
+        .filter(|document| document.recent_rank.is_some())
+        .cloned()
+        .collect();
+    recent_documents.sort_by_key(|document| document.recent_rank.unwrap_or(usize::MAX));
+    recent_documents
+}
+
+fn build_workspace_documents(
+    input: BuildWorkspaceIndexInput,
+    stage: &str,
+) -> PrismResult<(PathBuf, Vec<WorkspaceIndexedDocumentDto>)> {
+    let root = canonicalize_existing_path(&input.root_path, stage)?;
+    ensure_directory(&root, stage)?;
 
     let recent_by_path: HashMap<String, (f64, usize)> = input
         .recent_files
         .iter()
         .enumerate()
         .map(|(index, file)| {
-            let path = canonicalize_existing_path(&file.path, "build_workspace_index")
+            let path = canonicalize_existing_path(&file.path, stage)
                 .map(|path| path_to_string(&path))
                 .unwrap_or_else(|_| file.path.clone());
             (normalize_path(&path), (file.last_opened, index))
@@ -625,19 +668,21 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
         .collect();
 
     let override_by_path = input.current_document_override.as_ref().map(|document| {
-        let path = canonicalize_existing_path(&document.path, "build_workspace_index")
+        let path = canonicalize_existing_path(&document.path, stage)
             .map(|path| path_to_string(&path))
             .unwrap_or_else(|_| document.path.clone());
         (normalize_path(&path), document.content.clone())
     });
 
     let mut files = Vec::new();
-    collect_workspace_files(&root, &root, &mut files)?;
+    collect_workspace_files(&root, &root, &mut files, stage)?;
     files.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
 
     let root_key = normalize_path(&path_to_string(&root));
     let cache_mutex = workspace_index_cache();
-    let mut cache_by_root = cache_mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut cache_by_root = cache_mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let workspace_cache = cache_by_root.entry(root_key).or_default();
     let mut active_cache_keys = HashSet::new();
 
@@ -682,6 +727,12 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
         .documents_by_path
         .retain(|key, _| active_cache_keys.contains(key));
     drop(cache_by_root);
+
+    Ok((root, documents))
+}
+
+pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<WorkspaceIndexDto> {
+    let (root, mut documents) = build_workspace_documents(input, "build_workspace_index")?;
 
     let document_paths: Vec<String> = documents
         .iter()
@@ -729,12 +780,7 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
         });
     }
 
-    let mut recent_documents: Vec<WorkspaceIndexedDocumentDto> = documents
-        .iter()
-        .filter(|document| document.recent_rank.is_some())
-        .cloned()
-        .collect();
-    recent_documents.sort_by_key(|document| document.recent_rank.unwrap_or(usize::MAX));
+    let recent_documents = recent_documents_from_documents(&documents);
 
     Ok(WorkspaceIndexDto {
         backlinks_by_path,
@@ -743,6 +789,218 @@ pub fn build_workspace_index(input: BuildWorkspaceIndexInput) -> PrismResult<Wor
         recent_documents,
         root_path: path_to_string(&root),
     })
+}
+
+fn compare_relative_path(
+    a: &WorkspaceIndexedDocumentDto,
+    b: &WorkspaceIndexedDocumentDto,
+) -> Ordering {
+    normalize_path(&a.relative_path).cmp(&normalize_path(&b.relative_path))
+}
+
+fn recent_boost(document: &WorkspaceIndexedDocumentDto) -> i64 {
+    document
+        .recent_rank
+        .map(|rank| 1_i64.max(12 - rank as i64))
+        .unwrap_or(0)
+}
+
+fn content_snippet(content: &str, normalized_content: &str, normalized_query: &str) -> String {
+    let Some(byte_index) = normalized_content.find(normalized_query) else {
+        return String::new();
+    };
+    let match_start = normalized_content[..byte_index].chars().count();
+    let match_len = normalized_query.chars().count();
+    let chars = content.chars().collect::<Vec<_>>();
+    let start = match_start.saturating_sub(48);
+    let end = (match_start + match_len + 80).min(chars.len());
+    chars[start..end]
+        .iter()
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn search_result(
+    document: &WorkspaceIndexedDocumentDto,
+    match_kind: &str,
+    score: i64,
+    snippet: String,
+) -> WorkspaceIndexSearchResultDto {
+    WorkspaceIndexSearchResultDto {
+        document: document.clone(),
+        match_kind: match_kind.to_string(),
+        score,
+        snippet,
+    }
+}
+
+fn rank_document_for_query(
+    document: &WorkspaceIndexedDocumentDto,
+    normalized_query: &str,
+    mode: &WorkspaceIndexQueryMode,
+) -> Option<WorkspaceIndexSearchResultDto> {
+    let title = document.title.to_lowercase();
+    let name = document.name.to_lowercase();
+    let relative_path = document.relative_path.to_lowercase();
+    let heading = document
+        .headings
+        .iter()
+        .find(|item| item.title.to_lowercase().contains(normalized_query));
+    let boost = recent_boost(document);
+    let detail_snippet = match mode {
+        WorkspaceIndexQueryMode::QuickOpen => document.relative_path.clone(),
+        WorkspaceIndexQueryMode::FullText => document.title.clone(),
+    };
+    let name_snippet = match mode {
+        WorkspaceIndexQueryMode::QuickOpen => document.relative_path.clone(),
+        WorkspaceIndexQueryMode::FullText => document.name.clone(),
+    };
+
+    if title == normalized_query {
+        return Some(search_result(
+            document,
+            "title",
+            120 + boost,
+            detail_snippet,
+        ));
+    }
+    if name == normalized_query {
+        return Some(search_result(document, "name", 110 + boost, name_snippet));
+    }
+    if title.contains(normalized_query) {
+        return Some(search_result(document, "title", 90 + boost, detail_snippet));
+    }
+    if name.contains(normalized_query) {
+        return Some(search_result(document, "name", 80 + boost, name_snippet));
+    }
+    if relative_path.contains(normalized_query) {
+        return Some(search_result(
+            document,
+            "path",
+            55 + boost,
+            document.relative_path.clone(),
+        ));
+    }
+    if let Some(heading) = heading {
+        return Some(search_result(
+            document,
+            "heading",
+            45 + boost,
+            heading.title.clone(),
+        ));
+    }
+    if mode == &WorkspaceIndexQueryMode::FullText {
+        let content = document.content.to_lowercase();
+        if content.contains(normalized_query) {
+            return Some(search_result(
+                document,
+                "content",
+                25 + boost,
+                content_snippet(&document.content, &content, normalized_query),
+            ));
+        }
+    }
+
+    None
+}
+
+fn empty_workspace_query_results(
+    documents: &[WorkspaceIndexedDocumentDto],
+    limit: usize,
+    mode: &WorkspaceIndexQueryMode,
+) -> Vec<WorkspaceIndexSearchResultDto> {
+    let recent_documents = recent_documents_from_documents(documents);
+    match mode {
+        WorkspaceIndexQueryMode::FullText => recent_documents
+            .iter()
+            .take(limit)
+            .map(|document| search_result(document, "name", 1, document.relative_path.clone()))
+            .collect(),
+        WorkspaceIndexQueryMode::QuickOpen => {
+            let recent_paths = recent_documents
+                .iter()
+                .map(|document| normalize_path(&document.path))
+                .collect::<HashSet<_>>();
+            let mut rest = documents
+                .iter()
+                .filter(|document| !recent_paths.contains(&normalize_path(&document.path)))
+                .cloned()
+                .collect::<Vec<_>>();
+            rest.sort_by(|a, b| {
+                b.modified_at
+                    .unwrap_or(0.0)
+                    .partial_cmp(&a.modified_at.unwrap_or(0.0))
+                    .unwrap_or(Ordering::Equal)
+                    .then_with(|| compare_relative_path(a, b))
+            });
+
+            recent_documents
+                .iter()
+                .chain(rest.iter())
+                .take(limit)
+                .map(|document| {
+                    let score = document
+                        .recent_rank
+                        .map(|rank| 20 - rank as i64)
+                        .unwrap_or(1);
+                    search_result(document, "name", score, document.relative_path.clone())
+                })
+                .collect()
+        }
+    }
+}
+
+fn query_workspace_documents(
+    documents: &[WorkspaceIndexedDocumentDto],
+    query: &str,
+    limit: usize,
+    mode: &WorkspaceIndexQueryMode,
+) -> Vec<WorkspaceIndexSearchResultDto> {
+    if limit == 0 {
+        return Vec::new();
+    }
+
+    let normalized_query = query.trim().to_lowercase();
+    if normalized_query.is_empty() {
+        return empty_workspace_query_results(documents, limit, mode);
+    }
+
+    let mut results = documents
+        .iter()
+        .filter_map(|document| rank_document_for_query(document, &normalized_query, mode))
+        .collect::<Vec<_>>();
+    results.sort_by(|a, b| {
+        b.score
+            .cmp(&a.score)
+            .then_with(|| compare_relative_path(&a.document, &b.document))
+    });
+    results.truncate(limit);
+    results
+}
+
+pub fn query_workspace_index(
+    input: QueryWorkspaceIndexInput,
+) -> PrismResult<Vec<WorkspaceIndexSearchResultDto>> {
+    let QueryWorkspaceIndexInput {
+        root_path,
+        query,
+        limit,
+        mode,
+        current_document_override,
+        recent_files,
+    } = input;
+    let (_, documents) = build_workspace_documents(
+        BuildWorkspaceIndexInput {
+            root_path,
+            current_document_override,
+            recent_files,
+        },
+        "query_workspace_index",
+    )?;
+
+    Ok(query_workspace_documents(&documents, &query, limit, &mode))
 }
 
 #[cfg(test)]
@@ -898,6 +1156,93 @@ mod tests {
                 "node_modules/notes.md",
             ]
         );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn queries_workspace_index_for_quick_open_and_full_text() {
+        let root = temp_dir("query");
+        fs::create_dir_all(root.join("docs")).expect("create docs");
+        let guide = root.join("docs").join("guide.md");
+        let api = root.join("docs").join("api.md");
+        fs::write(&guide, "# Guide\n\nneedle target content").expect("write guide");
+        fs::write(&api, "# API Reference\n\ninvoke contract").expect("write api");
+
+        let quick_results = query_workspace_index(QueryWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            query: "api".to_string(),
+            limit: 10,
+            mode: WorkspaceIndexQueryMode::QuickOpen,
+            current_document_override: None,
+            recent_files: vec![RecentFileDto {
+                path: path_to_string(&guide),
+                name: None,
+                last_opened: 300.0,
+            }],
+        })
+        .expect("query quick open");
+
+        assert_eq!(quick_results[0].match_kind, "title");
+        assert_eq!(quick_results[0].document.relative_path, "docs/api.md");
+        assert_eq!(quick_results[0].snippet, "docs/api.md");
+
+        let empty_quick_results = query_workspace_index(QueryWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            query: String::new(),
+            limit: 10,
+            mode: WorkspaceIndexQueryMode::QuickOpen,
+            current_document_override: None,
+            recent_files: vec![RecentFileDto {
+                path: path_to_string(&guide),
+                name: None,
+                last_opened: 300.0,
+            }],
+        })
+        .expect("empty quick open");
+        assert_eq!(
+            empty_quick_results[0].document.relative_path,
+            "docs/guide.md"
+        );
+
+        let full_text_results = query_workspace_index(QueryWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            query: "needle".to_string(),
+            limit: 10,
+            mode: WorkspaceIndexQueryMode::FullText,
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("query full text");
+
+        assert_eq!(full_text_results[0].match_kind, "content");
+        assert_eq!(full_text_results[0].document.relative_path, "docs/guide.md");
+        assert!(full_text_results[0].snippet.contains("needle"));
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn workspace_query_uses_current_document_override() {
+        let root = temp_dir("query-override");
+        let current = root.join("current.md");
+        fs::write(&current, "# Disk title").expect("write current");
+
+        let results = query_workspace_index(QueryWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            query: "Unsaved".to_string(),
+            limit: 10,
+            mode: WorkspaceIndexQueryMode::FullText,
+            current_document_override: Some(CurrentDocumentOverride {
+                path: path_to_string(&current),
+                content: "# Unsaved title\n\nfresh body".to_string(),
+            }),
+            recent_files: vec![],
+        })
+        .expect("query with override");
+
+        assert_eq!(results[0].match_kind, "title");
+        assert_eq!(results[0].document.title, "Unsaved title");
 
         let _ = fs::remove_dir_all(root);
     }

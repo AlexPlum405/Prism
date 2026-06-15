@@ -2132,3 +2132,54 @@ git diff --check
 
 - Phase 10 的 `App.tsx < 350` 与 `EditorPane.tsx < 500` 目标均已达成；仍可继续整理当前未提交功能增量带来的额外编辑器 UI 接线，但不再属于本阶段硬性行数目标。
 - 当前工作树仍有未提交编辑器功能增量，后续若继续提交 Callout/插图/Toggle/菜单/样式/图标，应按各自功能 checkpoint 单独验证、单独提交。
+
+
+## Rust Core Phase 2：工作区查询下沉
+
+### 目标
+
+把工作区索引 Module 从“Rust 构建完整索引、前端同步查询”加深为“Rust 持有索引缓存并执行快速打开/全文搜索查询”。前端命令面板继续保留 TypeScript fallback，但优先通过 native Adapter 传入 `rootPath/query/mode/limit/currentDocumentOverride/recentFiles` 这类小参数，避免每次输入都在 WebView 主线程遍历完整 `WorkspaceIndex`。
+
+### 改动范围
+
+- `src-tauri/src/domain/workspace_index.rs`
+  - 新增 `QueryWorkspaceIndexInput`、`WorkspaceIndexQueryMode`、`WorkspaceIndexSearchResultDto`。
+  - 拆出 `build_workspace_documents`，查询路径复用文档缓存，不为每个搜索词重算 backlink 图。
+  - 新增 `query_workspace_index`，覆盖 quick open 排序、全文搜索、recent 空查询、当前未保存文档覆盖。
+- `src-tauri/src/commands/workspace_index.rs` / `src-tauri/src/lib.rs`
+  - 注册 `query_workspace_index` Tauri command。
+- `src/platform/tauri/workspaceIndex.ts` / `src/domains/workspace/services/workspaceIndexNative.ts`
+  - 新增 native query Adapter 与 DTO 校验。
+- `src/components/shell/CommandPalette.tsx`
+  - 命令面板先显示同步 TypeScript fallback，native 查询成功后替换结果。
+  - command unavailable 时关闭 native 查询路径，保持 fallback。
+  - 透传当前文档内容作为 override，避免 Rust 结果覆盖未保存文档搜索。
+- `src/App.tsx` / `src/app/controllers/AppAuxiliaryModalsController.tsx`
+  - 将当前文档透传到命令面板，仅用于 native 查询输入。
+
+### 架构判断
+
+这个阶段选择加深 Rust 工作区索引 Module，而不是新增一个浅 Seam。删除这个 Module 后，文件扫描、recent 排序、当前文档覆盖、全文匹配、结果排序和错误处理会重新散落到命令面板、hook 与 TS service 中；因此该 Module 的 Interface 虽然小，但背后承载了更高 Leverage。TypeScript Adapter 仍是真实 Seam：native 可用走 Rust Adapter，native 不可用走现有 TypeScript Implementation，Locality 集中在工作区查询层。
+
+### 验证
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml workspace_index
+cargo test --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/components/shell/CommandPalette.test.tsx src/app/controllers/AppAuxiliaryModalsController.test.tsx
+npm run build
+git diff --check
+```
+
+结果：
+
+- Rust workspace_index 聚焦测试：通过，5 个测试。
+- Rust 全量测试：通过，36 个测试。
+- TS 工作区索引/Adapter/命令面板聚焦测试：通过，5 个测试文件、17 个测试。
+- `npm run build`：通过，Vite 仍输出既有 chunk size warning。
+- `git diff --check`：通过。
+
+### 剩余风险
+
+- Phase 2 当前只下沉快速打开和全文搜索；关系图谱与 backlink 面板仍使用前端 `WorkspaceIndex` 查询。
+- native 查询每次仍会重新扫描工作区文件列表来判断活跃文档，虽然文件内容与解析结果会复用 Rust cache；后续可继续把 root-level file manifest / query cache 做成更深的 Module。

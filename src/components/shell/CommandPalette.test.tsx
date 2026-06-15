@@ -1,8 +1,14 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileNode } from '../../domains/workspace/types';
 import { buildWorkspaceIndex } from '../../domains/workspace/services';
 import { CommandPalette } from './CommandPalette';
+
+const nativeQueryMock = vi.hoisted(() => ({
+  queryWorkspaceIndexNativeModel: vi.fn(),
+}));
+
+vi.mock('../../domains/workspace/services/workspaceIndexNative', () => nativeQueryMock);
 
 const files: FileNode[] = [
   {
@@ -18,6 +24,11 @@ const files: FileNode[] = [
 ];
 
 describe('CommandPalette', () => {
+  beforeEach(() => {
+    nativeQueryMock.queryWorkspaceIndexNativeModel.mockReset();
+    nativeQueryMock.queryWorkspaceIndexNativeModel.mockResolvedValue(null);
+  });
+
   it('searches workspace files in quick-open mode and executes the selected file action', () => {
     const onExecute = vi.fn();
     const onClose = vi.fn();
@@ -99,5 +110,65 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Zeta 方案')).toBeInTheDocument();
     expect(screen.getByText('正文')).toBeInTheDocument();
     expect(screen.getByText(/全文命中/)).toBeInTheDocument();
+  });
+
+  it('uses native workspace query results when they are available', async () => {
+    const onExecute = vi.fn();
+    const onClose = vi.fn();
+    const workspaceIndex = buildWorkspaceIndex({
+      fileTree: files,
+      workspaceRoot: '/notes',
+      documents: [
+        { path: '/notes/b/z.md', content: '# Zeta' },
+        { path: '/notes/root.md', content: '# Root file' },
+      ],
+    });
+    const nativeDocument = {
+      ...workspaceIndex.documents[0],
+      path: '/notes/native.md',
+      name: 'native.md',
+      relativePath: 'native.md',
+      title: 'Native Result',
+    };
+    nativeQueryMock.queryWorkspaceIndexNativeModel.mockResolvedValue([{
+      document: nativeDocument,
+      match: 'title',
+      score: 120,
+      snippet: 'native.md',
+    }]);
+
+    render(
+      <CommandPalette
+        visible
+        files={files}
+        workspaceRoot="/notes"
+        recentFiles={[{ path: '/notes/root.md', lastOpened: 100 }]}
+        currentDocument={{ path: '/notes/current.md', content: '# Unsaved Current' }}
+        workspaceIndex={workspaceIndex}
+        mode="files"
+        onClose={onClose}
+        onExecute={onExecute}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('搜索工作区文件…'), {
+      target: { value: 'native' },
+    });
+
+    await waitFor(() => {
+      expect(nativeQueryMock.queryWorkspaceIndexNativeModel).toHaveBeenLastCalledWith({
+        rootPath: '/notes',
+        query: 'native',
+        limit: 30,
+        mode: 'quickOpen',
+        currentDocumentOverride: {
+          path: '/notes/current.md',
+          content: '# Unsaved Current',
+        },
+        recentFiles: [{ path: '/notes/root.md', lastOpened: 100 }],
+      });
+    });
+    expect(await screen.findByText('Native Result')).toBeInTheDocument();
+    expect(screen.getByText('native.md')).toBeInTheDocument();
   });
 });

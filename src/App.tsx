@@ -321,6 +321,7 @@ function App() {
         aboutVisible={aboutVisible}
         commandPaletteMode={commandPaletteMode}
         commandPaletteVisible={commandPaletteVisible}
+        currentDocument={currentDocument}
         files={workspace.fileTree}
         recentFiles={settings.recentFiles}
         shortcutPanelVisible={shortcutPanelVisible}

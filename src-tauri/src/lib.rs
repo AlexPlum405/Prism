@@ -90,6 +90,7 @@ pub fn run() {
             commands::document_io::write_document_file,
             commands::workspace_tree::load_workspace_tree,
             commands::workspace_index::build_workspace_index,
+            commands::workspace_index::query_workspace_index,
             commands::export_jobs::create_export_job,
             commands::export_jobs::update_export_job,
             commands::export_jobs::complete_export_job,

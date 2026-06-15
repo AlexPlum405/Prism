@@ -8,6 +8,8 @@ import {
   type WorkspaceIndex,
   type WorkspaceIndexSearchResult,
 } from '../../domains/workspace/services';
+import { queryWorkspaceIndexNativeModel } from '../../domains/workspace/services/workspaceIndexNative';
+import { isNativeCommandUnavailableError } from '../../platform/tauri/result';
 import { t, useI18n } from '../../domains/i18n';
 
 export type CommandPaletteMode = 'files' | 'search';
@@ -17,11 +19,19 @@ interface CommandPaletteProps {
   files?: FileNode[];
   workspaceRoot?: string | null;
   recentFiles?: QuickOpenRecentFile[];
+  currentDocument?: { path: string; content: string } | null;
   workspaceIndex?: WorkspaceIndex | null;
   workspaceIndexing?: boolean;
   mode?: CommandPaletteMode;
   onClose: () => void;
   onExecute: (commandId: string) => void;
+}
+
+interface CommandPaletteItem {
+  id: string;
+  label: string;
+  category: string;
+  shortcut?: string;
 }
 
 const SearchIcon = () => (
@@ -36,6 +46,7 @@ export function CommandPalette({
   files = [],
   workspaceRoot = null,
   recentFiles = [],
+  currentDocument = null,
   workspaceIndex = null,
   workspaceIndexing = false,
   mode = 'files',
@@ -45,16 +56,29 @@ export function CommandPalette({
   const { locale } = useI18n();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [nativeItems, setNativeItems] = useState<{ items: CommandPaletteItem[]; key: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const nativeQueryDisabledRef = useRef(false);
+  const nativeQueryRequestRef = useRef(0);
+  const recentFilesKey = useMemo(
+    () => recentFiles.map((file) => `${file.path}:${file.lastOpened}`).join('\n'),
+    [recentFiles],
+  );
+  const currentDocumentOverride = currentDocument?.path
+    ? { path: currentDocument.path, content: currentDocument.content }
+    : null;
+  const nativeQueryKey = [
+    mode,
+    query,
+    workspaceRoot ?? '',
+    recentFilesKey,
+    currentDocumentOverride?.path ?? '',
+    currentDocumentOverride?.content.length ?? 0,
+  ].join('\n');
 
   const quickOpenItems = useMemo(() => {
     if (workspaceIndex) {
-      return rankWorkspaceIndexDocuments(workspaceIndex, query, 30).map((result) => ({
-        id: `openWorkspaceFile:${encodeURIComponent(result.document.path)}`,
-        label: result.document.title || result.document.name,
-        category: result.snippet || result.document.relativePath,
-        shortcut: result.match === 'heading' ? t('palette.match.title') : undefined,
-      }));
+      return quickOpenResultsToItems(rankWorkspaceIndexDocuments(workspaceIndex, query, 30));
     }
     return rankQuickOpenFiles(files, query, 30, workspaceRoot, recentFiles).map((result) => ({
       id: `openWorkspaceFile:${encodeURIComponent(result.node.path)}`,
@@ -65,18 +89,17 @@ export function CommandPalette({
   }, [files, locale, query, recentFiles, workspaceIndex, workspaceRoot]);
   const workspaceSearchItems = useMemo(() => (
     workspaceIndex
-      ? searchWorkspaceIndex(workspaceIndex, query, 40).map((result) => ({
-          id: `openWorkspaceFile:${encodeURIComponent(result.document.path)}`,
-          label: result.document.title || result.document.name,
-          category: searchCategoryLabel(result),
-          shortcut: searchMatchLabel(result.match),
-        }))
+      ? searchResultsToItems(searchWorkspaceIndex(workspaceIndex, query, 40))
       : []
   ), [locale, query, workspaceIndex]);
-  const visibleItems = useMemo(() => {
+  const fallbackVisibleItems = useMemo(() => {
     if (mode === 'files') return quickOpenItems;
     return workspaceSearchItems;
   }, [mode, quickOpenItems, workspaceSearchItems]);
+  const visibleItems = useMemo(() => {
+    if (nativeItems?.key === nativeQueryKey) return nativeItems.items;
+    return fallbackVisibleItems;
+  }, [fallbackVisibleItems, nativeItems, nativeQueryKey]);
   const placeholder = mode === 'files'
     ? t('palette.searchFilesPlaceholder')
     : t('palette.searchWorkspacePlaceholder');
@@ -97,6 +120,60 @@ export function CommandPalette({
   }, [visible, mode]);
 
   useEffect(() => { setSelectedIndex(0); }, [query]);
+
+  useEffect(() => {
+    if (!visible || !workspaceRoot || nativeQueryDisabledRef.current) {
+      setNativeItems(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestId = nativeQueryRequestRef.current + 1;
+    nativeQueryRequestRef.current = requestId;
+
+    const run = async () => {
+      try {
+        const results = await queryWorkspaceIndexNativeModel({
+          rootPath: workspaceRoot,
+          query,
+          limit: mode === 'files' ? 30 : 40,
+          mode: mode === 'files' ? 'quickOpen' : 'fullText',
+          currentDocumentOverride,
+          recentFiles,
+        });
+        if (cancelled || nativeQueryRequestRef.current !== requestId) return;
+        setNativeItems(results
+          ? {
+              key: nativeQueryKey,
+              items: mode === 'files' ? quickOpenResultsToItems(results) : searchResultsToItems(results),
+            }
+          : null);
+      } catch (error) {
+        if (cancelled || nativeQueryRequestRef.current !== requestId) return;
+        if (isNativeCommandUnavailableError(error)) {
+          nativeQueryDisabledRef.current = true;
+        } else {
+          console.warn('[CommandPalette] Native workspace query unavailable, falling back to TypeScript:', error);
+        }
+        setNativeItems(null);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentDocumentOverride?.content,
+    currentDocumentOverride?.path,
+    mode,
+    nativeQueryKey,
+    query,
+    recentFiles,
+    visible,
+    workspaceRoot,
+  ]);
 
   useEffect(() => {
     if (!visible) return;
@@ -122,7 +199,7 @@ export function CommandPalette({
 
   if (!visible) return null;
 
-  const renderItem = (cmd: { id: string; label: string; category: string; shortcut?: string }, index: number) => (
+  const renderItem = (cmd: CommandPaletteItem, index: number) => (
     <div
       key={cmd.id}
       className={`cmdk-item ${index === selectedIndex ? 'selected' : ''}`}
@@ -190,6 +267,24 @@ function searchMatchLabel(match: WorkspaceIndexSearchResult['match']) {
     default:
       return undefined;
   }
+}
+
+function quickOpenResultsToItems(results: WorkspaceIndexSearchResult[]): CommandPaletteItem[] {
+  return results.map((result) => ({
+    id: `openWorkspaceFile:${encodeURIComponent(result.document.path)}`,
+    label: result.document.title || result.document.name,
+    category: result.snippet || result.document.relativePath,
+    shortcut: result.match === 'heading' ? t('palette.match.title') : undefined,
+  }));
+}
+
+function searchResultsToItems(results: WorkspaceIndexSearchResult[]): CommandPaletteItem[] {
+  return results.map((result) => ({
+    id: `openWorkspaceFile:${encodeURIComponent(result.document.path)}`,
+    label: result.document.title || result.document.name,
+    category: searchCategoryLabel(result),
+    shortcut: searchMatchLabel(result.match),
+  }));
 }
 
 function searchCategoryLabel(result: WorkspaceIndexSearchResult) {

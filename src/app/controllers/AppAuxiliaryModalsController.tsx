@@ -1,6 +1,7 @@
 import { AboutModal } from '../../components/shell/AboutModal';
 import { CommandPalette, type CommandPaletteMode } from '../../components/shell/CommandPalette';
 import { ShortcutPanel } from '../../components/shell/ShortcutPanel';
+import type { OpenDocument } from '../../domains/document/types';
 import type { RecentFile, WorkspaceIndex } from '../../domains/workspace/services';
 import type { FileNode } from '../../domains/workspace/types';
 
@@ -8,6 +9,7 @@ interface AppAuxiliaryModalsControllerProps {
   aboutVisible: boolean;
   commandPaletteMode: CommandPaletteMode;
   commandPaletteVisible: boolean;
+  currentDocument: OpenDocument | null;
   files: FileNode[];
   recentFiles: RecentFile[];
   workspaceIndex: WorkspaceIndex | null;
@@ -25,6 +27,7 @@ export function AppAuxiliaryModalsController({
   aboutVisible,
   commandPaletteMode,
   commandPaletteVisible,
+  currentDocument,
   files,
   recentFiles,
   shortcutPanelVisible,
@@ -49,6 +52,7 @@ export function AppAuxiliaryModalsController({
         files={files}
         workspaceRoot={workspaceRoot}
         recentFiles={recentFiles}
+        currentDocument={currentDocument}
         workspaceIndex={workspaceIndex}
         workspaceIndexing={workspaceIndexing}
         mode={commandPaletteMode}
