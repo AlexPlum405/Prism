@@ -606,8 +606,11 @@ const GFM_FOOTNOTE_PATTERN = /(^|\n)\s{0,3}\[\^[^\]\n]+]:|\[\^[^\]\n]+\]/;
 const GFM_AUTOLINK_LITERAL_PATTERN = /(^|[\s(])(?:https?:\/\/|www\.)[^\s<]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/;
 const LARGE_PRE_TABLE_ROW_THRESHOLD = 24;
 const LARGE_PRE_TABLE_PLACEHOLDER_BASE = 'PrismLargePreTablePlaceholder';
+const COMMON_MARKDOWN_PREVIEW_FAST_PATH_MIN_LENGTH = 300 * 1024;
 const HTML_ESCAPE_CANDIDATE_PATTERN = /[&<>"']/;
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
+const HTML_TEXT_ESCAPE_CANDIDATE_PATTERN = /[&<>]/;
+const HTML_TEXT_ESCAPE_PATTERN = /[&<>]/g;
 const HTML_ESCAPE_REPLACEMENTS: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -633,6 +636,11 @@ const FRONT_MATTER_FIELDS: Array<{
 function escapeGeneratedHtml(value: string) {
   if (!HTML_ESCAPE_CANDIDATE_PATTERN.test(value)) return value;
   return value.replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPE_REPLACEMENTS[char] ?? char);
+}
+
+function escapeGeneratedHtmlText(value: string) {
+  if (!HTML_TEXT_ESCAPE_CANDIDATE_PATTERN.test(value)) return value;
+  return value.replace(HTML_TEXT_ESCAPE_PATTERN, (char) => HTML_ESCAPE_REPLACEMENTS[char] ?? char);
 }
 
 function splitMarkdownTableRow(line: string) {
@@ -690,6 +698,509 @@ interface LargePreTablePlaceholder {
 interface SourceLineOffset {
   afterLine: number;
   delta: number;
+}
+
+interface CommonMarkdownFastPathFrontMatter {
+  endLineIndex: number;
+  html: string;
+}
+
+function findFrontMatterForCommonFastPath(content: string): CommonMarkdownFastPathFrontMatter | null {
+  const match = FRONT_MATTER_PATTERN.exec(content);
+  if (!match) return null;
+  return {
+    endLineIndex: match[0].match(/\n/g)?.length ?? 0,
+    html: renderFrontMatterMetadataHtml(content),
+  };
+}
+
+function collectCommonFastPathBodyLinesOutsideFences(content: string) {
+  const lines = content.split(/\r?\n/);
+  const output: string[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    const fence = isFenceLine(line);
+    if (!fence) {
+      output.push(line);
+      index += 1;
+      continue;
+    }
+
+    const fenceText = fence[1];
+    const fenceChar = fenceText[0];
+    const closePattern = new RegExp(`^\\s{0,3}${escapeRegExp(fenceChar.repeat(fenceText.length))}${fenceChar}*\\s*$`);
+    index += 1;
+    while (index < lines.length && !closePattern.test(lines[index])) {
+      index += 1;
+    }
+    if (index >= lines.length) {
+      output.push(line);
+      break;
+    }
+    index += 1;
+  }
+
+  return output;
+}
+
+function hasIndentedCodeOutsideFences(content: string) {
+  return collectCommonFastPathBodyLinesOutsideFences(content)
+    .some((line) => /^(?: {4}|\t)\S/.test(line));
+}
+
+function canUseCommonMarkdownPreviewFastPath(content: string, options: MarkdownToHtmlOptions) {
+  if (content.length < COMMON_MARKDOWN_PREVIEW_FAST_PATH_MIN_LENGTH) return false;
+  if (options.lightweightTables !== true) return false;
+  if (options.renderMath !== false) return false;
+  if (options.highlightCode !== false) return false;
+  if (options.autoDetectUnlabeledCode !== false) return false;
+  if (frontMatterModeForOptions(options) !== 'metadata') return false;
+
+  const frontMatter = FRONT_MATTER_PATTERN.exec(content);
+  const body = frontMatter ? content.slice(frontMatter[0].length) : content;
+  const bodyOutsideFences = collectCommonFastPathBodyLinesOutsideFences(body).join('\n');
+  if (HTML_CANDIDATE_PATTERN.test(bodyOutsideFences)) return false;
+  if (GFM_TASK_LIST_PATTERN.test(bodyOutsideFences) || GFM_FOOTNOTE_PATTERN.test(bodyOutsideFences)) return false;
+  if (/(^|\n)\s{0,3}\[[^\]\n]+]:/.test(bodyOutsideFences)) return false;
+  if (hasIndentedCodeOutsideFences(body)) return false;
+  return true;
+}
+
+function findClosingDelimiter(value: string, delimiter: string, startIndex: number) {
+  let index = startIndex;
+  while (index < value.length) {
+    const foundIndex = value.indexOf(delimiter, index);
+    if (foundIndex === -1) return -1;
+    if (foundIndex === 0 || value[foundIndex - 1] !== '\\') return foundIndex;
+    index = foundIndex + delimiter.length;
+  }
+  return -1;
+}
+
+function appendEscapedInlineChunk(output: string[], value: string, startIndex: number, endIndex: number) {
+  if (endIndex <= startIndex) return;
+  output.push(escapeGeneratedHtmlText(value.slice(startIndex, endIndex)));
+}
+
+function renderCommonPreviewHrefAttribute(value: string, kind: 'link' | 'media') {
+  const protocols = kind === 'link'
+    ? new Set(['http:', 'https:', 'mailto:'])
+    : new Set(['http:', 'https:']);
+  return isUnsafePreviewUrl(value, protocols) ? '' : escapeGeneratedHtml(value);
+}
+
+function renderCommonPreviewKatexPlaceholder(value: string, displayMode: boolean, line?: number) {
+  return renderKatexPlaceholderHtml(value, displayMode, line);
+}
+
+function renderCommonMarkdownInline(value: string, options: { allowImages?: boolean } = {}): string {
+  const output: string[] = [];
+  let index = 0;
+
+  while (index < value.length) {
+    if (value.startsWith('[[', index)) {
+      const endIndex = value.indexOf(']]', index + 2);
+      if (endIndex !== -1) {
+        const rawTarget = value.slice(index + 2, endIndex);
+        const [targetValue, labelValue] = rawTarget.split('|');
+        const target = targetValue?.trim() ?? '';
+        const label = (labelValue ?? target).trim() || target;
+        if (target) {
+          output.push(
+            `<a href="#" class="prism-wiki-link" data-prism-wiki-target="${escapeGeneratedHtml(target)}">${escapeGeneratedHtmlText(label)}</a>`,
+          );
+          index = endIndex + 2;
+          continue;
+        }
+      }
+    }
+
+    if (options.allowImages !== false && value.startsWith('![', index)) {
+      const labelEndIndex = value.indexOf(']', index + 2);
+      if (labelEndIndex !== -1 && value[labelEndIndex + 1] === '(') {
+        const hrefEndIndex = value.indexOf(')', labelEndIndex + 2);
+        if (hrefEndIndex !== -1) {
+          const alt = value.slice(index + 2, labelEndIndex);
+          const src = value.slice(labelEndIndex + 2, hrefEndIndex).trim();
+          const safeSrc = renderCommonPreviewHrefAttribute(src, 'media');
+          output.push(safeSrc
+            ? `<img src="${safeSrc}" alt="${escapeGeneratedHtml(alt)}">`
+            : `<img alt="${escapeGeneratedHtml(alt)}">`);
+          index = hrefEndIndex + 1;
+          continue;
+        }
+      }
+    }
+
+    if (value[index] === '[') {
+      const labelEndIndex = value.indexOf(']', index + 1);
+      if (labelEndIndex !== -1 && value[labelEndIndex + 1] === '(') {
+        const hrefEndIndex = value.indexOf(')', labelEndIndex + 2);
+        if (hrefEndIndex !== -1) {
+          const label = value.slice(index + 1, labelEndIndex);
+          const href = value.slice(labelEndIndex + 2, hrefEndIndex).trim();
+          const safeHref = renderCommonPreviewHrefAttribute(href, 'link');
+          const labelHtml = renderCommonMarkdownInline(label, { allowImages: false });
+          output.push(safeHref
+            ? `<a href="${safeHref}">${labelHtml}</a>`
+            : `<a>${labelHtml}</a>`);
+          index = hrefEndIndex + 1;
+          continue;
+        }
+      }
+    }
+
+    if (value.startsWith('`', index)) {
+      const endIndex = findClosingDelimiter(value, '`', index + 1);
+      if (endIndex !== -1) {
+        output.push(`<code>${escapeGeneratedHtmlText(value.slice(index + 1, endIndex))}</code>`);
+        index = endIndex + 1;
+        continue;
+      }
+    }
+
+    if (value.startsWith('**', index)) {
+      const endIndex = findClosingDelimiter(value, '**', index + 2);
+      if (endIndex !== -1) {
+        output.push(`<strong>${renderCommonMarkdownInline(value.slice(index + 2, endIndex), options)}</strong>`);
+        index = endIndex + 2;
+        continue;
+      }
+    }
+
+    if (value.startsWith('==', index)) {
+      const endIndex = findClosingDelimiter(value, '==', index + 2);
+      if (endIndex !== -1) {
+        output.push(`<mark>${renderCommonMarkdownInline(value.slice(index + 2, endIndex), options)}</mark>`);
+        index = endIndex + 2;
+        continue;
+      }
+    }
+
+    if (value.startsWith('$$', index)) {
+      const endIndex = findClosingDelimiter(value, '$$', index + 2);
+      if (endIndex !== -1) {
+        output.push(renderCommonPreviewKatexPlaceholder(value.slice(index + 2, endIndex), true));
+        index = endIndex + 2;
+        continue;
+      }
+    }
+
+    if (value[index] === '$') {
+      const endIndex = findClosingDelimiter(value, '$', index + 1);
+      if (endIndex !== -1) {
+        output.push(renderCommonPreviewKatexPlaceholder(value.slice(index + 1, endIndex), false));
+        index = endIndex + 1;
+        continue;
+      }
+    }
+
+    const urlMatch = /^(https?:\/\/[^\s<]+|www\.[^\s<]+)/.exec(value.slice(index));
+    if (urlMatch) {
+      const rawHref = urlMatch[1];
+      const href = rawHref.startsWith('www.') ? `http://${rawHref}` : rawHref;
+      output.push(`<a href="${escapeGeneratedHtml(href)}">${escapeGeneratedHtmlText(rawHref)}</a>`);
+      index += rawHref.length;
+      continue;
+    }
+
+    const emailMatch = /^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/.exec(value.slice(index));
+    if (emailMatch) {
+      const email = emailMatch[0];
+      output.push(`<a href="mailto:${escapeGeneratedHtml(email)}">${escapeGeneratedHtmlText(email)}</a>`);
+      index += email.length;
+      continue;
+    }
+
+    const nextSpecialIndex = [
+      value.indexOf('[[', index + 1),
+      value.indexOf('![', index + 1),
+      value.indexOf('[', index + 1),
+      value.indexOf('`', index + 1),
+      value.indexOf('**', index + 1),
+      value.indexOf('==', index + 1),
+      value.indexOf('$', index + 1),
+      value.indexOf('http://', index + 1),
+      value.indexOf('https://', index + 1),
+      value.indexOf('www.', index + 1),
+    ].filter((nextIndex) => nextIndex !== -1).sort((a, b) => a - b)[0] ?? value.length;
+    appendEscapedInlineChunk(output, value, index, nextSpecialIndex);
+    index = nextSpecialIndex;
+  }
+
+  return output.join('');
+}
+
+function isFenceLine(line: string) {
+  return /^\s{0,3}(```+|~~~+)\s*([^\s`]*)?.*$/.exec(line);
+}
+
+function isThematicBreakLine(line: string) {
+  return /^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line);
+}
+
+function isSimpleListLine(line: string) {
+  return /^\s{0,3}(?:[-+*]|\d+[.)])\s+\S/.test(line);
+}
+
+function isBlockquoteLine(line: string) {
+  return /^\s{0,3}>\s?/.test(line);
+}
+
+function isAtxHeadingLine(line: string) {
+  return /^\s{0,3}#{1,6}(?:\s|$)/.test(line);
+}
+
+function isDisplayMathFenceLine(line: string) {
+  return /^\s{0,3}\$\$\s*$/.test(line);
+}
+
+function isCommonMarkdownBlockStart(lines: string[], index: number) {
+  const line = lines[index] ?? '';
+  if (!line.trim()) return true;
+  if (isAtxHeadingLine(line)) return true;
+  if (isFenceLine(line)) return true;
+  if (isDisplayMathFenceLine(line)) return true;
+  if (isBlockquoteLine(line)) return true;
+  if (isSimpleListLine(line)) return true;
+  if (isThematicBreakLine(line)) return true;
+  return Boolean(splitMarkdownTableRow(line) && isMarkdownTableSeparator(lines[index + 1] ?? ''));
+}
+
+function renderCommonPreviewCodeBlock(
+  lines: string[],
+  startIndex: number,
+): { html: string; nextIndex: number } | null {
+  const startLine = lines[startIndex] ?? '';
+  const match = isFenceLine(startLine);
+  if (!match) return null;
+
+  const fence = match[1];
+  const fenceChar = fence[0];
+  const closePattern = new RegExp(`^\\s{0,3}${escapeRegExp(fenceChar.repeat(fence.length))}${fenceChar}*\\s*$`);
+  const language = (match[2] ?? '').trim();
+  const codeLines: string[] = [];
+  let index = startIndex + 1;
+  while (index < lines.length && !closePattern.test(lines[index])) {
+    codeLines.push(lines[index]);
+    index += 1;
+  }
+  if (index >= lines.length) return null;
+
+  const sourceLine = startIndex + 1;
+  const code = codeLines.join('\n');
+  if (language === 'mermaid') {
+    const escapedLine = escapeGeneratedHtml(String(sourceLine));
+    return {
+      html: `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(code)}" data-source-line="${escapedLine}"></div>`,
+      nextIndex: index + 1,
+    };
+  }
+
+  const className = language ? `hljs language-${escapeGeneratedHtml(language)}` : 'hljs';
+  return {
+    html: `<pre data-source-line="${sourceLine}" class="${className}">${escapeGeneratedHtmlText(code)}</pre>`,
+    nextIndex: index + 1,
+  };
+}
+
+function renderCommonPreviewDisplayMath(
+  lines: string[],
+  startIndex: number,
+): { html: string; nextIndex: number } | null {
+  if (!isDisplayMathFenceLine(lines[startIndex] ?? '')) return null;
+  const mathLines: string[] = [];
+  let index = startIndex + 1;
+  while (index < lines.length && !isDisplayMathFenceLine(lines[index])) {
+    mathLines.push(lines[index]);
+    index += 1;
+  }
+  if (index >= lines.length) return null;
+
+  return {
+    html: renderCommonPreviewKatexPlaceholder(mathLines.join('\n'), true, startIndex + 1),
+    nextIndex: index + 1,
+  };
+}
+
+function renderCommonPreviewTable(
+  lines: string[],
+  startIndex: number,
+): { html: string; nextIndex: number } | null {
+  const headers = splitMarkdownTableRow(lines[startIndex] ?? '');
+  const separator = splitMarkdownTableRow(lines[startIndex + 1] ?? '');
+  if (!headers || !separator || !isMarkdownTableSeparator(lines[startIndex + 1] ?? '')) return null;
+
+  const parsed = parseLightweightMarkdownTableRows(lines, startIndex + 2);
+  if (!canRenderLightweightMarkdownTable(headers, parsed.rows)) return null;
+  return {
+    html: renderLightweightMarkdownTable(headers, separator, parsed.rows, startIndex + 1),
+    nextIndex: parsed.nextIndex,
+  };
+}
+
+function renderCommonPreviewBlockquote(
+  lines: string[],
+  startIndex: number,
+): { html: string; nextIndex: number } | null {
+  const quoteLines: string[] = [];
+  let index = startIndex;
+  while (index < lines.length && isBlockquoteLine(lines[index])) {
+    quoteLines.push(lines[index].replace(/^\s{0,3}>\s?/, ''));
+    index += 1;
+  }
+
+  const sourceLine = startIndex + 1;
+  const firstLine = quoteLines[0] ?? '';
+  const calloutMatch = /^\[!([A-Za-z]+)](?:\s+(.*))?$/.exec(firstLine.trim());
+  if (calloutMatch) {
+    const kind = calloutMatch[1].toLowerCase();
+    const title = calloutMatch[2]?.trim() || kind[0].toUpperCase() + kind.slice(1);
+    const bodyLines = quoteLines.slice(1);
+    const body = bodyLines.join('\n').trim();
+    const bodyHtml = body ? `<p>${renderCommonMarkdownInline(body)}</p>` : '';
+    return {
+      html: [
+        `<blockquote class="prism-callout prism-callout--${escapeGeneratedHtml(kind)}" data-callout-kind="${escapeGeneratedHtml(kind)}" data-callout-title="${escapeGeneratedHtml(title)}" data-source-line="${sourceLine}">`,
+        bodyHtml,
+        '</blockquote>',
+      ].join(''),
+      nextIndex: index,
+    };
+  }
+
+  return {
+    html: `<blockquote data-source-line="${sourceLine}"><p>${renderCommonMarkdownInline(quoteLines.join('\n'))}</p></blockquote>`,
+    nextIndex: index,
+  };
+}
+
+function renderCommonPreviewList(
+  lines: string[],
+  startIndex: number,
+): { html: string; nextIndex: number } | null {
+  const firstMatch = /^(\s{0,3})([-+*]|\d+[.)])\s+(.+)$/.exec(lines[startIndex] ?? '');
+  if (!firstMatch) return null;
+
+  const ordered = /\d/.test(firstMatch[2]);
+  const tagName = ordered ? 'ol' : 'ul';
+  const items: string[] = [];
+  let index = startIndex;
+  while (index < lines.length) {
+    const match = /^(\s{0,3})([-+*]|\d+[.)])\s+(.+)$/.exec(lines[index] ?? '');
+    if (!match) break;
+    const nextOrdered = /\d/.test(match[2]);
+    if (nextOrdered !== ordered) break;
+    const sourceLine = index + 1;
+    items.push(`<li data-source-line="${sourceLine}">${renderCommonMarkdownInline(match[3])}</li>`);
+    index += 1;
+  }
+
+  return {
+    html: `<${tagName} data-source-line="${startIndex + 1}">${items.join('')}</${tagName}>`,
+    nextIndex: index,
+  };
+}
+
+function renderCommonPreviewParagraph(
+  lines: string[],
+  startIndex: number,
+): { html: string; nextIndex: number } {
+  const paragraphLines: string[] = [];
+  let index = startIndex;
+  while (index < lines.length && !isCommonMarkdownBlockStart(lines, index)) {
+    paragraphLines.push(lines[index]);
+    index += 1;
+  }
+
+  return {
+    html: `<p data-source-line="${startIndex + 1}">${renderCommonMarkdownInline(paragraphLines.join('\n'))}</p>`,
+    nextIndex: index,
+  };
+}
+
+function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownToHtmlOptions): string | null {
+  if (!canUseCommonMarkdownPreviewFastPath(content, options)) return null;
+
+  const lines = content.split(/\r?\n/);
+  const html: string[] = [];
+  const frontMatter = findFrontMatterForCommonFastPath(content);
+  let index = 0;
+
+  if (frontMatter) {
+    html.push(frontMatter.html);
+    index = frontMatter.endLineIndex;
+  }
+
+  while (index < lines.length) {
+    const line = lines[index] ?? '';
+    if (!line.trim()) {
+      index += 1;
+      continue;
+    }
+
+    const headingMatch = /^\s{0,3}(#{1,6})(?:\s+(.+?)\s*#*\s*)?$/.exec(line);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      html.push(`<h${level} data-source-line="${index + 1}">${renderCommonMarkdownInline(headingMatch[2] ?? '')}</h${level}>`);
+      index += 1;
+      continue;
+    }
+
+    if (isFenceLine(line)) {
+      const code = renderCommonPreviewCodeBlock(lines, index);
+      if (!code) return null;
+      html.push(code.html);
+      index = code.nextIndex;
+      continue;
+    }
+
+    if (isDisplayMathFenceLine(line)) {
+      const math = renderCommonPreviewDisplayMath(lines, index);
+      if (!math) return null;
+      html.push(math.html);
+      index = math.nextIndex;
+      continue;
+    }
+
+    if (isBlockquoteLine(line)) {
+      const blockquote = renderCommonPreviewBlockquote(lines, index);
+      if (!blockquote) return null;
+      html.push(blockquote.html);
+      index = blockquote.nextIndex;
+      continue;
+    }
+
+    if (splitMarkdownTableRow(line) && isMarkdownTableSeparator(lines[index + 1] ?? '')) {
+      const table = renderCommonPreviewTable(lines, index);
+      if (!table) return null;
+      html.push(table.html);
+      index = table.nextIndex;
+      continue;
+    }
+
+    if (isSimpleListLine(line)) {
+      const list = renderCommonPreviewList(lines, index);
+      if (!list) return null;
+      html.push(list.html);
+      index = list.nextIndex;
+      continue;
+    }
+
+    if (isThematicBreakLine(line)) {
+      html.push(`<hr data-source-line="${index + 1}">`);
+      index += 1;
+      continue;
+    }
+
+    const paragraph = renderCommonPreviewParagraph(lines, index);
+    html.push(paragraph.html);
+    index = paragraph.nextIndex;
+  }
+
+  return html.join('\n');
 }
 
 function parseLargePreTableRows(lines: string[], startIndex: number) {
@@ -1070,6 +1581,9 @@ function renderFrontMatterForPreview(content: string, mode: 'plain' | 'hide' | '
 }
 
 export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
+  const fastPathHtml = renderCommonMarkdownPreviewFastPath(content, options);
+  if (fastPathHtml !== null) return fastPathHtml;
+
   const displayMathLines: number[] = [];
   const largePreTablePreview = extractLargePreTablesForPreview(
     renderFrontMatterForPreview(content, frontMatterModeForOptions(options)),

@@ -39,19 +39,18 @@ export function collectPreviewDomPostProcessTargets(
   write: HTMLElement,
   hints: PreviewDomTargetHints,
 ): PreviewDomPostProcessTargets {
-  const selectors: string[] = [];
-  if (hints.katexPlaceholders) selectors.push('.katex-placeholder');
-  if (hints.media) selectors.push('img[src]', 'source[src]');
-  if (hints.katexErrors) selectors.push('.katex-error');
-  if (hints.mermaid) selectors.push('.mermaid-placeholder');
-  if (selectors.length === 0) return EMPTY_PREVIEW_DOM_TARGETS;
+  if (!hints.katexPlaceholders && !hints.media && !hints.katexErrors && !hints.mermaid) {
+    return EMPTY_PREVIEW_DOM_TARGETS;
+  }
 
   const katexPlaceholders: HTMLElement[] = [];
   const mediaElements: Array<HTMLImageElement | HTMLSourceElement> = [];
   const katexErrorElements: HTMLElement[] = [];
   const mermaidPlaceholders: HTMLElement[] = [];
+  const walker = write.ownerDocument.createTreeWalker(write, NodeFilter.SHOW_ELEMENT);
 
-  write.querySelectorAll<HTMLElement>(selectors.join(',')).forEach((element) => {
+  let element = walker.currentNode as HTMLElement | null;
+  while (element) {
     if (hints.katexPlaceholders && element.classList.contains('katex-placeholder')) {
       katexPlaceholders.push(element);
     }
@@ -64,7 +63,8 @@ export function collectPreviewDomPostProcessTargets(
     if (hints.mermaid && element.classList.contains('mermaid-placeholder')) {
       mermaidPlaceholders.push(element);
     }
-  });
+    element = walker.nextNode() as HTMLElement | null;
+  }
 
   return {
     katexPlaceholders,

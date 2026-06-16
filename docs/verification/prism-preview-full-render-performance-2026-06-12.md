@@ -68,6 +68,71 @@ PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspac
 
 结果保持稳定：`markdownToHtmlMs` 9.9 ms，`domWriteMs` 155.6 ms，`scrollSyncScanMs` 49.1 ms，HTML 长度 738,407。
 
+## 2026-06-16 通用 1MB fast path 与滚动扫描继续优化
+
+复跑上一轮后，通用 1MB 混合文档的主要瓶颈已经集中到 unified AST 管线和 DOM 构建。`CHAR_REVIEW.md` 仍是特殊快路径，不作为本轮主决策输入。
+
+变更：
+
+- 增加大文档预览专用 common Markdown fast path，仅在 `frontMatterMode: 'metadata'`、`lightweightTables: true`、`renderMath: false`、`highlightCode: false`、`autoDetectUnlabeledCode: false` 的大文档预览配置下启用。
+- fast path 覆盖普通标题、段落、简单列表、引用/Callout、简单表格、代码块、Mermaid placeholder、图片、wiki link、普通链接、强调、高亮、inline code、KaTeX placeholder；遇到 raw HTML、任务列表、脚注、link reference、围栏外缩进代码或复杂表格时回退完整 unified 管线。
+- fast path 输出只保留必要的 `data-source-line`，不再重复写 `data-line`；代码块去掉一层 `<code>` wrapper，滚动映射可直接从 `<pre>` 文本计算代码块行范围。
+- fast path 文本节点只转义 `& < >`，属性仍做完整转义，避免 JSON 代码块中的引号被无意义放大。
+- DOM 后处理目标收集和滚动 source-line 收集改为一次 TreeWalker 遍历；benchmark 的 `scrollSyncScanMs` 改为测量实际滚动映射收集路径，不再把额外诊断计数的第二次 DOM 扫描计入滚动热路径。
+
+通用 1MB benchmark：
+
+```bash
+PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+| 指标 | 上一轮后 | 本轮后 | 变化 |
+|---|---:|---:|---:|
+| HTML 长度 | 2,873,934 | 2,484,652 | -389,282（约 -13.5%） |
+| `markdownToHtmlMs` | 3,324.9 ms | 60.8 ms | -3,264.1 ms（约 -98.2%） |
+| `domWriteMs` | 850.3 ms | 823.9 ms | -26.4 ms（约 -3.1%） |
+| `domTargetScanMs` | 178.6 ms | 144.2 ms | -34.4 ms（约 -19.3%） |
+| `scrollSyncScanMs` | 419.9 ms | 126.7 ms | -293.2 ms（约 -69.8%） |
+| `scrollMapBuildMs` | 50.9 ms | 49.7 ms | 基本持平 |
+| source-line 节点数 | 15,898 | 13,740 | -2,158（约 -13.6%） |
+
+当前输出摘要：
+
+```json
+{
+  "contentLength": 1048751,
+  "iterations": 3,
+  "summary": {
+    "markdownToHtmlMs": 60.8,
+    "domWriteMs": 823.9,
+    "domTargetScanMs": 144.2,
+    "scrollSyncScanMs": 126.7,
+    "scrollMapBuildMs": 49.7,
+    "scrollMapLookupMs": 0.1,
+    "htmlLength": 2484652,
+    "mediaTargetCount": 359,
+    "katexErrorCount": 0,
+    "mermaidPlaceholderCount": 431,
+    "sourceLineElementCount": 13740,
+    "codeLineElementCount": 13740
+  }
+}
+```
+
+CHAR_REVIEW.md 回归：
+
+```bash
+PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspace/mpz8o63iwqg7cqnc/phase19/annotation/CHAR_REVIEW.md npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+结果仍在目标阈值内：`markdownToHtmlMs` 16.1 ms，`domWriteMs` 243.6 ms，`scrollSyncScanMs` 35.0 ms，HTML 长度 738,407。
+
+未完全达成项：
+
+- `markdownToHtmlMs < 1500ms` 已达成，且降到 100ms 内。
+- `scrollSyncScanMs < 120ms` 本轮中位数为 126.7ms，已经接近目标；继续压低需要减少大文档 source-line anchor 数量或引入更稀疏的 sidecar map，这会影响点击定位精度，暂未在本轮做取舍。
+- `domWriteMs < 500ms` 未达成。本轮 HTML 已降到约 2.48MB，但 jsdom `innerHTML` 仍要构建完整预览 DOM：大量 Markdown 表格单元格、代码块、KaTeX placeholder、Mermaid placeholder 和图片节点仍是完整预览所需内容。继续显著下降需要改变简单表格的 DOM 表达、减少 source-line anchor 粒度，或在真实 WebView 中改用分阶段 DOM commit；这些都需要单独验证视觉和交互取舍。
+
 该基准构造约 1MB Markdown，覆盖标题、长段落、表格、代码块、Callout、wiki link、KaTeX、Mermaid placeholder 和本地图片引用。记录：
 
 - `markdownToHtmlMs`：Markdown 到 HTML 的完整转换耗时。

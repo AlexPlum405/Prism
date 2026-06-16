@@ -29,8 +29,7 @@ function readSourceLine(element: HTMLElement): number | null {
 function getCodeBlockEndLine(el: HTMLElement, line: number): number | undefined {
   if (el.tagName !== 'PRE') return undefined;
   const codeEl = el.querySelector('code');
-  if (!codeEl) return undefined;
-  const text = codeEl.textContent || '';
+  const text = codeEl?.textContent || el.textContent || '';
   const lineCount = (text.match(/\n/g) || []).length + 1;
   return line + lineCount - 1;
 }
@@ -53,8 +52,7 @@ function getPreviewScrollMapSignature(preview: HTMLElement, revision: number) {
 
 export function collectCodeLineElements(preview: HTMLElement): CodeLineElement[] {
   const elements: CodeLineElement[] = [];
-  const root = getPreviewSourceRoot(preview);
-  const nodes = root.querySelectorAll<HTMLElement>('[data-source-line], [data-line]');
+  const nodes = collectPreviewSourceLineElements(preview);
   nodes.forEach((el) => {
     const line = readSourceLine(el);
     if (line === null) return;
@@ -71,6 +69,23 @@ export function collectCodeLineElements(preview: HTMLElement): CodeLineElement[]
     elements.push({ element: el, line });
   });
   elements.sort((a, b) => a.line - b.line);
+  return elements;
+}
+
+export function collectPreviewSourceLineElements(preview: HTMLElement): HTMLElement[] {
+  const root = getPreviewSourceRoot(preview);
+  const document = root.ownerDocument;
+  const elements: HTMLElement[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+
+  let current = walker.currentNode as HTMLElement | null;
+  while (current) {
+    if (current.hasAttribute('data-source-line') || current.hasAttribute('data-line')) {
+      elements.push(current);
+    }
+    current = walker.nextNode() as HTMLElement | null;
+  }
+
   return elements;
 }
 

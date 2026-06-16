@@ -163,10 +163,13 @@ function runFullPreviewBenchmark(iterations = 3) {
       };
     });
 
-    const scrollSyncScan = measure(() => ({
-      codeLineElements: collectCodeLineElements(write),
-      sourceLineElementCount: write.querySelectorAll('[data-source-line], [data-line]').length,
-    }));
+    const scrollSyncScan = measure(() => {
+      const codeLineElements = collectCodeLineElements(write);
+      return {
+        codeLineElements,
+        sourceLineElementCount: codeLineElements.length,
+      };
+    });
     const scrollMapBuild = measure(() => buildPreviewScrollMap(write, scrollSyncScan.value.codeLineElements));
     const lookupLines = Array.from({ length: 1000 }, (_, lookupIndex) => 1 + lookupIndex * 7);
     const scrollMapLookup = measure(() => {

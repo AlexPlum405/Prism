@@ -26,7 +26,7 @@ describe('preview DOM target collection', () => {
     expect(targets.mermaidPlaceholders).toHaveLength(0);
   });
 
-  it('collects media, KaTeX placeholders/errors, and Mermaid placeholders in one DOM query', () => {
+  it('collects media, KaTeX placeholders/errors, and Mermaid placeholders in one DOM walk', () => {
     const write = document.createElement('div');
     write.innerHTML = [
       '<p><img alt="local" src="assets/a.png"></p>',
@@ -35,12 +35,10 @@ describe('preview DOM target collection', () => {
       '<span class="katex-error" title="bad">\\bad</span>',
       '<div class="mermaid-placeholder" data-mermaid="graph"></div>',
     ].join('');
-    const querySelectorAll = vi.spyOn(write, 'querySelectorAll');
 
     const hints = getPreviewDomTargetHints(write.innerHTML, '/Users/Alex/Notes/Plan.md');
     const targets = collectPreviewDomPostProcessTargets(write, hints);
 
-    expect(querySelectorAll).toHaveBeenCalledTimes(1);
     expect(targets.katexPlaceholders).toHaveLength(1);
     expect(targets.mediaElements).toHaveLength(2);
     expect(targets.katexErrorElements).toHaveLength(1);

@@ -57,6 +57,63 @@ function buildMediaHeavyPreviewSmokeMarkdown() {
   return parts.join('');
 }
 
+const largePreviewRenderOptions = {
+  autoDetectUnlabeledCode: false,
+  frontMatterMode: 'metadata' as const,
+  highlightCode: false,
+  lightweightTables: true,
+  renderMath: false,
+};
+
+function buildCommonFastPathMarkdown(targetLength = 320 * 1024) {
+  const parts = [
+    '---',
+    'title: Common Fast Path',
+    'tags: preview, benchmark',
+    'status: draft',
+    '---',
+    '',
+    '# Common Fast Path',
+    '',
+  ];
+
+  let index = 1;
+  while (parts.join('\n').length < targetLength) {
+    parts.push(
+      [
+        `## 章节 ${index}`,
+        '',
+        `这是第 ${index} 段，包含 **加粗**、==高亮==、[[内部链接 ${index}|内部链接]]、[外部链接](https://example.com/docs/${index})、行内公式 $a_${index}^2=b_${index}^2$。`,
+        '',
+        '> [!NOTE] 提示',
+        `> 这里是第 ${index} 个 callout。`,
+        '',
+        '- 第一项',
+        '- 第二项',
+        '',
+        '| 项目 | 状态 |',
+        '| --- | ---: |',
+        `| 渲染 | 通过 ${index} |`,
+        `| 校验 | 完成 ${index} |`,
+        '',
+        '```ts',
+        `const section${index} = ${index};`,
+        '```',
+        '',
+        index % 3 === 0
+          ? ['```mermaid', `graph TD; A${index} --> B${index}`, '```'].join('\n')
+          : '',
+        '',
+        index % 4 === 0 ? `![本地图片](assets/preview-${index}.png)` : '',
+        '',
+      ].join('\n'),
+    );
+    index += 1;
+  }
+
+  return parts.join('\n');
+}
+
 describe('markdownToHtml compatibility modes', () => {
   const codeBlock = '```ts\nconst answer = 42;\n```';
   const compatibilityModes = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne'] as const;
@@ -256,6 +313,45 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('<td style="text-align:right">通过</td>');
     expect(html).toContain('<tr><td>预览</td>');
     expect(html).toContain('<h1 data-source-line="6"');
+  });
+
+  it('uses the common large-preview fast path without dropping core preview features', () => {
+    const markdown = buildCommonFastPathMarkdown();
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(markdown.length).toBeGreaterThan(300 * 1024);
+    expect(html).toContain('class="prism-frontmatter-preview"');
+    expect(html).toContain('<h1 data-source-line="7"');
+    expect(html).toContain('<strong>加粗</strong>');
+    expect(html).toContain('<mark>高亮</mark>');
+    expect(html).toContain('class="prism-wiki-link"');
+    expect(html).toContain('<a href="https://example.com/docs/1">外部链接</a>');
+    expect(html).toContain('class="katex-placeholder"');
+    expect(html).toContain('class="prism-callout prism-callout--note"');
+    expect(html).toContain('<ul data-source-line=');
+    expect(html).toContain('<table data-source-line=');
+    expect(html).toContain('class="hljs language-ts"');
+    expect(html).toContain('class="mermaid-placeholder"');
+    expect(html).toContain('<img src="assets/preview-');
+    expect(html).not.toContain('PrismLargePreTablePlaceholder');
+  });
+
+  it('falls back to the full unified pipeline for large preview raw HTML', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '<details>',
+      '<summary>点击展开</summary>',
+      '',
+      '折叠内容包含 **加粗**。',
+      '',
+      '</details>',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).toContain('<details>');
+    expect(html).toContain('<summary>点击展开</summary>');
+    expect(html).toContain('<strong>加粗</strong>');
   });
 
   it('keeps complex tables on the normal GFM path when lightweight table extraction is enabled', () => {
