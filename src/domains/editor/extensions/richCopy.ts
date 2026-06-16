@@ -1,6 +1,4 @@
-import { markdownToHtml } from '../../../lib/markdownToHtml';
-
-interface RichClipboardInput {
+export interface RichClipboardInput {
   html: string;
   text: string;
 }
@@ -32,7 +30,8 @@ export async function writeRichClipboard(input: RichClipboardInput) {
   await navigator.clipboard.writeText(input.html || input.text);
 }
 
-export function markdownSelectionToRichClipboardInput(markdown: string): RichClipboardInput {
+export async function markdownSelectionToRichClipboardInput(markdown: string): Promise<RichClipboardInput> {
+  const { markdownToHtml } = await import('../../../lib/markdownToHtml');
   return {
     html: markdownToHtml(markdown, { frontMatterMode: 'hide' }),
     text: markdown,

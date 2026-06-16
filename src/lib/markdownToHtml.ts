@@ -17,7 +17,7 @@ import {
   parseDocumentFrontMatter,
   type DocumentFrontMatterProperties,
 } from '../domains/editor/extensions/frontMatterProperties';
-import { t } from '../domains/i18n';
+import { t } from '../domains/i18n/runtime';
 
 function remarkMermaid() {
   return (tree: any) => {
@@ -54,6 +54,78 @@ function remarkCollectMathLines(mathLines: number[]) {
     visit(tree, 'math', (node: any) => {
       const line = node.position?.start?.line;
       if (Number.isFinite(line)) mathLines.push(line);
+    });
+  };
+}
+
+function createKatexPlaceholderNode(value: string, displayMode: boolean, line?: number) {
+  return {
+    type: 'prismKatexPlaceholder',
+    data: {
+      hName: 'span',
+      hProperties: {
+        className: displayMode ? ['katex-display', 'katex-placeholder'] : ['katex-placeholder'],
+        'data-katex': encodeURIComponent(value),
+        'data-katex-display': displayMode ? 'true' : 'false',
+        ...(displayMode && Number.isFinite(line)
+          ? {
+              'data-source-line': String(line),
+              'data-line': String(line),
+              dataLine: String(line),
+            }
+          : {}),
+      },
+    },
+    children: [{ type: 'text', value }],
+  };
+}
+
+function splitInlineKatexPlaceholderNodes(value: string) {
+  const pattern = /(^|[^\\$])(\$\$?)([^$\n]+?)\2(?!\$)/g;
+  const children: any[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value)) !== null) {
+    const prefix = match[1] ?? '';
+    const delimiter = match[2] ?? '$';
+    const math = match[3] ?? '';
+    const mathStart = match.index + prefix.length;
+    if (mathStart > lastIndex) {
+      children.push({ type: 'text', value: value.slice(lastIndex, mathStart) });
+    }
+    children.push(createKatexPlaceholderNode(math, delimiter === '$$'));
+    lastIndex = mathStart + delimiter.length + math.length + delimiter.length;
+  }
+
+  if (children.length === 0) return null;
+  if (lastIndex < value.length) {
+    children.push({ type: 'text', value: value.slice(lastIndex) });
+  }
+  return children;
+}
+
+function remarkKatexPlaceholders() {
+  return (tree: any) => {
+    visit(tree, 'paragraph', (node: any, index, parent: any) => {
+      if (typeof index !== 'number' || !parent || !Array.isArray(node.children)) return;
+      if (node.children.length !== 1 || node.children[0]?.type !== 'text') return;
+      const value = String(node.children[0].value ?? '');
+      const displayMatch = /^\$\$\s*\n?([\s\S]*?)\n?\s*\$\$$/.exec(value.trim());
+      if (!displayMatch) return;
+      const math = displayMatch[1] ?? '';
+      const line = node.position?.start?.line;
+      parent.children.splice(index, 1, createKatexPlaceholderNode(math, true, line));
+      return ['skip', index] as any;
+    });
+
+    visit(tree, 'text', (node: any, index, parent: any) => {
+      if (typeof index !== 'number' || !parent || !Array.isArray(parent.children)) return;
+      if (parent.type === 'link' || parent.type === 'linkReference') return;
+      const children = splitInlineKatexPlaceholderNodes(String(node.value ?? ''));
+      if (!children) return;
+      parent.children.splice(index, 1, ...children);
+      return ['skip', index + children.length] as any;
     });
   };
 }
@@ -253,7 +325,21 @@ function renderKatexHtml(value: string, displayMode: boolean, line: number | und
   return displayMode ? withDisplayMathLineAttributes(html, line) : html;
 }
 
-function rehypeKatexRaw(mathLines: number[]) {
+function renderKatexPlaceholderHtml(value: string, displayMode: boolean, line: number | undefined) {
+  const encoded = encodeURIComponent(value);
+  const text = escapeGeneratedHtml(value);
+  if (!displayMode) {
+    return `<span class="katex-placeholder" data-katex="${encoded}" data-katex-display="false">${text}</span>`;
+  }
+
+  const escapedLine = Number.isFinite(line) ? escapeGeneratedHtml(String(line)) : '';
+  const sourceAttributes = escapedLine
+    ? ` data-source-line="${escapedLine}" data-line="${escapedLine}"`
+    : '';
+  return `<span class="katex-display katex-placeholder" data-katex="${encoded}" data-katex-display="true"${sourceAttributes}>${text}</span>`;
+}
+
+function rehypeKatexRaw(mathLines: number[], options: { renderMath: boolean }) {
   return (tree: any) => {
     visit(tree, 'element', (node: any, index, parent: any) => {
       if (!parent || typeof index !== 'number') return;
@@ -262,14 +348,16 @@ function rehypeKatexRaw(mathLines: number[]) {
       const line = target.displayMode ? mathLines.shift() : undefined;
       parent.children.splice(index, 1, {
         type: 'raw',
-        value: renderKatexHtml(target.value, target.displayMode, line),
+        value: options.renderMath
+          ? renderKatexHtml(target.value, target.displayMode, line)
+          : renderKatexPlaceholderHtml(target.value, target.displayMode, line),
       });
       return ['skip', index] as any;
     });
   };
 }
 
-function rehypePrismCodeHighlight(options: { autoDetectUnlabeledCode: boolean }) {
+function rehypePrismCodeHighlight(options: { autoDetectUnlabeledCode: boolean; highlightCode: boolean }) {
   return (tree: any) => {
     visit(tree, 'element', (node: any, _index, parent: any) => {
       if (
@@ -291,6 +379,7 @@ function rehypePrismCodeHighlight(options: { autoDetectUnlabeledCode: boolean })
       }
       node.properties.className = className;
 
+      if (!options.highlightCode) return;
       if (!language && !options.autoDetectUnlabeledCode) return;
 
       const code = getHastText(node);
@@ -479,8 +568,14 @@ function remarkCitations() {
   };
 }
 
-interface MarkdownToHtmlOptions {
+export interface MarkdownToHtmlOptions {
   compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne';
+  /** 大文档预览中可抽取纯文本简单表格，绕开全量 GFM 表格解析。复杂表格仍走 GFM。 */
+  lightweightTables?: boolean;
+  /** 是否同步生成 KaTeX HTML。大文档预览可关闭，交给 PreviewPane 异步补齐。 */
+  renderMath?: boolean;
+  /** 是否执行 token 级代码高亮。大文档预览可关闭以保留完整代码内容但减少渲染成本。 */
+  highlightCode?: boolean;
   /** 对无语言代码块是否自动猜语言。大文档预览可关闭以避免 highlightAuto 放大耗时。 */
   autoDetectUnlabeledCode?: boolean;
   frontMatterMode?: 'plain' | 'hide' | 'metadata';
@@ -554,6 +649,17 @@ function isMarkdownTableSeparator(line: string) {
   return Boolean(cells && cells.length >= 2 && cells.every((cell) => /^:?-{3,}:?$/.test(cell)));
 }
 
+function getMarkdownTableAlignments(separatorCells: string[]) {
+  return separatorCells.map((cell) => {
+    const left = cell.startsWith(':');
+    const right = cell.endsWith(':');
+    if (left && right) return 'center';
+    if (right) return 'right';
+    if (left) return 'left';
+    return null;
+  });
+}
+
 function stripInlineCodeFence(value: string) {
   const trimmed = value.trim();
   const match = /^`([^`]*)`$/.exec(trimmed);
@@ -569,6 +675,11 @@ interface LargePreTableRow {
   preContent: string;
   sourceLine: number;
   trailingCell: string;
+}
+
+interface LightweightMarkdownTableRow {
+  cells: string[];
+  sourceLine: number;
 }
 
 interface LargePreTablePlaceholder {
@@ -654,6 +765,73 @@ function renderLargePreTable(headers: string[], rows: LargePreTableRow[], source
   ].join('\n');
 }
 
+function isPlainMarkdownTableCell(value: string) {
+  return !/[\\`*_#[\]<>~]|!\(|!\[|\]\(|https?:\/\/|www\.|@/.test(value);
+}
+
+function canRenderLightweightMarkdownTable(headers: string[], rows: LightweightMarkdownTableRow[]) {
+  return [...headers, ...rows.flatMap((row) => row.cells)].every(isPlainMarkdownTableCell);
+}
+
+function normalizeMarkdownTableCells(cells: string[], columnCount: number) {
+  return Array.from({ length: columnCount }, (_, index) => cells[index] ?? '');
+}
+
+function renderTableCellAttributes(align: string | null | undefined) {
+  return align ? ` style="text-align:${align}"` : '';
+}
+
+function renderLightweightMarkdownTable(
+  headers: string[],
+  separatorCells: string[],
+  rows: LightweightMarkdownTableRow[],
+  sourceLine: number,
+) {
+  const columnCount = headers.length;
+  const alignments = getMarkdownTableAlignments(normalizeMarkdownTableCells(separatorCells, columnCount));
+  const headerHtml = normalizeMarkdownTableCells(headers, columnCount)
+    .map((header, index) => (
+      `<th${renderTableCellAttributes(alignments[index])}>${escapeGeneratedHtml(header)}</th>`
+    ))
+    .join('');
+  const rowsHtml = rows
+    .map((row) => {
+      const cells = normalizeMarkdownTableCells(row.cells, columnCount)
+        .map((cell, index) => (
+          `<td${renderTableCellAttributes(alignments[index])}>${escapeGeneratedHtml(cell)}</td>`
+        ))
+        .join('');
+      return `<tr>${cells}</tr>`;
+    })
+    .join('\n');
+
+  return [
+    `<table data-source-line="${sourceLine}">`,
+    `<thead><tr>${headerHtml}</tr></thead>`,
+    rowsHtml ? `<tbody>${rowsHtml}</tbody>` : '<tbody></tbody>',
+    '</table>',
+  ].join('\n');
+}
+
+function parseLightweightMarkdownTableRows(lines: string[], startIndex: number) {
+  const rows: LightweightMarkdownTableRow[] = [];
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    if (line.includes('<pre') || line.includes('</pre>')) break;
+    const cells = splitMarkdownTableRow(line);
+    if (!cells || isMarkdownTableSeparator(line)) break;
+    rows.push({
+      cells,
+      sourceLine: index + 1,
+    });
+    index += 1;
+  }
+
+  return { nextIndex: index, rows };
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -706,8 +884,11 @@ function remarkApplySourceLineOffsets(offsets: SourceLineOffset[]) {
   };
 }
 
-function extractLargePreTablesForPreview(content: string) {
-  if (!content.includes('<pre>')) return { content, placeholders: [], sourceLineOffsets: [] };
+function extractLargePreTablesForPreview(
+  content: string,
+  options: { lightweightTables?: boolean } = {},
+) {
+  if (!content.includes('|')) return { content, placeholders: [], sourceLineOffsets: [] };
 
   const lines = content.split(/\r?\n/);
   const output: string[] = [];
@@ -719,9 +900,9 @@ function extractLargePreTablesForPreview(content: string) {
   while (index < lines.length) {
     const headers = splitMarkdownTableRow(lines[index]);
     const nextLine = lines[index + 1];
-    if (headers && headers.length >= 3 && nextLine && isMarkdownTableSeparator(nextLine)) {
+    if (headers && headers.length >= 2 && nextLine && isMarkdownTableSeparator(nextLine)) {
       const parsed = parseLargePreTableRows(lines, index + 2);
-      if (parsed.rows.length >= LARGE_PRE_TABLE_ROW_THRESHOLD) {
+      if (headers.length >= 3 && parsed.rows.length >= LARGE_PRE_TABLE_ROW_THRESHOLD) {
         const outputLine = output.length + 1;
         const consumedLineCount = parsed.nextIndex - index;
         const token = `${placeholderPrefix}${placeholders.length}`;
@@ -736,6 +917,27 @@ function extractLargePreTablesForPreview(content: string) {
         });
         index = parsed.nextIndex;
         continue;
+      }
+
+      if (options.lightweightTables && !lines[index].includes('<pre') && !nextLine.includes('<pre')) {
+        const separatorCells = splitMarkdownTableRow(nextLine) ?? [];
+        const lightweightTable = parseLightweightMarkdownTableRows(lines, index + 2);
+        if (canRenderLightweightMarkdownTable(headers, lightweightTable.rows)) {
+          const outputLine = output.length + 1;
+          const consumedLineCount = lightweightTable.nextIndex - index;
+          const token = `${placeholderPrefix}${placeholders.length}`;
+          placeholders.push({
+            replacementHtml: renderLightweightMarkdownTable(headers, separatorCells, lightweightTable.rows, index + 1),
+            token,
+          });
+          output.push(token);
+          sourceLineOffsets.push({
+            afterLine: outputLine,
+            delta: consumedLineCount - 1,
+          });
+          index = lightweightTable.nextIndex;
+          continue;
+        }
       }
     }
 
@@ -871,6 +1073,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   const displayMathLines: number[] = [];
   const largePreTablePreview = extractLargePreTablesForPreview(
     renderFrontMatterForPreview(content, frontMatterModeForOptions(options)),
+    { lightweightTables: options.lightweightTables === true },
   );
   const featureHints = detectMarkdownPreviewFeatures(largePreTablePreview.content);
   let processor: any = unified()
@@ -878,14 +1081,18 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
 
   if (featureHints.gfm) processor = processor.use(remarkGfm);
 
-  if (featureHints.math) {
+  if (featureHints.math && options.renderMath === false) {
+    processor = processor.use(remarkKatexPlaceholders);
+  } else if (featureHints.math) {
     processor = processor
       .use(remarkMath);
   }
   if (largePreTablePreview.sourceLineOffsets.length > 0) {
     processor = processor.use(() => remarkApplySourceLineOffsets(largePreTablePreview.sourceLineOffsets));
   }
-  if (featureHints.math) processor = processor.use(() => remarkCollectMathLines(displayMathLines));
+  if (featureHints.math && options.renderMath !== false) {
+    processor = processor.use(() => remarkCollectMathLines(displayMathLines));
+  }
   if (featureHints.mark) processor = processor.use(remarkMark);
   if (featureHints.wikiLinks) processor = processor.use(remarkWikiLinks);
   if (featureHints.citations) processor = processor.use(remarkCitations);
@@ -895,13 +1102,16 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
 
   processor = processor.use(remarkRehype, { allowDangerousHtml: featureHints.rawHtml });
   if (featureHints.rawHtml) processor = processor.use(rehypeRaw);
-  if (featureHints.math) {
-    processor = processor.use(() => rehypeKatexRaw(displayMathLines));
+  if (featureHints.math && options.renderMath !== false) {
+    processor = processor.use(() => rehypeKatexRaw(displayMathLines, {
+      renderMath: true,
+    }));
   }
   if (featureHints.code) {
     // MiaoYan hands unlabeled fenced blocks to Highlightr for auto detection.
     processor = processor.use(rehypePrismCodeHighlight, {
       autoDetectUnlabeledCode: options.autoDetectUnlabeledCode !== false,
+      highlightCode: options.highlightCode !== false,
     });
   }
 

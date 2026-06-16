@@ -11,6 +11,63 @@
 PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx
 ```
 
+## 2026-06-16 通用 1MB 混合文档继续优化
+
+复查通用 1MB benchmark 后，CHAR_REVIEW 专项已经不是瓶颈；重负载集中在更普通的混合 Markdown：大量小表格、代码块、KaTeX、Mermaid 和本地图片引用共同放大 HTML 与 DOM 提交。
+
+变更：
+
+- 大文档预览关闭同步 token 级代码高亮，仍保留完整代码文本和 `hljs/language-*` class。
+- 大文档预览关闭同步 KaTeX HTML 生成，先输出完整公式 placeholder，再由 `PreviewPane` 动态加载 KaTeX 并分批 hydrate。
+- 大文档预览对纯文本简单表格走轻量 HTML placeholder，复杂表格仍保留原 GFM 路径。
+- `PreviewPane` 将 DOM 后处理、KaTeX hydrate、Mermaid hydrate 都放入可取消/可让帧的异步任务。
+
+通用 1MB benchmark：
+
+```bash
+PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+| 指标 | 本轮前 | 本轮后 | 变化 |
+|---|---:|---:|---:|
+| HTML 长度 | 10,470,053 | 2,873,934 | -7,596,119（约 -72.6%） |
+| `markdownToHtmlMs` | 4,748.5 ms | 3,324.9 ms | -1,423.6 ms（约 -30.0%） |
+| `domWriteMs` | 2,908.9 ms | 850.3 ms | -2,058.6 ms（约 -70.8%） |
+| `domTargetScanMs` | 482.7 ms | 178.6 ms | -304.1 ms（约 -63.0%） |
+| `scrollSyncScanMs` | 1,426.0 ms | 419.9 ms | -1,006.1 ms（约 -70.6%） |
+| `scrollMapBuildMs` | 181.1 ms | 50.9 ms | -130.2 ms（约 -71.9%） |
+
+当前输出摘要：
+
+```json
+{
+  "contentLength": 1048751,
+  "iterations": 3,
+  "summary": {
+    "markdownToHtmlMs": 3324.9,
+    "domWriteMs": 850.3,
+    "domTargetScanMs": 178.6,
+    "scrollSyncScanMs": 419.9,
+    "scrollMapBuildMs": 50.9,
+    "scrollMapLookupMs": 0.1,
+    "htmlLength": 2873934,
+    "mediaTargetCount": 359,
+    "katexErrorCount": 0,
+    "mermaidPlaceholderCount": 431,
+    "sourceLineElementCount": 15898,
+    "codeLineElementCount": 15898
+  }
+}
+```
+
+CHAR_REVIEW.md 回归：
+
+```bash
+PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspace/mpz8o63iwqg7cqnc/phase19/annotation/CHAR_REVIEW.md npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+结果保持稳定：`markdownToHtmlMs` 9.9 ms，`domWriteMs` 155.6 ms，`scrollSyncScanMs` 49.1 ms，HTML 长度 738,407。
+
 该基准构造约 1MB Markdown，覆盖标题、长段落、表格、代码块、Callout、wiki link、KaTeX、Mermaid placeholder 和本地图片引用。记录：
 
 - `markdownToHtmlMs`：Markdown 到 HTML 的完整转换耗时。

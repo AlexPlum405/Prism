@@ -2,11 +2,6 @@ import { syntaxTree } from '@codemirror/language';
 import { Facet, RangeSetBuilder } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, type ViewUpdate } from '@codemirror/view';
 import type { ContentTheme } from '../../settings/types';
-import {
-  highlightPrismCode,
-  highlightPrismCodeAuto,
-  isPrismCodeHighlightLanguage,
-} from '../../markdown/codeHighlight';
 
 export const contentThemeFacet = Facet.define<ContentTheme, ContentTheme>({
   combine: (values) => values[values.length - 1] ?? 'miaoyan',
@@ -39,8 +34,78 @@ type MiaoyanCodeHighlightTarget = {
 
 export const MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT = 3000;
 const COMPATIBILITY_CODE_HIGHLIGHT_THEMES = new Set<ContentTheme>(['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne']);
+const PRISM_KNOWN_CODE_LANGUAGES = new Set([
+  'bash',
+  'c',
+  'cpp',
+  'csharp',
+  'css',
+  'diff',
+  'dockerfile',
+  'ini',
+  'java',
+  'javascript',
+  'json',
+  'markdown',
+  'php',
+  'python',
+  'ruby',
+  'rust',
+  'shell',
+  'sql',
+  'swift',
+  'typescript',
+  'xml',
+  'yaml',
+  'sh',
+  'zsh',
+  'cc',
+  'cxx',
+  'c++',
+  'hpp',
+  'cs',
+  'docker',
+  'js',
+  'jsx',
+  'mjs',
+  'cjs',
+  'md',
+  'mkd',
+  'mdown',
+  'php3',
+  'php4',
+  'php5',
+  'py',
+  'console',
+  'shell-session',
+  'ts',
+  'tsx',
+  'html',
+  'xhtml',
+  'svg',
+  'yml',
+]);
 const codeHighlightDecorationCache = new Map<string, Decoration>();
 const codeHighlightResultCache = new Map<string, HighlightTokenRange[]>();
+type CodeHighlightModule = typeof import('../../markdown/codeHighlight');
+let codeHighlightModule: CodeHighlightModule | null = null;
+let codeHighlightLoadPromise: Promise<CodeHighlightModule> | null = null;
+
+function ensureCodeHighlightModule(onLoaded?: () => void) {
+  if (codeHighlightModule) return Promise.resolve(codeHighlightModule);
+  codeHighlightLoadPromise ??= import('../../markdown/codeHighlight').then((module) => {
+    codeHighlightModule = module;
+    return module;
+  });
+  if (onLoaded) {
+    void codeHighlightLoadPromise.then(onLoaded, () => undefined);
+  }
+  return codeHighlightLoadPromise;
+}
+
+export function loadMiaoyanCodeHighlighterForTesting() {
+  return ensureCodeHighlightModule();
+}
 
 function getCodeHighlightDecoration(className: string) {
   const cached = codeHighlightDecorationCache.get(className);
@@ -60,7 +125,7 @@ export function getMiaoyanCodeLanguage(code: string) {
     .slice(3, firstLineEnd)
     .trim();
 
-  if (!language || language === 'go' || !isPrismCodeHighlightLanguage(language)) {
+  if (!language || language === 'go' || !PRISM_KNOWN_CODE_LANGUAGES.has(language)) {
     return undefined;
   }
 
@@ -128,7 +193,7 @@ function getMiaoyanCodeHighlightTarget(code: string): MiaoyanCodeHighlightTarget
   };
 }
 
-export function getMiaoyanCodeHighlightRanges(code: string) {
+export function getMiaoyanCodeHighlightRanges(code: string, onHighlighterLoaded?: () => void) {
   if (code.length === 0 || code.length > MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT) {
     return [];
   }
@@ -141,11 +206,15 @@ export function getMiaoyanCodeHighlightRanges(code: string) {
   const cacheKey = `${target.language ?? 'auto'}:${target.offset}\n${code}`;
   const cached = codeHighlightResultCache.get(cacheKey);
   if (cached) return cached;
+  if (!codeHighlightModule) {
+    void ensureCodeHighlightModule(onHighlighterLoaded);
+    return [];
+  }
 
   try {
     const highlighted = target.language
-      ? highlightPrismCode(target.code, target.language)
-      : highlightPrismCodeAuto(target.code);
+      ? codeHighlightModule.highlightPrismCode(target.code, target.language)
+      : codeHighlightModule.highlightPrismCodeAuto(target.code);
     const ranges = collectHighlightTokenRanges(highlighted.value, target.code.length)
       .map((range) => ({
         ...range,
@@ -172,9 +241,10 @@ function addMiaoyanCodeHighlightDecorations(
   view: EditorView,
   from: number,
   to: number,
+  onHighlighterLoaded?: () => void,
 ) {
   const code = view.state.doc.sliceString(from, to);
-  const tokenRanges = getMiaoyanCodeHighlightRanges(code);
+  const tokenRanges = getMiaoyanCodeHighlightRanges(code, onHighlighterLoaded);
   for (const tokenRange of tokenRanges) {
     if (tokenRange.from === tokenRange.to) continue;
     builder.add(
@@ -193,7 +263,7 @@ export function shouldHighlightCompatibilityCodeTheme(theme: ContentTheme) {
   return COMPATIBILITY_CODE_HIGHLIGHT_THEMES.has(theme);
 }
 
-function buildCompatibilityDecorations(view: EditorView): DecorationSet {
+function buildCompatibilityDecorations(view: EditorView, onHighlighterLoaded?: () => void): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   const enableCodeHighlight = shouldHighlightCompatibilityCode(view);
   for (const { from, to } of view.visibleRanges) {
@@ -221,7 +291,7 @@ function buildCompatibilityDecorations(view: EditorView): DecorationSet {
         if (name === 'FencedCode' || name === 'CodeBlock') {
           builder.add(node.from, node.to, compatibilityDecos.fencedCode);
           if (enableCodeHighlight) {
-            addMiaoyanCodeHighlightDecorations(builder, view, node.from, node.to);
+            addMiaoyanCodeHighlightDecorations(builder, view, node.from, node.to, onHighlighterLoaded);
           }
           return false;
         }
@@ -270,16 +340,34 @@ function buildCompatibilityDecorations(view: EditorView): DecorationSet {
 export const compatibilityMarkdownPlugin = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
+    private destroyed = false;
+    private refreshQueued = false;
+    private view: EditorView;
     constructor(view: EditorView) {
-      this.decorations = buildCompatibilityDecorations(view);
+      this.view = view;
+      this.decorations = buildCompatibilityDecorations(view, this.scheduleHighlightRefresh);
     }
     update(update: ViewUpdate) {
       const contentThemeChanged =
         update.startState.facet(contentThemeFacet) !== update.state.facet(contentThemeFacet);
       if (update.docChanged || update.viewportChanged || update.selectionSet || contentThemeChanged) {
-        this.decorations = buildCompatibilityDecorations(update.view);
+        this.decorations = buildCompatibilityDecorations(update.view, this.scheduleHighlightRefresh);
       }
     }
+    destroy() {
+      this.destroyed = true;
+    }
+    private scheduleHighlightRefresh = () => {
+      if (this.destroyed || this.refreshQueued) return;
+      this.refreshQueued = true;
+      const win = this.view.dom.ownerDocument.defaultView ?? window;
+      win.requestAnimationFrame(() => {
+        this.refreshQueued = false;
+        if (this.destroyed) return;
+        this.decorations = buildCompatibilityDecorations(this.view, this.scheduleHighlightRefresh);
+        this.view.dispatch({});
+      });
+    };
   },
   { decorations: (v) => v.decorations },
 );

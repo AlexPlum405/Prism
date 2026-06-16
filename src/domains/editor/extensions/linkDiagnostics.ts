@@ -1,6 +1,6 @@
 import { getMarkdownHeadingSlug } from './headingSlug';
 import { t } from '../../i18n';
-import { extractMarkdownDocumentHeadings } from '../../markdown/documentModel';
+import { extractMarkdownDocumentHeadings } from '../../markdown/headings';
 
 export type LinkDiagnosticKind = 'empty-target' | 'missing-heading' | 'missing-file';
 

@@ -7,7 +7,8 @@ import type {
   PdfMargin,
   PdfPaper,
 } from '../settings/types';
-import { t, type AppLocale, type LocalePreference } from '../i18n';
+import { t } from '../i18n/runtime';
+import type { AppLocale, LocalePreference } from '../i18n/types';
 import type { ExportFrontMatter } from './frontMatter';
 
 export type ExportFormat = 'html' | 'pdf' | 'docx' | 'png';

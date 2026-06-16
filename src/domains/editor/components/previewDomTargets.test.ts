@@ -14,21 +14,24 @@ describe('preview DOM target collection', () => {
     const targets = collectPreviewDomPostProcessTargets(write, hints);
 
     expect(hints).toEqual({
+      katexPlaceholders: false,
       media: false,
       katexErrors: false,
       mermaid: false,
     });
     expect(querySelectorAll).not.toHaveBeenCalled();
+    expect(targets.katexPlaceholders).toHaveLength(0);
     expect(targets.mediaElements).toHaveLength(0);
     expect(targets.katexErrorElements).toHaveLength(0);
     expect(targets.mermaidPlaceholders).toHaveLength(0);
   });
 
-  it('collects media, KaTeX errors, and Mermaid placeholders in one DOM query', () => {
+  it('collects media, KaTeX placeholders/errors, and Mermaid placeholders in one DOM query', () => {
     const write = document.createElement('div');
     write.innerHTML = [
       '<p><img alt="local" src="assets/a.png"></p>',
       '<picture><source src="assets/a.webp"></picture>',
+      '<span class="katex-placeholder" data-katex="x" data-katex-display="false">x</span>',
       '<span class="katex-error" title="bad">\\bad</span>',
       '<div class="mermaid-placeholder" data-mermaid="graph"></div>',
     ].join('');
@@ -38,6 +41,7 @@ describe('preview DOM target collection', () => {
     const targets = collectPreviewDomPostProcessTargets(write, hints);
 
     expect(querySelectorAll).toHaveBeenCalledTimes(1);
+    expect(targets.katexPlaceholders).toHaveLength(1);
     expect(targets.mediaElements).toHaveLength(2);
     expect(targets.katexErrorElements).toHaveLength(1);
     expect(targets.mermaidPlaceholders).toHaveLength(1);
@@ -51,9 +55,10 @@ describe('preview DOM target collection', () => {
     const targets = collectPreviewDomPostProcessTargets(write, hints);
 
     expect(hints.media).toBe(false);
+    expect(hints.katexPlaceholders).toBe(false);
     expect(hints.mermaid).toBe(true);
+    expect(targets.katexPlaceholders).toHaveLength(0);
     expect(targets.mediaElements).toHaveLength(0);
     expect(targets.mermaidPlaceholders).toHaveLength(1);
   });
 });
-

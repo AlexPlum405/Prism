@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
-import {
-  handleMarkdownRenderRequest,
-  type MarkdownRenderRequest,
-  type MarkdownRenderResponse,
+import { handleMarkdownRenderRequest } from './markdownRenderWorkerCore';
+import type {
+  MarkdownRenderRequest,
+  MarkdownRenderResponse,
 } from './markdownRenderCore';
 
 // 预览渲染 Worker：在工作线程内执行 markdownToHtml，避免大文档渲染阻塞主线程。

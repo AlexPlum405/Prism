@@ -71,6 +71,18 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   color: var(--preview-search-current-text) !important;
 }
 
+.preview-compat:not(.prism-export-document) #write
+  > :where(p, blockquote, ul, ol, dl, table, pre, figure, section, details, .mermaid-placeholder, .prism-frontmatter-preview) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
+}
+
+.preview-compat:not(.prism-export-document) #write
+  > :where(h1, h2, h3, h4, h5, h6, hr) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 72px;
+}
+
 .preview-compat .prism-large-pre-table {
   display: block;
   width: 100%;

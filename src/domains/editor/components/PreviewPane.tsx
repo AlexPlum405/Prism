@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { readFile, stat } from '../../../platform/tauri/fileSystem';
-import { markdownRenderService } from '../../../lib/markdownRenderService';
 import { openExternalUrl } from '../../../platform/tauri/opener';
 import { ContentTheme, DEFAULT_SETTINGS, isContentTheme } from '../../settings/types';
 import { useSettingsStore } from '../../settings/store';
@@ -30,6 +29,8 @@ const PREVIEW_AUTO_CODE_HIGHLIGHT_LIMIT = PREVIEW_RENDER_LARGE_DOC_LIMIT;
 const PREVIEW_RENDER_SMALL_DEBOUNCE_MS = 120;
 const PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS = 220;
 const PREVIEW_RENDER_LARGE_DEBOUNCE_MS = 600;
+const PREVIEW_KATEX_BATCH_THRESHOLD = 24;
+const PREVIEW_KATEX_BATCH_SIZE = 12;
 const PREVIEW_MERMAID_BATCH_THRESHOLD = 10;
 const PREVIEW_MERMAID_BATCH_SIZE = 3;
 const PREVIEW_MEDIA_CACHE_LIMIT = 96;
@@ -43,7 +44,9 @@ interface PreviewMediaCacheEntry {
 }
 
 const previewMediaCache = new Map<string, PreviewMediaCacheEntry>();
+let katexModulePromise: Promise<typeof import('katex')> | null = null;
 let mermaidModulePromise: Promise<typeof import('mermaid')> | null = null;
+let markdownRenderServicePromise: Promise<typeof import('../../../lib/markdownRenderService')['markdownRenderService']> | null = null;
 
 function getPreviewRenderDebounceMs(contentLength: number) {
   if (contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT) return PREVIEW_RENDER_LARGE_DEBOUNCE_MS;
@@ -56,17 +59,40 @@ function shouldShowPreviewUpdatingStatus(contentLength: number) {
 }
 
 function getPreviewMarkdownRenderOptions(contentLength: number) {
-  const options: { frontMatterMode: 'metadata'; autoDetectUnlabeledCode?: boolean } = {
+  const options: {
+    frontMatterMode: 'metadata';
+    autoDetectUnlabeledCode?: boolean;
+    highlightCode?: boolean;
+    lightweightTables?: boolean;
+    renderMath?: boolean;
+  } = {
     frontMatterMode: 'metadata',
   };
   if (contentLength > PREVIEW_AUTO_CODE_HIGHLIGHT_LIMIT) {
     options.autoDetectUnlabeledCode = false;
+    options.highlightCode = false;
+    options.lightweightTables = true;
+    options.renderMath = false;
   }
   return options;
 }
 
+function getKatexPreviewBatchSize(placeholderCount: number) {
+  return placeholderCount > PREVIEW_KATEX_BATCH_THRESHOLD ? PREVIEW_KATEX_BATCH_SIZE : 1;
+}
+
 function getMermaidPreviewBatchSize(placeholderCount: number) {
   return placeholderCount > PREVIEW_MERMAID_BATCH_THRESHOLD ? PREVIEW_MERMAID_BATCH_SIZE : 1;
+}
+
+function loadKatexModule() {
+  if (!katexModulePromise) {
+    katexModulePromise = import('katex').catch((error) => {
+      katexModulePromise = null;
+      throw error;
+    });
+  }
+  return katexModulePromise;
 }
 
 function loadMermaidModule() {
@@ -77,6 +103,18 @@ function loadMermaidModule() {
     });
   }
   return mermaidModulePromise;
+}
+
+function loadMarkdownRenderService() {
+  if (!markdownRenderServicePromise) {
+    markdownRenderServicePromise = import('../../../lib/markdownRenderService')
+      .then(({ markdownRenderService }) => markdownRenderService)
+      .catch((error) => {
+        markdownRenderServicePromise = null;
+        throw error;
+      });
+  }
+  return markdownRenderServicePromise;
 }
 
 function nowMs() {
@@ -107,6 +145,32 @@ function logPreviewPerformance(stage: string, data: Record<string, unknown>) {
     ]),
   );
   console.debug('[Prism preview perf]', { stage, ...normalized });
+}
+
+function schedulePreviewTask(
+  callback: () => void,
+  options: { immediate?: boolean; timeout?: number } = {},
+) {
+  const win = window as Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+  if (options.immediate) {
+    const id = win.setTimeout(callback, 0);
+    return () => win.clearTimeout(id);
+  }
+
+  if (typeof win.requestIdleCallback === 'function') {
+    const id = win.requestIdleCallback(callback, { timeout: options.timeout ?? 250 });
+    return () => {
+      if (typeof win.cancelIdleCallback === 'function') {
+        win.cancelIdleCallback(id);
+      }
+    };
+  }
+
+  const id = win.setTimeout(callback, 0);
+  return () => win.clearTimeout(id);
 }
 
 function getCurrentContentTheme(): ContentTheme {
@@ -348,7 +412,59 @@ function renderMermaidError(container: HTMLElement, error: unknown) {
   `;
 }
 
+function withPreviewKatexDisplaySourceLine(html: string, sourceLine: string) {
+  if (!sourceLine) return html;
+  const escapedLine = escapeHtml(sourceLine);
+  return html.replace(
+    '<span class="katex-display"',
+    `<span class="katex-display" data-source-line="${escapedLine}" data-line="${escapedLine}"`,
+  );
+}
+
+function renderPreviewKatexHtml(
+  katex: typeof import('katex'),
+  value: string,
+  displayMode: boolean,
+  sourceLine: string,
+) {
+  let html: string;
+
+  try {
+    html = katex.default.renderToString(value, {
+      displayMode,
+      throwOnError: true,
+    });
+  } catch (error) {
+    try {
+      html = katex.default.renderToString(value, {
+        displayMode,
+        strict: 'ignore',
+        throwOnError: false,
+      });
+    } catch {
+      html = `<span class="katex-error" style="color:#cc0000" title="${escapeHtml(formatRenderError(error))}">${escapeHtml(value)}</span>`;
+    }
+  }
+
+  return displayMode ? withPreviewKatexDisplaySourceLine(html, sourceLine) : html;
+}
+
+function replaceKatexPlaceholder(
+  placeholder: HTMLElement,
+  html: string,
+) {
+  const parent = placeholder.parentElement;
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  placeholder.replaceWith(template.content);
+  if (!parent) return;
+  enhanceKatexErrors(Array.from(parent.querySelectorAll<HTMLElement>('.katex-error')));
+}
+
 export const __previewPaneTesting = {
+  clearKatexCache: () => {
+    katexModulePromise = null;
+  },
   clearMermaidCache: () => {
     mermaidSvgCache.clear();
     mermaidFontReadyCache.clear();
@@ -359,6 +475,7 @@ export const __previewPaneTesting = {
     previewMediaCache.forEach((entry) => URL.revokeObjectURL(entry.objectUrl));
     previewMediaCache.clear();
   },
+  getKatexPreviewBatchSize,
   getMermaidPreviewBatchSize,
   getPreviewMarkdownRenderOptions,
   getPreviewRenderDebounceMs,
@@ -497,8 +614,10 @@ export function PreviewPane({
     setHtmlRenderPending(true);
     const renderStartedAt = nowMs();
 
-    markdownRenderService
-      .render(renderContent, getPreviewMarkdownRenderOptions(renderContent.length))
+    loadMarkdownRenderService()
+      .then((markdownRenderService) => (
+        markdownRenderService.render(renderContent, getPreviewMarkdownRenderOptions(renderContent.length))
+      ))
       .then((result) => {
         if (cancelled || result.stale) return;
         logPreviewPerformance('markdown', {
@@ -538,41 +657,52 @@ export function PreviewPane({
   useEffect(() => {
     let cancelled = false;
     const objectUrls: string[] = [];
-    const write = containerRef.current?.querySelector<HTMLElement>('#write');
-    if (!write) {
-      return () => {
-        cancelled = true;
-      };
-    }
-    const postProcessStartedAt = nowMs();
-    const targetHints = getPreviewDomTargetHints(html, documentPath);
-    const targets = collectPreviewDomPostProcessTargets(write, targetHints);
-    domTargetsRef.current = { write, targets };
-    const mediaCount = targets.mediaElements.length;
-    const katexErrorCount = targets.katexErrorElements.length;
-    const katexStartedAt = nowMs();
-    enhanceKatexErrors(targets.katexErrorElements);
-    const katexMs = nowMs() - katexStartedAt;
-    const mediaStartedAt = nowMs();
-    void resolveLocalPreviewMedia(targets.mediaElements, documentPath, {
-      isCancelled: () => cancelled,
-      trackObjectUrl: (url) => objectUrls.push(url),
-    }).finally(() => {
+    const scheduledAt = nowMs();
+    domTargetsRef.current = null;
+
+    const cancelScheduledPostProcess = schedulePreviewTask(() => {
       if (cancelled) return;
-      logPreviewPerformance('dom-postprocess', {
-        htmlLength: html.length,
-        mediaCount,
-        katexErrorCount,
-        katexMs,
-        mediaMs: nowMs() - mediaStartedAt,
-        elapsedMs: nowMs() - postProcessStartedAt,
+      const write = containerRef.current?.querySelector<HTMLElement>('#write');
+      if (!write) return;
+
+      const postProcessStartedAt = nowMs();
+      const targetHints = getPreviewDomTargetHints(html, documentPath);
+      const scanStartedAt = nowMs();
+      const targets = collectPreviewDomPostProcessTargets(write, targetHints);
+      const targetScanMs = nowMs() - scanStartedAt;
+      domTargetsRef.current = { write, targets };
+      const katexPlaceholderCount = targets.katexPlaceholders.length;
+      const mediaCount = targets.mediaElements.length;
+      const katexErrorCount = targets.katexErrorElements.length;
+      const katexStartedAt = nowMs();
+      enhanceKatexErrors(targets.katexErrorElements);
+      const katexMs = nowMs() - katexStartedAt;
+      const mediaStartedAt = nowMs();
+      void resolveLocalPreviewMedia(targets.mediaElements, documentPath, {
+        isCancelled: () => cancelled,
+        trackObjectUrl: (url) => objectUrls.push(url),
+      }).finally(() => {
+        if (cancelled) return;
+        logPreviewPerformance('dom-postprocess', {
+          htmlLength: html.length,
+          katexPlaceholderCount,
+          mediaCount,
+          katexErrorCount,
+          targetScanMs,
+          katexMs,
+          mediaMs: nowMs() - mediaStartedAt,
+          scheduleDelayMs: postProcessStartedAt - scheduledAt,
+          elapsedMs: nowMs() - postProcessStartedAt,
+        });
       });
-    });
+    }, { immediate: renderStrategy === 'immediate', timeout: 320 });
+
     return () => {
       cancelled = true;
+      cancelScheduledPostProcess();
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [html, documentPath]);
+  }, [html, documentPath, renderStrategy]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -630,39 +760,101 @@ export function PreviewPane({
     const container = containerRef.current;
     if (!container) return;
 
-    if (!getPreviewDomTargetHints(html).mermaid) return;
-    const write = container.querySelector<HTMLElement>('#write');
-    if (!write) return;
-    const targets = domTargetsRef.current?.write === write
-      ? domTargetsRef.current.targets
-      : collectPreviewDomPostProcessTargets(write, {
-          media: false,
-          katexErrors: false,
-          mermaid: true,
-        });
-    const placeholderList = targets.mermaidPlaceholders;
-    if (placeholderList.length === 0) return;
-
-    const mermaidConfig = getMermaidThemeConfig(contentTheme);
-    const mermaidModule = loadMermaidModule();
+    if (!getPreviewDomTargetHints(html).katexPlaceholders) return;
     let cancelled = false;
-    const scheduleRender =
-      renderStrategy === 'immediate'
-        ? (callback: () => void) => {
-            const id = window.setTimeout(callback, 0);
-            return () => window.clearTimeout(id);
-          }
-        : 'requestIdleCallback' in window
-        ? (callback: () => void) => {
-            const id = window.requestIdleCallback(callback, { timeout: 300 });
-            return () => window.cancelIdleCallback(id);
-          }
-        : (callback: () => void) => {
-            const id = window.setTimeout(callback, 0);
-            return () => window.clearTimeout(id);
-          };
+    const cancelScheduledRender = schedulePreviewTask(() => {
+      if (cancelled) return;
+      const write = container.querySelector<HTMLElement>('#write');
+      if (!write) return;
+      const targets = domTargetsRef.current?.write === write
+        ? domTargetsRef.current.targets
+        : collectPreviewDomPostProcessTargets(write, {
+            katexPlaceholders: true,
+            media: false,
+            katexErrors: false,
+            mermaid: false,
+          });
+      const placeholderList = targets.katexPlaceholders;
+      if (placeholderList.length === 0) return;
 
-    const cancelScheduledRender = scheduleRender(() => {
+      const katexModule = loadKatexModule();
+      katexModule.then((katex) => {
+        if (cancelled) return;
+        const batchSize = getKatexPreviewBatchSize(placeholderList.length);
+        let renderedInBatch = 0;
+
+        const yieldAfterBatch = async (index: number) => {
+          renderedInBatch += 1;
+          if (renderedInBatch < batchSize || index >= placeholderList.length - 1) return;
+          renderedInBatch = 0;
+          await waitForPreviewRenderSlot();
+        };
+
+        void (async () => {
+          const katexStartedAt = nowMs();
+          let renderedCount = 0;
+          let failedCount = 0;
+
+          for (const [i, placeholder] of placeholderList.entries()) {
+            if (cancelled) return;
+            if (!placeholder.isConnected) continue;
+
+            const encoded = placeholder.getAttribute('data-katex');
+            if (!encoded) continue;
+
+            const value = decodeURIComponent(encoded);
+            const displayMode = placeholder.getAttribute('data-katex-display') === 'true';
+            const sourceLine = placeholder.getAttribute('data-source-line') ?? readClosestSourceLine(placeholder);
+            const nextHtml = renderPreviewKatexHtml(katex, value, displayMode, sourceLine);
+            if (nextHtml.includes('katex-error')) {
+              failedCount += 1;
+            } else {
+              renderedCount += 1;
+            }
+            replaceKatexPlaceholder(placeholder, nextHtml);
+            await yieldAfterBatch(i);
+          }
+
+          logPreviewPerformance('katex', {
+            formulaCount: placeholderList.length,
+            renderedCount,
+            failedCount,
+            elapsedMs: nowMs() - katexStartedAt,
+          });
+        })();
+      });
+    }, { immediate: renderStrategy === 'immediate', timeout: 260 });
+
+    return () => {
+      cancelled = true;
+      cancelScheduledRender();
+    };
+  }, [html, renderStrategy]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!getPreviewDomTargetHints(html).mermaid) return;
+    let cancelled = false;
+    const cancelScheduledRender = schedulePreviewTask(() => {
+      if (cancelled) return;
+      const write = container.querySelector<HTMLElement>('#write');
+      if (!write) return;
+      const targets = domTargetsRef.current?.write === write
+        ? domTargetsRef.current.targets
+        : collectPreviewDomPostProcessTargets(write, {
+            katexPlaceholders: false,
+            media: false,
+            katexErrors: false,
+            mermaid: true,
+          });
+      const placeholderList = targets.mermaidPlaceholders;
+      if (placeholderList.length === 0) return;
+
+      const mermaidConfig = getMermaidThemeConfig(contentTheme);
+      const mermaidModule = loadMermaidModule();
+
       mermaidModule.then(({ default: mermaid }) => {
         if (cancelled) return;
         initializeMermaidForPreview(mermaid, mermaidConfig);
@@ -740,7 +932,7 @@ export function PreviewPane({
           }
         })();
       });
-    });
+    }, { immediate: renderStrategy === 'immediate', timeout: 300 });
 
     return () => {
       cancelled = true;

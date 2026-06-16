@@ -1,5 +1,5 @@
 import { readFile } from '../../platform/tauri/fileSystem';
-import { t } from '../i18n';
+import { t } from '../i18n/runtime';
 import { dirname, joinPath } from '../workspace/services/path';
 import { readExportResource } from './resources/exportResourceClient';
 

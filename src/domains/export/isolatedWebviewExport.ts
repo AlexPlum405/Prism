@@ -1,7 +1,7 @@
 import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { BackgroundThrottlingPolicy } from '@tauri-apps/api/window';
-import { t } from '../i18n';
+import { t } from '../i18n/runtime';
 import type { ExportDocumentInput, ExportFormat } from './types';
 import {
   EXPORT_WORKER_PROGRESS_EVENT,

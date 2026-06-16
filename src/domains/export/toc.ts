@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { t } from '../i18n/runtime';
 
 export interface ExportTocHeading {
   level: number;

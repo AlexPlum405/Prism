@@ -1,5 +1,5 @@
 import { dump, load } from 'js-yaml';
-import { t } from '../../i18n';
+import { t } from '../../i18n/runtime';
 import {
   parseDocumentFrontMatter,
   type DocumentFrontMatterProperties,

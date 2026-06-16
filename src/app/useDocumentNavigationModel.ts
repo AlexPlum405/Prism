@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { useDocumentStore } from '../domains/document/store';
 import { useDocumentStore as useDocumentStoreRuntime } from '../domains/document/store';
-import type { WorkspaceIndex } from '../domains/workspace/services';
+import type { WorkspaceIndex } from '../domains/workspace/services/workspaceIndex';
 import {
-  type BacklinkReference,
-  type DocumentLinkReference,
   extractDocumentLinks,
-  flattenFiles,
+  resolveDocumentLinkTarget,
+  type DocumentLinkReference,
+} from '../domains/workspace/services/documentLinks';
+import type { BacklinkReference } from '../domains/workspace/services/backlinks';
+import { flattenFiles } from '../domains/workspace/services/fileTree';
+import { isSamePath } from '../domains/workspace/services/path';
+import {
   getWorkspaceIndexBacklinks,
   getWorkspaceIndexLinkFiles,
-  isSamePath,
-  resolveDocumentLinkTarget,
-} from '../domains/workspace/services';
+} from '../domains/workspace/services/workspaceIndexQuery';
 import { queryWorkspaceBacklinksNativeModel } from '../domains/workspace/services/workspaceIndexNative';
 import type { FileNode } from '../domains/workspace/types';
 import type { FileActionInput } from '../lib/fileActions';
 import type { ToastInput } from '../lib/toast';
 import { t } from '../domains/i18n';
-import { extractMarkdownDocumentHeadings } from '../domains/markdown/documentModel';
+import { extractMarkdownDocumentHeadings } from '../domains/markdown/headings';
 
 const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
 

@@ -56,6 +56,22 @@ vi.mock('../export', async (importOriginal) => {
   };
 });
 
+vi.mock('../export/exportService', () => ({
+  exportDocument: exportMock.exportDocument,
+}));
+
+vi.mock('../export/templates', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../export/templates')>();
+  return {
+    ...actual,
+    resolveExportOptions: exportMock.resolveExportOptions,
+  };
+});
+
+vi.mock('../export/preflight', () => ({
+  buildExportPreflightDiagnostics: vi.fn(async () => []),
+}));
+
 import {
   commandRegistry,
   commandRegistryById,

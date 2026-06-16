@@ -1,6 +1,6 @@
 import { t } from '../../i18n';
 import type { I18nKey } from '../../i18n';
-import { extractMarkdownDocumentImages } from '../../markdown/documentModel';
+import { extractMarkdownDocumentImages } from '../../markdown/links';
 import { dirname, joinPath } from '../../workspace/services/path';
 import { exists } from '../../../platform/tauri/fileSystem';
 

@@ -58,8 +58,8 @@ describe('rich clipboard copy', () => {
     expect(writeText).toHaveBeenCalledWith('<p>Body</p>');
   });
 
-  it('converts markdown selections to rendered html and plain text', () => {
-    const input = markdownSelectionToRichClipboardInput('# 标题');
+  it('converts markdown selections to rendered html and plain text', async () => {
+    const input = await markdownSelectionToRichClipboardInput('# 标题');
 
     expect(input.html).toContain('<h1');
     expect(input.html).toContain('标题');

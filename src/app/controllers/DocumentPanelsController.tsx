@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
 import { DocumentDiagnosticsPanel } from '../../domains/editor/components/DocumentDiagnosticsPanel';
-import { DocumentPropertiesPanel } from '../../domains/editor/components/DocumentPropertiesPanel';
 import { TypographyDiagnosticsPanel } from '../../domains/editor/components/TypographyDiagnosticsPanel';
 import { BacklinksPanel } from '../../domains/workspace/components/BacklinksPanel';
 import { DocumentLinksPanel } from '../../domains/workspace/components/DocumentLinksPanel';
@@ -14,6 +13,9 @@ import type {
 
 const RelationGraphPanel = lazy(() => import('../../domains/workspace/components/RelationGraphPanel')
   .then((module) => ({ default: module.RelationGraphPanel })));
+
+const DocumentPropertiesPanel = lazy(() => import('../../domains/editor/components/DocumentPropertiesPanel')
+  .then((module) => ({ default: module.DocumentPropertiesPanel })));
 
 interface DocumentPanelsControllerProps {
   backlinks: BacklinkReference[];
@@ -113,13 +115,17 @@ export function DocumentPanelsController({
         </Suspense>
       )}
 
-      <DocumentPropertiesPanel
-        visible={documentPropertiesVisible}
-        content={currentDocumentContent}
-        onClose={onDocumentPropertiesClose}
-        onApply={onApplyDocumentProperties}
-        onNotice={onDocumentPropertiesNotice}
-      />
+      {documentPropertiesVisible && (
+        <Suspense fallback={null}>
+          <DocumentPropertiesPanel
+            visible={documentPropertiesVisible}
+            content={currentDocumentContent}
+            onClose={onDocumentPropertiesClose}
+            onApply={onApplyDocumentProperties}
+            onNotice={onDocumentPropertiesNotice}
+          />
+        </Suspense>
+      )}
 
       <TypographyDiagnosticsPanel
         visible={typographyDiagnosticsVisible}

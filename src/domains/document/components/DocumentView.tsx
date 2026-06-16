@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { useDocumentStore } from '../store';
 import { SplitView } from '../../editor/components/SplitView';
-import { EditorPaneHandle } from '../../editor/components/EditorPane';
+import type { EditorPaneHandle } from '../../editor/components/EditorPane';
 import type { WorkspaceIndex } from '../../workspace/services';
 import { useI18n } from '../../i18n';
 

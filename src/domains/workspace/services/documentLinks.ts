@@ -2,7 +2,7 @@ import {
   extractMarkdownDocumentLinks,
   type MarkdownDocumentLinkKind,
   type MarkdownDocumentLinkReference,
-} from '../../markdown/documentModel';
+} from '../../markdown/links';
 import {
   basename,
   dirname,

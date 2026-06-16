@@ -14,7 +14,7 @@ import { markdownToHtml } from '../../lib/markdownToHtml';
 import { applyCalloutMetadataToMdastBlockquote } from '../editor/extensions/callouts';
 import { findPandocCitations } from '../editor/extensions/citations';
 import type { ContentTheme } from '../settings/types';
-import { t } from '../i18n';
+import { t } from '../i18n/runtime';
 import type { ExportDocumentInput } from './types';
 import {
   getDocxThemeByContentTheme,

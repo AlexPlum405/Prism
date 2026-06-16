@@ -7,7 +7,7 @@ import {
 import {
   handleMarkdownRenderRequest,
   renderMarkdownWithLocale,
-} from './markdownRenderCore';
+} from './markdownRenderWorkerCore';
 import { getCurrentLocale, setLocaleForTesting } from '../domains/i18n';
 
 const FRONT_MATTER_DOC = [

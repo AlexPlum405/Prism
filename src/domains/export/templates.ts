@@ -8,7 +8,8 @@ import type {
 import { getDocxThemeByContentTheme } from './exportSettings';
 import { parseExportFrontMatter } from './frontMatter';
 import type { ExportDocumentInput } from './types';
-import { resolveAppLocale, t, type I18nKey } from '../i18n';
+import { resolveAppLocale, t } from '../i18n/runtime';
+import type { I18nKey } from '../i18n/resources';
 
 export interface ExportTemplate {
   id: ExportTemplateId;

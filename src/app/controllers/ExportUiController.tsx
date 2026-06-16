@@ -5,7 +5,7 @@ import {
   type SaveDialogState,
 } from '../useSaveExportDialogModel';
 import { Toast } from '../../components/shell/Toast';
-import { getExportFormatLabel } from '../../domains/export';
+import { getExportFormatLabel } from '../../domains/export/types';
 import {
   getLocalizedExportQualityPreset,
   getLocalizedExportQualityPresets,

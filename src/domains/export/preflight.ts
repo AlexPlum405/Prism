@@ -11,7 +11,7 @@ import { scanHeadingAnchorDiagnostics } from '../editor/extensions/headingDiagno
 import { scanMarkdownImageDiagnostics } from '../editor/extensions/imageDiagnostics';
 import { scanMarkdownLinks } from '../editor/extensions/linkDiagnostics';
 import { scanMarkdownTableDiagnostics } from '../editor/extensions/tables';
-import { t } from '../i18n';
+import { t } from '../i18n/runtime';
 import { exportResourceExists } from './resources/exportResourceClient';
 import type { ExportFormat } from './types';
 

@@ -47,7 +47,9 @@ export function runBasicEditorCommand(
     case 'copyHtml': {
       const selection = view.state.selection.main;
       const text = view.state.doc.sliceString(selection.from, selection.to);
-      if (text) void writeRichClipboard(markdownSelectionToRichClipboardInput(text));
+      if (text) {
+        void markdownSelectionToRichClipboardInput(text).then(writeRichClipboard);
+      }
       return true;
     }
     case 'selectAll':

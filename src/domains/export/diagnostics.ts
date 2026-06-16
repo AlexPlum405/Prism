@@ -1,6 +1,6 @@
 import type { SettingsState } from '../settings/types';
 import { getThemeEntry } from '../themes';
-import { t } from '../i18n';
+import { t } from '../i18n/runtime';
 import { getExportFormatLabel, type ExportFormat } from './types';
 
 function formatExportDiagnosticError(error: unknown): string {

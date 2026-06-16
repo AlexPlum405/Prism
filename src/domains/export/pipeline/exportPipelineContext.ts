@@ -1,4 +1,4 @@
-import { t } from '../../i18n';
+import { t } from '../../i18n/runtime';
 import type { ExportDocumentInput } from '../types';
 
 export type ExportFileLabel = 'HTML' | 'PDF' | 'PNG' | 'Word';

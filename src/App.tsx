@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { lazy, Suspense, useRef, useState, useCallback } from 'react';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppStoreSnapshotModel } from './app/useAppStoreSnapshotModel';
 import { useAppLifecycleModel } from './app/useAppLifecycleModel';
@@ -17,13 +17,15 @@ import { DocumentSafetyController } from './app/controllers/DocumentSafetyContro
 import { DocumentPanelsController } from './app/controllers/DocumentPanelsController';
 import { AppAuxiliaryModalsController } from './app/controllers/AppAuxiliaryModalsController';
 import { AppWorkspaceViewController } from './app/controllers/AppWorkspaceViewController';
-import { EditorPaneHandle } from './domains/editor/components/EditorPane';
+import type { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
-import { SettingsModal } from './components/shell/SettingsModal';
 
 export { shouldShowRecoveryPrompt };
+
+const SettingsModal = lazy(() => import('./components/shell/SettingsModal')
+  .then((module) => ({ default: module.SettingsModal })));
 
 function App() {
   const {
@@ -338,11 +340,15 @@ function App() {
         onCommandPaletteExecute={(commandId) => handleCommandAction(commandId)}
         onShortcutPanelClose={closeShortcutPanel}
       />
-      <SettingsModal
-        initialSection={settingsInitialSection}
-        visible={settingsVisible}
-        onClose={() => setSettingsVisible(false)}
-      />
+      {settingsVisible && (
+        <Suspense fallback={null}>
+          <SettingsModal
+            initialSection={settingsInitialSection}
+            visible={settingsVisible}
+            onClose={() => setSettingsVisible(false)}
+          />
+        </Suspense>
+      )}
     </WindowShell>
   );
 }

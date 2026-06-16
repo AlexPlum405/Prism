@@ -1,7 +1,7 @@
 import type { useDocumentStore } from '../document/store';
 import type { useSettingsStore } from '../settings/store';
 import type { useWorkspaceStore } from '../workspace/store';
-import type { ExportFormat } from '../export';
+import type { ExportFormat } from '../export/types';
 import type { ToastInput } from '../../lib/toast';
 
 export type CommandCategory =

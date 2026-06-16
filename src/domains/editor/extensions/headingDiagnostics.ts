@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import { extractMarkdownDocumentHeadings } from '../../markdown/documentModel';
+import { extractMarkdownDocumentHeadings } from '../../markdown/headings';
 
 export type HeadingDiagnosticKind = 'duplicate-anchor';
 

@@ -12,7 +12,8 @@ import type { EditorView } from '@codemirror/view';
 import { useDocumentStore } from '../../document/store';
 import { useSettingsStore } from '../../settings/store';
 import { useWorkspaceStore } from '../../workspace/store';
-import { flattenFiles, getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services';
+import { flattenFiles } from '../../workspace/services/fileTree';
+import { getWorkspaceIndexLinkFiles, type WorkspaceIndex } from '../../workspace/services/workspaceIndexQuery';
 import { queryWorkspaceLinkTargetsNativeModel } from '../../workspace/services/workspaceIndexNative';
 import type { QueryWorkspaceLinkTargets } from '../extensions/linkCompletion';
 import type { SearchAction, SearchParams } from './SearchPanel';
@@ -48,6 +49,7 @@ import {
   MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT,
   getMiaoyanCodeHighlightRanges,
   getMiaoyanCodeLanguage,
+  loadMiaoyanCodeHighlighterForTesting,
   shouldHighlightCompatibilityCodeTheme,
 } from '../extensions/markdownHighlight';
 import { useI18n } from '../../i18n';
@@ -141,6 +143,7 @@ const TOGGLE_BLOCK_TITLE_END = TOGGLE_BLOCK_TITLE_START + '标题'.length;
 export const __editorPaneTesting = {
   getMiaoyanCodeLanguage,
   getMiaoyanCodeHighlightRanges,
+  loadMiaoyanCodeHighlighterForTesting,
   getEditorFormatResult,
   getEditorTypographyStyle,
   getLineNumberExtensions,

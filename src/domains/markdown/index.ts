@@ -1,13 +1,17 @@
 export {
   extractMarkdownDocumentHeadings,
-  extractMarkdownDocumentLinks,
   parseMarkdownDocumentModel,
   type MarkdownDocumentFrontMatter,
   type MarkdownDocumentHeading,
-  type MarkdownDocumentLinkKind,
-  type MarkdownDocumentLinkReference,
   type MarkdownDocumentModel,
 } from './documentModel';
+export {
+  extractMarkdownDocumentImages,
+  extractMarkdownDocumentLinks,
+  type MarkdownDocumentImageReference,
+  type MarkdownDocumentLinkKind,
+  type MarkdownDocumentLinkReference,
+} from './links';
 export {
   EMPTY_DOCUMENT_FRONT_MATTER_PROPERTIES,
   parseDocumentFrontMatter,

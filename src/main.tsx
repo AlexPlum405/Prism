@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { markdownRenderService } from './lib/markdownRenderService';
 import 'katex/dist/katex.min.css';
 import './styles/global.css';
 
@@ -12,7 +11,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 const warmupMarkdownWorker = () => {
-  markdownRenderService.warmup();
+  void import('./lib/markdownRenderService').then(({ markdownRenderService }) => {
+    markdownRenderService.warmup();
+  });
 };
 
 if ('requestIdleCallback' in window) {

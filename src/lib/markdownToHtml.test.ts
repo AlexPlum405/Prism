@@ -110,6 +110,18 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('hljs-string');
   });
 
+  it('can skip token-level code highlighting for large preview renders', () => {
+    const html = markdownToHtml('```ts\nconst answer = "42";\n```', {
+      autoDetectUnlabeledCode: false,
+      compatibilityMode: 'miaoyan',
+      highlightCode: false,
+    });
+
+    expect(html).toContain('class="hljs language-ts"');
+    expect(html).toContain('const answer = "42";');
+    expect(html).not.toContain('hljs-string');
+  });
+
   it('marks preview blocks with source line attributes for scroll and click mapping', () => {
     const html = markdownToHtml('# Title\n\nParagraph');
 
@@ -195,6 +207,19 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('data-line="3"');
   });
 
+  it('can defer KaTeX rendering for large preview renders', () => {
+    const html = markdownToHtml('Inline $a^2$.\n\n$$\nx^2\n$$', {
+      renderMath: false,
+    });
+
+    expect(html).toContain('class="katex-placeholder"');
+    expect(html).toContain('class="katex-display katex-placeholder"');
+    expect(html).toContain(`data-katex="${encodeURIComponent('a^2')}"`);
+    expect(html).toContain(`data-katex="${encodeURIComponent('x^2')}"`);
+    expect(html).toContain('data-source-line="3"');
+    expect(html).not.toContain('katex-html');
+  });
+
   it('renders Prism highlight marks without allowing raw HTML injection', () => {
     const html = markdownToHtml('==important & safe==');
 
@@ -213,6 +238,37 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('<table');
     expect(html).toContain('<th>项目</th>');
     expect(html).toContain('<td>通过</td>');
+  });
+
+  it('can render plain tables through the lightweight large-preview table path', () => {
+    const html = markdownToHtml([
+      '| 项目 | 状态 |',
+      '| --- | ---: |',
+      '| 预览 | 通过 |',
+      '| 滚动 | 顺滑 |',
+      '',
+      '# Next',
+    ].join('\n'), {
+      lightweightTables: true,
+    });
+
+    expect(html).toContain('<table data-source-line="1">');
+    expect(html).toContain('<td style="text-align:right">通过</td>');
+    expect(html).toContain('<tr><td>预览</td>');
+    expect(html).toContain('<h1 data-source-line="6"');
+  });
+
+  it('keeps complex tables on the normal GFM path when lightweight table extraction is enabled', () => {
+    const html = markdownToHtml([
+      '| 项目 | 状态 |',
+      '| --- | --- |',
+      '| **预览** | [通过](https://example.com) |',
+    ].join('\n'), {
+      lightweightTables: true,
+    });
+
+    expect(html).toContain('<strong>预览</strong>');
+    expect(html).toContain('<a href="https://example.com">通过</a>');
   });
 
   it('renders common GFM inline and list syntax only when needed', () => {

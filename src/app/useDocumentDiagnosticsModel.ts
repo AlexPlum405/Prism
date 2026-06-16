@@ -17,7 +17,6 @@ import {
   tableDiagnosticsToPrismDiagnostics,
 } from '../domains/diagnostics/adapters';
 import { getActionableErrorDiagnostics, type PrismDiagnostic } from '../domains/diagnostics/types';
-import { scanMarkdownRenderDiagnostics } from '../domains/export/preflight';
 import { onAppEvent } from '../platform/events/appEvents';
 
 type CurrentDocument = ReturnType<typeof useDocumentStore.getState>['currentDocument'];
@@ -99,9 +98,10 @@ export function useDocumentDiagnosticsModel({
     }
 
     const timer = window.setTimeout(() => {
-      void scanMarkdownRenderDiagnostics(currentDocument.content, {
-        includePreviewRenderCheck: false,
-      })
+      void import('../domains/export/preflight')
+        .then(({ scanMarkdownRenderDiagnostics }) => scanMarkdownRenderDiagnostics(currentDocument.content, {
+          includePreviewRenderCheck: false,
+        }))
         .then((diagnostics) => {
           if (!cancelled) setRenderDiagnostics(diagnostics);
         })

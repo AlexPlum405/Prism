@@ -60,10 +60,6 @@ export {
   applyWorkspaceIndexOverlay,
   buildWorkspaceIndex,
   buildWorkspaceIndexIncremental,
-  getWorkspaceIndexBacklinks,
-  getWorkspaceIndexLinkFiles,
-  rankWorkspaceIndexDocuments,
-  searchWorkspaceIndex,
   type WorkspaceIndex,
   type WorkspaceIndexBacklink,
   type WorkspaceIndexBuildInput,
@@ -76,10 +72,8 @@ export {
   type WorkspaceIndexSourceDocument,
 } from './workspaceIndex';
 export {
-  buildRelationGraph,
-  type RelationGraph,
-  type RelationGraphDepth,
-  type RelationGraphEdge,
-  type RelationGraphNode,
-  type RelationGraphScope,
-} from './relationGraph';
+  getWorkspaceIndexBacklinks,
+  getWorkspaceIndexLinkFiles,
+  rankWorkspaceIndexDocuments,
+  searchWorkspaceIndex,
+} from './workspaceIndexQuery';

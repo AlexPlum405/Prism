@@ -9,6 +9,13 @@ const mermaidMock = vi.hoisted(() => ({
   initialize: vi.fn(),
   render: vi.fn(),
 }));
+const katexMock = vi.hoisted(() => ({
+  renderToString: vi.fn((value: string, options: { displayMode?: boolean } = {}) => (
+    options.displayMode
+      ? `<span class="katex-display"><span class="katex-html">${value}</span></span>`
+      : `<span class="katex"><span class="katex-html">${value}</span></span>`
+  )),
+}));
 const openerMock = vi.hoisted(() => ({
   openUrl: vi.fn(),
 }));
@@ -33,6 +40,10 @@ vi.mock('mermaid', () => ({
   default: mermaidMock,
 }));
 
+vi.mock('katex', () => ({
+  default: katexMock,
+}));
+
 vi.mock('../../../lib/markdownToHtml', () => ({
   markdownToHtml: vi.fn(() => '<p>Hello preview</p>'),
 }));
@@ -53,7 +64,9 @@ function deferred<T>() {
 
 async function flushPreviewRender() {
   await act(async () => {
-    await Promise.resolve();
+    for (let i = 0; i < 4; i += 1) {
+      await Promise.resolve();
+    }
   });
 }
 
@@ -81,6 +94,7 @@ describe('PreviewPane theme switching', () => {
     mermaidMock.initialize.mockReset();
     mermaidMock.render.mockReset();
     mermaidMock.render.mockResolvedValue({ svg: '<svg viewBox="0 0 10 10"></svg>' });
+    katexMock.renderToString.mockClear();
     openerMock.openUrl.mockReset();
     fsMock.readFile.mockReset();
     fsMock.readFile.mockResolvedValue(new Uint8Array([60, 115, 118, 103, 62]));
@@ -103,6 +117,7 @@ describe('PreviewPane theme switching', () => {
       configurable: true,
       value: vi.fn(),
     });
+    __previewPaneTesting.clearKatexCache();
     __previewPaneTesting.clearMermaidCache();
     __previewPaneTesting.clearPreviewMediaCache();
   });
@@ -115,6 +130,7 @@ describe('PreviewPane theme switching', () => {
 
   it('does not rerun the markdown pipeline when only the content theme changes', async () => {
     render(<PreviewPane content="# Hello" />);
+    await flushPreviewRender();
 
     expect(markdownToHtml).toHaveBeenCalledTimes(1);
     expect(markdownToHtml).toHaveBeenLastCalledWith('# Hello', { frontMatterMode: 'metadata' });
@@ -143,9 +159,10 @@ describe('PreviewPane theme switching', () => {
     expect(write?.style.fontSize).toBe('21px');
   });
 
-  it('debounces expensive markdown rendering across rapid content changes', () => {
+  it('debounces expensive markdown rendering across rapid content changes', async () => {
     vi.useFakeTimers();
     const { rerender } = render(<PreviewPane content="# First" />);
+    await flushPreviewRender();
 
     expect(markdownToHtml).toHaveBeenCalledTimes(1);
 
@@ -162,6 +179,7 @@ describe('PreviewPane theme switching', () => {
     act(() => {
       vi.advanceTimersByTime(1);
     });
+    await flushPreviewRender();
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
     expect(markdownToHtml).toHaveBeenLastCalledWith('# Third', { frontMatterMode: 'metadata' });
@@ -176,7 +194,12 @@ describe('PreviewPane theme switching', () => {
     expect(__previewPaneTesting.getPreviewMarkdownRenderOptions(360 * 1024)).toEqual({
       autoDetectUnlabeledCode: false,
       frontMatterMode: 'metadata',
+      highlightCode: false,
+      lightweightTables: true,
+      renderMath: false,
     });
+    expect(__previewPaneTesting.getKatexPreviewBatchSize(24)).toBe(1);
+    expect(__previewPaneTesting.getKatexPreviewBatchSize(25)).toBe(12);
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(10)).toBe(1);
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(11)).toBe(3);
   });
@@ -186,6 +209,7 @@ describe('PreviewPane theme switching', () => {
     const first = `# First\n${'一'.repeat(310 * 1024)}`;
     const second = `# Second\n${'二'.repeat(310 * 1024)}`;
     const { rerender } = render(<PreviewPane content={first} />);
+    await flushPreviewRender();
 
     expect(markdownToHtml).toHaveBeenCalledTimes(1);
 
@@ -202,11 +226,15 @@ describe('PreviewPane theme switching', () => {
     act(() => {
       vi.advanceTimersByTime(1);
     });
+    await flushPreviewRender();
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
     expect(markdownToHtml).toHaveBeenLastCalledWith(second, {
       autoDetectUnlabeledCode: false,
       frontMatterMode: 'metadata',
+      highlightCode: false,
+      lightweightTables: true,
+      renderMath: false,
     });
     await flushPreviewRender();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -217,6 +245,7 @@ describe('PreviewPane theme switching', () => {
     const first = `# First\n${'一'.repeat(310 * 1024)}`;
     const second = `# Second\n${'二'.repeat(310 * 1024)}`;
     const { rerender } = render(<PreviewPane content={first} />);
+    await flushPreviewRender();
 
     rerender(<PreviewPane content={second} />);
 
@@ -224,11 +253,15 @@ describe('PreviewPane theme switching', () => {
     expect(markdownToHtml).toHaveBeenCalledTimes(1);
 
     rerender(<PreviewPane content={second} renderStrategy="immediate" />);
+    await flushPreviewRender();
 
     expect(markdownToHtml).toHaveBeenCalledTimes(2);
     expect(markdownToHtml).toHaveBeenLastCalledWith(second, {
       autoDetectUnlabeledCode: false,
       frontMatterMode: 'metadata',
+      highlightCode: false,
+      lightweightTables: true,
+      renderMath: false,
     });
     await flushPreviewRender();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -607,6 +640,24 @@ describe('PreviewPane theme switching', () => {
     expect(await screen.findByText('\\bad')).toHaveClass('preview-katex-error');
     expect(screen.getByText('\\bad')).toHaveAttribute('data-preview-source-line', '7');
     expect(screen.getByRole('button', { name: '跳到源码' })).toHaveAttribute('data-preview-source-line', '7');
+  });
+
+  it('hydrates deferred KaTeX placeholders after the preview HTML is committed', async () => {
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      `<p data-source-line="3">公式 <span class="katex-placeholder" data-katex="${encodeURIComponent('a^2')}" data-katex-display="false">a^2</span></p>`,
+    );
+
+    render(<PreviewPane content="$a^2$" renderStrategy="immediate" />);
+
+    expect(await screen.findByText('a^2')).toHaveClass('katex-placeholder');
+
+    await waitFor(() => {
+      expect(katexMock.renderToString).toHaveBeenCalledWith('a^2', {
+        displayMode: false,
+        throwOnError: true,
+      });
+      expect(screen.getByText('a^2')).toHaveClass('katex-html');
+    });
   });
 
   it('opens absolute http links through the system opener', async () => {

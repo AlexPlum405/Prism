@@ -11,7 +11,8 @@ describe('EditorPane Miaoyan code highlighting', () => {
     expect(__editorPaneTesting.getMiaoyanCodeLanguage('let title = "miaoyan"')).toBeUndefined();
   });
 
-  it('creates atom-one-light token classes for fenced code under the MiaoYan limit', () => {
+  it('creates atom-one-light token classes for fenced code under the MiaoYan limit', async () => {
+    await __editorPaneTesting.loadMiaoyanCodeHighlighterForTesting();
     const ranges = __editorPaneTesting.getMiaoyanCodeHighlightRanges(
       '```swift\nlet title = "miaoyan"\nprint(title)\n```',
     );
@@ -22,7 +23,8 @@ describe('EditorPane Miaoyan code highlighting', () => {
     expect(classes).toContain('hljs-built_in');
   });
 
-  it('highlights JavaScript inside fences instead of treating the fence as a template string', () => {
+  it('highlights JavaScript inside fences instead of treating the fence as a template string', async () => {
+    await __editorPaneTesting.loadMiaoyanCodeHighlighterForTesting();
     const code = '```js\nconst answer = 42;\nfunction hello(name) {\n  return name;\n}\n```';
     const ranges = __editorPaneTesting.getMiaoyanCodeHighlightRanges(code);
 

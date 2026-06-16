@@ -10,6 +10,11 @@ import {
   pageOffsetToLine,
   shouldSyncPreviewScrollToEditor,
 } from './SplitView';
+import {
+  buildPreviewScrollMap,
+  lineToPreviewScrollTopInMap,
+  pageOffsetToLineInMap,
+} from './previewScrollMap';
 
 const mockState = vi.hoisted(() => ({
   jumpToLine: vi.fn(),
@@ -96,7 +101,7 @@ describe('SplitView editor lifecycle', () => {
     mockState.unmounts = 0;
   });
 
-  it('keeps the editor mounted when switching through preview mode so undo history survives', () => {
+  it('keeps the editor mounted when switching through preview mode so undo history survives', async () => {
     const props = {
       content: 'hello Prism',
       onChange: vi.fn(),
@@ -104,7 +109,7 @@ describe('SplitView editor lifecycle', () => {
     };
     const { rerender } = render(<SplitView {...props} viewMode="edit" />);
 
-    expect(screen.getByTestId('editor-pane')).toBeTruthy();
+    expect(await screen.findByTestId('editor-pane')).toBeTruthy();
     expect(mockState.mounts).toBe(1);
     expect(mockState.unmounts).toBe(0);
 
@@ -120,6 +125,21 @@ describe('SplitView editor lifecycle', () => {
     expect(screen.getByTestId('editor-pane')).toBeTruthy();
     expect(mockState.mounts).toBe(1);
     expect(mockState.unmounts).toBe(0);
+  });
+
+  it('does not mount the hidden editor when a document starts in preview-only mode', () => {
+    render(
+      <SplitView
+        content="preview-only startup"
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('preview-pane')).toBeTruthy();
+    expect(screen.queryByTestId('editor-pane')).toBeNull();
+    expect(mockState.mounts).toBe(0);
   });
 
   it('asks the preview pane to flush rendering immediately in preview-only mode', () => {
@@ -444,10 +464,11 @@ describe('SplitView preview scroll mapping', () => {
 
     const startedAt = performance.now();
     const elements = collectCodeLineElements(preview);
+    const scrollMap = buildPreviewScrollMap(preview, elements);
     const maxDrift = samples.reduce((max, line) => {
-      const scrollTop = lineToPreviewScrollTop(line, elements, preview);
+      const scrollTop = lineToPreviewScrollTopInMap(line, scrollMap);
       expect(scrollTop).not.toBeNull();
-      const roundTrippedLine = pageOffsetToLine(scrollTop!, elements, preview);
+      const roundTrippedLine = pageOffsetToLineInMap(scrollTop!, scrollMap);
       expect(roundTrippedLine).not.toBeNull();
       return Math.max(max, Math.abs(roundTrippedLine! - line));
     }, 0);

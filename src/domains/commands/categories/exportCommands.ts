@@ -1,11 +1,9 @@
-import { basename, flattenFiles } from '../../workspace/services';
+import { basename } from '../../workspace/services/path';
+import { flattenFiles } from '../../workspace/services/fileTree';
 import {
-  exportDocument,
   getExportFormatLabel,
-  resolveExportOptions,
   type ExportFormat,
-} from '../../export';
-import { buildExportFailureDiagnostic } from '../../export/diagnostics';
+} from '../../export/types';
 import {
   completeExportJob,
   createExportJob,
@@ -13,7 +11,6 @@ import {
   updateExportJob,
   type ExportJob,
 } from '../../export/jobs/exportJobClient';
-import { buildExportPreflightDiagnostics } from '../../export/preflight';
 import { normalizeExportQualityScale } from '../../export/quality';
 import { getActionableErrorDiagnostics } from '../../diagnostics/types';
 import type { ExportHistoryEntry, ExportHistorySettings, SettingsState } from '../../settings/types';
@@ -204,6 +201,7 @@ async function handleExport(
   };
 
   try {
+    const { buildExportPreflightDiagnostics } = await import('../../export/preflight');
     const preflightDiagnostics = getActionableErrorDiagnostics(await buildExportPreflightDiagnostics({
       content: doc.content,
       documentPath: doc.path,
@@ -258,6 +256,13 @@ async function handleExport(
     setExportProgress(lastProgress);
     await waitForExportProgressPaint();
 
+    const [
+      { exportDocument },
+      { resolveExportOptions },
+    ] = await Promise.all([
+      import('../../export/exportService'),
+      import('../../export/templates'),
+    ]);
     const exported = await exportDocument(resolveExportOptions({
       content: doc.content,
       filename: doc.name,
@@ -344,6 +349,7 @@ async function handleExport(
         // Keep the existing export failure diagnostic path even if job state cannot be updated.
       }
     }
+    const { buildExportFailureDiagnostic } = await import('../../export/diagnostics');
     const diagnostic = buildExportFailureDiagnostic({
       format,
       documentName: doc.name,

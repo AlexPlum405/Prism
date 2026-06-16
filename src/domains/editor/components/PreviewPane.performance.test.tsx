@@ -5,13 +5,20 @@ import {
   collectPreviewDomPostProcessTargets,
   getPreviewDomTargetHints,
 } from './previewDomTargets';
-import { collectCodeLineElements } from './SplitView';
+import {
+  buildPreviewScrollMap,
+  collectCodeLineElements,
+  lineToPreviewScrollTopInMap,
+  pageOffsetToLineInMap,
+} from './previewScrollMap';
 
 interface PreviewBenchmarkSample {
   markdownToHtmlMs: number;
   domWriteMs: number;
   domTargetScanMs: number;
   scrollSyncScanMs: number;
+  scrollMapBuildMs: number;
+  scrollMapLookupMs: number;
   htmlLength: number;
   mediaTargetCount: number;
   katexErrorCount: number;
@@ -23,6 +30,13 @@ interface PreviewBenchmarkSample {
 const RUN_PREVIEW_BENCHMARK = process.env.PRISM_PREVIEW_BENCH === '1';
 const PREVIEW_BENCHMARK_FILE = process.env.PRISM_PREVIEW_BENCH_FILE;
 const ONE_MEGABYTE = 1024 * 1024;
+const LARGE_PREVIEW_RENDER_OPTIONS = {
+  autoDetectUnlabeledCode: false,
+  frontMatterMode: 'metadata' as const,
+  highlightCode: false,
+  lightweightTables: true,
+  renderMath: false,
+};
 
 function buildPreviewBenchmarkSection(index: number) {
   const language = index % 4 === 0 ? 'ts' : index % 4 === 1 ? 'js' : index % 4 === 2 ? 'json' : '';
@@ -104,6 +118,8 @@ function summarize(samples: PreviewBenchmarkSample[]) {
     domWriteMs: roundMs(median(samples.map((sample) => sample.domWriteMs))),
     domTargetScanMs: roundMs(median(samples.map((sample) => sample.domTargetScanMs))),
     scrollSyncScanMs: roundMs(median(samples.map((sample) => sample.scrollSyncScanMs))),
+    scrollMapBuildMs: roundMs(median(samples.map((sample) => sample.scrollMapBuildMs))),
+    scrollMapLookupMs: roundMs(median(samples.map((sample) => sample.scrollMapLookupMs))),
     htmlLength: samples.at(-1)?.htmlLength ?? 0,
     mediaTargetCount: samples.at(-1)?.mediaTargetCount ?? 0,
     katexErrorCount: samples.at(-1)?.katexErrorCount ?? 0,
@@ -124,16 +140,10 @@ function runFullPreviewBenchmark(iterations = 3) {
   const samples: PreviewBenchmarkSample[] = [];
 
   // Warm up unified/highlight/katex module paths before recording medians.
-  markdownToHtml(content, {
-    autoDetectUnlabeledCode: false,
-    frontMatterMode: 'metadata',
-  });
+  markdownToHtml(content, LARGE_PREVIEW_RENDER_OPTIONS);
 
   for (let index = 0; index < iterations; index += 1) {
-    const markdown = measure(() => markdownToHtml(content, {
-      autoDetectUnlabeledCode: false,
-      frontMatterMode: 'metadata',
-    }));
+    const markdown = measure(() => markdownToHtml(content, LARGE_PREVIEW_RENDER_OPTIONS));
     const write = document.createElement('div');
     write.id = 'write';
 
@@ -157,12 +167,25 @@ function runFullPreviewBenchmark(iterations = 3) {
       codeLineElements: collectCodeLineElements(write),
       sourceLineElementCount: write.querySelectorAll('[data-source-line], [data-line]').length,
     }));
+    const scrollMapBuild = measure(() => buildPreviewScrollMap(write, scrollSyncScan.value.codeLineElements));
+    const lookupLines = Array.from({ length: 1000 }, (_, lookupIndex) => 1 + lookupIndex * 7);
+    const scrollMapLookup = measure(() => {
+      let mappedLineTotal = 0;
+      for (const line of lookupLines) {
+        const scrollTop = lineToPreviewScrollTopInMap(line, scrollMapBuild.value);
+        if (scrollTop === null) continue;
+        mappedLineTotal += pageOffsetToLineInMap(scrollTop, scrollMapBuild.value) ?? 0;
+      }
+      return mappedLineTotal;
+    });
 
     samples.push({
       markdownToHtmlMs: markdown.elapsedMs,
       domWriteMs: domWrite.elapsedMs,
       domTargetScanMs: domTargetScan.elapsedMs,
       scrollSyncScanMs: scrollSyncScan.elapsedMs,
+      scrollMapBuildMs: scrollMapBuild.elapsedMs,
+      scrollMapLookupMs: scrollMapLookup.elapsedMs,
       htmlLength: markdown.value.length,
       sourceLineElementCount: scrollSyncScan.value.sourceLineElementCount,
       codeLineElementCount: scrollSyncScan.value.codeLineElements.length,
@@ -180,6 +203,8 @@ function runFullPreviewBenchmark(iterations = 3) {
       domWriteMs: roundMs(sample.domWriteMs),
       domTargetScanMs: roundMs(sample.domTargetScanMs),
       scrollSyncScanMs: roundMs(sample.scrollSyncScanMs),
+      scrollMapBuildMs: roundMs(sample.scrollMapBuildMs),
+      scrollMapLookupMs: roundMs(sample.scrollMapLookupMs),
     })),
   };
 }

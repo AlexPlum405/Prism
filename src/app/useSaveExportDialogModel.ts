@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { downloadDir, homeDir } from '../platform/tauri/path';
-import type { ExportFormat } from '../domains/export';
-import { getExportFormatLabel } from '../domains/export';
+import { getExportFormatLabel, type ExportFormat } from '../domains/export/types';
 import { normalizeExportQualityScale } from '../domains/export/quality';
 import type { ExportDefaultLocation, SettingsState } from '../domains/settings/types';
 import { t } from '../domains/i18n';

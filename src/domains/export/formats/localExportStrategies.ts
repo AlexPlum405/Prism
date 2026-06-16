@@ -1,5 +1,5 @@
 import type { ExportDocumentInput, ExportFormat } from '../types';
-import { t } from '../../i18n';
+import { t } from '../../i18n/runtime';
 
 export type LocalExportAdapter = (
   input: ExportDocumentInput,

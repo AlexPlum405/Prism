@@ -5,8 +5,8 @@ import {
   type RelationGraphDepth,
   type RelationGraphNode,
   type RelationGraphScope,
-  type WorkspaceIndex,
-} from '../services';
+} from '../services/relationGraph';
+import type { WorkspaceIndex } from '../services/workspaceIndex';
 import { queryWorkspaceRelationGraphNativeModel } from '../services/workspaceIndexNative';
 import { useI18n } from '../../i18n';
 

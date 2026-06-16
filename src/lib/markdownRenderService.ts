@@ -1,11 +1,10 @@
-import { markdownToHtml } from './markdownToHtml';
 import {
   type MarkdownRenderOptions,
   type MarkdownRenderRequest,
   type MarkdownRenderResponse,
 } from './markdownRenderCore';
-import { getCurrentLocale } from '../domains/i18n';
-import type { AppLocale } from '../domains/i18n';
+import { getCurrentLocale } from '../domains/i18n/runtime';
+import type { AppLocale } from '../domains/i18n/types';
 
 export interface MarkdownRenderResult {
   html: string;
@@ -43,6 +42,11 @@ interface PendingRender {
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+async function renderMarkdownOnMainThread(content: string, options: MarkdownRenderOptions) {
+  const { markdownToHtml } = await import('./markdownToHtml');
+  return markdownToHtml(content, options);
 }
 
 /** 默认 Worker 工厂：仅在浏览器且支持 Worker 时创建，否则返回 null 触发主线程降级。 */
@@ -121,9 +125,9 @@ export function createMarkdownRenderService(workerFactory: WorkerFactory = defau
     requestedAtMs = nowMs(),
   ): Promise<MarkdownRenderResult> {
     // 主线程 locale 本就正确，直接调用 markdownToHtml，避免 setLocale 副作用。
-    return Promise.resolve().then(() => {
+    return Promise.resolve().then(async () => {
       const renderStartedAt = nowMs();
-      const html = markdownToHtml(content, options);
+      const html = await renderMarkdownOnMainThread(content, options);
       const finishedAt = nowMs();
       return {
         html,

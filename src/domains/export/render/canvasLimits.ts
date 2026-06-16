@@ -1,4 +1,4 @@
-import { t } from '../../i18n';
+import { t } from '../../i18n/runtime';
 
 export const MAX_EXPORT_CANVAS_DIMENSION = 16_000;
 export const MAX_EXPORT_CANVAS_AREA = 64_000_000;

@@ -3,16 +3,10 @@ import { readTextFile } from '../../../platform/tauri/fileSystem';
 import type { OpenDocument } from '../../document/types';
 import type { RecentFileEntry } from '../../settings/types';
 import type { FileNode } from '../types';
-import {
-  applyWorkspaceIndexOverlay,
-  buildWorkspaceIndex,
-  buildWorkspaceIndexIncremental,
-  flattenFiles,
-  isSupportedMarkdownPath,
-  normalizePathForCompare,
-  type WorkspaceIndex,
-  type WorkspaceIndexSourceDocument,
-} from '../services';
+import { flattenFiles } from '../services/fileTree';
+import { isSupportedMarkdownPath } from '../services/fileAssociation';
+import { normalizePathForCompare } from '../services/path';
+import type { WorkspaceIndex, WorkspaceIndexSourceDocument } from '../services/workspaceIndex';
 import {
   cancelWorkspaceIndexJobNativeModel,
   getWorkspaceIndexJobNativeModel,
@@ -171,6 +165,7 @@ export function useWorkspaceIndexModel(input: {
   } = input;
   const [baseWorkspaceIndex, setBaseWorkspaceIndex] = useState<WorkspaceIndex | null>(null);
   const [baseWorkspaceIndexJobId, setBaseWorkspaceIndexJobId] = useState<string | null>(null);
+  const [workspaceIndex, setWorkspaceIndex] = useState<WorkspaceIndex | null>(null);
   const [workspaceIndexing, setWorkspaceIndexing] = useState(false);
   const fallbackIndexCacheRef = useRef<{
     index: WorkspaceIndex | null;
@@ -252,6 +247,8 @@ export function useWorkspaceIndexModel(input: {
       }
 
       if (files.length > FULL_WORKSPACE_INDEX_FILE_LIMIT) {
+        const { buildWorkspaceIndex } = await import('../services/workspaceIndex');
+        if (cancelled) return;
         setBaseWorkspaceIndex(buildWorkspaceIndex({
           documents: [],
           fileTree,
@@ -267,6 +264,8 @@ export function useWorkspaceIndexModel(input: {
         files,
         fallbackIndexCacheRef.current.sources,
       );
+      const { buildWorkspaceIndexIncremental } = await import('../services/workspaceIndex');
+      if (cancelled) return;
       const fallbackIndex = buildWorkspaceIndexIncremental({
         documents,
         fileTree,
@@ -292,14 +291,33 @@ export function useWorkspaceIndexModel(input: {
     };
   }, [fileTree, rootPath]);
 
-  const workspaceIndex = useMemo<WorkspaceIndex | null>(() => {
-    if (!baseWorkspaceIndex) return null;
-    return applyWorkspaceIndexOverlay(baseWorkspaceIndex, {
-      currentDocument: currentDocument?.path
-        ? { path: currentDocument.path, content: currentDocument.content }
-        : null,
-      recentFiles,
-    });
+  useEffect(() => {
+    if (!baseWorkspaceIndex) {
+      setWorkspaceIndex(null);
+      return undefined;
+    }
+
+    const currentDocumentOverlay = currentDocument?.path
+      ? { path: currentDocument.path, content: currentDocument.content }
+      : null;
+    if (!currentDocumentOverlay && recentFiles.length === 0) {
+      setWorkspaceIndex(baseWorkspaceIndex);
+      return undefined;
+    }
+
+    let cancelled = false;
+    void import('../services/workspaceIndex')
+      .then(({ applyWorkspaceIndexOverlay }) => {
+        if (cancelled) return;
+        setWorkspaceIndex(applyWorkspaceIndexOverlay(baseWorkspaceIndex, {
+          currentDocument: currentDocumentOverlay,
+          recentFiles,
+        }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [baseWorkspaceIndex, currentDocument?.content, currentDocument?.path, recentFiles, recentFilesKey]);
 
   return {

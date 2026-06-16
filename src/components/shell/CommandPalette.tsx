@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { FileNode } from '../../domains/workspace/types';
+import { rankQuickOpenFiles, type QuickOpenRecentFile } from '../../domains/workspace/services/quickOpen';
 import {
-  rankQuickOpenFiles,
   rankWorkspaceIndexDocuments,
   searchWorkspaceIndex,
-  type QuickOpenRecentFile,
   type WorkspaceIndex,
   type WorkspaceIndexSearchResult,
-} from '../../domains/workspace/services';
+} from '../../domains/workspace/services/workspaceIndexQuery';
 import { queryWorkspaceIndexNativeModel } from '../../domains/workspace/services/workspaceIndexNative';
 import { isNativeCommandUnavailableError } from '../../platform/tauri/result';
 import { t, useI18n } from '../../domains/i18n';

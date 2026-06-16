@@ -30,7 +30,6 @@ import {
   normalizeRecentFiles,
   normalizeSettings,
 } from './normalize';
-import { registerCustomFonts } from './fontService';
 import {
   applyThemeRuntime,
   initializeThemeRegistry,
@@ -141,6 +140,12 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   if (typeof error === 'string' && error.trim()) return error;
   return t('settings.pandocDetectionFailed');
+}
+
+async function registerLoadedCustomFonts(customFonts: CustomFont[]) {
+  if (customFonts.length === 0) return;
+  const { registerCustomFonts } = await import('./fontService');
+  await registerCustomFonts(customFonts);
 }
 
 interface SettingsStore extends SettingsState {
@@ -586,7 +591,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       applyLocaleRuntime(settings.locale);
       applyAppearanceTheme(settings.theme);
       await applyContentTheme(contentTheme);
-      void registerCustomFonts(settings.customFonts);
+      void registerLoadedCustomFonts(settings.customFonts);
 
       // 监听系统主题变化
       if (settings.theme === 'auto') {
