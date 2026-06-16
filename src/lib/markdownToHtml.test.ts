@@ -320,20 +320,32 @@ describe('markdownToHtml compatibility modes', () => {
     const html = markdownToHtml(markdown, largePreviewRenderOptions);
 
     expect(markdown.length).toBeGreaterThan(300 * 1024);
+    expect(html).toContain('<!--prism-preview-source-map:flat:');
     expect(html).toContain('class="prism-frontmatter-preview"');
-    expect(html).toContain('<h1 data-source-line="7"');
+    expect(html).toContain('<h1>Common Fast Path</h1>');
     expect(html).toContain('<strong>加粗</strong>');
     expect(html).toContain('<mark>高亮</mark>');
     expect(html).toContain('class="prism-wiki-link"');
     expect(html).toContain('<a href="https://example.com/docs/1">外部链接</a>');
     expect(html).toContain('class="katex-placeholder"');
     expect(html).toContain('class="prism-callout prism-callout--note"');
-    expect(html).toContain('<ul data-source-line=');
-    expect(html).toContain('<table data-source-line=');
+    expect(html).toContain('<ul><li>第一项</li><li>第二项</li></ul>');
+    expect(html).toContain('class="prism-simple-table prism-simple-table--cols-2"');
     expect(html).toContain('class="hljs language-ts"');
     expect(html).toContain('class="mermaid-placeholder"');
     expect(html).toContain('<img src="assets/preview-');
     expect(html).not.toContain('PrismLargePreTablePlaceholder');
+  });
+
+  it('renders common fast path plain tables as lightweight preview grids', () => {
+    const html = markdownToHtml(buildCommonFastPathMarkdown(), largePreviewRenderOptions);
+
+    expect(html).toContain('<div class="prism-simple-table prism-simple-table--cols-2">');
+    expect(html).toContain('<span>项目</span>');
+    expect(html).toContain('<span class="prism-simple-table__cell--right">状态</span>');
+    expect(html).toContain('<span>渲染</span>');
+    expect(html).not.toContain('<thead>');
+    expect(html).not.toContain('<tbody>');
   });
 
   it('falls back to the full unified pipeline for large preview raw HTML', () => {
@@ -365,6 +377,21 @@ describe('markdownToHtml compatibility modes', () => {
 
     expect(html).toContain('<strong>预览</strong>');
     expect(html).toContain('<a href="https://example.com">通过</a>');
+  });
+
+  it('falls back to the full unified pipeline for large preview complex tables', () => {
+    const html = markdownToHtml([
+      buildCommonFastPathMarkdown(),
+      '',
+      '| 项目 | 状态 |',
+      '| --- | --- |',
+      '| **预览** | [通过](https://example.com) |',
+    ].join('\n'), largePreviewRenderOptions);
+
+    expect(html).toContain('<table');
+    expect(html).toContain('<strong>预览</strong>');
+    expect(html).toContain('<a href="https://example.com">通过</a>');
+    expect(html).not.toContain('prism-simple-table');
   });
 
   it('renders common GFM inline and list syntax only when needed', () => {

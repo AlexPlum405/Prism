@@ -17,7 +17,29 @@ export interface PreviewScrollMap {
 }
 
 function getPreviewSourceRoot(preview: HTMLElement): HTMLElement {
+  if (preview.id === 'write') return preview;
   return preview.querySelector<HTMLElement>('#write') ?? preview;
+}
+
+const FLAT_SOURCE_MAP_MARKER = 'prism-preview-source-map:flat';
+
+function readFlatPreviewSourceMap(root: HTMLElement): number[] | null {
+  const firstChild = root.firstChild;
+  if (firstChild?.nodeType !== 8) return null;
+
+  const value = firstChild.nodeValue?.trim() ?? '';
+  if (value === FLAT_SOURCE_MAP_MARKER) return [];
+  if (!value.startsWith(`${FLAT_SOURCE_MAP_MARKER}:`)) return null;
+
+  const lines = value.slice(FLAT_SOURCE_MAP_MARKER.length + 1);
+  if (!lines) return [];
+  let currentLine = 0;
+  return lines.split(',').flatMap((encodedDelta) => {
+    const delta = Number.parseInt(encodedDelta, 36);
+    if (!Number.isFinite(delta)) return [];
+    currentLine += delta;
+    return [currentLine];
+  });
 }
 
 function readSourceLine(element: HTMLElement): number | null {
@@ -26,9 +48,17 @@ function readSourceLine(element: HTMLElement): number | null {
   return Number.isFinite(line) ? line : null;
 }
 
+function pushSourceLineElement(elements: HTMLElement[], element: Element | null | undefined) {
+  if (!(element instanceof HTMLElement)) return;
+  if (element.hasAttribute('data-source-line') || element.hasAttribute('data-line')) {
+    elements.push(element);
+  }
+}
+
 function getCodeBlockEndLine(el: HTMLElement, line: number): number | undefined {
   if (el.tagName !== 'PRE') return undefined;
-  const codeEl = el.querySelector('code');
+  const firstElement = el.firstElementChild;
+  const codeEl = firstElement?.tagName === 'CODE' ? firstElement : null;
   const text = codeEl?.textContent || el.textContent || '';
   const lineCount = (text.match(/\n/g) || []).length + 1;
   return line + lineCount - 1;
@@ -51,8 +81,14 @@ function getPreviewScrollMapSignature(preview: HTMLElement, revision: number) {
 }
 
 export function collectCodeLineElements(preview: HTMLElement): CodeLineElement[] {
+  const root = getPreviewSourceRoot(preview);
+  const flatSourceMap = readFlatPreviewSourceMap(root);
+  if (flatSourceMap) {
+    return collectFlatCodeLineElements(root, flatSourceMap);
+  }
+
   const elements: CodeLineElement[] = [];
-  const nodes = collectPreviewSourceLineElements(preview);
+  const nodes = collectPreviewSourceLineElements(root);
   nodes.forEach((el) => {
     const line = readSourceLine(el);
     if (line === null) return;
@@ -74,6 +110,10 @@ export function collectCodeLineElements(preview: HTMLElement): CodeLineElement[]
 
 export function collectPreviewSourceLineElements(preview: HTMLElement): HTMLElement[] {
   const root = getPreviewSourceRoot(preview);
+  if (readFlatPreviewSourceMap(root)) {
+    return collectFlatPreviewSourceLineElements(root);
+  }
+
   const document = root.ownerDocument;
   const elements: HTMLElement[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
@@ -84,6 +124,147 @@ export function collectPreviewSourceLineElements(preview: HTMLElement): HTMLElem
       elements.push(current);
     }
     current = walker.nextNode() as HTMLElement | null;
+  }
+
+  return elements;
+}
+
+function findFlatPreviewSourceElement(target: Element | null, root: HTMLElement): HTMLElement | null {
+  let element = target instanceof HTMLElement ? target : target?.parentElement ?? null;
+  while (element && element !== root) {
+    if (
+      isFlatSidecarMappedElement(element)
+      || element.hasAttribute('data-source-line')
+      || element.hasAttribute('data-line')
+    ) {
+      return element;
+    }
+    element = element.parentElement;
+  }
+  return null;
+}
+
+export function findPreviewSourceLineElement(
+  target: Element | null,
+  preview: HTMLElement,
+): { element: HTMLElement; line: number } | null {
+  const attributedElement = target?.closest<HTMLElement>('[data-source-line], [data-line]');
+  if (attributedElement) {
+    const line = readSourceLine(attributedElement);
+    if (line !== null) return { element: attributedElement, line };
+  }
+
+  const root = getPreviewSourceRoot(preview);
+  const flatSourceMap = readFlatPreviewSourceMap(root);
+  if (!flatSourceMap) return null;
+
+  const sourceElement = findFlatPreviewSourceElement(target, root);
+  if (!sourceElement) return null;
+
+  const entry = collectFlatCodeLineElements(root, flatSourceMap)
+    .find((candidate) => candidate.element === sourceElement);
+  return entry ? { element: entry.element, line: entry.line } : null;
+}
+
+export function findPreviewElementForSourceLine(
+  preview: HTMLElement,
+  line: number,
+): HTMLElement | null {
+  const root = getPreviewSourceRoot(preview);
+  if (!readFlatPreviewSourceMap(root)) {
+    const exactTarget = root.querySelector<HTMLElement>(`[data-source-line="${line}"], [data-line="${line}"]`);
+    if (exactTarget) return exactTarget;
+  }
+
+  const elements = collectCodeLineElements(root);
+  return elements.find((entry) => entry.line === line)?.element ?? null;
+}
+
+function isFlatSidecarMappedElement(element: HTMLElement) {
+  if (/^H[1-6]$/.test(element.tagName)) return true;
+  if (element.tagName === 'P') return true;
+  if (element.tagName === 'PRE') return true;
+  if (element.tagName === 'BLOCKQUOTE') return true;
+  if (element.tagName === 'LI') return true;
+  if (element.tagName === 'HR') return true;
+  return element.classList.contains('prism-simple-table');
+}
+
+function collectFlatCodeLineElements(root: HTMLElement, sourceLines: number[]): CodeLineElement[] {
+  const elements: CodeLineElement[] = [];
+  let sourceIndex = 0;
+
+  const pushMappedElement = (element: Element | null | undefined) => {
+    if (!(element instanceof HTMLElement)) return;
+
+    let line: number | null = null;
+    if (isFlatSidecarMappedElement(element)) {
+      line = sourceLines[sourceIndex] ?? null;
+      sourceIndex += 1;
+    } else {
+      line = readSourceLine(element);
+    }
+    if (line === null || !Number.isFinite(line)) return;
+
+    const endLine = getCodeBlockEndLine(element, line);
+    elements.push(endLine === undefined ? { element, line } : { element, line, endLine });
+  };
+
+  let child = root.firstElementChild;
+  while (child) {
+    pushMappedElement(child);
+
+    if (child.tagName === 'UL' || child.tagName === 'OL') {
+      let item = child.firstElementChild;
+      while (item) {
+        pushMappedElement(item);
+        item = item.nextElementSibling;
+      }
+    } else if (child.classList.contains('prism-large-pre-table')) {
+      let row = child.firstElementChild;
+      while (row) {
+        pushMappedElement(row);
+        row = row.nextElementSibling;
+      }
+    }
+
+    child = child.nextElementSibling;
+  }
+
+  elements.sort((a, b) => a.line - b.line);
+  return elements;
+}
+
+function collectFlatPreviewSourceLineElements(root: HTMLElement): HTMLElement[] {
+  const elements: HTMLElement[] = [];
+
+  let child = root.firstElementChild;
+  while (child) {
+    if (child instanceof HTMLElement && isFlatSidecarMappedElement(child)) {
+      elements.push(child);
+    } else {
+      pushSourceLineElement(elements, child);
+    }
+
+    if (child.tagName === 'UL' || child.tagName === 'OL') {
+      let item = child.firstElementChild;
+      while (item) {
+        if (item instanceof HTMLElement && isFlatSidecarMappedElement(item)) {
+          elements.push(item);
+        } else {
+          pushSourceLineElement(elements, item);
+        }
+        item = item.nextElementSibling;
+      }
+    } else if (child.classList.contains('prism-large-pre-table')) {
+      let row = child.firstElementChild;
+      while (row) {
+        pushSourceLineElement(elements, row);
+        row = row.nextElementSibling;
+      }
+    }
+
+    child = child.nextElementSibling;
   }
 
   return elements;

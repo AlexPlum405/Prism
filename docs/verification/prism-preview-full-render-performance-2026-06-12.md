@@ -133,6 +133,76 @@ PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspac
 - `scrollSyncScanMs < 120ms` 本轮中位数为 126.7ms，已经接近目标；继续压低需要减少大文档 source-line anchor 数量或引入更稀疏的 sidecar map，这会影响点击定位精度，暂未在本轮做取舍。
 - `domWriteMs < 500ms` 未达成。本轮 HTML 已降到约 2.48MB，但 jsdom `innerHTML` 仍要构建完整预览 DOM：大量 Markdown 表格单元格、代码块、KaTeX placeholder、Mermaid placeholder 和图片节点仍是完整预览所需内容。继续显著下降需要改变简单表格的 DOM 表达、减少 source-line anchor 粒度，或在真实 WebView 中改用分阶段 DOM commit；这些都需要单独验证视觉和交互取舍。
 
+## 2026-06-16 DOM 写入与 source map sidecar 继续优化
+
+本轮先给 benchmark 增加 DOM 诊断统计，再按数据优化。诊断显示通用 1MB mixed benchmark 的 57,277 个元素中，标准 Markdown 表格相关节点约 32,370 个（`table/thead/tbody/tr/th/td`），是 `domWriteMs` 的最大可改项；`data-source-line` 也有 13,740 个，滚动扫描需要遍历完整 DOM。
+
+变更：
+
+- fast path 的纯文本简单表格改为 `.prism-simple-table` CSS grid：保留全部单元格文本、列对齐、source 映射和五套主题基础视觉；复杂表格、含 inline Markdown 的表格仍回退完整 GFM/unified 路径。
+- fast path 普通块级 source line 改为 comment sidecar：`h1-h6/p/pre/blockquote/li/hr/.prism-simple-table` 不再逐个写 `data-source-line`/`data-line`，滚动同步和点击定位通过 sidecar 映射恢复；Mermaid 与 display math 仍保留显式行号，保证渲染错误“跳到源码”可用。
+- `previewScrollMap` 对 sidecar 文档走扁平 sibling 遍历，避免每次滚动映射重新 TreeWalker 扫全部子树；同时避免对已经是 `#write` 的节点重复 `querySelector('#write')`。
+- 代码块行数计算改为读取 `firstElementChild`，避免对大量 `<pre>` 重复 `querySelector('code')`。
+- inline KaTeX placeholder 去掉冗余 `data-katex-display="false"`；display mode 仍可通过 `katex-display` class / true 标记区分。
+- benchmark 输出新增节点数、属性数、source-line 属性数、简单表格节点数等诊断字段。
+
+通用 1MB benchmark：
+
+```bash
+PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+| 指标 | 本轮前 | 本轮后 | 变化 |
+|---|---:|---:|---:|
+| HTML 长度 | 2,484,652 | 2,190,402 | -294,250（约 -11.8%） |
+| `markdownToHtmlMs` | 60.8 ms | 61.9 ms | 基本持平 |
+| `domWriteMs` | 823.9 ms | 626.4 ms | -197.5 ms（约 -24.0%） |
+| `domTargetScanMs` | 144.2 ms | 119.7 ms | -24.5 ms（约 -17.0%） |
+| `scrollSyncScanMs` | 126.7 ms | 33.9 ms | -92.8 ms（约 -73.2%） |
+| `scrollMapBuildMs` | 49.7 ms | 43.9 ms | -5.8 ms（约 -11.7%） |
+| DOM 元素数 | 57,277 | 46,487 | -10,790（约 -18.8%） |
+| DOM 属性数 | 39,073 | 26,073 | -13,000（约 -33.3%） |
+| `data-source-line` 属性数 | 13,740 | 1 | sidecar 化 |
+
+当前输出摘要：
+
+```json
+{
+  "contentLength": 1048751,
+  "iterations": 3,
+  "summary": {
+    "markdownToHtmlMs": 61.9,
+    "domWriteMs": 626.4,
+    "domTargetScanMs": 119.7,
+    "scrollSyncScanMs": 33.9,
+    "scrollMapBuildMs": 43.9,
+    "scrollMapLookupMs": 0.1,
+    "htmlLength": 2190402,
+    "totalElementCount": 46487,
+    "totalAttributeCount": 26073,
+    "sourceLineAttributeCount": 1,
+    "dataLineAttributeCount": 432,
+    "simpleTableElementCount": 2158,
+    "simpleTableCellElementCount": 19422,
+    "sourceLineElementCount": 13740
+  }
+}
+```
+
+CHAR_REVIEW.md 回归：
+
+```bash
+PRISM_PREVIEW_BENCH=1 PRISM_PREVIEW_BENCH_FILE=/Users/Alex/.qoderworkcn/workspace/mpz8o63iwqg7cqnc/phase19/annotation/CHAR_REVIEW.md npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose
+```
+
+结果仍在目标阈值内：`markdownToHtmlMs` 12.6 ms，`domWriteMs` 198.7 ms，`domTargetScanMs` 0.3 ms，`scrollSyncScanMs` 10.4 ms，`scrollMapBuildMs` 9.8 ms，HTML 长度 738,407。
+
+未完全达成项与取舍：
+
+- `scrollSyncScanMs < 80ms` 已达成，当前约 33.9ms。
+- `domWriteMs` 从约 823.9ms 降到约 626.4ms，已明显下降但未稳定进入 500-600ms。剩余主要是完整预览仍需构建 46,487 个元素，其中 `.prism-simple-table` 2,158 个、直接单元格 19,422 个；继续压低需要进一步改变表格单元格 DOM 表达，或改为真实 WebView 分阶段 DOM commit。
+- 本轮没有实现分阶段 DOM commit：它更偏真实 WebView 交互阻塞优化，不能直接降低 jsdom 单次 `innerHTML` benchmark；仓库现有 `npm run tauri:build:app-smoke` 是打包/功能 smoke，不是大文档预览性能 harness。后续若做该专项，应先补真实 app 大文档打开/拖动/菜单响应的可重复测量脚本。
+
 该基准构造约 1MB Markdown，覆盖标题、长段落、表格、代码块、Callout、wiki link、KaTeX、Mermaid placeholder 和本地图片引用。记录：
 
 - `markdownToHtmlMs`：Markdown 到 HTML 的完整转换耗时。

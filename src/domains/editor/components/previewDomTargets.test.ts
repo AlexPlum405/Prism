@@ -31,7 +31,7 @@ describe('preview DOM target collection', () => {
     write.innerHTML = [
       '<p><img alt="local" src="assets/a.png"></p>',
       '<picture><source src="assets/a.webp"></picture>',
-      '<span class="katex-placeholder" data-katex="x" data-katex-display="false">x</span>',
+      '<span class="katex-placeholder" data-katex="x">x</span>',
       '<span class="katex-error" title="bad">\\bad</span>',
       '<div class="mermaid-placeholder" data-mermaid="graph"></div>',
     ].join('');

@@ -404,6 +404,25 @@ describe('SplitView preview scroll mapping', () => {
     expect(Math.round(pageOffsetToLine(mappedParagraphScroll!, elements, preview)!)).toBe(section118ParagraphLine);
   });
 
+  it('collects fast-path flat source maps without walking every descendant', () => {
+    const preview = document.createElement('div');
+    preview.appendChild(document.createComment('prism-preview-source-map:flat:2,2,4,4'));
+    preview.insertAdjacentHTML('beforeend', [
+      '<h2>标题</h2>',
+      '<div class="prism-simple-table prism-simple-table--cols-2">',
+      '<span>项目</span><span>状态</span><span>预览</span><span>通过</span>',
+      '</div>',
+      '<ul><li>列表项</li></ul>',
+      '<pre>line 1\nline 2</pre>',
+    ].join(''));
+
+    const elements = collectCodeLineElements(preview);
+
+    expect(elements.map((element) => element.line)).toEqual([2, 4, 8, 12]);
+    expect(elements.map((element) => element.element.tagName)).toEqual(['H2', 'DIV', 'LI', 'PRE']);
+    expect(elements.at(-1)?.endLine).toBe(13);
+  });
+
   it('keeps media-heavy preview round-trip drift within one source line', () => {
     const preview = document.createElement('div');
     setLayoutBox(preview, 0, 720);

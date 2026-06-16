@@ -15,6 +15,8 @@ import { previewHtmlToRichClipboardInput, writeRichClipboard } from '../extensio
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 import {
   createPreviewScrollMapCache,
+  findPreviewElementForSourceLine,
+  findPreviewSourceLineElement,
   lineToPreviewScrollTopInMap,
   pageOffsetToLineInMap,
 } from './previewScrollMap';
@@ -94,7 +96,14 @@ function readPreviewSourceLine(element: HTMLElement): number | null {
   return Number.isFinite(line) ? line : null;
 }
 
-function findSourceLineElement(target: Element | null): { element: HTMLElement; line: number } | null {
+function findSourceLineElement(
+  target: Element | null,
+  preview?: HTMLElement | null,
+): { element: HTMLElement; line: number } | null {
+  if (preview) {
+    return findPreviewSourceLineElement(target, preview);
+  }
+
   const element = target?.closest<HTMLElement>('[data-source-line], [data-line]');
   if (!element) return null;
   const line = readPreviewSourceLine(element);
@@ -357,7 +366,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         editorRef.current?.jumpToLine(line);
         const preview = previewContainerRef.current;
         if (preview) {
-          const target = preview.querySelector(`[data-source-line="${line}"], [data-line="${line}"]`);
+          const target = findPreviewElementForSourceLine(preview, line);
           if (target) {
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             target.classList.add('preview-line-flash');
@@ -435,7 +444,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       event.stopPropagation();
 
       const target = event.target instanceof Element ? event.target : null;
-      const sourceLine = findSourceLineElement(target);
+      const sourceLine = findSourceLineElement(target, previewContainerRef.current);
 
       setPreviewContextMenu({
         x: event.clientX,
@@ -469,7 +478,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         return;
       }
 
-      const sourceLine = findSourceLineElement(target);
+      const sourceLine = findSourceLineElement(target, previewContainerRef.current);
       if (!sourceLine) return;
       if (!event.metaKey && !event.ctrlKey && !event.altKey) return;
       event.preventDefault();

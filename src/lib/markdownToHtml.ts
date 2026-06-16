@@ -329,7 +329,7 @@ function renderKatexPlaceholderHtml(value: string, displayMode: boolean, line: n
   const encoded = encodeURIComponent(value);
   const text = escapeGeneratedHtml(value);
   if (!displayMode) {
-    return `<span class="katex-placeholder" data-katex="${encoded}" data-katex-display="false">${text}</span>`;
+    return `<span class="katex-placeholder" data-katex="${encoded}">${text}</span>`;
   }
 
   const escapedLine = Number.isFinite(line) ? escapeGeneratedHtml(String(line)) : '';
@@ -607,6 +607,7 @@ const GFM_AUTOLINK_LITERAL_PATTERN = /(^|[\s(])(?:https?:\/\/|www\.)[^\s<]+|[\w.
 const LARGE_PRE_TABLE_ROW_THRESHOLD = 24;
 const LARGE_PRE_TABLE_PLACEHOLDER_BASE = 'PrismLargePreTablePlaceholder';
 const COMMON_MARKDOWN_PREVIEW_FAST_PATH_MIN_LENGTH = 300 * 1024;
+const COMMON_MARKDOWN_PREVIEW_SOURCE_MAP_MARKER = 'prism-preview-source-map:flat';
 const HTML_ESCAPE_CANDIDATE_PATTERN = /[&<>"']/;
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
 const HTML_TEXT_ESCAPE_CANDIDATE_PATTERN = /[&<>]/;
@@ -618,6 +619,7 @@ const HTML_ESCAPE_REPLACEMENTS: Record<string, string> = {
   '"': '&quot;',
   "'": '&#39;',
 };
+const COMMON_MARKDOWN_PREVIEW_SIDECAR_LINE_PATTERN = /(<(?:h[1-6]|p|pre|blockquote|li|hr)\b[^>]*?|<div class="prism-simple-table[^"]*"[^>]*?)\sdata-line="(\d+)"/g;
 const FRONT_MATTER_FIELDS: Array<{
   className: string;
   key: keyof DocumentFrontMatterProperties;
@@ -792,7 +794,14 @@ function renderCommonPreviewHrefAttribute(value: string, kind: 'link' | 'media')
 }
 
 function renderCommonPreviewKatexPlaceholder(value: string, displayMode: boolean, line?: number) {
-  return renderKatexPlaceholderHtml(value, displayMode, line);
+  const encoded = encodeURIComponent(value);
+  const text = escapeGeneratedHtml(value);
+  if (!displayMode) {
+    return `<span class="katex-placeholder" data-katex="${encoded}">${text}</span>`;
+  }
+
+  const sourceAttribute = Number.isFinite(line) ? ` data-line="${escapeGeneratedHtml(String(line))}"` : '';
+  return `<span class="katex-display katex-placeholder" data-katex="${encoded}" data-katex-display="true"${sourceAttribute}>${text}</span>`;
 }
 
 function renderCommonMarkdownInline(value: string, options: { allowImages?: boolean } = {}): string {
@@ -994,14 +1003,14 @@ function renderCommonPreviewCodeBlock(
   if (language === 'mermaid') {
     const escapedLine = escapeGeneratedHtml(String(sourceLine));
     return {
-      html: `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(code)}" data-source-line="${escapedLine}"></div>`,
+      html: `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(code)}" data-line="${escapedLine}"></div>`,
       nextIndex: index + 1,
     };
   }
 
   const className = language ? `hljs language-${escapeGeneratedHtml(language)}` : 'hljs';
   return {
-    html: `<pre data-source-line="${sourceLine}" class="${className}">${escapeGeneratedHtmlText(code)}</pre>`,
+    html: `<pre data-line="${sourceLine}" class="${className}">${escapeGeneratedHtmlText(code)}</pre>`,
     nextIndex: index + 1,
   };
 }
@@ -1036,7 +1045,9 @@ function renderCommonPreviewTable(
   const parsed = parseLightweightMarkdownTableRows(lines, startIndex + 2);
   if (!canRenderLightweightMarkdownTable(headers, parsed.rows)) return null;
   return {
-    html: renderLightweightMarkdownTable(headers, separator, parsed.rows, startIndex + 1),
+    html: canRenderCommonPreviewSimpleTable(headers)
+      ? renderCommonPreviewSimpleTable(headers, separator, parsed.rows, startIndex + 1)
+      : renderLightweightMarkdownTable(headers, separator, parsed.rows, startIndex + 1),
     nextIndex: parsed.nextIndex,
   };
 }
@@ -1063,7 +1074,7 @@ function renderCommonPreviewBlockquote(
     const bodyHtml = body ? `<p>${renderCommonMarkdownInline(body)}</p>` : '';
     return {
       html: [
-        `<blockquote class="prism-callout prism-callout--${escapeGeneratedHtml(kind)}" data-callout-kind="${escapeGeneratedHtml(kind)}" data-callout-title="${escapeGeneratedHtml(title)}" data-source-line="${sourceLine}">`,
+        `<blockquote class="prism-callout prism-callout--${escapeGeneratedHtml(kind)}" data-callout-kind="${escapeGeneratedHtml(kind)}" data-callout-title="${escapeGeneratedHtml(title)}" data-line="${sourceLine}">`,
         bodyHtml,
         '</blockquote>',
       ].join(''),
@@ -1072,7 +1083,7 @@ function renderCommonPreviewBlockquote(
   }
 
   return {
-    html: `<blockquote data-source-line="${sourceLine}"><p>${renderCommonMarkdownInline(quoteLines.join('\n'))}</p></blockquote>`,
+    html: `<blockquote data-line="${sourceLine}"><p>${renderCommonMarkdownInline(quoteLines.join('\n'))}</p></blockquote>`,
     nextIndex: index,
   };
 }
@@ -1094,12 +1105,12 @@ function renderCommonPreviewList(
     const nextOrdered = /\d/.test(match[2]);
     if (nextOrdered !== ordered) break;
     const sourceLine = index + 1;
-    items.push(`<li data-source-line="${sourceLine}">${renderCommonMarkdownInline(match[3])}</li>`);
+    items.push(`<li data-line="${sourceLine}">${renderCommonMarkdownInline(match[3])}</li>`);
     index += 1;
   }
 
   return {
-    html: `<${tagName} data-source-line="${startIndex + 1}">${items.join('')}</${tagName}>`,
+    html: `<${tagName}>${items.join('')}</${tagName}>`,
     nextIndex: index,
   };
 }
@@ -1116,9 +1127,21 @@ function renderCommonPreviewParagraph(
   }
 
   return {
-    html: `<p data-source-line="${startIndex + 1}">${renderCommonMarkdownInline(paragraphLines.join('\n'))}</p>`,
+    html: `<p data-line="${startIndex + 1}">${renderCommonMarkdownInline(paragraphLines.join('\n'))}</p>`,
     nextIndex: index,
   };
+}
+
+function encodeCommonPreviewSourceMapLines(lines: string[]) {
+  let previousLine = 0;
+  return lines
+    .map((rawLine) => {
+      const line = Number(rawLine);
+      const delta = line - previousLine;
+      previousLine = line;
+      return delta.toString(36);
+    })
+    .join(',');
 }
 
 function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownToHtmlOptions): string | null {
@@ -1144,7 +1167,7 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     const headingMatch = /^\s{0,3}(#{1,6})(?:\s+(.+?)\s*#*\s*)?$/.exec(line);
     if (headingMatch) {
       const level = headingMatch[1].length;
-      html.push(`<h${level} data-source-line="${index + 1}">${renderCommonMarkdownInline(headingMatch[2] ?? '')}</h${level}>`);
+      html.push(`<h${level} data-line="${index + 1}">${renderCommonMarkdownInline(headingMatch[2] ?? '')}</h${level}>`);
       index += 1;
       continue;
     }
@@ -1190,7 +1213,7 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     }
 
     if (isThematicBreakLine(line)) {
-      html.push(`<hr data-source-line="${index + 1}">`);
+      html.push(`<hr data-line="${index + 1}">`);
       index += 1;
       continue;
     }
@@ -1200,7 +1223,18 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     index = paragraph.nextIndex;
   }
 
-  return html.join('\n');
+  const sourceLines: string[] = [];
+  const body = html.join('\n').replace(
+    COMMON_MARKDOWN_PREVIEW_SIDECAR_LINE_PATTERN,
+    (_match, prefix: string, line: string) => {
+      sourceLines.push(line);
+      return prefix;
+    },
+  );
+  return [
+    `<!--${COMMON_MARKDOWN_PREVIEW_SOURCE_MAP_MARKER}:${encodeCommonPreviewSourceMapLines(sourceLines)}-->`,
+    body,
+  ].join('\n');
 }
 
 function parseLargePreTableRows(lines: string[], startIndex: number) {
@@ -1290,6 +1324,40 @@ function normalizeMarkdownTableCells(cells: string[], columnCount: number) {
 
 function renderTableCellAttributes(align: string | null | undefined) {
   return align ? ` style="text-align:${align}"` : '';
+}
+
+function canRenderCommonPreviewSimpleTable(headers: string[]) {
+  return headers.length >= 1 && headers.length <= 8;
+}
+
+function renderCommonPreviewSimpleTableCell(value: string, align: string | null | undefined) {
+  const alignClass = align ? ` class="prism-simple-table__cell--${align}"` : '';
+  return `<span${alignClass}>${escapeGeneratedHtml(value)}</span>`;
+}
+
+function renderCommonPreviewSimpleTable(
+  headers: string[],
+  separatorCells: string[],
+  rows: LightweightMarkdownTableRow[],
+  sourceLine: number,
+) {
+  const columnCount = headers.length;
+  const alignments = getMarkdownTableAlignments(normalizeMarkdownTableCells(separatorCells, columnCount));
+  const headerHtml = normalizeMarkdownTableCells(headers, columnCount)
+    .map((header, index) => renderCommonPreviewSimpleTableCell(header, alignments[index]))
+    .join('');
+  const rowsHtml = rows
+    .map((row) => normalizeMarkdownTableCells(row.cells, columnCount)
+      .map((cell, index) => renderCommonPreviewSimpleTableCell(cell, alignments[index]))
+      .join(''))
+    .join('\n');
+
+  return [
+    `<div class="prism-simple-table prism-simple-table--cols-${columnCount}" data-line="${sourceLine}">`,
+    headerHtml,
+    rowsHtml,
+    '</div>',
+  ].join('\n');
 }
 
 function renderLightweightMarkdownTable(
