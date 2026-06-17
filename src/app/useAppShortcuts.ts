@@ -15,6 +15,30 @@ interface UseAppShortcutsInput {
   toggleFocusMode: () => void;
 }
 
+function getTargetElement(target: EventTarget | null): Element | null {
+  if (target instanceof Element) return target;
+  if (target instanceof Node) return target.parentElement;
+  return null;
+}
+
+function isCodeMirrorTarget(target: Element | null): boolean {
+  return Boolean(target?.closest('.cm-editor, .cm-content'));
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  const element = getTargetElement(target);
+  if (!element) return false;
+  if (element.closest('input, textarea, select')) return true;
+  if (element.closest('[contenteditable="true"], [contenteditable="plaintext-only"]')) return true;
+  return element instanceof HTMLElement && element.isContentEditable;
+}
+
+function shouldPreserveEditableShortcut(event: KeyboardEvent, command: CommandDefinition): boolean {
+  if (!isEditableTarget(event.target)) return false;
+  if (isCodeMirrorTarget(getTargetElement(event.target))) return false;
+  return command.category === 'edit' || command.category === 'format' || command.category === 'insert';
+}
+
 export function useAppShortcuts({
   createCommandContext,
   findCommand = findCommandByKeyboardEvent,
@@ -23,6 +47,8 @@ export function useAppShortcuts({
   toggleFocusMode,
 }: UseAppShortcutsInput) {
   const handleKeyDown = useCallback(async (event: KeyboardEvent) => {
+    if (event.defaultPrevented) return;
+
     if (event.key === 'Escape' && focusMode) {
       toggleFocusMode();
       return;
@@ -30,6 +56,7 @@ export function useAppShortcuts({
 
     const command = findCommand(event);
     if (command) {
+      if (shouldPreserveEditableShortcut(event, command)) return;
       event.preventDefault();
       await runCommandById(command.id, createCommandContext());
     }
