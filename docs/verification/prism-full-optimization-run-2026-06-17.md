@@ -298,4 +298,4 @@
 | 命令结果 | 通过：无 whitespace error |
 | 证据路径 | `docs/adr/0008-design-token-governance.md`、`docs/verification/prism-design-token-audit-2026-06-17.md` |
 | 未验证风险 | 本项只做语义审计、ADR、上下文和 CSS 注释治理，没有改 token 运行时值，因此未新增截图；硬编码主题色、`!important` 覆盖、跨平台字体 fallback 和真实 shell 密度仍留给 P2-05/P2-06/P2-07 继续验证 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `5be7881d66e79636372362fe8040329c56b5c6f8` |
