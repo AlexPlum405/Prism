@@ -278,4 +278,4 @@
 | 证据路径 | `docs/verification/fixtures/prism-typography-fixture.md`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/README.md`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/miaoyan-1200.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/miaoyan-1440.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/miaoyan-1920.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/nocturne-1200.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/nocturne-1440.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/nocturne-1920.png` |
 | 截图审查 | 已用本地图片检查 `miaoyan-1440.png` 与 `nocturne-1440.png`：截图非空，正文、普通引用、Callout、Toggle、表格均可见，暗色块边界和正文对比可辨 |
 | 未验证风险 | 当前截图是 Playwright 渲染的独立 preview fixture，不是完整 Tauri WebView 真实窗口截图；Windows/Linux 字体渲染差异、真实系统 chrome 密度和 WebView 滚动体感仍需 P2-06 或跨平台真机补验；本项只调默认/暗色阅读排版，不把所有内置主题同步重排，完整主题截图回归留给 P2-05 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `19a7502f5731d70d00d9172b3b3c9cb168c84234` |
