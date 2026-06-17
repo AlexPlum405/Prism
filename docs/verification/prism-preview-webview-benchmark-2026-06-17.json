@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-06-17T12:01:09.861Z",
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v25.9.0",
+    "macOS": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5\nBuildVersion:\t\t25F71",
+    "appPath": "/Users/Alex/AI/project/Prism/src-tauri/target/release/bundle/macos/Prism.app",
+    "buildMode": "Tauri release .app",
+    "automation": {
+      "tauriDriver": "not found",
+      "screenshot": "screencapture full-screen fallback",
+      "systemEvents": "osascript best effort"
+    }
+  },
+  "results": [
+    {
+      "label": "1mb",
+      "bytes": 1049011,
+      "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-1mb.md",
+      "defaultViewMode": "preview",
+      "openCommandToVisibleMs": 930.6,
+      "openCommandToLastSessionMs": 4534,
+      "openCommandToScreenshotMs": 14947.3,
+      "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-opened.png",
+      "screenshotMs": 186.4,
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-1mb.md",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures",
+        "viewMode": "preview",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1781697567716
+      },
+      "actions": [
+        {
+          "name": "scrollPageDown",
+          "status": "pass",
+          "elapsedMs": 2911.6,
+          "actionMs": 2465.4,
+          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-scroll.png",
+          "screenshotMs": 193.3
+        },
+        {
+          "name": "searchFirstTerm",
+          "status": "pass",
+          "elapsedMs": 2787.8,
+          "actionMs": 2345.3,
+          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-search.png",
+          "screenshotMs": 189.9
+        },
+        {
+          "name": "contextMenuAttempt",
+          "status": "error",
+          "elapsedMs": 2220.8,
+          "error": "98:117: execution error: “System Events”遇到一个错误：发生“-25200”类型错误。 (-25200)"
+        },
+        {
+          "name": "sourceLocateFromPreview",
+          "status": "notAutomated",
+          "reason": "Current harness records context menu availability, but does not select the localized source-locate menu item through Accessibility."
+        }
+      ],
+      "domCommitMetric": {
+        "status": "observableSubstitute",
+        "substitute": "openCommandToLastSessionMs + openCommandToScreenshotMs in packaged Tauri WebView",
+        "reason": "tauri-driver is not installed in this environment, and WKWebView DOM internals are not directly observable from the app-smoke process."
+      }
+    },
+    {
+      "label": "3mb",
+      "bytes": 3146641,
+      "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md",
+      "defaultViewMode": "preview",
+      "status": "timeout",
+      "error": "lastSession /Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md timed out",
+      "openCommandToVisibleMs": 928,
+      "openCommandToLastSessionMs": null,
+      "openCommandToScreenshotMs": 91991.9,
+      "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-timeout.png",
+      "screenshotMs": 192.8,
+      "actions": [],
+      "domCommitMetric": {
+        "status": "timeoutBeforeReady",
+        "substitute": "window became visible, but lastSession did not update before timeout"
+      }
+    }
+  ]
+}
