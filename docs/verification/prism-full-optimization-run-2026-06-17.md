@@ -316,4 +316,4 @@
 | 命令结果 | 通过：无 whitespace error |
 | 证据路径 | `docs/help/prism-migration-guide.md` |
 | 未验证风险 | 本项交付为 repo 内帮助文档，尚未做 app 内帮助路由或在线文档发布；外部竞品事实只作迁移心智校准，未安装或实测当前 Typora/妙言/MarkText app；Windows/Linux 真实迁移路径仍需 P2-06 和后续真机补验 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `20aa754297b17f3cbecd1753670f4bf4df373bfb` |
