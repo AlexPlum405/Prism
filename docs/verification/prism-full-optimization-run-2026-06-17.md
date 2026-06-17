@@ -37,7 +37,7 @@
 | P1-03 预览搜索节流和渐进高亮 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-04 preview-only 源码定位 ready 队列 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-05 状态栏图谱条件显示 | 已完成 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
-| P1-06 导出诊断产品化 | 未开始 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
+| P1-06 导出诊断产品化 | 已完成 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
 | P1-07 保存、冲突、导出微反馈统一 | 未开始 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
 | P2-01 默认阅读排版调优 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
 | P2-02 token 语义审计 | 未开始 | 低 | `git diff --check`、必要 theme tests |
@@ -216,3 +216,21 @@
 | 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/app/controllers/AppWorkspaceViewController.test.tsx`；`src/domains/workspace/components/StatusBar.test.tsx`；`src/domains/commands/categories/workspaceCommands.test.ts` |
 | 未验证风险 | 当前为 jsdom 和 build 验证，未在真实 Tauri WebView 中手工打开有出链/反链文档观察状态栏按钮显隐；命令启用条件依赖当前 `workspaceIndex`，索引尚未完成时按钮会先隐藏，之后随索引完成出现，未录制真实索引完成前后的视觉过渡 |
 | 对应提交 | `faffd14fa8ec8872c6117d0db04a006be6880491` |
+
+### P1-06 导出诊断产品化
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 文档诊断面板从扁平列表改为按来源分组，导出预检问题可按链接、图片、渲染、锚点、表格、导出类扫描；导出失败事件新增结构化字段，失败弹窗直接展示阶段、文档路径、输出路径、错误原因和下一步建议，同时保留完整诊断文本用于复制；导出失败 toast 的“查看诊断”复用同一结构化事件 |
+| 涉及文件 | `src/domains/editor/components/DocumentDiagnosticsPanel.tsx`、`src/app/controllers/ExportUiController.tsx`、`src/domains/commands/categories/exportCommands.ts`、`src/hooks/useExportTaskUi.ts`、`src/platform/events/eventTypes.ts`、`src/domains/i18n/resources.ts`、`src/styles/diagnostics.css`、`src/styles/export.css` 及对应测试 |
+| 风险等级 | 高 |
+| 验证命令 | `npm test -- --run src/domains/export/preflight.test.ts src/domains/export/diagnostics.test.ts src/hooks/useExportTaskUi.test.tsx src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx src/domains/commands/registry.test.ts src/App.recovery.test.tsx --reporter verbose` |
+| 命令结果 | 通过：6 个测试文件，46 个测试用例；覆盖导出预检图片/Mermaid/KaTeX/标题锚点/表格诊断、失败诊断文本、导出失败结构化事件、诊断面板分组、失败弹窗结构化详情、导出命令失败 toast 与复制诊断回归；输出中有既有 App ref/act、`localStorage.setItem is not a function` 和 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/domains/export/preflight.test.ts`；`src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx`；`src/App.recovery.test.tsx`；`src/domains/commands/registry.test.ts` |
+| 未验证风险 | 当前为 jsdom 与 build 验证，未在真实 Tauri WebView 中手工执行一次失败导出并检查弹窗视觉；本轮没有新增分页预检算法，只把现有预检和失败阶段反馈产品化，分页/资源更细粒度风险仍需后续导出保真专项继续扩展 |
+| 对应提交 | `e34de864babf0e120fdfa1374825038d2a9de63a` |
