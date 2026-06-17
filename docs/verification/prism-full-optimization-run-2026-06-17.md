@@ -43,7 +43,7 @@
 | P2-02 token 语义审计 | 已完成 | 低 | `git diff --check`、必要 theme tests |
 | P2-03 迁移帮助页 | 已完成 | 低 | 文档检查、相关命令/快捷键测试 |
 | P2-04 命令面板信息架构 | 已完成 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
-| P2-05 主题截图回归 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
+| P2-05 主题截图回归 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
 | P2-06 跨平台壳与控件密度审计 | 未开始 | 中 | 截图审查、相关 component tests |
 | P2-07 微反馈与动效节奏统一 | 未开始 | 中 | UI tests、手工 smoke、reduced-motion 检查 |
 | P2-08 品牌与空状态收口 | 未开始 | 低 | 文档检查、截图审查 |
@@ -335,3 +335,26 @@
 | 证据路径 | 本文件；`src/components/shell/CommandPalette.test.tsx`；`src/domains/commands/registry.test.ts` |
 | 未验证风险 | 当前为 jsdom/build 验证，未在真实 Tauri WebView 中手工观察命令面板视觉；低频能力仍通过菜单/命令系统组织，当前 UI 仍是快速打开/全文搜索入口，不是全局命令列表；Windows/Linux 字体和系统缩放下的标题栏 hint 截断仍待 P2-06/P2-05 截图补验 |
 | 对应提交 | `58a10b3c80b44824838e4df77ffe0707b833ce57` |
+
+### P2-05 主题截图回归
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `scripts/run-theme-visual-snapshots.mjs`，用同一 Markdown fixture 为全部内置主题 `miaoyan`、`inkstone`、`slate`、`mono`、`nocturne` 生成 1440px 复合截图；截图覆盖 preview、editor、command palette、status bar 和 export diagnostics popover；README 记录截图路径、preview/editor/floating/statusbar 指标、正文对比度、诊断浮层对比度和横向溢出状态；保留用户主题 CSS 安全校验。截图回归暴露 `diagnostics.css` 在全局样式中使用 CSS Modules `:global(...)` 导致 nocturne 诊断浮层暗色适配不可靠，本项已机械替换为普通全局选择器，并新增全局样式测试防回归 |
+| 涉及文件 | `.gitignore`、`scripts/run-theme-visual-snapshots.mjs`、`docs/verification/prism-theme-snapshots-2026-06-17/`、`src/styles/diagnostics.css`、`src/styles/global.test.ts` |
+| 风险等级 | 中 |
+| 验证命令 | `node --check scripts/run-theme-visual-snapshots.mjs` |
+| 命令结果 | 通过：脚本语法检查无输出 |
+| 验证命令 | `node scripts/run-theme-visual-snapshots.mjs` |
+| 命令结果 | 通过：生成 5 张主题复合截图和 README 指标；全部主题 `Diagnostics visible=yes`、`Page overflow=no`；正文对比度范围 13.43:1 到 17.2:1，诊断浮层对比度范围 14.96:1 到 17.8:1；`nocturne` 诊断浮层背景为 `rgba(24, 24, 26, 0.82)`，对比度 17.73:1 |
+| 验证命令 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts src/styles/global.test.ts --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，14 个测试用例；覆盖内置主题 contract、Mermaid config、默认/暗色阅读宽度边界、用户主题 CSS scoped/remote/core-surface 安全校验、全局 CSS 不泄漏 `:global(` 选择器、Windows/Modal/FileTree 视觉规则 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | `docs/verification/prism-theme-snapshots-2026-06-17/README.md`、`docs/verification/prism-theme-snapshots-2026-06-17/miaoyan-theme-surface-1440.png`、`docs/verification/prism-theme-snapshots-2026-06-17/inkstone-theme-surface-1440.png`、`docs/verification/prism-theme-snapshots-2026-06-17/slate-theme-surface-1440.png`、`docs/verification/prism-theme-snapshots-2026-06-17/mono-theme-surface-1440.png`、`docs/verification/prism-theme-snapshots-2026-06-17/nocturne-theme-surface-1440.png` |
+| 截图审查 | 已用本地图片检查 `miaoyan-theme-surface-1440.png` 与 `nocturne-theme-surface-1440.png`：截图非空，preview/editor/statusbar/diagnostics/command palette 均可见；`nocturne` 诊断浮层为深色底且文字可辨，命令面板和状态栏未出现明显文本溢出 |
+| 未验证风险 | 当前截图是 Playwright 渲染的复合 fixture，不是真实 Tauri WebView 窗口；Windows/Linux 系统 chrome、真实菜单栏、字体 fallback、系统缩放和 WebView 抗锯齿差异仍需 P2-06 或后续真机验证；本项只建立内置主题截图回归和修复全局诊断选择器，不替换所有历史手写图标 |
+| 对应提交 | `425a1e339a74b00a0dd2e6e478bc42e1fd834bc5` |
