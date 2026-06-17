@@ -12,6 +12,7 @@ import { PDFDocument } from 'pdf-lib';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const appPath = path.join(repoRoot, 'src-tauri/target/release/bundle/macos/Prism.app');
+const smokeScope = process.env.PRISM_APP_SMOKE_SCOPE || 'full';
 const appProcessName = resolveInfoPlistValue('CFBundleExecutable') || 'Prism';
 const appDisplayName = resolveInfoPlistValue('CFBundleDisplayName')
   || resolveInfoPlistValue('CFBundleName')
@@ -21,6 +22,7 @@ const workspaceDir = path.join(smokeRoot, 'workspace');
 const evidenceDir = path.join(smokeRoot, 'evidence');
 const sourceFile = path.join(workspaceDir, 'app-smoke.md');
 const targetFile = path.join(workspaceDir, 'target.md');
+const startupMarkdownFile = path.join(workspaceDir, '中文 路径.markdown');
 const complexExportRoot = path.join(repoRoot, '.codex-smoke/complex-export');
 const complexExportOutDir = path.join(complexExportRoot, 'out');
 const complexExportPaths = {
@@ -312,6 +314,7 @@ async function prepareFixtures() {
     '',
   ].join('\n'), 'utf8');
   await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+P、编辑和保存。\n', 'utf8');
+  await fs.writeFile(startupMarkdownFile, '# 中文 路径\n\n用于验证 .markdown、中文和空格路径启动。\n', 'utf8');
 }
 
 function getWindowBoundsFromAccessibility() {
@@ -448,14 +451,24 @@ function getWindowBounds() {
 async function capture(name, bounds = getWindowBounds()) {
   const target = path.join(evidenceDir, `${name}.png`);
   if (bounds.windowId) {
-    await run('screencapture', ['-x', '-l', String(bounds.windowId), target]);
-  } else {
+    try {
+      await run('screencapture', ['-x', '-l', String(bounds.windowId), target]);
+      return target;
+    } catch (error) {
+      console.warn(`[app-smoke] window screenshot failed, falling back to bounds: ${error.message}`);
+    }
+  }
+  try {
     await run('screencapture', [
       '-x',
       `-R${bounds.x},${bounds.y},${bounds.width},${bounds.height}`,
       target,
     ]);
+    return target;
+  } catch (error) {
+    console.warn(`[app-smoke] bounds screenshot failed, falling back to full screen: ${error.message}`);
   }
+  await run('screencapture', ['-x', target]);
   return target;
 }
 
@@ -532,6 +545,24 @@ async function runSmoke() {
 
   try {
     await quitPrism();
+    await run('open', ['-n', '-a', appPath, startupMarkdownFile]);
+    await waitFor('Prism window for markdown path launch', async () => {
+      try {
+        return getWindowBounds();
+      } catch {
+        return false;
+      }
+    }, 16000, 500);
+    const markdownLaunchConfig = await waitForLastSession(startupMarkdownFile);
+    const markdownLaunchBounds = getWindowBounds();
+    await delay(500);
+    await capture('00-launch-markdown-chinese-space', markdownLaunchBounds);
+    record('launch opens .markdown fixture with Chinese space path', 'pass', {
+      summary: path.relative(repoRoot, startupMarkdownFile),
+      lastSession: markdownLaunchConfig.lastSession,
+    });
+
+    await quitPrism();
     await run('open', ['-n', '-a', appPath, sourceFile]);
     await waitFor('Prism window', async () => {
       try {
@@ -549,6 +580,27 @@ async function runSmoke() {
       summary: path.relative(repoRoot, sourceFile),
       lastSession: launchConfig.lastSession,
     });
+
+    if (smokeScope === 'startup') {
+      record('startup launch matrix completed', 'pass', {
+        summary: '.markdown Chinese/space path and .md explicit launch both opened',
+      });
+      const report = {
+        generatedAt: new Date().toISOString(),
+        scope: smokeScope,
+        appPath,
+        workspaceDir,
+        sourceFile,
+        targetFile,
+        startupMarkdownFile,
+        marker,
+        configRestoredAfterRun: true,
+        exportArtifacts,
+        steps,
+      };
+      await fs.writeFile(path.join(evidenceDir, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
+      return;
+    }
 
     const errorBefore = await capture('02-error-before', bounds);
     let errorDiff = null;
@@ -631,10 +683,12 @@ async function runSmoke() {
     });
     const report = {
       generatedAt: new Date().toISOString(),
+      scope: smokeScope,
       appPath,
       workspaceDir,
       sourceFile,
       targetFile,
+      startupMarkdownFile,
       marker,
       configRestoredAfterRun: true,
       exportArtifacts,

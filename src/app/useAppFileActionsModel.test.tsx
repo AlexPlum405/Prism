@@ -1,11 +1,17 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDocumentStore } from '../domains/document/store';
 import { executeFileAction } from '../lib/fileActions';
+import { openPrismWindow } from '../lib/openWindow';
 import { useStartupFileOpen } from './useStartupFileOpen';
 import { useAppFileActionsModel } from './useAppFileActionsModel';
 
 vi.mock('../lib/fileActions', () => ({
   executeFileAction: vi.fn(),
+}));
+
+vi.mock('../lib/openWindow', () => ({
+  openPrismWindow: vi.fn(),
 }));
 
 vi.mock('./useStartupFileOpen', () => ({
@@ -17,6 +23,7 @@ describe('useAppFileActionsModel', () => {
   const showToast = vi.fn();
 
   beforeEach(() => {
+    useDocumentStore.setState({ currentDocument: null });
     vi.clearAllMocks();
   });
 
@@ -89,5 +96,23 @@ describe('useAppFileActionsModel', () => {
       { action: 'openFile', path: '/repo/startup.md' },
       expect.any(Object),
     );
+  });
+
+  it('opens running-app startup files in a new window when a document is already active', async () => {
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current');
+
+    renderHook(() => useAppFileActionsModel({
+      requestMarkdownSavePath,
+      showToast,
+    }));
+
+    const input = vi.mocked(useStartupFileOpen).mock.calls[0][0];
+
+    await act(async () => {
+      await input.onOpenFilePath('/repo/from-system.markdown');
+    });
+
+    expect(openPrismWindow).toHaveBeenCalledWith({ filePath: '/repo/from-system.markdown' });
+    expect(executeFileAction).not.toHaveBeenCalled();
   });
 });

@@ -8,6 +8,7 @@ import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
 import { addRecentFile, dirname, getRuntimePlatform } from '../domains/workspace/services';
 import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
 import { readDocumentFileSession } from '../domains/document/services/fileSafety';
+import { openPrismWindow } from '../lib/openWindow';
 
 const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800] as const;
 const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
@@ -103,7 +104,21 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     const openPendingStartupFile = async () => {
       const pendingFiles = await invokeNativeCommand<string[]>('get_pending_files');
       if (cancelled || useDocumentStore.getState().currentDocument) return true;
-      return pendingFiles.length > 0 && await openFile(pendingFiles[0]);
+      if (pendingFiles.length === 0) return false;
+
+      const [firstFile, ...additionalFiles] = pendingFiles;
+      const opened = await openFile(firstFile);
+      if (!opened || cancelled) return opened;
+
+      await Promise.all(additionalFiles.map(async (path) => {
+        try {
+          await openPrismWindow({ filePath: path });
+        } catch (err) {
+          console.error('[useBootstrap] Failed to open additional startup file:', err);
+        }
+      }));
+
+      return true;
     };
 
     const openPendingStartupFileBeforeSessionRestore = async () => {

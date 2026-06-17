@@ -21,16 +21,19 @@ export function useStartupFileOpen({
   useEffect(() => {
     let mounted = true;
 
-    const openFirstPath = async (paths: string[]) => {
-      const path = paths[0];
-      if (!path || !mounted) return false;
-      await onOpenFilePath(path);
-      return true;
+    const openPaths = async (paths: string[]) => {
+      let opened = false;
+      for (const path of paths) {
+        if (!path || !mounted) continue;
+        await onOpenFilePath(path);
+        opened = true;
+      }
+      return opened;
     };
 
     const openPendingFiles = async () => {
       try {
-        return await openFirstPath(await getPendingStartupFiles());
+        return await openPaths(await getPendingStartupFiles());
       } catch {
         // Pending file integration is best effort.
         return false;
@@ -38,7 +41,7 @@ export function useStartupFileOpen({
     };
 
     const unlisten = listenForStartupFiles((paths) => {
-      void openFirstPath(paths);
+      void openPaths(paths);
     });
 
     void (async () => {

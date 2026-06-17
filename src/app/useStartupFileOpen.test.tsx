@@ -23,9 +23,12 @@ describe('useStartupFileOpen', () => {
     });
   });
 
-  it('opens the first pending startup file after the poll delay', async () => {
+  it('opens every pending startup file after the poll delay', async () => {
     const onOpenFilePath = vi.fn();
-    vi.mocked(getPendingStartupFiles).mockResolvedValue(['/tmp/from-finder.md']);
+    vi.mocked(getPendingStartupFiles).mockResolvedValue([
+      '/tmp/from-finder.md',
+      '/tmp/second file.markdown',
+    ]);
 
     renderHook(() => useStartupFileOpen({
       onOpenFilePath,
@@ -36,9 +39,11 @@ describe('useStartupFileOpen', () => {
     await waitFor(() => {
       expect(onOpenFilePath).toHaveBeenCalledWith('/tmp/from-finder.md');
     });
+    expect(onOpenFilePath).toHaveBeenCalledWith('/tmp/second file.markdown');
+    expect(onOpenFilePath).toHaveBeenCalledTimes(2);
   });
 
-  it('opens files delivered by the native file-opened event', async () => {
+  it('opens every file delivered by the native file-opened event', async () => {
     const onOpenFilePath = vi.fn();
 
     renderHook(() => useStartupFileOpen({
@@ -48,9 +53,11 @@ describe('useStartupFileOpen', () => {
     }));
 
     await waitFor(() => expect(openedHandler).not.toBeNull());
-    await openedHandler?.(['/tmp/event.md']);
+    await openedHandler?.(['/tmp/event.md', '/tmp/事件 二.markdown']);
 
     expect(onOpenFilePath).toHaveBeenCalledWith('/tmp/event.md');
+    expect(onOpenFilePath).toHaveBeenCalledWith('/tmp/事件 二.markdown');
+    expect(onOpenFilePath).toHaveBeenCalledTimes(2);
   });
 
   it('removes the native listener on unmount', async () => {

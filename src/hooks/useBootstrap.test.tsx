@@ -18,9 +18,14 @@ vi.mock('../domains/workspace/lib/loadFolderTree', () => ({
   loadFolderTree: vi.fn(),
 }));
 
+vi.mock('../lib/openWindow', () => ({
+  openPrismWindow: vi.fn(),
+}));
+
 import { invoke } from '@tauri-apps/api/core';
 import { exists, readTextFile, stat } from '@tauri-apps/plugin-fs';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
+import { openPrismWindow } from '../lib/openWindow';
 import { useBootstrap } from './useBootstrap';
 
 beforeEach(() => {
@@ -151,6 +156,63 @@ describe('useBootstrap', () => {
     const doc = useDocumentStore.getState().currentDocument;
     expect(doc?.path).toBe('C:/docs/opened.md');
     expect(doc?.content).toBe('opened content');
+  });
+
+  it('opens additional pending startup files in new windows', async () => {
+    window.history.replaceState({}, '', '/');
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(async (command: string) => {
+      if (command === 'get_pending_files') {
+        return [
+          'C:/docs/first.md',
+          'C:/docs/second file.md',
+          'C:/docs/第三.markdown',
+        ];
+      }
+      return undefined;
+    });
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('first content');
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    renderHook(() => useBootstrap(true));
+
+    await waitFor(() => {
+      expect(useDocumentStore.getState().currentDocument?.path).toBe('C:/docs/first.md');
+    });
+
+    expect(useDocumentStore.getState().currentDocument?.content).toBe('first content');
+    expect(openPrismWindow).toHaveBeenCalledWith({ filePath: 'C:/docs/second file.md' });
+    expect(openPrismWindow).toHaveBeenCalledWith({ filePath: 'C:/docs/第三.markdown' });
+  });
+
+  it('opens encoded explicit markdown paths before pending files and last session', async () => {
+    const explicitPath = 'C:/docs/中文 文档.markdown';
+    window.history.replaceState({}, '', `/?file=${encodeURIComponent(explicitPath)}`);
+    useSettingsStore.setState({
+      restoreLastSession: true,
+      lastSession: {
+        filePath: 'C:/docs/last.md',
+        viewMode: 'preview',
+        updatedAt: 1,
+      },
+      recentFiles: [],
+      saveSettings: vi.fn(),
+    });
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue(['C:/docs/opened.md']);
+    (readTextFile as ReturnType<typeof vi.fn>).mockImplementation(async (path: string) => (
+      path === explicitPath ? 'explicit content' : 'unexpected content'
+    ));
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    renderHook(() => useBootstrap(true));
+
+    await waitFor(() => {
+      expect(useDocumentStore.getState().currentDocument?.path).toBe(explicitPath);
+    });
+
+    expect(useDocumentStore.getState().currentDocument?.content).toBe('explicit content');
+    expect(readTextFile).not.toHaveBeenCalledWith('C:/docs/last.md');
+    expect(invoke).not.toHaveBeenCalledWith('get_pending_files');
+    expect(openPrismWindow).not.toHaveBeenCalled();
   });
 
   it('waits for delayed pending startup files before restoring the last session', async () => {

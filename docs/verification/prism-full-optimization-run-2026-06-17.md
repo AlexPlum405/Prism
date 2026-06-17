@@ -30,7 +30,7 @@
 | ID | 状态 | 风险 | 最小验证 |
 |---|---|---|---|
 | P0-01 全局快捷键输入框豁免 | 已完成 | 中 | `npm test -- --run src/app/useAppShortcuts.test.tsx` |
-| P0-02 默认 app 打开与启动 smoke | 未开始 | 高 | `npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts`、`npm run tauri:build:app-smoke` |
+| P0-02 默认 app 打开与启动 smoke | 已完成 | 高 | `npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts`、`npm run tauri:build:app-smoke` |
 | P0-03 真实 Tauri WebView 长文档性能基准 | 未开始 | 高 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose`、新增真实 app harness |
 | P1-01 统一打开文件策略 | 未开始 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts` |
 | P1-02 DocumentProfile 落地 | 未开始 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
@@ -75,3 +75,23 @@
 | 证据路径 | 本文件；Vitest 命令输出；后续提交 diff |
 | 未验证风险 | 当前为 jsdom 单测验证，未在真实 Tauri WebView 中手工按键；Windows/Linux 物理键盘未补验 |
 | 对应提交 | `f464af7cb63f211cefc68e15266b181547d524a9` |
+
+### P0-02 默认 app 打开与启动 smoke
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 代码与测试已完成，等待提交 hash 回填 |
+| 变更摘要 | 冷启动 pending files 支持多文件：第一个文件进入当前新窗口，其余文件通过 `openPrismWindow` 新开窗口；运行中 `file-opened` 事件逐个处理，多文件不再只取第一个；当前窗口已有文档时，系统打开文件改为新开窗口，符合单活动文档窗口规则；Tauri 启动参数过滤集中为可测试 helper，保留 `.md/.markdown` 且支持中文、空格和大小写扩展名；app smoke 增加 `.markdown` 中文空格路径启动 fixture、截图 fallback 和 `PRISM_APP_SMOKE_SCOPE=startup` 范围 |
+| 涉及文件 | `src/hooks/useBootstrap.ts`、`src/hooks/useBootstrap.test.tsx`、`src/app/useStartupFileOpen.ts`、`src/app/useStartupFileOpen.test.tsx`、`src/app/useAppFileActionsModel.ts`、`src/app/useAppFileActionsModel.test.tsx`、`src/lib/openWindow.test.ts`、`src-tauri/src/commands/startup_files.rs`、`scripts/run-app-smoke.mjs` |
+| 风险等级 | 高 |
+| 验证命令 | `npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/app/useStartupFileOpen.test.tsx src/app/useAppFileActionsModel.test.tsx` |
+| 命令结果 | 通过：4 个测试文件，19 个测试用例 |
+| 验证命令 | `cargo test --manifest-path src-tauri/Cargo.toml` |
+| 命令结果 | 通过：49 个 Rust 单元测试；`src/main.rs` 0 测试；doc-tests 0 测试 |
+| 验证命令 | `npm run tauri:build:app-smoke` |
+| 命令结果 | 前端 `npm run build` 通过，Tauri release 编译和 `.app` bundle 通过；完整 app smoke 在 P0-02 启动步骤之后的 `ERROR` 面板点击阶段因 `osascript ETIMEDOUT` 失败，未作为完整通过记录 |
+| 验证命令 | `PRISM_APP_SMOKE_SCOPE=startup node scripts/run-app-smoke.mjs` |
+| 命令结果 | 通过：`.markdown` 中文空格路径启动、随后 `.md` 显式启动覆盖上次会话均写入 `lastSession.filePath` |
+| 证据路径 | `.codex-smoke/app-smoke/evidence/report.json`、`.codex-smoke/app-smoke/evidence/00-launch-markdown-chinese-space.png`、`.codex-smoke/app-smoke/evidence/01-launch-source.png` |
+| 未验证风险 | Windows/Linux 默认 app 真机未验证；macOS Finder 默认 app 双击未直接手工验证，本轮用 `open -n -a Prism.app <file>` 作为真实 app 替代；完整 app smoke 后续 ERROR 面板交互仍需在后续相关阶段修复或复验 |
+| 对应提交 | 待提交后回填 |
