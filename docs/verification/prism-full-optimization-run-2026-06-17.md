@@ -49,7 +49,7 @@
 | P2-08 品牌与空状态收口 | 已完成 | 低 | 文档检查、截图审查、i18n/UI tests、build |
 | P2-09 斜杠菜单第一版 | 已完成 | 中 | editor extension tests、EditorPane/SplitView tests、build |
 | P2-10 选区浮动工具栏第一版 | 已完成 | 中 | EditorPane tests、controller tests、formatting/SplitView 回归、build |
-| P2-11 图标规范 | 未开始 | 低 | 文档检查、截图审查、相关 UI tests |
+| P2-11 图标规范 | 已完成 | 低 | 文档检查、截图审查、相关 UI tests |
 
 ## Phase 0 记录
 
@@ -459,3 +459,23 @@
 | 证据路径 | 本文件；`src/domains/editor/runtime/editorSelectionToolbarController.test.ts`；`src/domains/editor/components/EditorPane.integration.test.tsx`；相关 Vitest/build 命令输出 |
 | 未验证风险 | 当前验证以 jsdom integration tests、controller tests 和 production build 为主，未在真实 Tauri WebView 中手工观察选区浮层像素位置、长文档滚动时的体感稳定性或跨平台字体渲染；第一版只支持源码编辑区单选区，不处理多选区批量格式化、不在预览区触发，也不引入完整 block editor。 |
 | 对应提交 | `4ccb84bfe9449a7aceaa9e2bf508f6780d40e3f9` |
+
+### P2-11 图标规范
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `docs/design/prism-icon-spec.md`，固化 Prism UI 图标规范：通用图标 20px 源网格、状态栏 14px / 22x22、视图切换 18px / 23x23、窗口控件 12px / 44x40 或主题覆盖；定义填充/线性图标使用边界、`currentColor` 颜色规则、hover/active/disabled/error 状态、tooltip 和可访问性要求；明确 app icon 继续使用位图生成链路，Text 格式符号、窗口控件、菜单勾选和关系图谱节点属于有限例外；本轮不全量替换既有手写 SVG、不引入外部图标库、不重绘 app icon。 |
+| 涉及文件 | `docs/design/prism-icon-spec.md`、`docs/verification/prism-full-optimization-run-2026-06-17.md` |
+| 风险等级 | 低 |
+| 验证命令 | `rg -n -- "20 20|12 12|14px|18px|22x22|23x23|44x40|currentColor|aria-label|focusable|状态栏|视图切换|窗口控件|app icon|P2-11|暂不做" docs/design/prism-icon-spec.md` |
+| 命令结果 | 通过：关键尺寸、网格、颜色、可访问性、适用范围、P2-11 和暂不做规则均命中 |
+| 验证命令 | `npm test -- --run src/components/shell/TitleBar.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/domains/document/components/ViewModeSwitch.module.test.ts --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，16 个测试用例；覆盖标题栏平台布局、保存状态、状态栏关系图谱条件显示、导出状态、视图切换平台偏移 |
+| 截图检查命令 | `sips -g pixelWidth -g pixelHeight docs/verification/prism-shell-density-snapshots-2026-06-17/macos-miaoyan-1200.png docs/verification/prism-shell-density-snapshots-2026-06-17/windows-nocturne-1440.png docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1200.png` |
+| 截图检查结果 | 通过：三张截图分别为 1200x900、1440x900、1200x840；已抽查图像内容，macOS/MiaoYan 壳层、Windows/Nocturne 壳层、品牌空状态和 About 面板均可见，包含标题栏、视图切换、状态栏、窗口控件或品牌 mark |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | `docs/design/prism-icon-spec.md`、`docs/verification/prism-shell-density-snapshots-2026-06-17/macos-miaoyan-1200.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/windows-nocturne-1440.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1200.png`、本文件、相关 Vitest 命令输出 |
+| 未验证风险 | 本项是规范和证据收口，没有替换现有图标组件；真实 Windows/Linux Tauri WebView、系统缩放、字体抗锯齿和原生窗口 chrome 仍需真机补验；现有部分 icon-only 状态栏按钮仍以 `title` 为主，后续触达时应按规范补本地化 `aria-label`。 |
+| 对应提交 | `763b4fa130743bcdf8c3efb482e938292bc2b0b9` |
