@@ -479,3 +479,20 @@
 | 证据路径 | `docs/design/prism-icon-spec.md`、`docs/verification/prism-shell-density-snapshots-2026-06-17/macos-miaoyan-1200.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/windows-nocturne-1440.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1200.png`、本文件、相关 Vitest 命令输出 |
 | 未验证风险 | 本项是规范和证据收口，没有替换现有图标组件；真实 Windows/Linux Tauri WebView、系统缩放、字体抗锯齿和原生窗口 chrome 仍需真机补验；现有部分 icon-only 状态栏按钮仍以 `title` 为主，后续触达时应按规范补本地化 `aria-label`。 |
 | 对应提交 | `763b4fa130743bcdf8c3efb482e938292bc2b0b9` |
+
+## Phase 4 总收口
+
+| 项 | 结果 |
+|---|---|
+| P3 暂不做确认 | 已确认：AI 自动写作、聊天侧栏、agent 工作流、云同步、账号系统、实时协作、评论审阅、插件市场、第三方执行型插件 API、Notion 式数据库属性、Obsidian 式重型知识宇宙图、3D 图谱、常驻图谱侧栏、完整 block editor 和隐藏 Markdown 源码仍保持暂不做；重评条件继续以 `docs/plans/prism-optimization-plan-2026-06-17.md` 和 `CONTEXT.md` 为准。 |
+| 最终验证前 HEAD | `7f49c4fa91244ded3f0c3a68d7b1f1d1e5b12d4a` |
+| 任务矩阵检查 | `rg -n "\\| P0-|\\| P1-|\\| P2-|P2-10|P2-11|已完成|未开始" docs/verification/prism-full-optimization-run-2026-06-17.md` 确认 P0/P1/P2 均已完成或有明确基准风险说明；P2-10/P2-11 记录已存在 |
+| P3 边界检查 | `rg -n "AI|云同步|实时协作|插件市场|完整 block editor|Notion|Obsidian|暂不|P3" CONTEXT.md docs/goals/prism-full-optimization-execution-details-2026-06-17.md docs/plans/prism-optimization-plan-2026-06-17.md docs/verification/prism-full-optimization-run-2026-06-17.md` 命中产品边界、暂不做清单和重评条件 |
+| 最终测试命令 | `npm test -- --run src/domains/editor/runtime/editorSelectionToolbarController.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/extensions/slashMenu.test.ts src/domains/editor/components/SplitView.test.tsx src/components/shell/TitleBar.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/domains/document/components/ViewModeSwitch.module.test.ts src/domains/i18n/i18n.test.ts --reporter verbose` |
+| 最终测试结果 | 通过：8 个测试文件，76 个测试用例；覆盖 P2-09 斜杠菜单、P2-10 选区工具栏、Text Document gating、SplitView 预览/源码边界、标题栏、状态栏、视图切换和 i18n；输出中仍有既有 React `act(...)` 警告，无失败 |
+| 最终检查命令 | `git diff --check` |
+| 最终检查结果 | 通过：无 whitespace error |
+| 最终 build 命令 | `npm run build` |
+| 最终 build 结果 | 通过：`tsc` 和 `vite build` 成功；Vite 仍输出既有 chunk-size warning |
+| 未补跑项 | 本轮收尾未重新执行 `npm run tauri:build:app-smoke`。真实 Tauri app smoke 已在 P0/P1 阶段记录：`.app` bundle 可生成，但自动化 smoke 在当前环境的 ERROR 面板/截图阶段存在可视化限制；P2-09/P2-10/P2-11 不改变 Tauri、文件关联或系统打开链路，因此最终以相关前端测试、截图证据、`git diff --check` 和 production build 覆盖。 |
+| 剩余风险 | Windows/Linux 真机 Tauri WebView、系统文件关联双击、真实系统缩放、窗口 chrome、字体 fallback、3MB 真实完整预览性能、选区浮层像素体感和 app smoke 后半段仍需后续真机/环境补验。 |
