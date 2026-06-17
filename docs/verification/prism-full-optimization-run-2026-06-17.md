@@ -80,7 +80,7 @@
 
 | 项 | 结果 |
 |---|---|
-| 状态 | 代码与测试已完成，等待提交 hash 回填 |
+| 状态 | 已完成 |
 | 变更摘要 | 冷启动 pending files 支持多文件：第一个文件进入当前新窗口，其余文件通过 `openPrismWindow` 新开窗口；运行中 `file-opened` 事件逐个处理，多文件不再只取第一个；当前窗口已有文档时，系统打开文件改为新开窗口，符合单活动文档窗口规则；Tauri 启动参数过滤集中为可测试 helper，保留 `.md/.markdown` 且支持中文、空格和大小写扩展名；app smoke 增加 `.markdown` 中文空格路径启动 fixture、截图 fallback 和 `PRISM_APP_SMOKE_SCOPE=startup` 范围 |
 | 涉及文件 | `src/hooks/useBootstrap.ts`、`src/hooks/useBootstrap.test.tsx`、`src/app/useStartupFileOpen.ts`、`src/app/useStartupFileOpen.test.tsx`、`src/app/useAppFileActionsModel.ts`、`src/app/useAppFileActionsModel.test.tsx`、`src/lib/openWindow.test.ts`、`src-tauri/src/commands/startup_files.rs`、`scripts/run-app-smoke.mjs` |
 | 风险等级 | 高 |
@@ -94,4 +94,4 @@
 | 命令结果 | 通过：`.markdown` 中文空格路径启动、随后 `.md` 显式启动覆盖上次会话均写入 `lastSession.filePath` |
 | 证据路径 | `.codex-smoke/app-smoke/evidence/report.json`、`.codex-smoke/app-smoke/evidence/00-launch-markdown-chinese-space.png`、`.codex-smoke/app-smoke/evidence/01-launch-source.png` |
 | 未验证风险 | Windows/Linux 默认 app 真机未验证；macOS Finder 默认 app 双击未直接手工验证，本轮用 `open -n -a Prism.app <file>` 作为真实 app 替代；完整 app smoke 后续 ERROR 面板交互仍需在后续相关阶段修复或复验 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `e9f59a9196cb2d88874649643858c6b63fda5d42` |
