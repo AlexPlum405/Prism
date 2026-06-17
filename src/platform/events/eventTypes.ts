@@ -37,8 +37,14 @@ export interface ExportProgressPayload {
 }
 
 export interface ExportFailedPayload {
-  title: string;
   diagnostic: string;
+  documentPath?: string | null;
+  format?: string;
+  message?: string;
+  nextSteps?: string;
+  outputPath?: string | null;
+  stage?: string;
+  title: string;
 }
 
 export interface DiagnosticsOpenPayload {

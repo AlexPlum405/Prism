@@ -378,11 +378,21 @@ describe('App export diagnostics wiring', () => {
         detail: {
           title: 'PDF 导出失败',
           diagnostic: 'stage: render-pdf\nerror: simulated export failure',
+          documentPath: '/tmp/report.md',
+          message: 'simulated export failure',
+          nextSteps: '检查输出目录后重试',
+          outputPath: '/tmp/report.pdf',
+          stage: '正在写入 PDF 文件',
         },
       }));
     });
 
     expect(screen.getByRole('dialog', { name: 'PDF 导出失败' })).toBeInTheDocument();
+    expect(screen.getByText('正在写入 PDF 文件')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/report.md')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/report.pdf')).toBeInTheDocument();
+    expect(screen.getByText('simulated export failure')).toBeInTheDocument();
+    expect(screen.getByText('检查输出目录后重试')).toBeInTheDocument();
     expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
       'stage: render-pdf\nerror: simulated export failure',
     );

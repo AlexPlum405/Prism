@@ -89,6 +89,24 @@
   overflow-y: auto;
 }
 
+.prism-diagnostics-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prism-diagnostics-group + .prism-diagnostics-group {
+  margin-top: 8px;
+}
+
+.prism-diagnostics-group-title {
+  padding: 4px 8px 2px;
+  color: var(--c-ash);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .prism-link-diagnostic-item,
 .prism-backlink-item,
 .prism-document-link-item {

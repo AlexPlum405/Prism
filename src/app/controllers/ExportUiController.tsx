@@ -54,6 +54,14 @@ export function ExportUiController({
   updateSaveDialogFilename,
   updateSaveDialogQualityScale,
 }: ExportUiControllerProps) {
+  const exportFailureDetails = exportFailure ? [
+    exportFailure.stage ? [t('export.diagnostic.stage'), exportFailure.stage] : null,
+    exportFailure.documentPath ? [t('export.diagnostic.documentPath'), exportFailure.documentPath] : null,
+    exportFailure.outputPath ? [t('export.diagnostic.outputPath'), exportFailure.outputPath] : null,
+    exportFailure.message ? [t('export.diagnostic.error'), exportFailure.message] : null,
+    exportFailure.nextSteps ? [t('export.diagnostic.nextSteps'), exportFailure.nextSteps] : null,
+  ].filter((item): item is string[] => Boolean(item)) : [];
+
   return (
     <>
       {saveDialog && (
@@ -202,6 +210,16 @@ export function ExportUiController({
               <div className="prism-export-failure-summary">
                 {t('app.exportFailureSummary')}
               </div>
+              {exportFailureDetails.length > 0 && (
+                <div className="prism-export-failure-details">
+                  {exportFailureDetails.map(([label, value]) => (
+                    <div key={label} className="prism-export-failure-detail-row">
+                      <span>{label}</span>
+                      <b>{value}</b>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="prism-export-failure-actions">
                 <span>{t('app.recoveryAdvice')}</span>
                 <b>{t('app.recoveryAdviceText')}</b>

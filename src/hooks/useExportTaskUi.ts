@@ -4,8 +4,14 @@ import { t } from '../domains/i18n';
 import { onAppEvent } from '../platform/events/appEvents';
 
 export interface ExportFailureState {
-  title: string;
   diagnostic: string;
+  documentPath?: string | null;
+  format?: string;
+  message?: string;
+  nextSteps?: string;
+  outputPath?: string | null;
+  stage?: string;
+  title: string;
 }
 
 export function useExportTaskUi(showToast: (input: ToastInput) => void) {
@@ -29,8 +35,14 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
     return onAppEvent('export.failed', (detail) => {
       if (!detail?.diagnostic) return;
       setExportFailure({
-        title: detail.title || t('export.failed'),
         diagnostic: detail.diagnostic,
+        documentPath: detail.documentPath ?? null,
+        format: detail.format,
+        message: detail.message,
+        nextSteps: detail.nextSteps,
+        outputPath: detail.outputPath ?? null,
+        stage: detail.stage,
+        title: detail.title || t('export.failed'),
       });
     });
   }, []);

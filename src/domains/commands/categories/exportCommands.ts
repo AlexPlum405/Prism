@@ -117,10 +117,21 @@ function applyExportHistorySettings(
 function emitExportFailure(input: {
   format: ExportFormat;
   diagnostic: string;
+  documentPath?: string | null;
+  message?: string;
+  nextSteps?: string;
+  outputPath?: string | null;
+  stage?: string;
 }) {
   emitAppEvent('export.failed', {
-    title: t('export.failedTitle', { format: getExportFormatLabel(input.format) }),
     diagnostic: input.diagnostic,
+    documentPath: input.documentPath ?? null,
+    format: input.format,
+    message: input.message,
+    nextSteps: input.nextSteps,
+    outputPath: input.outputPath ?? null,
+    stage: input.stage,
+    title: t('export.failedTitle', { format: getExportFormatLabel(input.format) }),
   });
 }
 
@@ -370,7 +381,16 @@ async function handleExport(
       warnings: exportWarnings,
       error: err,
     });
-    emitExportFailure({ format, diagnostic });
+    const failureEvent = {
+      format,
+      diagnostic,
+      documentPath: doc.path ?? null,
+      message: formatError(err),
+      nextSteps: t('export.diagnostic.nextStepsText'),
+      outputPath,
+      stage: lastProgress,
+    };
+    emitExportFailure(failureEvent);
     context.showToast?.({
       tone: 'error',
       title: t('export.failedTitle', { format: formatLabel }),
@@ -380,7 +400,7 @@ async function handleExport(
         {
           label: t('export.viewDiagnostic'),
           dismissOnClick: false,
-          onClick: () => emitExportFailure({ format, diagnostic }),
+          onClick: () => emitExportFailure(failureEvent),
         },
         {
           label: t('common.retry'),

@@ -47,13 +47,28 @@ describe('useExportTaskUi', () => {
 
     act(() => {
       window.dispatchEvent(new CustomEvent('prism-export-failure', {
-        detail: { title: 'PDF 导出失败', diagnostic: 'stage: render' },
+        detail: {
+          title: 'PDF 导出失败',
+          diagnostic: 'stage: render',
+          documentPath: '/tmp/report.md',
+          format: 'pdf',
+          message: 'disk full',
+          nextSteps: '检查输出目录',
+          outputPath: '/tmp/report.pdf',
+          stage: '正在写入 PDF 文件',
+        },
       }));
     });
 
     expect(result.current.exportFailure).toEqual({
-      title: 'PDF 导出失败',
       diagnostic: 'stage: render',
+      documentPath: '/tmp/report.md',
+      format: 'pdf',
+      message: 'disk full',
+      nextSteps: '检查输出目录',
+      outputPath: '/tmp/report.pdf',
+      stage: '正在写入 PDF 文件',
+      title: 'PDF 导出失败',
     });
 
     await act(async () => {

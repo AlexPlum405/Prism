@@ -197,6 +197,41 @@
   line-height: 1.5;
 }
 
+.prism-export-failure-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--c-fog);
+  border-radius: 8px;
+  background: var(--c-chalk);
+}
+
+.prism-export-failure-detail-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-fog) 72%, transparent);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.prism-export-failure-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.prism-export-failure-detail-row span {
+  color: var(--c-ash);
+}
+
+.prism-export-failure-detail-row b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--c-void);
+  font-weight: 500;
+}
+
 .prism-export-failure-actions {
   display: flex;
   align-items: center;

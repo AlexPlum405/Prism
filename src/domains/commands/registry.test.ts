@@ -1146,6 +1146,11 @@ describe('command registry', () => {
     expect(failureListener).toHaveBeenCalledTimes(1);
     const detail = failureListener.mock.calls[0][0].detail;
     expect(detail.title).toBe('PDF 导出失败');
+    expect(detail.stage).toBe('正在写入 PDF 文件');
+    expect(detail.documentPath).toBe('/tmp/report.md');
+    expect(detail.outputPath).toBe('/tmp/report.pdf');
+    expect(detail.message).toBe('disk full');
+    expect(detail.nextSteps).toBe('先处理 ERROR 诊断；确认输出目录可写；如果是 DOCX 或引用相关，检查 Pandoc、引用和字体设置；仍失败时复制本诊断反馈。');
     expect(detail.diagnostic).toContain('Prism 导出失败诊断');
     expect(detail.diagnostic).toContain('格式: PDF (pdf)');
     expect(detail.diagnostic).toContain('阶段: 正在写入 PDF 文件');
