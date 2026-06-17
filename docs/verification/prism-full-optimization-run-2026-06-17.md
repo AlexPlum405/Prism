@@ -438,4 +438,4 @@
 | 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
 | 证据路径 | 本文件；`src/domains/editor/extensions/slashMenu.test.ts`；`src/domains/editor/components/EditorPane.integration.test.tsx` |
 | 未验证风险 | 当前验证以 unit/integration tests 和 production build 为主，未在真实 Tauri WebView 手工按键验证 completion tooltip 的像素位置；第一版仍使用 CodeMirror completion UI，不提供 Notion 式块编辑、拖拽块、数据库属性或跨块重排；`export-settings` 仍作为 YAML Front Matter 片段保留，但它只是源码插入项，不改变导出设置产品边界 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `a06826ebbe47b71419f47a8902ff3c04a67f2e53` |
