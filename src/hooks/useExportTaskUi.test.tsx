@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useExportTaskUi } from './useExportTaskUi';
 
 describe('useExportTaskUi', () => {
@@ -8,6 +8,10 @@ describe('useExportTaskUi', () => {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('tracks foreground and background export progress events', () => {
@@ -39,6 +43,57 @@ describe('useExportTaskUi', () => {
     });
     expect(result.current.exportProgress).toBeNull();
     expect(result.current.exportProgressInBackground).toBe(false);
+    expect(result.current.exportFeedback).toBeNull();
+  });
+
+  it('keeps completed and cancelled export feedback briefly', () => {
+    vi.useFakeTimers();
+    const showToast = vi.fn();
+    const { result } = renderHook(() => useExportTaskUi(showToast));
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-export-progress', {
+        detail: { visible: true, message: '正在生成 PDF' },
+      }));
+    });
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-export-result', {
+        detail: {
+          status: 'success',
+          title: 'PDF 导出完成',
+          message: 'report.pdf',
+          outputPath: '/tmp/report.pdf',
+        },
+      }));
+    });
+
+    expect(result.current.exportProgress).toBeNull();
+    expect(result.current.exportFeedback).toEqual({
+      message: 'report.pdf',
+      status: 'success',
+      title: 'PDF 导出完成',
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(2200);
+    });
+    expect(result.current.exportFeedback).toBeNull();
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-export-result', {
+        detail: { status: 'cancelled', title: '导出已取消' },
+      }));
+    });
+    expect(result.current.exportFeedback).toEqual({
+      message: undefined,
+      status: 'cancelled',
+      title: '导出已取消',
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(2200);
+    });
+    expect(result.current.exportFeedback).toBeNull();
   });
 
   it('tracks export failure diagnostics and copies them to the clipboard', async () => {
@@ -70,6 +125,12 @@ describe('useExportTaskUi', () => {
       stage: '正在写入 PDF 文件',
       title: 'PDF 导出失败',
     });
+    expect(result.current.exportFailureVisible).toBe(true);
+    expect(result.current.exportFeedback).toEqual({
+      message: 'disk full',
+      status: 'failed',
+      title: 'PDF 导出失败',
+    });
 
     await act(async () => {
       await result.current.copyExportFailureDiagnostic();
@@ -81,6 +142,13 @@ describe('useExportTaskUi', () => {
     act(() => {
       result.current.dismissExportFailure();
     });
-    expect(result.current.exportFailure).toBeNull();
+    expect(result.current.exportFailure).not.toBeNull();
+    expect(result.current.exportFailureVisible).toBe(false);
+    expect(result.current.exportFeedback?.status).toBe('failed');
+
+    act(() => {
+      result.current.showExportFailureDetails();
+    });
+    expect(result.current.exportFailureVisible).toBe(true);
   });
 });

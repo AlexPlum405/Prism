@@ -919,6 +919,7 @@ describe('command registry', () => {
   it('emits export progress events and clears progress after success', async () => {
     const baseContext = createCommandContext();
     const progressListener = vi.fn();
+    const resultListener = vi.fn();
     const requestExportPath = vi.fn().mockResolvedValue('/tmp/report.pdf');
     exportMock.exportDocument.mockImplementationOnce(async (input: any) => {
       input.onProgress?.('正在解析 Markdown');
@@ -926,6 +927,7 @@ describe('command registry', () => {
       return true;
     });
     window.addEventListener('prism-export-progress', progressListener);
+    window.addEventListener('prism-export-result', resultListener);
 
     const context = createCommandContext({
       documentStore: {
@@ -950,6 +952,7 @@ describe('command registry', () => {
 
     await runCommand('exportPdf', context);
     window.removeEventListener('prism-export-progress', progressListener);
+    window.removeEventListener('prism-export-result', resultListener);
 
     expect(progressListener.mock.calls.map(([event]) => event.detail)).toEqual([
       { visible: true, message: '准备导出' },
@@ -957,6 +960,54 @@ describe('command registry', () => {
       { visible: true, message: '正在写入 PDF 文件' },
       { visible: false },
     ]);
+    expect(resultListener).toHaveBeenCalledTimes(1);
+    expect(resultListener.mock.calls[0][0].detail).toEqual({
+      format: 'pdf',
+      message: 'report.pdf',
+      outputPath: '/tmp/report.pdf',
+      status: 'success',
+      title: 'PDF 导出完成',
+    });
+  });
+
+  it('emits a cancelled export result when the save panel is cancelled', async () => {
+    const baseContext = createCommandContext();
+    const resultListener = vi.fn();
+    const requestExportPath = vi.fn().mockResolvedValue(null);
+    window.addEventListener('prism-export-result', resultListener);
+
+    const context = createCommandContext({
+      documentStore: {
+        ...baseContext.documentStore,
+        currentDocument: {
+          path: '/tmp/report.md',
+          name: 'report.md',
+          content: '# Report',
+          isDirty: false,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          lastSavedAt: 0,
+          saveError: null,
+          viewMode: 'edit',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+          saveStatus: 'saved',
+        },
+      },
+      requestExportPath,
+    });
+
+    await runCommand('exportPdf', context);
+    window.removeEventListener('prism-export-result', resultListener);
+
+    expect(exportMock.exportDocument).not.toHaveBeenCalled();
+    expect(resultListener).toHaveBeenCalledTimes(1);
+    expect(resultListener.mock.calls[0][0].detail).toEqual({
+      format: 'pdf',
+      message: undefined,
+      outputPath: null,
+      status: 'cancelled',
+      title: '导出已取消',
+    });
   });
 
   it('continues export when requestAnimationFrame stalls before the first progress paint', async () => {

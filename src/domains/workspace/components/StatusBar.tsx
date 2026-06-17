@@ -3,6 +3,7 @@ import styles from './StatusBar.module.css';
 import { useWorkspaceStore } from '../../workspace/store';
 import type { WritingStats } from '../services';
 import { formatLocalizedNumber, t, useI18n } from '../../i18n';
+import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
 const IconFocus = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
@@ -84,8 +85,10 @@ interface StatusBarProps {
   onTypographyDiagnosticsClick?: () => void;
   onRelationGraphClick?: () => void;
   hasDocumentRelations?: boolean;
+  exportFeedback?: ExportFeedbackState | null;
   exportProgress?: string | null;
   exportProgressInBackground?: boolean;
+  onShowExportFailure?: () => void;
   onShowExportProgress?: () => void;
 }
 
@@ -113,8 +116,10 @@ export function StatusBar({
   onLinkDiagnosticsClick,
   onRelationGraphClick,
   hasDocumentRelations = false,
+  exportFeedback = null,
   exportProgress = null,
   exportProgressInBackground = false,
+  onShowExportFailure,
   onShowExportProgress,
 }: StatusBarProps) {
   useI18n();
@@ -204,6 +209,35 @@ export function StatusBar({
             >
               <span className={styles.exportStatusSpinner} aria-hidden="true" />
               <span className={styles.exportStatusText}>{t('status.exporting')}</span>
+            </button>
+          )}
+          {!exportProgress && exportFeedback?.status === 'success' && (
+            <span
+              className={`${styles.exportStatus} ${styles.exportStatusSuccess}`}
+              role="status"
+              title={exportFeedback.message
+                ? t('status.exportedTitle', { message: exportFeedback.message })
+                : exportFeedback.title}
+            >
+              <span className={styles.exportStatusText}>{t('status.exported')}</span>
+            </span>
+          )}
+          {!exportProgress && exportFeedback?.status === 'cancelled' && (
+            <span
+              className={`${styles.exportStatus} ${styles.exportStatusCancelled}`}
+              role="status"
+              title={exportFeedback.title}
+            >
+              <span className={styles.exportStatusText}>{t('status.exportCancelled')}</span>
+            </span>
+          )}
+          {!exportProgress && exportFeedback?.status === 'failed' && (
+            <button
+              className={`${styles.exportStatus} ${styles.exportStatusFailed}`}
+              title={t('status.exportFailedTitle', { title: exportFeedback.title })}
+              onClick={onShowExportFailure}
+            >
+              <span className={styles.exportStatusText}>{t('status.exportFailed')}</span>
             </button>
           )}
           {hasDocumentRelations && onRelationGraphClick && (

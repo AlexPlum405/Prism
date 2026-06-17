@@ -47,6 +47,14 @@ export interface ExportFailedPayload {
   title: string;
 }
 
+export interface ExportResultPayload {
+  format?: string;
+  message?: string;
+  outputPath?: string | null;
+  status: 'success' | 'cancelled';
+  title?: string;
+}
+
 export interface DiagnosticsOpenPayload {
   diagnostics?: PrismDiagnostic[];
 }
@@ -63,6 +71,7 @@ export interface AppEventMap {
   'toast.show': ToastInput;
   'export.progress': ExportProgressPayload;
   'export.failed': ExportFailedPayload;
+  'export.result': ExportResultPayload;
   'diagnostics.open': DiagnosticsOpenPayload;
   'settings.open': Record<string, never>;
 }

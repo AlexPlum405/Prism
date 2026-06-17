@@ -5,6 +5,7 @@ import type { OpenDocument } from '../../domains/document/types';
 import type { WorkspaceContextMenuState } from './WorkspaceController';
 import { WorkspaceController } from './WorkspaceController';
 import type { FileActionInput } from '../../lib/fileActions';
+import type { ExportFeedbackState } from '../../hooks/useExportTaskUi';
 import {
   hasWorkspaceIndexDocumentRelations,
   type WorkspaceIndex,
@@ -19,6 +20,7 @@ interface AppWorkspaceViewControllerProps {
   currentDocument: OpenDocument | null;
   cursor: { line: number; column: number };
   editorRef: RefObject<EditorPaneHandle>;
+  exportFeedback: ExportFeedbackState | null;
   exportProgress: string | null;
   exportProgressInBackground: boolean;
   firstActionableMessage?: string;
@@ -45,6 +47,7 @@ interface AppWorkspaceViewControllerProps {
   onRelationGraphClick: () => void;
   onSelectionTextChange: (text: string) => void;
   onSetSidebarHovered: (hovered: boolean) => void;
+  onShowExportFailure: () => void;
   onShowExportProgress: () => void;
   onTypographyDiagnosticsClick: () => void;
 }
@@ -56,6 +59,7 @@ export function AppWorkspaceViewController({
   currentDocument,
   cursor,
   editorRef,
+  exportFeedback,
   exportProgress,
   exportProgressInBackground,
   firstActionableMessage,
@@ -82,6 +86,7 @@ export function AppWorkspaceViewController({
   onRelationGraphClick,
   onSelectionTextChange,
   onSetSidebarHovered,
+  onShowExportFailure,
   onShowExportProgress,
   onTypographyDiagnosticsClick,
 }: AppWorkspaceViewControllerProps) {
@@ -113,6 +118,7 @@ export function AppWorkspaceViewController({
       )}
       exportProgress={exportProgress}
       exportProgressInBackground={exportProgressInBackground}
+      exportFeedback={exportFeedback}
       fileTree={workspace.fileTree}
       firstActionableMessage={firstActionableMessage}
       firstTypographyMessage={firstTypographyMessage}
@@ -142,6 +148,7 @@ export function AppWorkspaceViewController({
       onSelectionTextChange={onSelectionTextChange}
       onSetSidebarHovered={onSetSidebarHovered}
       onSetSidebarTab={workspace.setSidebarTab}
+      onShowExportFailure={onShowExportFailure}
       onShowExportProgress={onShowExportProgress}
       onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
       onToggleFocusMode={() => workspace.toggleFocusMode()}

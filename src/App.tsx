@@ -90,14 +90,17 @@ function App() {
     copyExportFailureDiagnostic,
     dismissExportFailure,
     dismissToast,
+    exportFeedback,
     exportProgress,
     exportProgressInBackground,
     exportFailure,
+    exportFailureVisible,
     requestExportPath,
     requestMarkdownSavePath,
     saveDialog,
     saveDialogOverwriteFilename,
     sendExportProgressToBackground,
+    showExportFailureDetails,
     showToast,
     showBackgroundExportProgress,
     toast,
@@ -215,7 +218,12 @@ function App() {
 
   return (
       <WindowShell>
-      <TitleBar docName={titleDocName} isDirty={titleDirty} />
+      <TitleBar
+        docName={titleDocName}
+        isDirty={titleDirty}
+        saveError={currentDocument?.saveError ?? null}
+        saveStatus={currentDocument?.saveStatus}
+      />
       <MenuBar sections={menuSections} onAction={handleCommandAction} />
       <AppWorkspaceViewController
         activePath={currentDocument?.path}
@@ -226,6 +234,7 @@ function App() {
         editorRef={editorRef}
         exportProgress={exportProgress}
         exportProgressInBackground={exportProgressInBackground}
+        exportFeedback={exportFeedback}
         firstActionableMessage={documentInsight.firstActionableDiagnostic?.message}
         firstTypographyMessage={documentInsight.firstTypographyDiagnostic?.message}
         globalContextMenu={globalContextMenu}
@@ -251,6 +260,7 @@ function App() {
         onSelectionTextChange={setSelectionText}
         onSetSidebarHovered={setIsSidebarHovered}
         onShowExportProgress={showBackgroundExportProgress}
+        onShowExportFailure={showExportFailureDetails}
         onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}
       />
 
@@ -312,6 +322,7 @@ function App() {
         dismissExportFailure={dismissExportFailure}
         dismissToast={dismissToast}
         exportFailure={exportFailure}
+        exportFailureVisible={exportFailureVisible}
         exportProgress={exportProgress}
         exportProgressInBackground={exportProgressInBackground}
         exportPngScale={settings.exportDefaults.pngScale}

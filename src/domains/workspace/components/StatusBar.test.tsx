@@ -179,4 +179,54 @@ describe('StatusBar', () => {
 
     expect(onShowExportProgress).toHaveBeenCalledTimes(1);
   });
+
+  it('shows completed and cancelled export feedback without making it a save status', () => {
+    const { rerender } = render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        exportFeedback={{ status: 'success', title: 'PDF 导出完成', message: 'report.pdf' }}
+      />
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('已导出');
+    expect(screen.getByRole('status')).toHaveAttribute('title', '导出完成：report.pdf');
+    expect(screen.queryByText('已保存')).not.toBeInTheDocument();
+
+    rerender(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        exportFeedback={{ status: 'cancelled', title: '导出已取消' }}
+      />
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('已取消');
+    expect(screen.queryByText('未保存')).not.toBeInTheDocument();
+  });
+
+  it('keeps export failure visible and clickable for details', () => {
+    const onShowExportFailure = vi.fn();
+    render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        exportFeedback={{ status: 'failed', title: 'PDF 导出失败', message: 'disk full' }}
+        onShowExportFailure={onShowExportFailure}
+      />
+    );
+
+    const failure = screen.getByRole('button', { name: '导出失败' });
+    expect(failure).toHaveAttribute('title', 'PDF 导出失败。点击查看详情。');
+
+    fireEvent.click(failure);
+
+    expect(onShowExportFailure).toHaveBeenCalledTimes(1);
+  });
 });

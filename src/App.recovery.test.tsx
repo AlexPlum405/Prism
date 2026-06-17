@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App, { shouldShowRecoveryPrompt } from './App';
 import { useDocumentStore } from './domains/document/store';
@@ -74,17 +74,27 @@ vi.mock('./domains/workspace/components/Sidebar', () => ({
 
 vi.mock('./domains/workspace/components/StatusBar', () => ({
   StatusBar: ({
+    exportFeedback,
     exportProgress,
     exportProgressInBackground,
+    onShowExportFailure,
     onShowExportProgress,
   }: {
+    exportFeedback?: { status: 'success' | 'failed' | 'cancelled' } | null;
     exportProgress?: string | null;
     exportProgressInBackground?: boolean;
+    onShowExportFailure?: () => void;
     onShowExportProgress?: () => void;
   }) => (
     <div data-testid="status-bar">
       {exportProgress && exportProgressInBackground && (
         <button type="button" onClick={onShowExportProgress}>导出中</button>
+      )}
+      {!exportProgress && exportFeedback?.status === 'success' && (
+        <span role="status">已导出</span>
+      )}
+      {!exportProgress && exportFeedback?.status === 'failed' && (
+        <button type="button" onClick={onShowExportFailure}>导出失败</button>
       )}
     </div>
   ),
@@ -321,6 +331,9 @@ describe('App export diagnostics wiring', () => {
       window.dispatchEvent(new CustomEvent('prism-export-progress', {
         detail: { visible: false },
       }));
+      window.dispatchEvent(new CustomEvent('prism-export-result', {
+        detail: { status: 'success', title: 'PDF 导出完成', message: 'report.pdf' },
+      }));
     });
 
     expect(screen.queryByText('正在写入 PDF 文件')).not.toBeInTheDocument();
@@ -370,6 +383,21 @@ describe('App export diagnostics wiring', () => {
       value: { writeText },
     });
     mockRecoveryQueue(null);
+    useDocumentStore.setState({
+      currentDocument: {
+        path: '/tmp/report.md',
+        name: 'report.md',
+        content: '# Report',
+        isDirty: false,
+        lastSavedAt: 1000,
+        lastKnownMtime: 1000,
+        lastKnownSize: 8,
+        saveStatus: 'saved',
+        saveError: null,
+        viewMode: 'edit',
+        scrollState: { editorRatio: 0, previewRatio: 0 },
+      },
+    });
 
     render(<App />);
 
@@ -403,6 +431,14 @@ describe('App export diagnostics wiring', () => {
       expect(writeText).toHaveBeenCalledWith('stage: render-pdf\nerror: simulated export failure');
     });
     expect(screen.getByRole('status')).toHaveTextContent('导出诊断文本已复制');
+
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'PDF 导出失败' })).getAllByRole('button', { name: '关闭' })[0]);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'PDF 导出失败' })).not.toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: '导出失败' }));
+    expect(screen.getByRole('dialog', { name: 'PDF 导出失败' })).toBeInTheDocument();
   });
 
   it('renders structured toast actions from the app toast event', async () => {

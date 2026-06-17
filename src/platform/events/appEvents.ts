@@ -12,6 +12,7 @@ export const APP_EVENT_NAMES = {
   'toast.show': 'prism-toast',
   'export.progress': 'prism-export-progress',
   'export.failed': 'prism-export-failure',
+  'export.result': 'prism-export-result',
   'diagnostics.open': 'prism-document-diagnostics-open',
   'settings.open': 'prism-open-settings',
 } as const satisfies Record<AppEventKey, string>;

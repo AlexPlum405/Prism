@@ -24,6 +24,7 @@ interface ExportUiControllerProps {
   dismissExportFailure: () => void;
   dismissToast: () => void;
   exportFailure: ExportFailureState | null;
+  exportFailureVisible: boolean;
   exportProgress: string | null;
   exportProgressInBackground: boolean;
   exportPngScale: number;
@@ -44,6 +45,7 @@ export function ExportUiController({
   dismissExportFailure,
   dismissToast,
   exportFailure,
+  exportFailureVisible,
   exportProgress,
   exportProgressInBackground,
   exportPngScale,
@@ -198,7 +200,7 @@ export function ExportUiController({
         </div>
       )}
 
-      {exportFailure && (
+      {exportFailure && exportFailureVisible && (
         <>
           <div className="modal-overlay" onClick={dismissExportFailure} />
           <div className="modal prism-export-failure-modal" role="dialog" aria-label={exportFailure.title}>

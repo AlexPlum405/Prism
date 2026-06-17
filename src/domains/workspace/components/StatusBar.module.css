@@ -76,15 +76,33 @@
   border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--c-canvas) 88%, var(--c-chalk));
   color: var(--c-void);
-  cursor: pointer;
+  cursor: default;
   font-size: 11px;
   font-weight: 500;
   transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
 }
 
-.exportStatus:hover {
+button.exportStatus {
+  cursor: pointer;
+}
+
+button.exportStatus:hover {
   background: var(--c-chalk);
   border-color: color-mix(in srgb, var(--c-void) 18%, var(--c-fog));
+}
+
+.exportStatusSuccess {
+  color: color-mix(in srgb, #147a46 86%, var(--c-void));
+  border-color: color-mix(in srgb, #147a46 22%, var(--c-fog));
+}
+
+.exportStatusCancelled {
+  color: var(--c-graphite);
+}
+
+.exportStatusFailed {
+  color: color-mix(in srgb, #b42318 88%, var(--c-void));
+  border-color: color-mix(in srgb, #b42318 24%, var(--c-fog));
 }
 
 .exportStatusSpinner {
@@ -229,22 +247,6 @@
   stroke: none;
 }
 
-/* 保存状态 */
-.saveStatus {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 0 6px;
-  pointer-events: auto;
-}
-.saveStatus.saved { color: var(--c-ash); }
-.saveStatus.saving { color: var(--c-graphite); }
-.saveStatus.dirty { color: var(--c-void); }
-.saveStatus.failed,
-.saveStatus.conflict { color: var(--c-void); }
-.saveStatus.dirty::before,
-.saveStatus.failed::before,
-.saveStatus.conflict::before { content: '●'; margin-right: 4px; }
-
 .statVal {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -354,8 +356,16 @@
   letter-spacing: 0.6px;
 }
 
-:global(html[data-content-theme='miaoyan']) .exportStatus:hover {
+:global(html[data-content-theme='miaoyan']) button.exportStatus:hover {
   background: var(--miaoyan-selection);
+}
+
+:global(html[data-content-theme='miaoyan']) .exportStatusSuccess {
+  color: color-mix(in srgb, #147a46 74%, var(--miaoyan-text));
+}
+
+:global(html[data-content-theme='miaoyan']) .exportStatusFailed {
+  color: color-mix(in srgb, #b42318 82%, var(--miaoyan-text));
 }
 
 :global(html[data-content-theme='miaoyan']) .main .left > .sep:first-of-type {
@@ -433,21 +443,6 @@
 :global(html[data-content-theme='miaoyan']) .modeBtn:hover {
   background: var(--miaoyan-panel-secondary);
   color: var(--miaoyan-toolbar-icon);
-}
-
-:global(html[data-content-theme='miaoyan']) .saveStatus {
-  padding: 0 4px;
-  color: var(--miaoyan-secondary-text);
-  font-family: var(--miaoyan-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='miaoyan']) .saveStatus.dirty,
-:global(html[data-content-theme='miaoyan']) .saveStatus.failed,
-:global(html[data-content-theme='miaoyan']) .saveStatus.conflict {
-  color: var(--miaoyan-accent);
 }
 
 :global(html[data-content-theme='miaoyan']) .statVal {
@@ -665,33 +660,6 @@
 :global(html[data-content-theme='nocturne']) .modeBtn:hover {
   background: var(--theme-panel-secondary);
   color: var(--theme-toolbar-icon);
-}
-
-:global(html[data-content-theme='inkstone']) .saveStatus,
-:global(html[data-content-theme='slate']) .saveStatus,
-:global(html[data-content-theme='mono']) .saveStatus,
-:global(html[data-content-theme='nocturne']) .saveStatus {
-  padding: 0 4px;
-  color: var(--theme-secondary-text);
-  font-family: var(--theme-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='inkstone']) .saveStatus.dirty,
-:global(html[data-content-theme='inkstone']) .saveStatus.failed,
-:global(html[data-content-theme='inkstone']) .saveStatus.conflict,
-:global(html[data-content-theme='slate']) .saveStatus.dirty,
-:global(html[data-content-theme='slate']) .saveStatus.failed,
-:global(html[data-content-theme='slate']) .saveStatus.conflict,
-:global(html[data-content-theme='mono']) .saveStatus.dirty,
-:global(html[data-content-theme='mono']) .saveStatus.failed,
-:global(html[data-content-theme='mono']) .saveStatus.conflict,
-:global(html[data-content-theme='nocturne']) .saveStatus.dirty,
-:global(html[data-content-theme='nocturne']) .saveStatus.failed,
-:global(html[data-content-theme='nocturne']) .saveStatus.conflict {
-  color: var(--theme-accent);
 }
 
 :global(html[data-content-theme='inkstone']) .statVal,

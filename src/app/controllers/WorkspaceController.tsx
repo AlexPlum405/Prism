@@ -5,6 +5,7 @@ import { StatusBar } from '../../domains/workspace/components/StatusBar';
 import type { FileNode, SidebarTab } from '../../domains/workspace/types';
 import type { WorkspaceIndex, WritingStats } from '../../domains/workspace/services';
 import { ContextMenu, type ContextMenuItem } from '../../components/shell/ContextMenu';
+import type { ExportFeedbackState } from '../../hooks/useExportTaskUi';
 
 export interface WorkspaceContextMenuState {
   items: ContextMenuItem[];
@@ -20,6 +21,7 @@ interface WorkspaceControllerProps {
   cursor: { line: number; column: number };
   documentContent: string;
   documentView?: ReactNode;
+  exportFeedback: ExportFeedbackState | null;
   exportProgress: string | null;
   exportProgressInBackground: boolean;
   fileTree: FileNode[];
@@ -51,6 +53,7 @@ interface WorkspaceControllerProps {
   onSelectionTextChange: (text: string) => void;
   onSetSidebarHovered: (hovered: boolean) => void;
   onSetSidebarTab: (tab: SidebarTab) => void;
+  onShowExportFailure: () => void;
   onShowExportProgress: () => void;
   onToggleFileTreeMode: () => void | Promise<void>;
   onToggleFocusMode: () => void;
@@ -65,6 +68,7 @@ export function WorkspaceController({
   cursor,
   documentContent,
   documentView,
+  exportFeedback,
   exportProgress,
   exportProgressInBackground,
   fileTree,
@@ -96,6 +100,7 @@ export function WorkspaceController({
   onSelectionTextChange,
   onSetSidebarHovered,
   onSetSidebarTab,
+  onShowExportFailure,
   onShowExportProgress,
   onToggleFileTreeMode,
   onToggleFocusMode,
@@ -160,8 +165,10 @@ export function WorkspaceController({
             onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
             onRelationGraphClick={onRelationGraphClick}
             hasDocumentRelations={hasDocumentRelations}
+            exportFeedback={exportFeedback}
             exportProgress={exportProgress}
             exportProgressInBackground={exportProgressInBackground}
+            onShowExportFailure={onShowExportFailure}
             onShowExportProgress={onShowExportProgress}
           />
         </div>

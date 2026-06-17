@@ -135,6 +135,22 @@ function emitExportFailure(input: {
   });
 }
 
+function emitExportResult(input: {
+  format: ExportFormat;
+  message?: string;
+  outputPath?: string | null;
+  status: 'success' | 'cancelled';
+  title?: string;
+}) {
+  emitAppEvent('export.result', {
+    format: input.format,
+    message: input.message,
+    outputPath: input.outputPath ?? null,
+    status: input.status,
+    title: input.title,
+  });
+}
+
 function emitDocumentDiagnosticsOpen(diagnostics: ReturnType<typeof getActionableErrorDiagnostics>) {
   emitAppEvent('diagnostics.open', { diagnostics });
 }
@@ -264,7 +280,14 @@ async function handleExport(
       ? requestedOutput.qualityScale
       : undefined;
     outputPath = typeof requestedOutput === 'string' ? requestedOutput : requestedOutput?.path;
-    if (!outputPath) return;
+    if (!outputPath) {
+      emitExportResult({
+        format,
+        status: 'cancelled',
+        title: t('export.cancelled'),
+      });
+      return;
+    }
     resolvedExportSettings = applyExportQualityScale(exportSettings, selectedQualityScale);
     exportJob = await createExportJob({
       format,
@@ -355,6 +378,13 @@ async function handleExport(
             },
           },
         ],
+      });
+      emitExportResult({
+        format,
+        message: basename(completedOutputPath),
+        outputPath: completedOutputPath,
+        status: 'success',
+        title: t('export.completedTitle', { format: formatLabel }),
       });
     }
   } catch (err) {

@@ -62,34 +62,64 @@
   line-height: 1.2;
 }
 
-.dirtyRing {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: 1.5px solid var(--c-ash);
-  opacity: 0.85;
-  margin-left: 6px;
-  margin-right: 6px;
-  display: inline-block;
-  vertical-align: middle;
-  animation: ring-breath 4s infinite ease-in-out;
+.saveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 94px;
+  height: 18px;
+  margin-left: 7px;
+  margin-right: 1px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, var(--c-fog));
+  border-radius: var(--r-pill);
+  color: var(--c-graphite);
+  background: color-mix(in srgb, var(--c-canvas) 90%, var(--c-chalk));
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
   flex-shrink: 0;
 }
 
-@keyframes ring-breath {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.4;
-    box-shadow: 0 0 0 0 rgba(142, 142, 147, 0.15);
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.9;
-    box-shadow: 0 0 0 4px rgba(142, 142, 147, 0.08);
-  }
+.saveBadgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: 0 0 auto;
 }
 
-.docName { color: var(--c-void); }
+.saveBadgeLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saving .saveBadgeDot {
+  animation: ring-breath 1.8s infinite ease-in-out;
+}
+
+.failed,
+.conflict {
+  color: color-mix(in srgb, #b42318 88%, var(--c-void));
+}
+
+.dirty {
+  color: var(--c-void);
+}
+
+@keyframes ring-breath {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.docName {
+  color: var(--c-void);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .sep {
   color: var(--c-ash);
@@ -199,8 +229,24 @@
   font-weight: 400;
 }
 
-:global(html[data-content-theme='miaoyan']) .dirtyRing {
-  border-color: var(--miaoyan-accent);
+:global(html[data-content-theme='miaoyan']) .saveBadge {
+  height: 17px;
+  border-color: color-mix(in srgb, currentColor 18%, var(--miaoyan-divider));
+  background: var(--miaoyan-panel-secondary);
+  color: var(--miaoyan-secondary-text);
+  font-family: var(--miaoyan-font);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+:global(html[data-content-theme='miaoyan']) .dirty,
+:global(html[data-content-theme='miaoyan']) .saving {
+  color: var(--miaoyan-accent);
+}
+
+:global(html[data-content-theme='miaoyan']) .failed,
+:global(html[data-content-theme='miaoyan']) .conflict {
+  color: color-mix(in srgb, #b42318 82%, var(--miaoyan-text));
 }
 
 :global(html[data-content-theme='miaoyan']) .controls {
@@ -284,11 +330,39 @@
   font-weight: 400;
 }
 
-:global(html[data-content-theme='inkstone']) .dirtyRing,
-:global(html[data-content-theme='slate']) .dirtyRing,
-:global(html[data-content-theme='mono']) .dirtyRing,
-:global(html[data-content-theme='nocturne']) .dirtyRing {
-  border-color: var(--theme-accent);
+:global(html[data-content-theme='inkstone']) .saveBadge,
+:global(html[data-content-theme='slate']) .saveBadge,
+:global(html[data-content-theme='mono']) .saveBadge,
+:global(html[data-content-theme='nocturne']) .saveBadge {
+  height: 17px;
+  border-color: color-mix(in srgb, currentColor 18%, var(--theme-divider));
+  background: var(--theme-panel-secondary);
+  color: var(--theme-secondary-text);
+  font-family: var(--theme-font);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+:global(html[data-content-theme='inkstone']) .dirty,
+:global(html[data-content-theme='inkstone']) .saving,
+:global(html[data-content-theme='slate']) .dirty,
+:global(html[data-content-theme='slate']) .saving,
+:global(html[data-content-theme='mono']) .dirty,
+:global(html[data-content-theme='mono']) .saving,
+:global(html[data-content-theme='nocturne']) .dirty,
+:global(html[data-content-theme='nocturne']) .saving {
+  color: var(--theme-accent);
+}
+
+:global(html[data-content-theme='inkstone']) .failed,
+:global(html[data-content-theme='inkstone']) .conflict,
+:global(html[data-content-theme='slate']) .failed,
+:global(html[data-content-theme='slate']) .conflict,
+:global(html[data-content-theme='mono']) .failed,
+:global(html[data-content-theme='mono']) .conflict,
+:global(html[data-content-theme='nocturne']) .failed,
+:global(html[data-content-theme='nocturne']) .conflict {
+  color: color-mix(in srgb, #ff6b5f 80%, var(--theme-text));
 }
 
 :global(html[data-content-theme='inkstone']) .controls,
