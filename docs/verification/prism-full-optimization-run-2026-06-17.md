@@ -33,7 +33,7 @@
 | P0-02 默认 app 打开与启动 smoke | 已完成 | 高 | `npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts`、`npm run tauri:build:app-smoke` |
 | P0-03 真实 Tauri WebView 长文档性能基准 | 已完成：基准已建立，3MB 真实性能风险待后续优化 | 高 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose`、`node scripts/run-preview-webview-benchmark.mjs` |
 | P1-01 统一打开文件策略 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts` |
-| P1-02 DocumentProfile 落地 | 未开始 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
+| P1-02 DocumentProfile 落地 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
 | P1-03 预览搜索节流和渐进高亮 | 未开始 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-04 preview-only 源码定位 ready 队列 | 未开始 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-05 状态栏图谱条件显示 | 未开始 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
@@ -132,3 +132,27 @@
 | 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/lib/openDocumentFlow.test.ts` |
 | 未验证风险 | 当前仍只支持 P1-02 前的 `.md/.markdown/.txt` 边界，`.sql/.json` 等 Text Document 将在 P1-02 扩展；本轮未跑真实 app 手工菜单/文件树 smoke，行为由 jsdom 单测和 build 覆盖；大文件确认在真实 Tauri dialog 中未手工点击验证 |
 | 对应提交 | `e08f3f8c2cb18cdb1ac794c5a794bf376dc2ad86` |
+
+### P1-02 DocumentProfile 落地
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 引入 Markdown Document / Text Document profile 单一判断源；Markdown 仅包含 `.md/.markdown`，Text Document 第一批支持 `.txt/.text/.sql/.json/.jsonc/.yaml/.yml/.toml/.xml/.csv/.tsv/.log/.ini/.conf/.env`；打开对话框、共享打开流程、冷启动/系统打开、Rust 文件授权、读写、工作区树、原生索引、前端 fallback 索引和全文搜索统一接受支持文档；Text Document 强制编辑模式，不触发 Markdown 预览、导出、Markdown 链接诊断、图片/渲染/排版诊断、链接补全、页面链接、反链或关系图谱；Tauri bundle 增加 Text Document 文件关联 |
+| 涉及文件 | `src/domains/workspace/services/fileAssociation.ts`、`src/domains/document/store.ts`、`src/lib/openDocumentFlow.ts`、`src/hooks/useBootstrap.test.tsx`、`src/lib/fileActions.test.ts`、`src/domains/workspace/services/workspaceIndex.ts`、`src/domains/workspace/services/workspaceIndexNative.ts`、`src/domains/workspace/services/relationGraph.ts`、`src/app/useDocumentDiagnosticsModel.ts`、`src/app/useDocumentNavigationModel.ts`、`src/domains/commands/categories/*Commands.ts`、`src-tauri/src/domain/document_io.rs`、`src-tauri/src/domain/workspace_index.rs`、`src-tauri/src/domain/workspace_tree.rs`、`src-tauri/src/commands/startup_files.rs`、`src-tauri/src/commands/file_scope.rs`、`src-tauri/tauri.conf.json` |
+| 风险等级 | 高 |
+| 验证命令 | `npm test -- --run src/domains/workspace/services/workspaceIndex.test.ts src/domains/workspace/services/relationGraph.test.ts src/lib/openDocumentFlow.test.ts src/lib/fileActions.test.ts src/domains/document/store.test.ts src/hooks/useBootstrap.test.tsx src/domains/commands/categories/fileCommands.test.ts src/app/useDocumentDiagnosticsModel.test.tsx src/app/useDocumentNavigationModel.test.tsx src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/commands/categories/viewCommands.test.ts src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx --reporter verbose` |
+| 命令结果 | 通过：14 个测试文件，101 个测试用例；覆盖 Text Document 打开边界、启动 explicit/pending files、工作区索引/搜索、关系图谱过滤、Markdown 诊断禁用、导航面板禁用、命令启用条件和文档 store 编辑模式保护；输出中有既有 jsdom `localStorage.setItem is not a function` mock 警告，无失败 |
+| 验证命令 | `cargo test --manifest-path src-tauri/Cargo.toml` |
+| 命令结果 | 通过：50 个 Rust 单元测试，`src/main.rs` 0 测试，doc-tests 0 测试；覆盖 `.sql/.json/.env` 等 Text Document 读写授权、启动参数过滤、工作区树、原生索引、全文搜索和关系图谱 Markdown-only 行为 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 验证命令 | `jq '.bundle.fileAssociations' src-tauri/tauri.conf.json` |
+| 命令结果 | 通过：配置中同时存在 Markdown Document 关联和 Text Document 关联；Text Document 扩展列表包含 `.txt/.text/.sql/.json/.jsonc/.yaml/.yml/.toml/.xml/.csv/.tsv/.log/.ini/.conf/.env` |
+| 验证命令 | `npm run tauri:build:app-smoke` |
+| 命令结果 | 未完整通过：前置 `npm run build` 通过，Tauri release 编译通过，`.app` bundle 成功生成到 `src-tauri/target/release/bundle/macos/Prism.app`；app smoke 的 `.markdown` 中文空格路径启动和 Markdown fixture 启动步骤通过；后续 ERROR 诊断面板可视化判断失败，日志为 `ERROR diagnostic panel did not visibly open.`，截图阶段同时出现 `screencapture` window/rect fallback 失败，输出截图为黑屏 |
+| 证据路径 | `.codex-smoke/app-smoke/evidence/00-launch-markdown-chinese-space.png`、`.codex-smoke/app-smoke/evidence/01-launch-source.png`、`.codex-smoke/app-smoke/evidence/failure.log`、本文件；相关 Vitest/Rust/build 命令输出 |
+| 未验证风险 | Windows/Linux 默认 app 文件关联未真机验证；macOS Finder 双击 `.sql/.json/.env` 关联未手工验证；本轮 app smoke 未完成 ERROR 面板之后的导出/设置等后半段交互，失败更像当前环境截图/可视化自动化限制，但仍需后续 P1/P2 阶段复验；P1-05 仍需进一步实现“有链接关系才显示图谱按钮”，本项只保证 Text Document 永不触发图谱 |
+| 对应提交 | `c33648c7cbb0752fba174136702241ebf822bb55` |
