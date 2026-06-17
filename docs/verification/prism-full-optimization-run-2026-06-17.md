@@ -44,7 +44,7 @@
 | P2-03 迁移帮助页 | 已完成 | 低 | 文档检查、相关命令/快捷键测试 |
 | P2-04 命令面板信息架构 | 已完成 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
 | P2-05 主题截图回归 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
-| P2-06 跨平台壳与控件密度审计 | 未开始 | 中 | 截图审查、相关 component tests |
+| P2-06 跨平台壳与控件密度审计 | 已完成 | 中 | 截图审查、相关 component tests |
 | P2-07 微反馈与动效节奏统一 | 未开始 | 中 | UI tests、手工 smoke、reduced-motion 检查 |
 | P2-08 品牌与空状态收口 | 未开始 | 低 | 文档检查、截图审查 |
 | P2-09 斜杠菜单第一版 | 未开始 | 中 | 新增 editor extension tests、必要 SplitView tests |
@@ -358,3 +358,26 @@
 | 截图审查 | 已用本地图片检查 `miaoyan-theme-surface-1440.png` 与 `nocturne-theme-surface-1440.png`：截图非空，preview/editor/statusbar/diagnostics/command palette 均可见；`nocturne` 诊断浮层为深色底且文字可辨，命令面板和状态栏未出现明显文本溢出 |
 | 未验证风险 | 当前截图是 Playwright 渲染的复合 fixture，不是真实 Tauri WebView 窗口；Windows/Linux 系统 chrome、真实菜单栏、字体 fallback、系统缩放和 WebView 抗锯齿差异仍需 P2-06 或后续真机验证；本项只建立内置主题截图回归和修复全局诊断选择器，不替换所有历史手写图标 |
 | 对应提交 | `425a1e339a74b00a0dd2e6e478bc42e1fd834bc5` |
+
+### P2-06 跨平台壳与控件密度审计
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `scripts/run-shell-density-snapshots.mjs`，用 Playwright 生成 macOS / Windows / Linux 三平台、`miaoyan` / `nocturne` 两主题、1200/1440/1920 三宽度的壳层密度截图矩阵；截图覆盖标题栏、菜单栏、侧栏、视图切换、编辑/预览分栏和状态栏，并在 README 记录 computed metrics。审计中发现 Linux 原先被归入 Windows 平台，导致 `data-platform`、body class、文件管理器文案和平台快捷键语义不准确，本项将 runtime platform 扩展为 `mac/windows/linux`，为 Linux 独立设置 `data-platform="linux"` / `platform-linux`、文件管理器文案和 Ctrl 快捷键规则；同时修正 Linux + MiaoYan 下视图切换不应继承 macOS 标题栏 `translateY(16px)` 的偏移。 |
+| 涉及文件 | `.gitignore`、`scripts/run-shell-density-snapshots.mjs`、`docs/verification/prism-shell-density-snapshots-2026-06-17/`、`src/domains/workspace/services/platform.ts`、`src/domains/workspace/services/platform.test.ts`、`src/domains/i18n/resources.ts`、`src/App.recovery.test.tsx`、`src/domains/document/components/ViewModeSwitch.module.css`、`src/domains/document/components/ViewModeSwitch.module.test.ts`、`src/domains/commands/types.ts`、`src/domains/commands/platform.test.ts`、`src/domains/commands/categories/editorCommands.ts` |
+| 风险等级 | 中 |
+| 验证命令 | `node --check scripts/run-shell-density-snapshots.mjs` |
+| 命令结果 | 通过：脚本语法检查无输出 |
+| 验证命令 | `node scripts/run-shell-density-snapshots.mjs` |
+| 命令结果 | 通过：生成 18 张截图和 README 指标；三平台两主题在 1200/1440/1920 宽度下 `Overflow` 均为 `no`；标题栏 28px、菜单栏 26px、侧栏 280px、状态栏 26px 保持稳定；macOS + MiaoYan 视图切换保留标题栏偏移 `top=16`，Windows/Linux + MiaoYan 视图切换为 `top=0` |
+| 验证命令 | `npm test -- --run src/domains/commands/platform.test.ts src/domains/commands/registry.test.ts src/domains/workspace/services/platform.test.ts src/domains/document/components/ViewModeSwitch.module.test.ts src/App.recovery.test.tsx src/components/shell/TitleBar.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/domains/i18n/i18n.test.ts --reporter verbose` |
+| 命令结果 | 通过：8 个测试文件，63 个测试用例；覆盖 Linux 独立平台检测、Linux 文件管理器文案、Linux Ctrl 快捷键匹配、非 macOS MiaoYan 视图切换偏移重置、App 根节点平台 class、标题栏和状态栏回归、三语 i18n key 完整；输出中有既有 React ref/act、`localStorage.setItem is not a function` 和 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | `docs/verification/prism-shell-density-snapshots-2026-06-17/README.md`、`docs/verification/prism-shell-density-snapshots-2026-06-17/macos-miaoyan-1200.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/macos-nocturne-1440.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/windows-miaoyan-1200.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/windows-nocturne-1440.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/linux-miaoyan-1200.png`、`docs/verification/prism-shell-density-snapshots-2026-06-17/linux-nocturne-1440.png` 及同目录其余矩阵截图 |
+| 截图审查 | 已抽查 `linux-miaoyan-1200.png` 与 `macos-nocturne-1440.png`：截图非空，标题栏、菜单栏、侧栏、视图切换、编辑/预览分栏和状态栏均可见；Linux + MiaoYan 视图切换不再下沉，macOS/Windows/Linux 主工作区结构与控件密度一致 |
+| 未验证风险 | 当前截图是 Playwright `data-platform` 模拟矩阵，不是 Windows/Linux 真机 Tauri WebView；系统 chrome、真实菜单栏、文件管理器集成、字体 fallback、系统缩放、WebView 抗锯齿和窗口装饰差异仍需 Windows/Linux 真机补验；本项只处理壳层密度和平台语义，不替代后续 P2-07 动效节奏、P2-08 品牌空状态或 P2-11 图标规范 |
+| 对应提交 | `c1047eadec5fadd2f9f8adff9585a6680b73184c` |
