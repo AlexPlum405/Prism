@@ -19,6 +19,7 @@ describe('standaloneHtml', () => {
 
     expect(html).toContain('<html lang="zh-CN" data-content-theme="miaoyan">');
     expect(html).toContain('<title>&lt;Title &amp; &quot;Meta&quot;&gt;</title>');
+    expect(html).toContain('<meta name="generator" content="Prism">');
     expect(html).toContain('<meta name="author" content="Alex &amp; Prism">');
     expect(html).toContain('<h1');
     expect(html).toContain('>Hello</h1>');

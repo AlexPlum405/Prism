@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useI18n } from '../../domains/i18n';
+import { PRISM_BRAND_PILLARS } from '../../lib/brand';
 
 interface AboutModalProps {
   visible: boolean;
@@ -35,11 +36,21 @@ export function AboutModal({
           <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
         <div className="modal-body">
+          <div className="about-brand-mark" aria-hidden="true">P</div>
           <div className="caption">PRISM · VERSION {version}</div>
           <div className="display">Prism</div>
+          <p className="about-tagline">{t('about.tagline')}</p>
           <p className="about-copy">
             {t('about.copy')}
           </p>
+          <div className="about-pillars" aria-label={t('brand.pillarsLabel')}>
+            {PRISM_BRAND_PILLARS.map((pillar) => (
+              <div key={pillar.id} className="about-pillar">
+                <div>{t(pillar.titleKey)}</div>
+                <span>{t(pillar.bodyKey)}</span>
+              </div>
+            ))}
+          </div>
           <dl className="about-meta">
             <div>
               <dt>{t('about.version')}</dt>

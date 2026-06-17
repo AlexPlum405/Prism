@@ -154,6 +154,7 @@ const paletteGroupByCommand = {
   showRelationGraph: 'links',
 
   mdReference: 'settings',
+  migrationGuide: 'settings',
   showShortcuts: 'settings',
   checkUpdate: 'settings',
   github: 'settings',

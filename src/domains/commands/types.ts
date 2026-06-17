@@ -158,6 +158,7 @@ export type CommandId =
   | 'alwaysOnTop'
   | 'preferences'
   | 'mdReference'
+  | 'migrationGuide'
   | 'showShortcuts'
   | 'checkUpdate'
   | 'github'

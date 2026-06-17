@@ -21,6 +21,12 @@ export function createHelpCommands(deps: HelpCommandDeps): CommandDefinition[] {
       run: () => handleHelpLink('mdReference'),
     },
     {
+      id: 'migrationGuide',
+      category: 'help',
+      keywords: ['migration', 'typora', 'miaoyan', 'marktext'],
+      run: () => handleHelpLink('migrationGuide'),
+    },
+    {
       id: 'showShortcuts',
       category: 'help',
       keywords: ['shortcut', 'keyboard'],

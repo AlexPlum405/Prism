@@ -146,6 +146,7 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   alwaysOnTop: 'command.alwaysOnTop',
   preferences: 'command.preferences',
   mdReference: 'command.mdReference',
+  migrationGuide: 'command.migrationGuide',
   showShortcuts: 'command.showShortcuts',
   checkUpdate: 'command.checkUpdate',
   github: 'command.github',

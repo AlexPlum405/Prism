@@ -285,12 +285,14 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
     >
       {isEmpty ? (
         <div className="file-tree-empty">
+          <div className="file-tree-empty-kicker">PRISM</div>
           <div style={{ marginBottom: '8px', color: 'var(--text-secondary)', fontWeight: 500 }}>
             {rootPath ? t('workspace.fileTree.emptyWithWorkspace.title') : t('workspace.fileTree.emptyNoWorkspace.title')}
           </div>
           <div style={{ fontSize: '12px' }}>
             {rootPath ? t('workspace.fileTree.emptyWithWorkspace.hint') : t('workspace.fileTree.emptyNoWorkspace.hint')}
           </div>
+          <div className="file-tree-empty-brand">{t('brand.tagline')}</div>
         </div>
       ) : fileTreeMode === 'list' ? (
         flatFiles.map(({ node, folderLabel }, index) => renderFileNode(node, 0, index, folderLabel))
@@ -391,6 +393,20 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
           color: var(--text-tertiary);
           line-height: 1.7;
           text-align: center;
+        }
+        .file-tree-empty-kicker {
+          margin-bottom: 8px;
+          color: var(--text-tertiary);
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0;
+        }
+        .file-tree-empty-brand {
+          max-width: 180px;
+          margin: 14px auto 0;
+          color: var(--text-tertiary);
+          font-size: 11.5px;
+          line-height: 1.55;
         }
         @media (prefers-reduced-motion: reduce) {
           .file-tree-item {

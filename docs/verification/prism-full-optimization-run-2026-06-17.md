@@ -46,7 +46,7 @@
 | P2-05 主题截图回归 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
 | P2-06 跨平台壳与控件密度审计 | 已完成 | 中 | 截图审查、相关 component tests |
 | P2-07 微反馈与动效节奏统一 | 已完成 | 中 | UI tests、reduced-motion 检查、build |
-| P2-08 品牌与空状态收口 | 未开始 | 低 | 文档检查、截图审查 |
+| P2-08 品牌与空状态收口 | 已完成 | 低 | 文档检查、截图审查、i18n/UI tests、build |
 | P2-09 斜杠菜单第一版 | 未开始 | 中 | 新增 editor extension tests、必要 SplitView tests |
 | P2-10 选区浮动工具栏第一版 | 未开始 | 中 | EditorPane tests 或手工 smoke + 截图 |
 | P2-11 图标规范 | 未开始 | 低 | 文档检查、截图审查、相关 UI tests |
@@ -401,3 +401,23 @@
 | 证据路径 | 本文件；`src/styles/global.test.ts` 的 motion/reduced-motion 回归测试；`src/lib/feedbackTiming.ts`；相关 Vitest/build 命令输出 |
 | 未验证风险 | 当前验证以 CSS/JS 单测和 production build 为主，未录制真实 Tauri WebView 中 command palette、toast、保存徽标、源码定位 flash 和导出状态的动效视频；Windows/Linux 真机的系统动画偏好、WebView 合成层和刷新率差异仍需后续人工 smoke 补验；历史主题文件中仍保留部分 120ms 覆盖和关系图谱内部动画，后续如果这些区域成为高频入口，应继续按组件迁移到 motion token |
 | 对应提交 | `9178ccad87c8f96fe54ee1447eb6ca0619c37e08` |
+
+### P2-08 品牌与空状态收口
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `src/lib/brand.ts` 集中 Prism 品牌支柱和迁移帮助 URL；About 弹窗增加轻量品牌 mark、Prism 自有视觉词、三条产品承诺；无文档主界面从单行提示改为克制空状态，说明本地文件、完整预览和可信导出；文件树空状态补 PRISM 识别和本地写作提示；Help 菜单和命令系统新增 Prism 迁移帮助入口；HTML standalone 导出增加非视觉 `generator=Prism` 元信息，避免破坏导出排版。 |
+| 涉及文件 | `src/lib/brand.ts`、`src/components/shell/AboutModal.tsx`、`src/components/shell/AboutModal.test.tsx`、`src/domains/document/components/DocumentView.tsx`、`src/domains/document/components/DocumentView.test.tsx`、`src/domains/workspace/components/FileTree.tsx`、`src/domains/workspace/components/FileTree.test.tsx`、`src/domains/commands/categories/helpCommands.ts`、`src/domains/commands/menuModel.ts`、`src/domains/commands/paletteGroups.ts`、`src/domains/commands/registry.ts`、`src/domains/commands/registry.test.ts`、`src/domains/commands/types.ts`、`src/domains/i18n/commands.ts`、`src/domains/i18n/resources.ts`、`src/domains/export/render/standaloneHtml.ts`、`src/domains/export/render/standaloneHtml.test.ts`、`src/styles/shell.css`、`src/styles/floating.css`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/` |
+| 风险等级 | 低 |
+| 验证命令 | `npm test -- --run src/domains/i18n/i18n.test.ts src/components/shell/AboutModal.test.tsx src/domains/document/components/DocumentView.test.tsx src/domains/workspace/components/FileTree.test.tsx src/domains/commands/registry.test.ts src/domains/export/render/standaloneHtml.test.ts --reporter verbose` |
+| 命令结果 | 通过：6 个测试文件，39 个测试用例；覆盖三语 i18n key 完整、About 品牌文案、不出现 AI/云同步/实时协作承诺、无文档空状态、文件树空状态、迁移帮助入口、HTML 导出 `generator=Prism`；输出中有既有 `localStorage.setItem is not a function` 和 `--localstorage-file` 警告，无失败 |
+| 截图命令 | inline Playwright fixture 生成 `docs/verification/prism-brand-empty-state-snapshots-2026-06-18/` |
+| 截图结果 | 通过：生成 `miaoyan` / `nocturne` 两主题、1200/1440 两宽度共 4 张复合截图；抽查 `miaoyan-brand-empty-about-1200.png` 与 `nocturne-brand-empty-about-1440.png`，截图非空，空文档状态和 About 品牌面板均可见，未发现明显文本重叠或溢出 |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 证据路径 | `docs/verification/prism-brand-empty-state-snapshots-2026-06-18/README.md`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1200.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1440.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/nocturne-brand-empty-about-1200.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/nocturne-brand-empty-about-1440.png`、本文件、相关 Vitest/build 命令输出 |
+| 未验证风险 | 当前截图是 Playwright 复合 fixture，不是真实 Tauri WebView；About 中的轻量字母 mark 不是最终 app icon 渲染替代，真实 macOS/Windows/Linux app icon、系统 About 菜单、窗口 chrome 和字体 fallback 仍需后续真机 smoke；本项只收口品牌表达和空状态，不新增 AI、云、协作、插件市场或知识库工作台定位 |
+| 对应提交 | 待提交后回填 |

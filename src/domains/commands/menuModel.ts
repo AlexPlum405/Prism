@@ -235,6 +235,7 @@ const menuModel: MenuModel = {
   help: [
     { command: 'showShortcuts' },
     { command: 'mdReference' },
+    { command: 'migrationGuide' },
     { command: 'checkUpdate' },
     { type: 'separator' },
     { command: 'github' },

@@ -27,6 +27,7 @@ import { emitAppEvent } from '../../platform/events/appEvents';
 import { openExternalUrl } from '../../platform/tauri/opener';
 import { askDialog } from '../../platform/tauri/dialogs';
 import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
+import { PRISM_MIGRATION_GUIDE_URL } from '../../lib/brand';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -108,6 +109,7 @@ async function handleDevTools(context: CommandContext): Promise<void> {
 async function handleHelpLink(command: CommandId): Promise<void> {
   const urls: Partial<Record<CommandId, string>> = {
     mdReference: 'https://www.markdownguide.org/basic-syntax/',
+    migrationGuide: PRISM_MIGRATION_GUIDE_URL,
     github: 'https://github.com/AlexPlum405/Prism',
     feedback: 'https://github.com/AlexPlum405/Prism/issues',
   };

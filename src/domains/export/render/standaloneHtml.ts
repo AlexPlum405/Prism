@@ -32,6 +32,7 @@ export async function buildStandaloneHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(getExportTitle(input))}</title>
+  <meta name="generator" content="Prism">
   ${input.author ? `<meta name="author" content="${escapeHtml(input.author)}">` : ''}
   ${input.date ? `<meta name="date" content="${escapeHtml(input.date)}">` : ''}
   ${css ? `<style>${css}</style>` : ''}

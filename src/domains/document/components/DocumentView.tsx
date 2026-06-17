@@ -4,6 +4,7 @@ import { SplitView } from '../../editor/components/SplitView';
 import type { EditorPaneHandle } from '../../editor/components/EditorPane';
 import type { WorkspaceIndex } from '../../workspace/services';
 import { useI18n } from '../../i18n';
+import { PRISM_BRAND_PILLARS } from '../../../lib/brand';
 
 interface DocumentViewProps {
   onCursorChange?: (cursor: { line: number; column: number }) => void;
@@ -33,17 +34,18 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
 
     if (!currentDocument) {
       return (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-secondary)',
-            fontSize: '14px',
-          }}
-        >
-          {t('document.emptyPrompt')}
+        <div className="prism-empty-state" role="status" aria-label={t('document.emptyTitle')}>
+          <div className="prism-empty-state__kicker">PRISM</div>
+          <h1>{t('document.emptyTitle')}</h1>
+          <p>{t('document.emptyBody')}</p>
+          <ul className="prism-empty-state__pillars" aria-label={t('brand.pillarsLabel')}>
+            {PRISM_BRAND_PILLARS.map((pillar) => (
+              <li key={pillar.id}>
+                <strong>{t(pillar.titleKey)}</strong>
+                <span>{t(pillar.bodyKey)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       );
     }

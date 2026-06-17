@@ -303,8 +303,16 @@ describe('command registry', () => {
     expect(Object.keys(sections)).not.toContain('Prism');
     expect(Object.keys(sections)).toEqual(['文件', '编辑', '插入', '格式', '导航', '视图', '导出', '窗口', '帮助']);
     expect(fileActions).toContain('preferences');
-    expect(helpActions).toEqual(expect.arrayContaining(['showShortcuts', 'checkUpdate', 'about']));
+    expect(helpActions).toEqual(expect.arrayContaining(['showShortcuts', 'mdReference', 'migrationGuide', 'checkUpdate', 'about']));
     expect(helpActions).not.toContain('commandPalette');
+  });
+
+  it('opens the Prism migration guide from product help', async () => {
+    await runCommand('migrationGuide', createCommandContext());
+
+    expect(openerMock.openUrl).toHaveBeenCalledWith(
+      'https://github.com/AlexPlum405/Prism/blob/main/docs/help/prism-migration-guide.md',
+    );
   });
 
   it('does not expose deferred platform features in menus', () => {
