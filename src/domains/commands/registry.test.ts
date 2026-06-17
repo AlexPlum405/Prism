@@ -73,8 +73,10 @@ vi.mock('../export/preflight', () => ({
 }));
 
 import {
+  COMMAND_PALETTE_GROUP_ORDER,
   commandRegistry,
   commandRegistryById,
+  getCommandPaletteGroup,
   getMenuSections,
   runCommand,
   type CommandContext,
@@ -216,6 +218,23 @@ describe('command registry', () => {
     const ids = commandRegistry.map((command) => command.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(commandRegistryById.size).toBe(commandRegistry.length);
+  });
+
+  it('maps registered commands into the product command palette groups', () => {
+    expect(COMMAND_PALETTE_GROUP_ORDER).toEqual([
+      'file',
+      'document',
+      'export',
+      'diagnostics',
+      'links',
+      'settings',
+    ]);
+    expect(commandRegistry.every((command) => Boolean(getCommandPaletteGroup(command.id)))).toBe(true);
+    expect(getCommandPaletteGroup('open')).toBe('file');
+    expect(getCommandPaletteGroup('showSearch')).toBe('document');
+    expect(getCommandPaletteGroup('exportPdf')).toBe('export');
+    expect(getCommandPaletteGroup('showRelationGraph')).toBe('links');
+    expect(getCommandPaletteGroup('preferences')).toBe('settings');
   });
 
   it('builds menu sections only from registered commands', () => {

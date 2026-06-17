@@ -106,9 +106,21 @@ export function CommandPalette({
   const hint = mode === 'files'
     ? t('palette.filesHint')
     : t('palette.searchHint');
-  const emptyText = mode === 'files'
-    ? workspaceIndexing ? t('palette.indexing') : t('palette.noFiles')
-    : workspaceIndexing ? t('palette.indexing') : t('palette.noContent');
+  const scopeLabel = mode === 'files'
+    ? t('palette.group.files')
+    : t('palette.group.workspace');
+  const indexStatus = getIndexStatus({
+    files,
+    mode,
+    nativeReady: nativeItems?.key === nativeQueryKey,
+    workspaceIndex,
+    workspaceIndexing,
+  });
+  const emptyText = getEmptyText({
+    mode,
+    workspaceIndex,
+    workspaceIndexing,
+  });
 
   useEffect(() => {
     if (visible) {
@@ -224,8 +236,11 @@ export function CommandPalette({
       <div className="cmdk-overlay" onClick={onClose} />
       <div className="cmdk" role="dialog" aria-label={mode === 'files' ? t('palette.quickOpen') : t('palette.aria.fullTextSearch')}>
         <div className="cmdk-titlebar">
-          <span className="cmdk-title">{title}</span>
-          <span className="cmdk-hint">{hint}</span>
+          <div className="cmdk-title-main">
+            <span className="cmdk-title">{title}</span>
+            <span className="cmdk-scope">{scopeLabel}</span>
+          </div>
+          <span className="cmdk-hint">{hint} · {indexStatus}</span>
         </div>
         <div className="cmdk-search">
           <SearchIcon />
@@ -291,4 +306,29 @@ function searchCategoryLabel(result: WorkspaceIndexSearchResult) {
   if (result.match === 'content' && result.snippet) return `${path} · ${result.snippet}`;
   if (result.match === 'heading' && result.snippet) return `${path} · ${result.snippet}`;
   return path;
+}
+
+function getIndexStatus(input: {
+  files: FileNode[];
+  mode: CommandPaletteMode;
+  nativeReady: boolean;
+  workspaceIndex: WorkspaceIndex | null;
+  workspaceIndexing: boolean;
+}) {
+  if (input.nativeReady) return t('palette.index.native');
+  if (input.workspaceIndex) return t('palette.index.ready');
+  if (input.workspaceIndexing) return t('palette.indexing');
+  if (input.mode === 'files' && input.files.length > 0) return t('palette.index.fileTreeFallback');
+  if (input.mode === 'search') return t('palette.index.unavailable');
+  return t('palette.index.noWorkspace');
+}
+
+function getEmptyText(input: {
+  mode: CommandPaletteMode;
+  workspaceIndex: WorkspaceIndex | null;
+  workspaceIndexing: boolean;
+}) {
+  if (input.workspaceIndexing) return t('palette.indexing');
+  if (input.mode === 'search' && !input.workspaceIndex) return t('palette.noIndex');
+  return input.mode === 'files' ? t('palette.noFiles') : t('palette.noContent');
 }

@@ -46,6 +46,8 @@ describe('CommandPalette', () => {
     );
 
     expect(screen.getByPlaceholderText('搜索工作区文件…')).toBeInTheDocument();
+    expect(screen.getByText('文件')).toBeInTheDocument();
+    expect(screen.getByText(/文件树降级/)).toBeInTheDocument();
     expect(screen.getAllByText(/\.md$/).map((node) => node.textContent)).toEqual(['root.md', 'a.md', 'z.md']);
     expect(screen.getByText('a.md')).toBeInTheDocument();
 
@@ -91,6 +93,8 @@ describe('CommandPalette', () => {
     });
     expect(screen.getByText('Zeta 方案')).toBeInTheDocument();
     expect(screen.getByText('b/z.md')).toBeInTheDocument();
+    expect(screen.getByText('文件')).toBeInTheDocument();
+    expect(screen.getByText(/索引就绪/)).toBeInTheDocument();
 
     rerender(
       <CommandPalette
@@ -107,6 +111,8 @@ describe('CommandPalette', () => {
     fireEvent.change(screen.getByPlaceholderText('全文搜索工作区…'), {
       target: { value: '全文命中' },
     });
+    expect(screen.getByText('工作区')).toBeInTheDocument();
+    expect(screen.getByText(/索引就绪/)).toBeInTheDocument();
     expect(screen.getByText('Zeta 方案')).toBeInTheDocument();
     expect(screen.getByText('正文')).toBeInTheDocument();
     expect(screen.getByText(/全文命中/)).toBeInTheDocument();
@@ -170,5 +176,23 @@ describe('CommandPalette', () => {
     });
     expect(await screen.findByText('Native Result')).toBeInTheDocument();
     expect(screen.getByText('native.md')).toBeInTheDocument();
+    expect(screen.getByText(/原生索引/)).toBeInTheDocument();
+  });
+
+  it('explains when full-text search has no workspace index yet', () => {
+    render(
+      <CommandPalette
+        visible
+        files={files}
+        workspaceRoot="/notes"
+        mode="search"
+        onClose={vi.fn()}
+        onExecute={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('工作区')).toBeInTheDocument();
+    expect(screen.getByText(/索引未就绪/)).toBeInTheDocument();
+    expect(screen.getByText('工作区索引尚不可用')).toBeInTheDocument();
   });
 });

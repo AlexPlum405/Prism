@@ -56,15 +56,37 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   color: var(--c-graphite);
 }
 
+.cmdk-title-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
 .cmdk-title {
   color: var(--c-void);
   font-size: 12px;
   font-weight: 600;
 }
 
+.cmdk-scope {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-link);
+  color: var(--c-graphite);
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
 .cmdk-hint {
+  min-width: 0;
+  overflow: hidden;
   color: var(--c-ash);
   font-size: 11px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cmdk-search {

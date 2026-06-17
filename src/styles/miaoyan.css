@@ -685,6 +685,13 @@ html[data-content-theme='miaoyan'] .cmdk-hint {
   letter-spacing: 0.6px;
 }
 
+html[data-content-theme='miaoyan'] .cmdk-scope {
+  border-color: var(--miaoyan-divider);
+  color: var(--miaoyan-secondary-text);
+  font-family: var(--miaoyan-font);
+  letter-spacing: 0.6px;
+}
+
 html[data-content-theme='miaoyan'] .cmdk-search,
 html[data-content-theme='miaoyan'] .sp-header,
 html[data-content-theme='miaoyan'] .modal-header {
