@@ -8,7 +8,7 @@ html[data-platform='windows'] .modal {
   margin: auto;
   transform: none;
   will-change: auto;
-  animation: prism-windows-modal-in 140ms var(--ease-out) both;
+  animation: prism-windows-modal-in var(--duration-hover) var(--ease-out) both;
   -webkit-font-smoothing: auto;
   font-synthesis-weight: none;
 }
@@ -22,6 +22,12 @@ html[data-platform='windows'][data-content-theme='miaoyan'] .modal-overlay {
 @keyframes prism-windows-modal-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-platform='windows'] :where(.modal) {
+    animation: none;
+  }
 }
 
 /* Windows WebView2 uses a different CJK text pipeline than macOS.

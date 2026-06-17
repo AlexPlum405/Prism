@@ -103,3 +103,32 @@ describe('modal visual rules', () => {
     expect(shortcutPanelRule).not.toContain('border-radius: var(--radius-window)');
   });
 });
+
+describe('motion and microfeedback rules', () => {
+  const css = readCssWithImports('global.css');
+
+  it('defines shared motion tokens for hover, popover, toast, status, and attention feedback', () => {
+    expect(css).toContain('--duration-hover: 120ms');
+    expect(css).toContain('--duration-popover: 200ms');
+    expect(css).toContain('--duration-toast: 220ms');
+    expect(css).toContain('--duration-feedback: 220ms');
+    expect(css).toContain('--duration-attention: 1800ms');
+    expect(css).toContain('--duration-spinner: 820ms');
+    expect(css).toContain('--duration-progress: 1200ms');
+  });
+
+  it('routes primary feedback surfaces through shared motion tokens', () => {
+    expect(css).toContain('animation: prism-toast-in var(--duration-toast) var(--ease-out)');
+    expect(css).toContain('animation: prism-line-flash var(--duration-attention) var(--ease-out)');
+    expect(css).toContain('animation: prism-export-spin var(--duration-spinner) linear infinite');
+    expect(css).toContain('background-color var(--duration-hover) var(--ease-out)');
+    expect(css).toContain('transition: transform var(--duration-popover) var(--ease-spring)');
+  });
+
+  it('respects reduced motion for floating layers, toast progress, source flash, and export spinners', () => {
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.prism-toast[\s\S]*transition-duration: 1ms/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.preview-line-flash[\s\S]*animation: none/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.prism-export-spinner[\s\S]*animation: none/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.cmdk[\s\S]*animation: none/);
+  });
+});

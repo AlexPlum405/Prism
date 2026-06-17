@@ -97,7 +97,7 @@
 }
 
 .saving .saveBadgeDot {
-  animation: ring-breath 1.8s infinite ease-in-out;
+  animation: ring-breath var(--duration-attention) var(--ease-out) infinite;
 }
 
 .failed,
@@ -257,7 +257,9 @@
   width: 34px;
   height: 28px;
   color: var(--miaoyan-secondary-text);
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 :global(html[data-content-theme='miaoyan']) .btn:hover {
@@ -379,7 +381,9 @@
   width: 34px;
   height: 28px;
   color: var(--theme-secondary-text);
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 :global(html[data-content-theme='inkstone']) .btn:hover,
@@ -405,4 +409,21 @@
 
 :global(html[data-platform='windows']) .windowsTitleCluster {
   gap: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saving .saveBadgeDot {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .btn,
+  :global(html[data-content-theme='miaoyan']) .btn,
+  :global(html[data-content-theme='inkstone']) .btn,
+  :global(html[data-content-theme='slate']) .btn,
+  :global(html[data-content-theme='mono']) .btn,
+  :global(html[data-content-theme='nocturne']) .btn {
+    transition-duration: 1ms;
+  }
 }

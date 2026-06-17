@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ToastInput } from '../lib/toast';
+import { EXPORT_TRANSIENT_FEEDBACK_MS } from '../lib/feedbackTiming';
 import { t } from '../domains/i18n';
 import { onAppEvent } from '../platform/events/appEvents';
-
-const EXPORT_TRANSIENT_FEEDBACK_MS = 2200;
 
 export interface ExportFailureState {
   diagnostic: string;

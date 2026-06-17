@@ -23,7 +23,7 @@
   border: none;
   border-radius: var(--r-link);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out);
+  transition: background var(--duration-hover) var(--ease-out);
 }
 
 .menuItem:hover,
@@ -49,7 +49,7 @@
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: var(--r-pill);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out);
+  transition: background var(--duration-hover) var(--ease-out);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -72,7 +72,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-hover) var(--ease-out);
 }
 
 .pillFilled:hover { opacity: 0.85; }
@@ -98,7 +98,9 @@
   font-weight: 400;
   line-height: 20px;
   letter-spacing: 0.6px;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 :global(html[data-content-theme='miaoyan']) .menuItem:hover,
@@ -177,7 +179,9 @@
   font-weight: 400;
   line-height: 20px;
   letter-spacing: 0.6px;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 :global(html[data-content-theme='inkstone']) .menuItem:hover,

@@ -13,6 +13,7 @@ import { getCommandMenuItems, type CommandContext } from '../../commands';
 import { t } from '../../i18n';
 import { previewHtmlToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
+import { PREVIEW_SOURCE_FLASH_MS } from '../../../lib/feedbackTiming';
 import {
   createPreviewScrollMapCache,
   findPreviewElementForSourceLine,
@@ -585,7 +586,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
             target.classList.add('preview-line-flash');
             setTimeout(() => {
               target.classList.remove('preview-line-flash');
-            }, 2000);
+            }, PREVIEW_SOURCE_FLASH_MS);
           }
         }
       },

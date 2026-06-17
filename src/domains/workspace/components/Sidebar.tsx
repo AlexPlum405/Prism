@@ -71,7 +71,7 @@ export function Sidebar({
                 boxShadow: isActive ? 'var(--elevation-card)' : 'none',
                 color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                 cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: 'background var(--duration-feedback) var(--ease-out), color var(--duration-feedback) var(--ease-out), box-shadow var(--duration-feedback) var(--ease-out), transform var(--duration-feedback) var(--ease-out)',
                 zIndex: 1,
                 position: 'relative',
                 display: 'flex',

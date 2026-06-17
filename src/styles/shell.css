@@ -28,7 +28,9 @@ button {
   font-weight: 500;
   font-size: 12px;
   outline: none;
-  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 button:focus-visible {
@@ -42,7 +44,7 @@ body.focus-mode .app-menubar,
 body.focus-mode .app-sidebar,
 body.focus-mode .app-statusbar {
   opacity: 0.25;
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity var(--duration-feedback) var(--ease-out);
 }
 
 body.focus-mode .app-titlebar:hover,
@@ -178,9 +180,9 @@ body.typewriter-mode .cm-editor {
   transform: translateY(1px);
   transform-origin: center;
   transition:
-    opacity 420ms cubic-bezier(0.16, 1, 0.3, 1) 120ms,
-    transform 420ms cubic-bezier(0.16, 1, 0.3, 1) 120ms,
-    background-color 140ms var(--ease-out);
+    opacity var(--duration-slow) var(--ease-out) var(--duration-hover),
+    transform var(--duration-slow) var(--ease-out) var(--duration-hover),
+    background-color var(--duration-hover) var(--ease-out);
 }
 
 .prism-horizontal-scrollbar[data-scrollable='true']:hover .prism-horizontal-scrollbar__thumb-visual,
@@ -198,7 +200,7 @@ body.typewriter-mode .cm-editor {
 
 @media (prefers-reduced-motion: reduce) {
   .prism-horizontal-scrollbar__thumb-visual {
-    transition-duration: 120ms;
+    transition-duration: var(--duration-hover);
     transition-delay: 0ms;
   }
 }

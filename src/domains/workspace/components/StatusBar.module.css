@@ -21,7 +21,7 @@
   padding: 0 6px 0 8px;
   box-shadow: 1px 0 0 var(--c-fog);
   opacity: 0;
-  transition: opacity 220ms var(--ease-out);
+  transition: opacity var(--duration-feedback) var(--ease-out);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -79,7 +79,10 @@
   cursor: default;
   font-size: 11px;
   font-weight: 500;
-  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    border-color var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 button.exportStatus {
@@ -113,7 +116,7 @@ button.exportStatus:hover {
   border: 1.6px solid color-mix(in srgb, currentColor 22%, transparent);
   border-top-color: currentColor;
   border-radius: 50%;
-  animation: prism-status-export-spin 1.2s linear infinite;
+  animation: prism-status-export-spin var(--duration-progress) linear infinite;
 }
 
 .exportStatusText {
@@ -139,7 +142,9 @@ button.exportStatus:hover {
   color: var(--c-graphite);
   font-size: 11px;
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 .btn:hover {
@@ -229,7 +234,10 @@ button.exportStatus:hover {
   border-radius: var(--r-pill);
   display: grid;
   place-items: center;
-  transition: background 140ms var(--ease-out), color 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out);
 }
 
 .modeBtn:hover { color: var(--c-void); }
@@ -725,4 +733,17 @@ button.exportStatus:hover {
 :global(html[data-content-theme='mono']) .diagnostic:hover,
 :global(html[data-content-theme='nocturne']) .diagnostic:hover {
   background: var(--theme-panel-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exportStatusSpinner {
+    animation: none;
+  }
+
+  .sidebarZone,
+  .exportStatus,
+  .btn,
+  .modeBtn {
+    transition-duration: 1ms;
+  }
 }

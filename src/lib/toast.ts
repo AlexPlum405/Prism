@@ -1,3 +1,9 @@
+import {
+  TOAST_ACTION_DURATION_MS,
+  TOAST_DEFAULT_DURATION_MS,
+  TOAST_STRING_DURATION_MS,
+} from './feedbackTiming';
+
 export type ToastTone = 'neutral' | 'success' | 'warning' | 'error';
 
 export interface ToastAction {
@@ -32,7 +38,7 @@ export function createToastState(input: ToastInput): ToastState {
       tone: 'neutral',
       title: input,
       actions: [],
-      durationMs: 2800,
+      durationMs: TOAST_STRING_DURATION_MS,
     };
   }
 
@@ -44,7 +50,7 @@ export function createToastState(input: ToastInput): ToastState {
     message: input.message,
     actions: input.actions ?? [],
     durationMs: input.durationMs === undefined
-      ? hasAction ? 6200 : 3600
+      ? hasAction ? TOAST_ACTION_DURATION_MS : TOAST_DEFAULT_DURATION_MS
       : input.durationMs,
   };
 }

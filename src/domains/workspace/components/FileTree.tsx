@@ -193,13 +193,13 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
           boxShadow: 'none',
           transform: 'scale(1)',
           position: 'relative',
-          transition: 'background 0.2s var(--ease-out), border-left-color 0.2s var(--ease-out), padding-left 0.2s var(--ease-out)',
+          transition: 'background var(--duration-feedback) var(--ease-out), border-left-color var(--duration-feedback) var(--ease-out), padding-left var(--duration-feedback) var(--ease-out)',
           display: 'flex',
           flexDirection: 'column',
           gap: '3px',
           zIndex: isActive ? 10 : 1,
-          animation: `fileItemEntry 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) backwards`,
-          animationDelay: `${Math.min(index, 24) * 0.02}s`,
+          animation: 'fileItemEntry var(--duration-slow) var(--ease-spring) backwards',
+          animationDelay: `calc(${Math.min(index, 24)} * var(--duration-fast) / 6)`,
           minHeight: '32px',
         }}
         className={`file-tree-item ${isActive ? 'is-active' : ''}`}
@@ -334,7 +334,9 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
           border-radius: var(--radius-md);
           color: var(--text-secondary);
           cursor: pointer;
-          transition: background 0.15s, color 0.15s;
+          transition:
+            background var(--duration-hover) var(--ease-out),
+            color var(--duration-hover) var(--ease-out);
         }
         .file-tree-directory:hover {
           background: var(--bg-hover);
@@ -348,7 +350,7 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
           justify-content: center;
           color: var(--text-tertiary);
           transform: rotate(0deg);
-          transition: transform 0.15s;
+          transition: transform var(--duration-hover) var(--ease-out);
           font-size: 14px;
           line-height: 1;
         }
@@ -389,6 +391,16 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
           color: var(--text-tertiary);
           line-height: 1.7;
           text-align: center;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .file-tree-item {
+            animation: none !important;
+            transition-duration: 1ms !important;
+          }
+          .file-tree-directory,
+          .file-tree-caret {
+            transition-duration: 1ms !important;
+          }
         }
       `}</style>
     </div>

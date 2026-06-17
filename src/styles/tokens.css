@@ -119,6 +119,13 @@ html, body { height: 100%; }
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --duration-slow: 400ms;
+  --duration-hover: 120ms;
+  --duration-popover: 200ms;
+  --duration-toast: 220ms;
+  --duration-feedback: 220ms;
+  --duration-attention: 1800ms;
+  --duration-spinner: 820ms;
+  --duration-progress: 1200ms;
   --app-zoom: 1;
 }
 

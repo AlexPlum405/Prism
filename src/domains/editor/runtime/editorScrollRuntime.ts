@@ -1,5 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import { addLineFlash, removeLineFlash } from '../extensions/selection';
+import { PREVIEW_SOURCE_FLASH_MS } from '../../../lib/feedbackTiming';
 
 export type ScheduleLineFlashClear = (
   callback: () => void,
@@ -23,7 +24,7 @@ export function jumpToEditorLine(
 ) {
   const line = getClampedLine(view, lineNumber);
   const scheduleClear = options.scheduleClear ?? setTimeout;
-  const clearDelayMs = options.clearDelayMs ?? 2000;
+  const clearDelayMs = options.clearDelayMs ?? PREVIEW_SOURCE_FLASH_MS;
 
   view.dispatch({
     selection: { anchor: line.from },

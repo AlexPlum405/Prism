@@ -46,6 +46,9 @@ html[data-content-theme='nocturne'] .preview-compat {
   line-height: 18px;
   pointer-events: none;
   backdrop-filter: blur(8px);
+  transition:
+    opacity var(--duration-feedback) var(--ease-out),
+    transform var(--duration-feedback) var(--ease-out);
 }
 
 html[data-content-theme='miaoyan'] .preview-render-status {
@@ -63,6 +66,10 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
 .preview-search-match {
   background-color: var(--preview-search-match-bg) !important;
   border-radius: 2px;
+  transition:
+    background-color var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 .preview-search-match--current {

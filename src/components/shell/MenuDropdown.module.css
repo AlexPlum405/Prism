@@ -9,7 +9,7 @@
   border: 1px solid var(--c-fog);
   box-shadow: var(--shadow-flyout);
   z-index: 1000;
-  animation: ddIn 140ms var(--ease-out);
+  animation: ddIn var(--duration-hover) var(--ease-out);
 }
 
 .itemWrap {
@@ -31,9 +31,9 @@
   transform: translateX(-4px);
   pointer-events: none;
   transition:
-    opacity 120ms var(--ease-out),
-    transform 120ms var(--ease-out),
-    visibility 120ms var(--ease-out);
+    opacity var(--duration-hover) var(--ease-out),
+    transform var(--duration-hover) var(--ease-out),
+    visibility var(--duration-hover) var(--ease-out);
 }
 
 .itemWrap:hover > .submenuPanel,
@@ -59,6 +59,9 @@
   border-radius: var(--r-link);
   cursor: pointer;
   user-select: none;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
 }
 
 .item:hover,
@@ -245,6 +248,17 @@
 :global(html[data-content-theme='mono']) .item.disabled,
 :global(html[data-content-theme='nocturne']) .item.disabled {
   color: var(--theme-tertiary-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown {
+    animation: none;
+  }
+
+  .submenuPanel,
+  .item {
+    transition-duration: 1ms;
+  }
 }
 
 :global(html[data-content-theme='inkstone']) .check,

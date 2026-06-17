@@ -243,7 +243,7 @@ export function useEditorRuntimeModel({
           '&': { flex: 1, minHeight: 0, backgroundColor: 'transparent' },
           '.cm-scroller': { overflowY: 'auto', overflowX: 'hidden' },
           '.cm-content': { padding: '32px 48px', color: 'var(--text-primary)', maxWidth: '860px', margin: '0 auto' },
-          '.cm-line-flash': { animation: 'cm-flash 2s cubic-bezier(0.16, 1, 0.3, 1)' },
+          '.cm-line-flash': { animation: 'cm-flash var(--duration-attention) var(--ease-out)' },
           '.cm-gutters': {
             backgroundColor: 'transparent',
             borderRight: '1px solid var(--theme-divider, var(--border-color))',

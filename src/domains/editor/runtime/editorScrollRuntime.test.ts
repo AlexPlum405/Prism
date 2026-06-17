@@ -6,6 +6,7 @@ import {
   scrollEditorToLine,
   setEditorScrollRatio,
 } from './editorScrollRuntime';
+import { PREVIEW_SOURCE_FLASH_MS } from '../../../lib/feedbackTiming';
 
 function createView(doc: string) {
   const parent = document.createElement('div');
@@ -34,7 +35,7 @@ describe('editorScrollRuntime', () => {
     try {
       expect(jumpToEditorLine(view, 9, { scheduleClear })).toBe(true);
       expect(view.state.selection.main.from).toBe(8);
-      expect(scheduleClear).toHaveBeenCalledWith(expect.any(Function), 2000);
+      expect(scheduleClear).toHaveBeenCalledWith(expect.any(Function), PREVIEW_SOURCE_FLASH_MS);
     } finally {
       destroy();
     }
