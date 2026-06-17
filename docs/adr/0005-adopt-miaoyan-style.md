@@ -1,5 +1,7 @@
 # 采用妙言风格作为当前主视觉方向
 
+状态：已被 ADR-0006 收束。妙言风格仍是重要参考，但 2026-06-17 起不再作为 Prism 视觉与交互的唯一判断标准。
+
 2026-05-19：Prism 当前 UI 已不再以 `docs/prism-openai-redesign.html` 的 OpenAI 极简原型为主，而是以妙言式 macOS Markdown 写作器体验作为主视觉方向。ADR-0001 保留为历史背景，不再作为新功能 UI 的唯一判断标准。
 
 ## Decision
