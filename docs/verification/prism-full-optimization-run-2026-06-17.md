@@ -29,7 +29,7 @@
 
 | ID | 状态 | 风险 | 最小验证 |
 |---|---|---|---|
-| P0-01 全局快捷键输入框豁免 | 未开始 | 中 | `npm test -- --run src/app/useAppShortcuts.test.tsx` |
+| P0-01 全局快捷键输入框豁免 | 已完成 | 中 | `npm test -- --run src/app/useAppShortcuts.test.tsx` |
 | P0-02 默认 app 打开与启动 smoke | 未开始 | 高 | `npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts`、`npm run tauri:build:app-smoke` |
 | P0-03 真实 Tauri WebView 长文档性能基准 | 未开始 | 高 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose`、新增真实 app harness |
 | P1-01 统一打开文件策略 | 未开始 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts` |
@@ -66,7 +66,7 @@
 
 | 项 | 结果 |
 |---|---|
-| 状态 | 代码与测试已完成，等待提交 hash 回填 |
+| 状态 | 已完成 |
 | 变更摘要 | `useAppShortcuts` 增加 editable target guard：普通 `input`、`textarea`、`select`、非 CodeMirror `contenteditable` 中的编辑/格式/插入类快捷键保留原生行为；`event.defaultPrevented` 的嵌套控件事件不再被全局快捷键二次处理；CodeMirror 未处理的格式化快捷键仍可进入 app command registry；Escape 在 focus mode 下仍可用 |
 | 涉及文件 | `src/app/useAppShortcuts.ts`、`src/app/useAppShortcuts.test.tsx` |
 | 风险等级 | 中 |
@@ -74,4 +74,4 @@
 | 命令结果 | 通过：1 个测试文件，12 个测试用例 |
 | 证据路径 | 本文件；Vitest 命令输出；后续提交 diff |
 | 未验证风险 | 当前为 jsdom 单测验证，未在真实 Tauri WebView 中手工按键；Windows/Linux 物理键盘未补验 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `f464af7cb63f211cefc68e15266b181547d524a9` |
