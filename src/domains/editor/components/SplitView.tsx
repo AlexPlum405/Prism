@@ -55,6 +55,8 @@ const DEFAULT_SEARCH_PARAMS: SearchParams = {
   regexp: false,
   wholeWord: false,
 };
+const PREVIEW_SEARCH_INPUT_DEBOUNCE_MS = 140;
+const PREVIEW_SEARCH_BATCH_SIZE = 80;
 
 function normalizeSelectionSeed(text: string) {
   const seed = text.replace(/\u00a0/g, ' ');
@@ -153,21 +155,17 @@ function isSearchablePreviewTextNode(node: Node) {
   return !parent.closest('.preview-search-match, script, style, noscript, textarea, input, select, button, svg');
 }
 
-function applyPreviewSearch(
-  preview: HTMLElement | null,
-  params: SearchParams,
-  currentMatch: number,
-) {
-  if (!preview) return { count: 0, current: 0 };
+interface PreviewSearchMarkState {
+  currentElement: HTMLElement | null;
+  matchIndex: number;
+  normalizedCurrent: number;
+}
 
-  clearPreviewSearchMarks(preview);
+interface PreviewSearchTask {
+  cancel: () => void;
+}
 
-  const write = preview.querySelector<HTMLElement>('#write');
-  if (!write || !params.query) return { count: 0, current: 0 };
-
-  const pattern = buildSearchPattern(params.query, params.matchCase, params.regexp, params.wholeWord);
-  if (!pattern || pattern === 'invalid') return { count: 0, current: 0 };
-
+function collectPreviewSearchTextNodes(write: HTMLElement): Text[] {
   const textNodes: Text[] = [];
   const walker = document.createTreeWalker(write, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => (
@@ -181,72 +179,154 @@ function applyPreviewSearch(
     textNodes.push(walker.currentNode as Text);
   }
 
-  const occurrences: Array<{ node: Text; from: number; to: number }> = [];
-  for (const node of textNodes) {
-    const text = node.data;
-    pattern.lastIndex = 0;
+  return textNodes;
+}
 
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(text)) !== null) {
-      if (match[0].length === 0) {
-        pattern.lastIndex += 1;
-        continue;
-      }
+function replaceTextNodeWithPreviewSearchMarks(
+  node: Text,
+  pattern: RegExp,
+  state: PreviewSearchMarkState,
+) {
+  if (!node.parentNode) return;
 
-      occurrences.push({
-        node,
-        from: match.index,
-        to: match.index + match[0].length,
-      });
+  const text = node.data;
+  const entries: Array<{ from: number; to: number; index: number }> = [];
+  pattern.lastIndex = 0;
+
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) {
+    if (match[0].length === 0) {
+      pattern.lastIndex += 1;
+      continue;
     }
+
+    state.matchIndex += 1;
+    entries.push({
+      from: match.index,
+      to: match.index + match[0].length,
+      index: state.matchIndex,
+    });
   }
 
-  const count = occurrences.length;
-  if (count === 0) return { count: 0, current: 0 };
+  if (entries.length === 0) return;
 
-  const normalizedCurrent = Math.min(Math.max(currentMatch || 1, 1), count);
-  const occurrencesByNode = new Map<Text, Array<{ from: number; to: number; index: number }>>();
+  const fragment = document.createDocumentFragment();
+  let cursor = 0;
 
-  occurrences.forEach((occurrence, index) => {
-    const entries = occurrencesByNode.get(occurrence.node) ?? [];
-    entries.push({ ...occurrence, index: index + 1 });
-    occurrencesByNode.set(occurrence.node, entries);
-  });
-
-  let currentElement: HTMLElement | null = null;
-  for (const [node, entries] of occurrencesByNode) {
-    const fragment = document.createDocumentFragment();
-    let cursor = 0;
-
-    for (const entry of entries) {
-      if (entry.from > cursor) {
-        fragment.appendChild(document.createTextNode(node.data.slice(cursor, entry.from)));
-      }
-
-      const mark = document.createElement('span');
-      mark.className = entry.index === normalizedCurrent
-        ? 'preview-search-match preview-search-match--current'
-        : 'preview-search-match';
-      mark.textContent = node.data.slice(entry.from, entry.to);
-      fragment.appendChild(mark);
-
-      if (entry.index === normalizedCurrent) {
-        currentElement = mark;
-      }
-
-      cursor = entry.to;
+  for (const entry of entries) {
+    if (entry.from > cursor) {
+      fragment.appendChild(document.createTextNode(text.slice(cursor, entry.from)));
     }
 
-    if (cursor < node.data.length) {
-      fragment.appendChild(document.createTextNode(node.data.slice(cursor)));
+    const mark = document.createElement('span');
+    mark.className = entry.index === state.normalizedCurrent
+      ? 'preview-search-match preview-search-match--current'
+      : 'preview-search-match';
+    mark.textContent = text.slice(entry.from, entry.to);
+    fragment.appendChild(mark);
+
+    if (entry.index === state.normalizedCurrent) {
+      state.currentElement = mark;
     }
 
-    node.replaceWith(fragment);
+    cursor = entry.to;
   }
 
-  currentElement?.scrollIntoView({ block: 'center', inline: 'nearest' });
+  if (cursor < text.length) {
+    fragment.appendChild(document.createTextNode(text.slice(cursor)));
+  }
 
-  return { count, current: normalizedCurrent };
+  node.replaceWith(fragment);
+}
+
+function applyPreviewSearch(
+  preview: HTMLElement | null,
+  params: SearchParams,
+  currentMatch: number,
+  options: { scrollToCurrent?: boolean } = {},
+) {
+  if (!preview) return { count: 0, current: 0 };
+
+  clearPreviewSearchMarks(preview);
+
+  const write = preview.querySelector<HTMLElement>('#write');
+  if (!write || !params.query) return { count: 0, current: 0 };
+
+  const pattern = buildSearchPattern(params.query, params.matchCase, params.regexp, params.wholeWord);
+  if (!pattern || pattern === 'invalid') return { count: 0, current: 0 };
+
+  const state: PreviewSearchMarkState = {
+    currentElement: null,
+    matchIndex: 0,
+    normalizedCurrent: Math.max(currentMatch || 1, 1),
+  };
+  for (const node of collectPreviewSearchTextNodes(write)) {
+    replaceTextNodeWithPreviewSearchMarks(node, pattern, state);
+  }
+
+  if (options.scrollToCurrent) {
+    state.currentElement?.scrollIntoView({ block: 'center', inline: 'nearest' });
+  }
+
+  return {
+    count: state.matchIndex,
+    current: state.matchIndex === 0 ? 0 : Math.min(state.normalizedCurrent, state.matchIndex),
+  };
+}
+
+function startProgressivePreviewSearch(
+  preview: HTMLElement | null,
+  params: SearchParams,
+  currentMatch: number,
+  options: { batchSize?: number; scrollToCurrent?: boolean } = {},
+): PreviewSearchTask {
+  if (!preview) return { cancel: () => {} };
+
+  clearPreviewSearchMarks(preview);
+
+  const write = preview.querySelector<HTMLElement>('#write');
+  if (!write || !params.query) return { cancel: () => {} };
+
+  const pattern = buildSearchPattern(params.query, params.matchCase, params.regexp, params.wholeWord);
+  if (!pattern || pattern === 'invalid') return { cancel: () => {} };
+
+  const textNodes = collectPreviewSearchTextNodes(write);
+  const state: PreviewSearchMarkState = {
+    currentElement: null,
+    matchIndex: 0,
+    normalizedCurrent: Math.max(currentMatch || 1, 1),
+  };
+  const batchSize = Math.max(1, options.batchSize ?? PREVIEW_SEARCH_BATCH_SIZE);
+  let cursor = 0;
+  let cancelled = false;
+  let frame: number | null = null;
+
+  const runBatch = () => {
+    if (cancelled) return;
+
+    const end = Math.min(cursor + batchSize, textNodes.length);
+    for (; cursor < end; cursor += 1) {
+      replaceTextNodeWithPreviewSearchMarks(textNodes[cursor], pattern, state);
+    }
+
+    if (cursor < textNodes.length) {
+      frame = requestAnimationFrame(runBatch);
+      return;
+    }
+
+    if (options.scrollToCurrent) {
+      state.currentElement?.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
+  };
+
+  frame = requestAnimationFrame(runBatch);
+
+  return {
+    cancel: () => {
+      cancelled = true;
+      if (frame !== null) cancelAnimationFrame(frame);
+    },
+  };
 }
 
 export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
@@ -284,10 +364,79 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     const viewModeRef = useRef(viewMode);
     const scrollStateRef = useRef(scrollState);
     const previewScrollMapCacheRef = useRef(createPreviewScrollMapCache());
+    const previewSearchTaskRef = useRef<PreviewSearchTask | null>(null);
+    const previewSearchDebounceTimerRef = useRef<number | null>(null);
     const [editorActivated, setEditorActivated] = useState(viewMode !== 'preview');
     // 同步方向锁：防止反馈循环
     const syncingRef = useRef<'editor' | 'preview' | null>(null);
     const syncingTimerRef = useRef<number | null>(null);
+
+    const cancelPreviewSearchWork = useCallback(() => {
+      if (previewSearchDebounceTimerRef.current !== null) {
+        window.clearTimeout(previewSearchDebounceTimerRef.current);
+        previewSearchDebounceTimerRef.current = null;
+      }
+      previewSearchTaskRef.current?.cancel();
+      previewSearchTaskRef.current = null;
+    }, []);
+
+    const runPreviewSearch = useCallback((
+      params: SearchParams,
+      current: number,
+      options: { progressive?: boolean; scrollToCurrent?: boolean } = {},
+    ) => {
+      cancelPreviewSearchWork();
+      const preview = previewContainerRef.current;
+      if (!preview) return;
+
+      if (options.progressive && !options.scrollToCurrent) {
+        previewSearchTaskRef.current = startProgressivePreviewSearch(preview, params, current);
+        return;
+      }
+
+      applyPreviewSearch(preview, params, current, {
+        scrollToCurrent: options.scrollToCurrent,
+      });
+    }, [cancelPreviewSearchWork]);
+
+    const schedulePreviewSearch = useCallback((
+      params: SearchParams,
+      current: number,
+      options: { debounce?: boolean; progressive?: boolean; scrollToCurrent?: boolean } = {},
+    ) => {
+      const preview = previewContainerRef.current;
+      cancelPreviewSearchWork();
+
+      if (!preview) return;
+
+      if (!params.query) {
+        clearPreviewSearchMarks(preview);
+        return;
+      }
+
+      if (options.debounce) {
+        clearPreviewSearchMarks(preview);
+        previewSearchDebounceTimerRef.current = window.setTimeout(() => {
+          previewSearchDebounceTimerRef.current = null;
+          runPreviewSearch(params, current, {
+            progressive: options.progressive,
+            scrollToCurrent: options.scrollToCurrent,
+          });
+        }, PREVIEW_SEARCH_INPUT_DEBOUNCE_MS);
+        return;
+      }
+
+      runPreviewSearch(params, current, {
+        progressive: options.progressive,
+        scrollToCurrent: options.scrollToCurrent,
+      });
+    }, [cancelPreviewSearchWork, runPreviewSearch]);
+
+    useEffect(() => {
+      return () => {
+        cancelPreviewSearchWork();
+      };
+    }, [cancelPreviewSearchWork]);
 
     useEffect(() => {
       searchParamsRef.current = searchParams;
@@ -577,9 +726,9 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       }
 
       if (viewModeRef.current !== 'edit') {
-        applyPreviewSearch(previewContainerRef.current, params, nextCurrent);
+        schedulePreviewSearch(params, nextCurrent, { progressive: true });
       }
-    }, [getSearchSeed]);
+    }, [getSearchSeed, schedulePreviewSearch]);
 
     useEffect(() => {
       const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -647,7 +796,11 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       }
 
       if (viewMode !== 'edit') {
-        applyPreviewSearch(previewContainerRef.current, params, nextCurrent);
+        schedulePreviewSearch(params, nextCurrent, {
+          debounce: action === 'input' && Boolean(params.query),
+          progressive: action === 'input',
+          scrollToCurrent: action === 'next' || action === 'prev',
+        });
       }
     };
 
@@ -683,12 +836,12 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         }
 
         if (viewMode !== 'edit') {
-          applyPreviewSearch(previewContainerRef.current, params, current);
+          schedulePreviewSearch(params, current, { progressive: true });
         }
       });
 
       return () => cancelAnimationFrame(frame);
-    }, [viewMode, content, searchVisible, searchParams.query]);
+    }, [viewMode, content, searchVisible, schedulePreviewSearch]);
 
     // 设置同步锁，100ms 后自动释放
     const markSyncing = (direction: 'editor' | 'preview') => {

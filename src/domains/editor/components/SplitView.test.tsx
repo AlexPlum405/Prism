@@ -1,8 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   SplitView,
   collectCodeLineElements,
@@ -92,6 +92,27 @@ vi.mock('./PreviewPane', () => ({
     </div>
   ),
 }));
+
+function installScrollIntoViewMock() {
+  const original = HTMLElement.prototype.scrollIntoView;
+  const scrollIntoView = vi.fn();
+  HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+  return {
+    scrollIntoView,
+    restore: () => {
+      if (original) {
+        HTMLElement.prototype.scrollIntoView = original;
+      } else {
+        delete (HTMLElement.prototype as { scrollIntoView?: Element['scrollIntoView'] }).scrollIntoView;
+      }
+    },
+  };
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('SplitView editor lifecycle', () => {
   beforeEach(() => {
@@ -326,6 +347,93 @@ describe('SplitView editor lifecycle', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(writeText).toHaveBeenCalledWith('Preview selected text');
+  });
+
+  it('debounces preview search input without scrolling during typing', async () => {
+    vi.useFakeTimers();
+    const { scrollIntoView, restore } = installScrollIntoViewMock();
+
+    try {
+      render(
+        <SplitView
+          content="alpha beta alpha"
+          viewMode="preview"
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />,
+      );
+
+      fireEvent.keyDown(window, {
+        bubbles: true,
+        cancelable: true,
+        code: 'KeyF',
+        key: 'f',
+        metaKey: true,
+      });
+      fireEvent.change(screen.getByPlaceholderText('查找'), { target: { value: 'alpha' } });
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(document.querySelectorAll('.preview-search-match')).toHaveLength(0);
+
+      await act(async () => {
+        vi.advanceTimersByTime(139);
+      });
+
+      expect(document.querySelectorAll('.preview-search-match')).toHaveLength(0);
+
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(document.querySelectorAll('.preview-search-match')).toHaveLength(2);
+      expect(document.querySelectorAll('.preview-search-match--current')).toHaveLength(1);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
+  it('scrolls preview search when moving between matches', async () => {
+    vi.useFakeTimers();
+    const { scrollIntoView, restore } = installScrollIntoViewMock();
+
+    try {
+      render(
+        <SplitView
+          content="alpha beta alpha"
+          viewMode="preview"
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />,
+      );
+
+      fireEvent.keyDown(window, {
+        bubbles: true,
+        cancelable: true,
+        code: 'KeyF',
+        key: 'f',
+        metaKey: true,
+      });
+      fireEvent.change(screen.getByPlaceholderText('查找'), { target: { value: 'alpha' } });
+
+      await act(async () => {
+        vi.advanceTimersByTime(140);
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByTitle('下一个'));
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(Array.from(document.querySelectorAll('.preview-search-match')).map((mark) => mark.className)).toEqual([
+        'preview-search-match',
+        'preview-search-match preview-search-match--current',
+      ]);
+    } finally {
+      restore();
+    }
   });
 });
 
