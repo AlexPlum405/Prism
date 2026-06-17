@@ -41,7 +41,7 @@
 | P1-07 保存、冲突、导出微反馈统一 | 已完成 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
 | P2-01 默认阅读排版调优 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
 | P2-02 token 语义审计 | 已完成 | 低 | `git diff --check`、必要 theme tests |
-| P2-03 迁移帮助页 | 未开始 | 低 | 文档检查、相关命令/快捷键测试 |
+| P2-03 迁移帮助页 | 已完成 | 低 | 文档检查、相关命令/快捷键测试 |
 | P2-04 命令面板信息架构 | 未开始 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
 | P2-05 主题截图回归 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
 | P2-06 跨平台壳与控件密度审计 | 未开始 | 中 | 截图审查、相关 component tests |
@@ -299,3 +299,21 @@
 | 证据路径 | `docs/adr/0008-design-token-governance.md`、`docs/verification/prism-design-token-audit-2026-06-17.md` |
 | 未验证风险 | 本项只做语义审计、ADR、上下文和 CSS 注释治理，没有改 token 运行时值，因此未新增截图；硬编码主题色、`!important` 覆盖、跨平台字体 fallback 和真实 shell 密度仍留给 P2-05/P2-06/P2-07 继续验证 |
 | 对应提交 | `5be7881d66e79636372362fe8040329c56b5c6f8` |
+
+### P2-03 迁移帮助页
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `docs/help/prism-migration-guide.md`，面向 Typora、妙言、MarkText 迁移用户解释 Prism 的三态视图、Markdown Document / Text Document 文件模型、默认 app/本地文件心智、主题、导出诊断、常用命令和快捷键；只描述当前已实现能力，并明确不承诺 AI、云同步、协作、插件市场、重型知识图谱、源码 IDE 或完整 block editor；外部对比资料只引用 Typora 官方、Typora support、妙言 GitHub 和 MarkText GitHub |
+| 涉及文件 | `docs/help/prism-migration-guide.md`、`docs/verification/prism-full-optimization-run-2026-06-17.md` |
+| 风险等级 | 低 |
+| 验证命令 | `rg -n -- "Typora|妙言|MarkText|Markdown Document|Text Document|Cmd/Ctrl|MiaoYan|Nocturne|导出诊断|官方|github.com/tw93|github.com/marktext|typora.io" docs/help/prism-migration-guide.md` |
+| 命令结果 | 通过：迁移帮助页覆盖三个迁移来源、文档类型模型、快捷键入口、主题、导出诊断和官方/一手来源链接 |
+| 验证命令 | `npm test -- --run src/domains/commands/registry.test.ts src/components/shell/CommandPalette.test.tsx src/app/useAppShortcuts.test.tsx --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，41 个测试用例；覆盖命令唯一注册、菜单/命令面板、快速打开、工作区全文搜索、主题菜单、导出历史、快捷键处理和输入框豁免；输出中有既有 `localStorage.setItem is not a function` 与 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | `docs/help/prism-migration-guide.md` |
+| 未验证风险 | 本项交付为 repo 内帮助文档，尚未做 app 内帮助路由或在线文档发布；外部竞品事实只作迁移心智校准，未安装或实测当前 Typora/妙言/MarkText app；Windows/Linux 真实迁移路径仍需 P2-06 和后续真机补验 |
+| 对应提交 | 待提交后回填 |
