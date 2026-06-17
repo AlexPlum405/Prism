@@ -42,7 +42,7 @@
 | P2-01 默认阅读排版调优 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
 | P2-02 token 语义审计 | 已完成 | 低 | `git diff --check`、必要 theme tests |
 | P2-03 迁移帮助页 | 已完成 | 低 | 文档检查、相关命令/快捷键测试 |
-| P2-04 命令面板信息架构 | 未开始 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
+| P2-04 命令面板信息架构 | 已完成 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
 | P2-05 主题截图回归 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
 | P2-06 跨平台壳与控件密度审计 | 未开始 | 中 | 截图审查、相关 component tests |
 | P2-07 微反馈与动效节奏统一 | 未开始 | 中 | UI tests、手工 smoke、reduced-motion 检查 |
@@ -317,3 +317,21 @@
 | 证据路径 | `docs/help/prism-migration-guide.md` |
 | 未验证风险 | 本项交付为 repo 内帮助文档，尚未做 app 内帮助路由或在线文档发布；外部竞品事实只作迁移心智校准，未安装或实测当前 Typora/妙言/MarkText app；Windows/Linux 真实迁移路径仍需 P2-06 和后续真机补验 |
 | 对应提交 | `20aa754297b17f3cbecd1753670f4bf4df373bfb` |
+
+### P2-04 命令面板信息架构
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增命令面板产品分组事实源，覆盖文件、当前文档、导出、诊断、链接和设置六类，并用测试保证所有已注册命令都有分组；命令面板标题栏增加当前 scope 标签，区分快速打开的“文件”和全文搜索的“工作区”；索引提示从单一 hint 扩展为原生索引、索引就绪、文件树降级、索引未就绪、未打开工作区等状态；全文搜索在没有 workspace index 时显示“工作区索引尚不可用”，避免用户误判为空结果 |
+| 涉及文件 | `src/domains/commands/paletteGroups.ts`、`src/domains/commands/index.ts`、`src/domains/commands/registry.test.ts`、`src/components/shell/CommandPalette.tsx`、`src/components/shell/CommandPalette.test.tsx`、`src/domains/i18n/resources.ts`、`src/styles/floating.css`、`src/styles/miaoyan.css` |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts src/domains/i18n/i18n.test.ts --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，34 个测试用例；覆盖快速打开文件树降级、workspace index ready、native index ready、全文搜索无索引空状态、所有注册命令映射到产品分组、三语 i18n key 完整；输出中有既有 `localStorage.setItem is not a function` 和 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 证据路径 | 本文件；`src/components/shell/CommandPalette.test.tsx`；`src/domains/commands/registry.test.ts` |
+| 未验证风险 | 当前为 jsdom/build 验证，未在真实 Tauri WebView 中手工观察命令面板视觉；低频能力仍通过菜单/命令系统组织，当前 UI 仍是快速打开/全文搜索入口，不是全局命令列表；Windows/Linux 字体和系统缩放下的标题栏 hint 截断仍待 P2-06/P2-05 截图补验 |
+| 对应提交 | `58a10b3c80b44824838e4df77ffe0707b833ce57` |
