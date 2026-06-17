@@ -48,7 +48,7 @@
 | P2-07 微反馈与动效节奏统一 | 已完成 | 中 | UI tests、reduced-motion 检查、build |
 | P2-08 品牌与空状态收口 | 已完成 | 低 | 文档检查、截图审查、i18n/UI tests、build |
 | P2-09 斜杠菜单第一版 | 已完成 | 中 | editor extension tests、EditorPane/SplitView tests、build |
-| P2-10 选区浮动工具栏第一版 | 未开始 | 中 | EditorPane tests 或手工 smoke + 截图 |
+| P2-10 选区浮动工具栏第一版 | 已完成 | 中 | EditorPane tests、controller tests、formatting/SplitView 回归、build |
 | P2-11 图标规范 | 未开始 | 低 | 文档检查、截图审查、相关 UI tests |
 
 ## Phase 0 记录
@@ -439,3 +439,23 @@
 | 证据路径 | 本文件；`src/domains/editor/extensions/slashMenu.test.ts`；`src/domains/editor/components/EditorPane.integration.test.tsx` |
 | 未验证风险 | 当前验证以 unit/integration tests 和 production build 为主，未在真实 Tauri WebView 手工按键验证 completion tooltip 的像素位置；第一版仍使用 CodeMirror completion UI，不提供 Notion 式块编辑、拖拽块、数据库属性或跨块重排；`export-settings` 仍作为 YAML Front Matter 片段保留，但它只是源码插入项，不改变导出设置产品边界 |
 | 对应提交 | `a06826ebbe47b71419f47a8902ff3c04a67f2e53` |
+
+### P2-10 选区浮动工具栏第一版
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增源码编辑区选区浮动格式工具栏，按 CodeMirror 当前单选区坐标定位并 clamp 到编辑容器内；按钮覆盖加粗、斜体、下划线、删除线、高亮、行内代码、链接和引用，点击后复用既有 `handleFormat` / `getEditorFormatResult` 格式化链路；空选区、多选区和无坐标时隐藏；Text Document 会关闭 Markdown 专属选区工具栏，与斜杠菜单和 Markdown link completion 的 DocumentProfile 边界保持一致。 |
+| 涉及文件 | `src/domains/editor/components/SelectionFloatingToolbar.tsx`、`src/domains/editor/runtime/editorSelectionToolbarController.ts`、`src/domains/editor/runtime/editorSelectionToolbarController.test.ts`、`src/domains/editor/components/EditorPane.tsx`、`src/domains/editor/components/useEditorRuntimeModel.ts`、`src/domains/editor/components/EditorPane.integration.test.tsx`、`src/domains/i18n/resources.ts`、`src/styles/floating.css` |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/domains/editor/runtime/editorSelectionToolbarController.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/i18n/i18n.test.ts --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，38 个测试用例；覆盖空选区/多选区隐藏、正常选区上方定位、上方空间不足时下方定位、EditorPane 中点击浮动工具栏执行粗体格式化、Text Document 不显示 Markdown 选区工具栏、三语 i18n key 完整；输出中有既有 React `act(...)` 警告，无失败 |
+| 验证命令 | `npm test -- --run src/domains/editor/extensions/formatting.test.ts src/domains/editor/components/SplitView.test.tsx --reporter verbose` |
+| 命令结果 | 通过：2 个测试文件，20 个测试用例；覆盖格式化扩展回归、SplitView preview-only 源码定位、预览复制、搜索和滚动映射边界 |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 证据路径 | 本文件；`src/domains/editor/runtime/editorSelectionToolbarController.test.ts`；`src/domains/editor/components/EditorPane.integration.test.tsx`；相关 Vitest/build 命令输出 |
+| 未验证风险 | 当前验证以 jsdom integration tests、controller tests 和 production build 为主，未在真实 Tauri WebView 中手工观察选区浮层像素位置、长文档滚动时的体感稳定性或跨平台字体渲染；第一版只支持源码编辑区单选区，不处理多选区批量格式化、不在预览区触发，也不引入完整 block editor。 |
+| 对应提交 | `4ccb84bfe9449a7aceaa9e2bf508f6780d40e3f9` |
