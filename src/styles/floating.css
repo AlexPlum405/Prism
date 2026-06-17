@@ -707,6 +707,7 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 
 .prism-table-popover__alignment button,
 .prism-table-popover__submit,
+.prism-selection-toolbar button,
 .prism-table-toolbar button,
 .prism-table-toolbar__menu button {
   min-height: 28px;
@@ -721,6 +722,7 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 
 .prism-table-popover__alignment button:hover,
 .prism-table-popover__alignment button.is-active,
+.prism-selection-toolbar button:hover,
 .prism-table-toolbar button:hover,
 .prism-table-toolbar__menu button:hover {
   background: var(--c-chalk);
@@ -832,6 +834,7 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   line-height: 1.25;
 }
 
+.prism-selection-toolbar,
 .prism-table-toolbar {
   position: absolute;
   z-index: 2300;
@@ -847,6 +850,26 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   overflow: visible;
+}
+
+.prism-selection-toolbar button {
+  flex: 0 0 28px;
+  min-width: 28px;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.prism-selection-toolbar button[aria-label='斜体'],
+.prism-selection-toolbar button[aria-label='Italic'] {
+  font-style: italic;
+}
+
+.prism-selection-toolbar button[aria-label='下划线'],
+.prism-selection-toolbar button[aria-label='Underline'],
+.prism-selection-toolbar button[aria-label='下線'] {
+  text-decoration: underline;
 }
 
 .prism-table-toolbar button {
@@ -897,6 +920,7 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   .sp,
   .modal,
   .prism-table-popover,
+  .prism-selection-toolbar,
   .prism-table-toolbar {
     animation: none !important;
     transition-duration: 1ms !important;

@@ -54,6 +54,7 @@ import {
 } from '../extensions/markdownHighlight';
 import { useI18n } from '../../i18n';
 import { TableFloatingToolbar } from './TableFloatingToolbar';
+import { SelectionFloatingToolbar } from './SelectionFloatingToolbar';
 import { TableInsertPopover } from './TableInsertPopover';
 import { useEditorActionModel } from './useEditorActionModel';
 import { useEditorCommandEventModel } from './useEditorCommandEventModel';
@@ -61,6 +62,11 @@ import { useEditorRuntimeModel } from './useEditorRuntimeModel';
 import { useEditorTableModel } from './useEditorTableModel';
 import { openDialog } from '../../../platform/tauri/dialogs';
 import { saveImageAssetFromPath } from '../extensions/imagePaste';
+import {
+  HIDDEN_SELECTION_TOOLBAR,
+  getSelectionFloatingToolbarState,
+  type SelectionFloatingToolbarState,
+} from '../runtime/editorSelectionToolbarController';
 
 export interface EditorPaneHandle {
   focus: () => void;
@@ -222,6 +228,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       hasSelection: boolean;
       isInTable: boolean;
     } | null>(null);
+    const [selectionToolbar, setSelectionToolbar] = useState<SelectionFloatingToolbarState>(HIDDEN_SELECTION_TOOLBAR);
     const {
       handleSelectTable,
       handleTableCommand,
@@ -316,6 +323,23 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       handleSourceBlockOperation,
       handleTemplateInsert,
     } = useEditorActionModel({ viewRef });
+
+    const updateSelectionToolbar = useCallback((view: EditorView) => {
+      if (!enableMarkdownCompletions) {
+        setSelectionToolbar(HIDDEN_SELECTION_TOOLBAR);
+        return;
+      }
+
+      setSelectionToolbar(getSelectionFloatingToolbarState(view, editorRef.current));
+    }, [enableMarkdownCompletions]);
+
+    useEffect(() => {
+      if (!enableMarkdownCompletions) {
+        setSelectionToolbar(HIDDEN_SELECTION_TOOLBAR);
+        return;
+      }
+      if (viewRef.current) updateSelectionToolbar(viewRef.current);
+    }, [enableMarkdownCompletions, updateSelectionToolbar]);
 
     const showCalloutPicker = useCallback((mode: 'insert' | 'selection') => {
       const view = viewRef.current;
@@ -489,6 +513,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       showLineNumbers,
       t,
       typewriterModeRef,
+      updateSelectionToolbar,
       updateTableToolbar,
       viewRef,
       wordWrap,
@@ -526,6 +551,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           onCopy={handleTableCopy}
           onSelectTable={handleSelectTable}
           onConvert={handleTableConvert}
+        />
+        <SelectionFloatingToolbar
+          visible={selectionToolbar.visible}
+          x={selectionToolbar.x}
+          y={selectionToolbar.y}
+          onFormat={handleFormat}
         />
         <HorizontalScrollbar getScroller={getEditorScroller} />
         {editorContextMenu && (

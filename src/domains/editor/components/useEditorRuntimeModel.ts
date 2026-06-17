@@ -82,6 +82,7 @@ interface UseEditorRuntimeModelInput {
   showLineNumbers: boolean;
   t: EditorTranslate;
   typewriterModeRef: MutableRefObject<boolean>;
+  updateSelectionToolbar: (view: EditorView) => void;
   updateTableToolbar: (view: EditorView) => void;
   viewRef: MutableRefObject<EditorView | null>;
   wordWrap: boolean;
@@ -129,6 +130,7 @@ export function useEditorRuntimeModel({
   showLineNumbers,
   t,
   typewriterModeRef,
+  updateSelectionToolbar,
   updateTableToolbar,
   viewRef,
   wordWrap,
@@ -277,6 +279,7 @@ export function useEditorRuntimeModel({
           if (update.docChanged || update.selectionSet) {
             onCursorChangeRef.current?.(getCursorPosition(update.view));
             onSelectionTextChangeRef.current?.(getSelectedText(update.view));
+            updateSelectionToolbar(update.view);
             updateTableToolbar(update.view);
             if (typewriterModeRef.current && update.selectionSet) {
               scrollPrimarySelectionToCenter(update.view);
@@ -331,6 +334,7 @@ export function useEditorRuntimeModel({
       const maxScroll = scroller.scrollHeight - scroller.clientHeight;
       onScrollRatioChangeRef.current?.(maxScroll > 0 ? scroller.scrollTop / maxScroll : 0);
       onScrollRef.current?.();
+      updateSelectionToolbar(view);
       updateTableToolbar(view);
 
       if (onTopLineChangeRef.current) {
@@ -347,6 +351,7 @@ export function useEditorRuntimeModel({
       }
     };
     view.scrollDOM.addEventListener('scroll', handleScroll);
+    updateSelectionToolbar(view);
 
     return () => {
       view.dom.removeEventListener('contextmenu', handleContextMenu);

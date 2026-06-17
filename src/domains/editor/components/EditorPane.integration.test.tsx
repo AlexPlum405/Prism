@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { currentCompletions, startCompletion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -336,6 +336,34 @@ describe('EditorPane command event integration', () => {
       expect(onChange).toHaveBeenCalled();
       expect(latestChange(changes)).toBe('**Prism**');
     });
+  });
+
+  it('formats the active source selection from the floating selection toolbar', async () => {
+    const coordsSpy = vi.spyOn(EditorView.prototype, 'coordsAtPos').mockReturnValue({
+      bottom: 140,
+      left: 240,
+      right: 280,
+      top: 120,
+    });
+    const { changes } = await renderEditorPane('hello world');
+
+    try {
+      act(() => {
+        getMountedEditorView().dispatch({
+          selection: { anchor: 0, head: 5 },
+        });
+      });
+
+      expect(await screen.findByRole('toolbar', { name: '选区格式工具' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '粗体' }));
+
+      await waitFor(() => {
+        expect(latestChange(changes)).toBe('**hello** world');
+      });
+    } finally {
+      coordsSpy.mockRestore();
+    }
   });
 
   it('handles heading events from menus and the command palette', async () => {
@@ -738,6 +766,46 @@ describe('EditorPane command event integration', () => {
     await waitFor(() => {
       expect(currentCompletions(getMountedEditorView().state)).toHaveLength(0);
     });
+  });
+
+  it('does not show the markdown selection toolbar for Text Document selections', async () => {
+    const coordsSpy = vi.spyOn(EditorView.prototype, 'coordsAtPos').mockReturnValue({
+      bottom: 140,
+      left: 240,
+      right: 280,
+      top: 120,
+    });
+    useDocumentStore.setState({
+      currentDocument: {
+        path: '/repo/data.json',
+        profile: TEXT_DOCUMENT_PROFILE,
+        name: 'data.json',
+        content: '',
+        isDirty: false,
+        lastSavedAt: 1000,
+        lastKnownMtime: 1000,
+        lastKnownSize: 0,
+        saveStatus: 'saved',
+        saveError: null,
+        viewMode: 'edit',
+        scrollState: { editorRatio: 0, previewRatio: 0 },
+      },
+    });
+    await renderEditorPane('hello world');
+
+    try {
+      act(() => {
+        getMountedEditorView().dispatch({
+          selection: { anchor: 0, head: 5 },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByRole('toolbar', { name: '选区格式工具' })).not.toBeInTheDocument();
+      });
+    } finally {
+      coordsSpy.mockRestore();
+    }
   });
 
   it('ignores invalid block and editor command payloads without changing the document', async () => {
