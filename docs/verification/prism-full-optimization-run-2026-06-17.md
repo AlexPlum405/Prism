@@ -45,7 +45,7 @@
 | P2-04 命令面板信息架构 | 已完成 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
 | P2-05 主题截图回归 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
 | P2-06 跨平台壳与控件密度审计 | 已完成 | 中 | 截图审查、相关 component tests |
-| P2-07 微反馈与动效节奏统一 | 未开始 | 中 | UI tests、手工 smoke、reduced-motion 检查 |
+| P2-07 微反馈与动效节奏统一 | 已完成 | 中 | UI tests、reduced-motion 检查、build |
 | P2-08 品牌与空状态收口 | 未开始 | 低 | 文档检查、截图审查 |
 | P2-09 斜杠菜单第一版 | 未开始 | 中 | 新增 editor extension tests、必要 SplitView tests |
 | P2-10 选区浮动工具栏第一版 | 未开始 | 中 | EditorPane tests 或手工 smoke + 截图 |
@@ -381,3 +381,23 @@
 | 截图审查 | 已抽查 `linux-miaoyan-1200.png` 与 `macos-nocturne-1440.png`：截图非空，标题栏、菜单栏、侧栏、视图切换、编辑/预览分栏和状态栏均可见；Linux + MiaoYan 视图切换不再下沉，macOS/Windows/Linux 主工作区结构与控件密度一致 |
 | 未验证风险 | 当前截图是 Playwright `data-platform` 模拟矩阵，不是 Windows/Linux 真机 Tauri WebView；系统 chrome、真实菜单栏、文件管理器集成、字体 fallback、系统缩放、WebView 抗锯齿和窗口装饰差异仍需 Windows/Linux 真机补验；本项只处理壳层密度和平台语义，不替代后续 P2-07 动效节奏、P2-08 品牌空状态或 P2-11 图标规范 |
 | 对应提交 | `c1047eadec5fadd2f9f8adff9585a6680b73184c` |
+
+### P2-07 微反馈与动效节奏统一
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `src/lib/feedbackTiming.ts` 作为 JS 反馈时长事实源，集中 toast、导出结果短暂持留和源码定位 flash 时长；扩展 `tokens.css` motion token，增加 `--duration-hover`、`--duration-popover`、`--duration-toast`、`--duration-feedback`、`--duration-attention`、`--duration-spinner`、`--duration-progress`。将 toast、导出 spinner/progress、诊断浮层、上下文菜单、命令面板/模态浮层、菜单栏、视图切换、标题栏保存徽标、状态栏导出状态、文件树 entry、侧栏 tab、预览搜索命中、预览/编辑器源码定位 flash 等主要微反馈改为读取统一 token 或 JS 常量；为 toast、浮层、菜单、文件树、状态栏 spinner、保存徽标和源码定位 flash 补 `prefers-reduced-motion` 覆盖。 |
+| 涉及文件 | `src/lib/feedbackTiming.ts`、`src/lib/toast.ts`、`src/hooks/useExportTaskUi.ts`、`src/domains/editor/components/SplitView.tsx`、`src/domains/editor/components/useEditorRuntimeModel.ts`、`src/domains/editor/runtime/editorScrollRuntime.ts`、`src/domains/editor/runtime/editorScrollRuntime.test.ts`、`src/styles/tokens.css`、`src/styles/global.test.ts`、`src/styles/diagnostics.css`、`src/styles/preview.css`、`src/styles/floating.css`、`src/styles/shell.css`、`src/styles/windows.css`、`src/components/shell/MenuBar.module.css`、`src/components/shell/MenuDropdown.module.css`、`src/components/shell/TitleBar.module.css`、`src/domains/document/components/ViewModeSwitch.module.css`、`src/domains/workspace/components/StatusBar.module.css`、`src/domains/workspace/components/FileTree.tsx`、`src/domains/workspace/components/Sidebar.tsx` |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/styles/global.test.ts src/hooks/useAppToast.test.tsx src/hooks/useExportTaskUi.test.tsx src/domains/editor/runtime/editorScrollRuntime.test.ts src/domains/editor/components/SplitView.test.tsx src/components/shell/TitleBar.test.tsx src/domains/workspace/components/StatusBar.test.tsx --reporter verbose` |
+| 命令结果 | 通过：7 个测试文件，50 个测试用例；覆盖 motion token、主要反馈面使用 token、reduced-motion 规则、toast 自动消失、导出成功/取消短暂反馈、导出失败保留详情、编辑器源码定位 flash 默认时长、预览搜索/源码定位、标题栏保存状态、状态栏导出状态 |
+| 验证命令 | `npm test -- --run src/domains/workspace/components/FileTree.test.tsx src/domains/document/components/ViewModeSwitch.module.test.ts src/domains/commands/registry.test.ts --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，31 个测试用例；覆盖文件树渲染/重命名、视图切换壳层偏移回归、命令注册和导出状态事件回归；输出中有既有 `localStorage.setItem is not a function` 和 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | 本文件；`src/styles/global.test.ts` 的 motion/reduced-motion 回归测试；`src/lib/feedbackTiming.ts`；相关 Vitest/build 命令输出 |
+| 未验证风险 | 当前验证以 CSS/JS 单测和 production build 为主，未录制真实 Tauri WebView 中 command palette、toast、保存徽标、源码定位 flash 和导出状态的动效视频；Windows/Linux 真机的系统动画偏好、WebView 合成层和刷新率差异仍需后续人工 smoke 补验；历史主题文件中仍保留部分 120ms 覆盖和关系图谱内部动画，后续如果这些区域成为高频入口，应继续按组件迁移到 motion token |
+| 对应提交 | `9178ccad87c8f96fe54ee1447eb6ca0619c37e08` |
