@@ -38,7 +38,7 @@
 | P1-04 preview-only 源码定位 ready 队列 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-05 状态栏图谱条件显示 | 已完成 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
 | P1-06 导出诊断产品化 | 已完成 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
-| P1-07 保存、冲突、导出微反馈统一 | 未开始 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
+| P1-07 保存、冲突、导出微反馈统一 | 已完成 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
 | P2-01 默认阅读排版调优 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
 | P2-02 token 语义审计 | 未开始 | 低 | `git diff --check`、必要 theme tests |
 | P2-03 迁移帮助页 | 未开始 | 低 | 文档检查、相关命令/快捷键测试 |
@@ -234,3 +234,23 @@
 | 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/domains/export/preflight.test.ts`；`src/domains/editor/components/DocumentDiagnosticsPanel.test.tsx`；`src/App.recovery.test.tsx`；`src/domains/commands/registry.test.ts` |
 | 未验证风险 | 当前为 jsdom 与 build 验证，未在真实 Tauri WebView 中手工执行一次失败导出并检查弹窗视觉；本轮没有新增分页预检算法，只把现有预检和失败阶段反馈产品化，分页/资源更细粒度风险仍需后续导出保真专项继续扩展 |
 | 对应提交 | `e34de864babf0e120fdfa1374825038d2a9de63a` |
+
+### P1-07 保存、冲突、导出微反馈统一
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 标题栏文件名区域从单一未保存圆点升级为保存状态徽标，覆盖未保存、保存中、保存失败和文件冲突，tooltip 暴露具体失败/冲突原因；底部状态栏继续不渲染保存状态，并移除历史 `.saveStatus` 死样式；导出 UI 新增 `export.result` 事件和 `exportFeedback` 状态，导出成功/取消在状态栏短暂显示，导出失败保留状态栏按钮并可重新打开结构化失败详情，关闭失败弹窗不再丢失失败状态 |
+| 涉及文件 | `src/components/shell/TitleBar.tsx`、`src/components/shell/TitleBar.module.css`、`src/domains/workspace/components/StatusBar.tsx`、`src/domains/workspace/components/StatusBar.module.css`、`src/hooks/useExportTaskUi.ts`、`src/app/controllers/ExportUiController.tsx`、`src/app/controllers/AppWorkspaceViewController.tsx`、`src/app/controllers/WorkspaceController.tsx`、`src/domains/commands/categories/exportCommands.ts`、`src/platform/events/*`、`src/domains/i18n/resources.ts` 及对应测试 |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/components/shell/TitleBar.test.tsx src/domains/workspace/components/StatusBar.test.tsx src/hooks/useExportTaskUi.test.tsx src/app/controllers/AppWorkspaceViewController.test.tsx src/app/controllers/WorkspaceController.test.tsx src/domains/commands/registry.test.ts src/App.recovery.test.tsx src/lib/fileActions.test.ts --reporter verbose` |
+| 命令结果 | 通过：8 个测试文件，76 个测试用例；覆盖标题栏未保存/保存中/保存失败/冲突徽标，状态栏不显示保存状态，导出中后台恢复，成功/取消短暂反馈，失败状态保留并可重开详情，导出命令成功/取消/失败事件，文件切换保存保护回归；输出中有既有 `localStorage.setItem is not a function`、App ref/act 和 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm test -- --run src/domains/i18n/i18n.test.ts src/platform/events/appEvents.test.ts --reporter verbose` |
+| 命令结果 | 通过：2 个测试文件，5 个测试用例；确认新增 `export.result` 事件和 `titlebar/status/export` 三语 key 完整 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/components/shell/TitleBar.test.tsx`；`src/domains/workspace/components/StatusBar.test.tsx`；`src/hooks/useExportTaskUi.test.tsx`；`src/App.recovery.test.tsx`；`src/domains/commands/registry.test.ts` |
+| 未验证风险 | 当前为 jsdom 组件/Hook/App 测试和 production build 验证，未在真实 Tauri WebView 中手工观察标题栏保存徽标、导出成功短暂消失和导出失败状态栏入口的视觉节奏；Windows/Linux 真机标题栏密度与系统 chrome 仍待 P2-06 补截图审查 |
+| 对应提交 | `11de0a660914b6d3b9c2d7d7705d4981cd375e7b` |
