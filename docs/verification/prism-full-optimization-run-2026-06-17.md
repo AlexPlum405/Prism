@@ -420,4 +420,4 @@
 | 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
 | 证据路径 | `docs/verification/prism-brand-empty-state-snapshots-2026-06-18/README.md`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1200.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1440.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/nocturne-brand-empty-about-1200.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/nocturne-brand-empty-about-1440.png`、本文件、相关 Vitest/build 命令输出 |
 | 未验证风险 | 当前截图是 Playwright 复合 fixture，不是真实 Tauri WebView；About 中的轻量字母 mark 不是最终 app icon 渲染替代，真实 macOS/Windows/Linux app icon、系统 About 菜单、窗口 chrome 和字体 fallback 仍需后续真机 smoke；本项只收口品牌表达和空状态，不新增 AI、云、协作、插件市场或知识库工作台定位 |
-| 对应提交 | 待提交后回填 |
+| 对应提交 | `9f5c26a150d43df3982e8d1858b26801b72ab123` |
