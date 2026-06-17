@@ -37,7 +37,7 @@
 }
 
 /* 深色模式适配 */
-:global(body.dark) .prism-diagnostics-popover {
+body.dark .prism-diagnostics-popover {
   background-color: rgba(24, 24, 26, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
@@ -331,7 +331,7 @@
 }
 
 /* 极致毛玻璃设计（妙言主题专属） */
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-modal {
+html[data-content-theme='miaoyan'] .prism-relation-graph-modal {
   background: rgba(250, 249, 246, 0.88) !important;
   backdrop-filter: blur(28px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
@@ -339,7 +339,7 @@
 }
 
 /* 极致毛玻璃设计（黑夜主题专属） */
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-modal {
+html[data-content-theme='nocturne'] .prism-relation-graph-modal {
   background: rgba(24, 23, 22, 0.88) !important;
   backdrop-filter: blur(28px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -369,13 +369,13 @@
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-segment {
+html[data-content-theme='miaoyan'] .prism-relation-graph-segment {
   border: 1px solid rgba(0, 0, 0, 0.05);
   background: rgba(0, 0, 0, 0.03);
   border-radius: 18px;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-segment {
+html[data-content-theme='nocturne'] .prism-relation-graph-segment {
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.03);
   border-radius: 18px;
@@ -402,12 +402,12 @@
   font-weight: 600;
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-segment button[data-active='true'] {
+html[data-content-theme='miaoyan'] .prism-relation-graph-segment button[data-active='true'] {
   background: #fff !important;
   color: var(--miaoyan-accent, #2a2826) !important;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-segment button[data-active='true'] {
+html[data-content-theme='nocturne'] .prism-relation-graph-segment button[data-active='true'] {
   background: rgba(255, 255, 255, 0.12) !important;
   color: #fff !important;
 }
@@ -433,23 +433,23 @@
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-toolbar input {
+html[data-content-theme='miaoyan'] .prism-relation-graph-toolbar input {
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.4);
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-toolbar input:focus {
+html[data-content-theme='miaoyan'] .prism-relation-graph-toolbar input:focus {
   border-color: #2a2826;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(42, 40, 38, 0.08);
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-toolbar input {
+html[data-content-theme='nocturne'] .prism-relation-graph-toolbar input {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.2);
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-toolbar input:focus {
+html[data-content-theme='nocturne'] .prism-relation-graph-toolbar input:focus {
   border-color: #dcdad7;
   background: rgba(0, 0, 0, 0.4);
   box-shadow: 0 0 0 3px rgba(220, 218, 215, 0.15);
@@ -471,12 +471,12 @@
   overflow: hidden;
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-canvas {
+html[data-content-theme='miaoyan'] .prism-relation-graph-canvas {
   border: 1px solid rgba(0, 0, 0, 0.06);
   background: #faf9f6; /* 宣纸米白 */
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-canvas {
+html[data-content-theme='nocturne'] .prism-relation-graph-canvas {
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: #181716; /* 静谧焦墨黑 */
 }
@@ -499,7 +499,7 @@
               opacity 0.3s var(--ease-out);
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-edge {
+html[data-content-theme='nocturne'] .prism-relation-graph-edge {
   stroke: #dcdad7; /* 宣纸白 */
 }
 
@@ -513,7 +513,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   opacity: 0.65;
 }
 
-:global(html[data-content-theme='nocturne']) svg.has-focus .prism-relation-graph-edge.is-connected-hover {
+html[data-content-theme='nocturne'] svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   stroke: #dcdad7;
 }
 
@@ -532,7 +532,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
               opacity 0.35s var(--ease-out);
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-node circle {
+html[data-content-theme='nocturne'] .prism-relation-graph-node circle {
   fill: #dcdad7; /* 宣纸白 */
 }
 
@@ -542,7 +542,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   opacity: 1.0;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-active circle {
+html[data-content-theme='nocturne'] .prism-relation-graph-node.is-active circle {
   fill: #ffffff !important;
 }
 
@@ -552,7 +552,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   opacity: 1.0 !important;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-hovered circle {
+html[data-content-theme='nocturne'] .prism-relation-graph-node.is-hovered circle {
   fill: #ffffff !important;
 }
 
@@ -562,7 +562,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   opacity: 0.95;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-adjacent circle {
+html[data-content-theme='nocturne'] .prism-relation-graph-node.is-adjacent circle {
   fill: #dcdad7;
 }
 
@@ -588,7 +588,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   pointer-events: none;
 }
 
-:global(html[data-content-theme='nocturne']) .pulse-halo {
+html[data-content-theme='nocturne'] .pulse-halo {
   fill: #ffffff;
 }
 
@@ -606,13 +606,13 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   transition: all 0.25s var(--ease-out);
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-node text {
+html[data-content-theme='miaoyan'] .prism-relation-graph-node text {
   fill: #2a2826;
   font-family: var(--miaoyan-font, sans-serif);
   stroke: #faf9f6;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-node text {
+html[data-content-theme='nocturne'] .prism-relation-graph-node text {
   fill: #dcdad7;
   stroke: #181716; /* 匹配黑夜背景 */
 }
@@ -622,7 +622,7 @@ svg.has-focus .prism-relation-graph-edge.is-connected-hover {
   font-weight: 600;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-node.is-active text {
+html[data-content-theme='nocturne'] .prism-relation-graph-node.is-active text {
   fill: #ffffff;
 }
 
@@ -641,7 +641,7 @@ svg.has-focus .prism-relation-graph-node.is-hovered text {
   font-size: 12px;
 }
 
-:global(html[data-content-theme='nocturne']) svg.has-focus .prism-relation-graph-node.is-hovered text {
+html[data-content-theme='nocturne'] svg.has-focus .prism-relation-graph-node.is-hovered text {
   fill: #ffffff !important;
 }
 
@@ -650,7 +650,7 @@ svg.has-focus .prism-relation-graph-node.is-adjacent text {
   opacity: 0.85;
 }
 
-:global(html[data-content-theme='nocturne']) svg.has-focus .prism-relation-graph-node.is-adjacent text {
+html[data-content-theme='nocturne'] svg.has-focus .prism-relation-graph-node.is-adjacent text {
   fill: #dcdad7;
 }
 
@@ -700,13 +700,13 @@ svg.has-focus .prism-relation-graph-node.is-adjacent text {
   border-left: 3.5px solid var(--miaoyan-accent, #1c5d33) !important;
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-list button.is-active {
+html[data-content-theme='miaoyan'] .prism-relation-graph-list button.is-active {
   background: rgba(28, 93, 51, 0.04) !important;
   border-color: rgba(28, 93, 51, 0.15) !important;
   border-left: 3.5px solid var(--miaoyan-accent, #1c5d33) !important;
 }
 
-:global(html[data-content-theme='nocturne']) .prism-relation-graph-list button.is-active {
+html[data-content-theme='nocturne'] .prism-relation-graph-list button.is-active {
   background: rgba(59, 122, 87, 0.08) !important;
   border-color: rgba(59, 122, 87, 0.25) !important;
   border-left: 3.5px solid #3b7a57 !important;
@@ -727,7 +727,7 @@ svg.has-focus .prism-relation-graph-node.is-adjacent text {
   font-weight: 600;
 }
 
-:global(html[data-content-theme='miaoyan']) .prism-relation-graph-list span {
+html[data-content-theme='miaoyan'] .prism-relation-graph-list span {
   color: var(--miaoyan-text);
   font-family: var(--miaoyan-font);
 }

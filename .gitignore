@@ -26,6 +26,7 @@ scripts/*
 !scripts/run-app-smoke.mjs
 !scripts/run-preview-webview-benchmark.mjs
 !scripts/run-preview-typography-snapshots.mjs
+!scripts/run-theme-visual-snapshots.mjs
 src-tauri/icons_backup/
 docs/assets/prism-app-icon-redesign-ai-v3-selected.png
 docs/assets/prism-logo-ai-v3/

@@ -19,6 +19,12 @@ function readCssWithImports(filename: string, seen = new Set<string>()): string 
 describe('global Windows visual compensation', () => {
   const css = readCssWithImports('global.css');
 
+  it('does not leak CSS Modules global selectors into the global stylesheet bundle', () => {
+    expect(css).not.toContain(':global(');
+    expect(css).toContain('body.dark .prism-diagnostics-popover');
+    expect(css).toContain("html[data-content-theme='nocturne'] .prism-relation-graph-modal");
+  });
+
   it('keeps Windows floating-layer compensation after content-theme overrides', () => {
     const miaoyanFloatingLayerOverride = css.lastIndexOf("html[data-content-theme='miaoyan'] .cmdk");
     const windowsFloatingLayerCompensation = css.lastIndexOf("html[data-platform='windows'] .cmdk");
