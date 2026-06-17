@@ -1,13 +1,11 @@
 # Prism full-run optimization goal
 
 ```text
-/goal 在 /Users/Alex/AI/project/Prism 中，读取并严格执行 docs/goals/prism-full-optimization-execution-details-2026-06-17.md，一次性完成 Prism 优化计划。
+/goal 在 /Users/Alex/AI/project/Prism 中，读取并严格执行 docs/goals/prism-full-optimization-execution-details-2026-06-17.md，一次性完成 Prism full-run 优化计划。
 
-开始前先读细则文件指定的全部上下文、当前 `git status --short --branch` 和 `git diff`；继承当前已验证文档基线，不从头重做评审。
+开始前读取该细则列出的上下文、当前 `git status --short --branch` 和 `git diff`；继承已验证进度，只补未闭环缺口。
 
-目标：完成细则定义的 P0/P1/P2 优化项；每项实现后按细则验证、记录证据、提交并推送。
+按细则完成 P0/P1/P2：每项实现后验证、记录、提交、推送；P3 不做。
 
-范围边界：遵守 CONTEXT.md、ADR-0006、ADR-0007 和本地细则；不实现 P3 暂不做项，不做无关重构，不覆盖无关脏改。需要调整目标时先显式更新 goal。
-
-完成条件和暂停条件全部按细则执行；最终汇报分支、commit hash、验证命令、push 状态和未验证风险。
+如目标或验收需调整，先显式更新 goal。完成条件、暂停条件、git 规则和最终汇报全部以本地细则为准。
 ```
