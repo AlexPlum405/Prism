@@ -46,4 +46,9 @@ describe('theme contract', () => {
     expect(config.themeVariables.primaryBorderColor).toBe('#262626');
     expect(config.flowchart.htmlLabels).toBe(true);
   });
+
+  it('keeps the default and dark reading measure bounded for wide screens', () => {
+    expect(getThemeContract('miaoyan').preview.maxWidth).toBe(920);
+    expect(getThemeContract('nocturne').preview.maxWidth).toBe(920);
+  });
 });

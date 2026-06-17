@@ -39,7 +39,7 @@
 | P1-05 状态栏图谱条件显示 | 已完成 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
 | P1-06 导出诊断产品化 | 已完成 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
 | P1-07 保存、冲突、导出微反馈统一 | 已完成 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
-| P2-01 默认阅读排版调优 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
+| P2-01 默认阅读排版调优 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
 | P2-02 token 语义审计 | 未开始 | 低 | `git diff --check`、必要 theme tests |
 | P2-03 迁移帮助页 | 未开始 | 低 | 文档检查、相关命令/快捷键测试 |
 | P2-04 命令面板信息架构 | 未开始 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
@@ -254,3 +254,28 @@
 | 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/components/shell/TitleBar.test.tsx`；`src/domains/workspace/components/StatusBar.test.tsx`；`src/hooks/useExportTaskUi.test.tsx`；`src/App.recovery.test.tsx`；`src/domains/commands/registry.test.ts` |
 | 未验证风险 | 当前为 jsdom 组件/Hook/App 测试和 production build 验证，未在真实 Tauri WebView 中手工观察标题栏保存徽标、导出成功短暂消失和导出失败状态栏入口的视觉节奏；Windows/Linux 真机标题栏密度与系统 chrome 仍待 P2-06 补截图审查 |
 | 对应提交 | `11de0a660914b6d3b9c2d7d7705d4981cd375e7b` |
+
+### P2-01 默认阅读排版调优
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增预览排版回归 fixture 和 Playwright 截图脚本，覆盖标题、中文正文、列表、任务、表格、普通引用、Callout、Toggle、代码块、inline code、KaTeX placeholder、Mermaid placeholder 与暗色模式；默认 `miaoyan` 和暗色 `nocturne` 预览写作列从 1000px 收敛到 920px，并同步 theme contract；调整标题层级、段距、列表缩进、普通引用、表格、代码块、inline code 和 Callout 覆盖规则，避免宽屏发散、引用 fit-content 碎裂和 Callout 被普通 blockquote 样式覆盖 |
+| 涉及文件 | `.gitignore`、`src/styles/miaoyan.css`、`src/styles/content-themes.css`、`src/domains/themes/themeContract.ts`、`src/domains/themes/themeContract.test.ts`、`scripts/run-preview-typography-snapshots.mjs`、`docs/verification/fixtures/prism-typography-fixture.md`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/` |
+| 风险等级 | 中 |
+| 验证命令 | `node --check scripts/run-preview-typography-snapshots.mjs` |
+| 命令结果 | 通过：脚本语法检查无输出 |
+| 验证命令 | `node scripts/run-preview-typography-snapshots.mjs` |
+| 命令结果 | 通过：生成 `miaoyan/nocturne` 两套主题在 1200/1440/1920 宽度下的 6 张截图和 README 指标；computed metrics 显示两套主题 `writeWidth=920`、估算中文行长 57.5 字、段落行高比 1.74、页面级横向溢出均为 `no`；Nocturne 正文对背景对比度为 13.43:1 |
+| 验证命令 | `test ! -e docs/verification/prism-preview-typography-snapshots-2026-06-17/preview-typography-fixture.html` |
+| 命令结果 | 通过：截图脚本不再写出内嵌完整 CSS 的 HTML 证据文件，仓库只保留 Markdown fixture、README 指标和 PNG 截图 |
+| 验证命令 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts --reporter verbose` |
+| 命令结果 | 通过：2 个测试文件，7 个测试用例；新增用例确认 `miaoyan` 和 `nocturne` 的 preview maxWidth 均为 920 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | `docs/verification/fixtures/prism-typography-fixture.md`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/README.md`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/miaoyan-1200.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/miaoyan-1440.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/miaoyan-1920.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/nocturne-1200.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/nocturne-1440.png`、`docs/verification/prism-preview-typography-snapshots-2026-06-17/nocturne-1920.png` |
+| 截图审查 | 已用本地图片检查 `miaoyan-1440.png` 与 `nocturne-1440.png`：截图非空，正文、普通引用、Callout、Toggle、表格均可见，暗色块边界和正文对比可辨 |
+| 未验证风险 | 当前截图是 Playwright 渲染的独立 preview fixture，不是完整 Tauri WebView 真实窗口截图；Windows/Linux 字体渲染差异、真实系统 chrome 密度和 WebView 滚动体感仍需 P2-06 或跨平台真机补验；本项只调默认/暗色阅读排版，不把所有内置主题同步重排，完整主题截图回归留给 P2-05 |
+| 对应提交 | 待提交后回填 |

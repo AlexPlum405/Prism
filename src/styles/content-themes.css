@@ -1636,7 +1636,7 @@ html[data-content-theme='nocturne'] {
   --preview-font: var(--nocturne-font);
   --preview-font-size: 16px;
   --preview-line-height: 1.74;
-  --preview-max-width: 1000px;
+  --preview-max-width: 920px;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne {
@@ -1654,9 +1654,9 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne {
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne #write {
   margin: 0 auto;
-  max-width: 1000px;
+  max-width: var(--preview-max-width, 920px);
   width: 100%;
-  padding: 0 28px 80px;
+  padding: 0 32px 88px;
   box-sizing: border-box;
 }
 
@@ -1719,22 +1719,32 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne h6 {
   position: relative;
   margin: 0;
   color: #e5e1d7;
-  line-height: 1.8;
+  line-height: 1.42;
   margin-block-start: 1.6em;
   margin-block-end: 0.8em;
   font-weight: bold;
   -webkit-font-smoothing: antialiased;
 }
 
-html[data-content-theme='nocturne'] .preview-compat--nocturne h1 { font-size: 2em; }
-html[data-content-theme='nocturne'] .preview-compat--nocturne h2 { font-size: 1.5em; color: #d8cdbc; }
-html[data-content-theme='nocturne'] .preview-compat--nocturne h3 { font-size: 1.25em; color: #d8cdbc; }
+html[data-content-theme='nocturne'] .preview-compat--nocturne h1 {
+  font-size: 1.92em;
+  margin-block-start: 1.72em;
+  margin-block-end: 0.92em;
+}
+html[data-content-theme='nocturne'] .preview-compat--nocturne h2 {
+  font-size: 1.42em;
+  margin-block-start: 1.56em;
+  margin-block-end: 0.74em;
+  color: #d8cdbc;
+}
+html[data-content-theme='nocturne'] .preview-compat--nocturne h3 { font-size: 1.18em; color: #d8cdbc; }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne h3,
 html[data-content-theme='nocturne'] .preview-compat--nocturne h4,
 html[data-content-theme='nocturne'] .preview-compat--nocturne h5,
 html[data-content-theme='nocturne'] .preview-compat--nocturne h6 {
-  margin-block-start: 0.6em;
+  line-height: 1.5;
+  margin-block-start: 1em;
   margin-block-end: 0.6em;
 }
 
@@ -1766,8 +1776,8 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne h5 + h6 {
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne p {
   color: #e5e1d7;
-  margin-block-start: 1.6em;
-  margin-block-end: 1.6em;
+  margin-block-start: 1.35em;
+  margin-block-end: 1.35em;
   text-align: left;
 }
 
@@ -1813,16 +1823,16 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne ul,
 html[data-content-theme='nocturne'] .preview-compat--nocturne ol,
 html[data-content-theme='nocturne'] .preview-compat--nocturne dl {
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
+  margin-block-end: 1.35em;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne ul {
-  padding-inline-start: calc(24px + 0.5em);
+  padding-inline-start: calc(22px + 0.5em);
   list-style-type: disc;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne ol {
-  padding-inline-start: calc(24px + 1em);
+  padding-inline-start: calc(22px + 1em);
   list-style-type: decimal;
 }
 
@@ -1856,15 +1866,15 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne input[type='checkb
 html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote {
   margin: 0;
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
-  padding: 0 15px;
-  border-radius: 8px;
+  margin-block-end: 1.35em;
+  padding: 2px 16px;
+  border-radius: 0;
   color: #cfc6b5;
-  border-left: 4px solid #617a55;
-  line-height: 1;
-  overflow: hidden;
+  border-left: 3px solid #617a55;
+  line-height: inherit;
+  overflow: visible;
   box-sizing: border-box;
-  width: fit-content;
+  width: auto;
   max-width: 100%;
   background: transparent;
   font-style: normal;
@@ -1881,9 +1891,10 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote blockqu
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne table {
   box-sizing: border-box;
-  table-layout: fixed;
+  display: block;
+  table-layout: auto;
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
+  margin-block-end: 1.35em;
   margin-inline-start: auto;
   margin-inline-end: auto;
   margin-right: auto;
@@ -1892,17 +1903,20 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne table {
   border: 1px solid #33382f;
   word-break: break-word;
   color: #e5e1d7;
+  overflow-x: auto;
   max-width: 100%;
-  width: auto;
+  width: max-content;
   font-family: inherit;
+  font-size: 0.94em;
+  line-height: 1.52;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne th,
 html[data-content-theme='nocturne'] .preview-compat--nocturne td {
-  padding-block-start: 6px;
-  padding-block-end: 6px;
-  padding-inline-start: 8px;
-  padding-inline-end: 8px;
+  padding-block-start: 7px;
+  padding-block-end: 7px;
+  padding-inline-start: 10px;
+  padding-inline-end: 10px;
   border: 1px solid #33382f;
   color: #e5e1d7;
   font-family: inherit;
@@ -1972,7 +1986,7 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne code {
   margin-inline-start: 0.25em;
   margin-inline-end: 0.25em;
   font-family: var(--nocturne-code-font);
-  font-size: 1em;
+  font-size: 0.92em;
   background-color: #20241f;
   padding: 2px 6px;
   border-radius: 4px;
@@ -1983,8 +1997,8 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne code {
 html[data-content-theme='nocturne'] .preview-compat--nocturne p > code,
 html[data-content-theme='nocturne'] .preview-compat--nocturne li > code {
   background-color: #252a24;
-  padding: 2px;
-  border-radius: 8px;
+  padding: 2px 5px;
+  border-radius: 5px;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne pre {
@@ -1994,19 +2008,21 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne pre {
   overflow-x: auto;
   box-sizing: border-box;
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
+  margin-block-end: 1.35em;
   margin-inline-start: 0;
   margin-inline-end: 0;
-  padding-block-start: 12px;
-  padding-block-end: 12px;
+  padding-block-start: 14px;
+  padding-block-end: 14px;
   padding-inline-start: 16px;
   padding-inline-end: 16px;
   overflow: auto;
   white-space: pre;
   word-wrap: normal;
-  border: 0;
+  border: 1px solid #33382f;
   border-radius: 8px;
   box-shadow: none;
+  font-size: 0.94em;
+  line-height: 1.58;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne pre code {
@@ -2020,7 +2036,7 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne pre code {
   white-space: pre-wrap;
   font-family: var(--nocturne-code-font);
   font-size: 1em;
-  line-height: 1.74;
+  line-height: inherit;
 }
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne pre code span { line-break: anywhere; }

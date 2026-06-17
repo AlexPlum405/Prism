@@ -198,7 +198,7 @@ html[data-content-theme='miaoyan'] {
   --preview-font: var(--miaoyan-font);
   --preview-font-size: 16px;
   --preview-line-height: 1.74;
-  --preview-max-width: 1000px;
+  --preview-max-width: 920px;
 }
 
 html[data-content-theme='miaoyan'] body,
@@ -1016,9 +1016,9 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan {
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan #write {
   margin: 0 auto;
-  max-width: 1000px;
+  max-width: var(--preview-max-width, 920px);
   width: 100%;
-  padding: 0 28px 80px;
+  padding: 0 32px 88px;
   box-sizing: border-box;
 }
 
@@ -1080,22 +1080,31 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan h6 {
   position: relative;
   margin: 0;
   color: #262626;
-  line-height: 1.8;
+  line-height: 1.42;
   margin-block-start: 1.6em;
   margin-block-end: 0.8em;
   font-weight: bold;
   -webkit-font-smoothing: antialiased;
 }
 
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan h1 { font-size: 2em; }
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan h2 { font-size: 1.5em; }
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3 { font-size: 1.25em; }
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h1 {
+  font-size: 1.92em;
+  margin-block-start: 1.72em;
+  margin-block-end: 0.92em;
+}
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h2 {
+  font-size: 1.42em;
+  margin-block-start: 1.56em;
+  margin-block-end: 0.74em;
+}
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3 { font-size: 1.18em; }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h4,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h5,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h6 {
-  margin-block-start: 0.6em;
+  line-height: 1.5;
+  margin-block-start: 1em;
   margin-block-end: 0.6em;
 }
 
@@ -1127,8 +1136,8 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan h5 + h6 {
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan p {
   color: #262626;
-  margin-block-start: 1.6em;
-  margin-block-end: 1.6em;
+  margin-block-start: 1.35em;
+  margin-block-end: 1.35em;
   text-align: left;
 }
 
@@ -1174,16 +1183,16 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan ul,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ol,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan dl {
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
+  margin-block-end: 1.35em;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ul {
-  padding-inline-start: calc(24px + 0.5em);
+  padding-inline-start: calc(22px + 0.5em);
   list-style-type: disc;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ol {
-  padding-inline-start: calc(24px + 1em);
+  padding-inline-start: calc(22px + 1em);
   list-style-type: decimal;
 }
 
@@ -1232,15 +1241,15 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan input[type='checkbox
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote {
   margin: 0;
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
-  padding: 0 15px;
-  border-radius: 8px;
-  color: #777;
-  border-left: 4px solid #d0d0d0;
-  line-height: 1;
-  overflow: hidden;
+  margin-block-end: 1.35em;
+  padding: 2px 16px;
+  border-radius: 0;
+  color: #666666;
+  border-left: 3px solid #d2d2d2;
+  line-height: inherit;
+  overflow: visible;
   box-sizing: border-box;
-  width: fit-content;
+  width: auto;
   max-width: 100%;
   background: transparent;
   font-style: normal;
@@ -1259,9 +1268,10 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote blockquot
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan table {
   box-sizing: border-box;
-  table-layout: fixed;
+  display: block;
+  table-layout: auto;
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
+  margin-block-end: 1.35em;
   margin-inline-start: auto;
   margin-inline-end: auto;
   margin-right: auto;
@@ -1270,17 +1280,20 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan table {
   border: 1px solid #e6e6e6;
   word-break: break-word;
   color: #262626;
+  overflow-x: auto;
   max-width: 100%;
-  width: auto;
+  width: max-content;
   font-family: inherit;
+  font-size: 0.94em;
+  line-height: 1.52;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan th,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan td {
-  padding-block-start: 6px;
-  padding-block-end: 6px;
-  padding-inline-start: 8px;
-  padding-inline-end: 8px;
+  padding-block-start: 7px;
+  padding-block-end: 7px;
+  padding-inline-start: 10px;
+  padding-inline-end: 10px;
   border: 1px solid #e6e6e6;
   color: #262626;
   font-family: inherit;
@@ -1409,7 +1422,7 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan code {
   margin-inline-start: 0.25em;
   margin-inline-end: 0.25em;
   font-family: SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 1em;
+  font-size: 0.92em;
   background-color: #f7f7f7;
   padding: 2px 6px;
   border-radius: 4px;
@@ -1420,8 +1433,8 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan code {
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan p > code,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan li > code {
   background-color: #eef1f2;
-  padding: 2px;
-  border-radius: 8px;
+  padding: 2px 5px;
+  border-radius: 5px;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre {
@@ -1431,19 +1444,21 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre {
   overflow-x: auto;
   box-sizing: border-box;
   margin-block-start: 0.8em;
-  margin-block-end: 1.6em;
+  margin-block-end: 1.35em;
   margin-inline-start: 0;
   margin-inline-end: 0;
-  padding-block-start: 12px;
-  padding-block-end: 12px;
+  padding-block-start: 14px;
+  padding-block-end: 14px;
   padding-inline-start: 16px;
   padding-inline-end: 16px;
   overflow: auto;
   white-space: pre;
   word-wrap: normal;
-  border: 0;
+  border: 1px solid #eeeeee;
   border-radius: 8px;
   box-shadow: none;
+  font-size: 0.94em;
+  line-height: 1.58;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre code {
@@ -1457,7 +1472,7 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre code {
   white-space: pre-wrap;
   font-family: SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 1em;
-  line-height: 1.74;
+  line-height: inherit;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre code span {
@@ -1623,6 +1638,44 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan kbd {
 }
 
 .preview-compat blockquote.prism-callout--important {
+  border-left-color: #6f5c8f;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote.prism-callout,
+html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote.prism-callout {
+  width: auto;
+  padding: 14px 16px 14px 18px;
+  border: 1px solid var(--theme-divider, var(--c-fog, #e8e8e8));
+  border-left-width: 3px;
+  border-radius: var(--r-card, 6px);
+  background: color-mix(in srgb, var(--theme-main-bg, var(--c-canvas, #fff)) 92%, var(--theme-divider, var(--c-fog, #e8e8e8)));
+  color: var(--theme-text, var(--c-void, #111));
+  overflow: visible;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote.prism-callout p,
+html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote.prism-callout p {
+  color: inherit;
+  line-height: inherit;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote.prism-callout--note,
+html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote.prism-callout--note {
+  border-left-color: var(--theme-secondary-text, var(--c-ash, #8f8f8f));
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote.prism-callout--warning,
+html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote.prism-callout--warning {
+  border-left-color: #9f6b00;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote.prism-callout--tip,
+html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote.prism-callout--tip {
+  border-left-color: #337a5b;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote.prism-callout--important,
+html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote.prism-callout--important {
   border-left-color: #6f5c8f;
 }
 

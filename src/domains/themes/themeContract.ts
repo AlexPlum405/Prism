@@ -95,7 +95,7 @@ export const builtInThemeContracts = {
         "'TsangerJinKai02-W04', 'TsangerJinKai02 W04', 'TsangerJinKai02', 'PingFangSC-Regular', -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
       fontSize: 16,
       lineHeight: 1.74,
-      maxWidth: 1000,
+      maxWidth: 920,
       writeClass: 'markdown-body heti',
     },
     search: {
@@ -461,7 +461,7 @@ export const builtInThemeContracts = {
       fontFamily: "'Newsreader', 'Source Serif 4', 'Songti SC', 'STSong', 'Iowan Old Style', Georgia, serif",
       fontSize: 16,
       lineHeight: 1.74,
-      maxWidth: 1000,
+      maxWidth: 920,
       writeClass: 'markdown-body heti nocturne-write',
     },
     search: {
