@@ -26,7 +26,7 @@ interface WorkspaceControllerProps {
   firstActionableMessage?: string;
   firstTypographyMessage?: string;
   globalContextMenu: WorkspaceContextMenuState | null;
-  hasSavedPath: boolean;
+  hasDocumentRelations: boolean;
   isSidebarHovered: boolean;
   selectionWritingStats: WritingStats | null;
   sidebarTab: SidebarTab;
@@ -71,7 +71,7 @@ export function WorkspaceController({
   firstActionableMessage,
   firstTypographyMessage,
   globalContextMenu,
-  hasSavedPath,
+  hasDocumentRelations,
   isSidebarHovered,
   selectionWritingStats,
   sidebarTab,
@@ -159,7 +159,7 @@ export function WorkspaceController({
             typographyIssueTitle={firstTypographyMessage}
             onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
             onRelationGraphClick={onRelationGraphClick}
-            hasSavedPath={hasSavedPath}
+            hasDocumentRelations={hasDocumentRelations}
             exportProgress={exportProgress}
             exportProgressInBackground={exportProgressInBackground}
             onShowExportProgress={onShowExportProgress}

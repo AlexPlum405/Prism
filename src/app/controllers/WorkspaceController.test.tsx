@@ -25,7 +25,7 @@ function renderController(overrides: Partial<Parameters<typeof WorkspaceControll
     firstActionableMessage: undefined,
     firstTypographyMessage: undefined,
     globalContextMenu: null,
-    hasSavedPath: true,
+    hasDocumentRelations: true,
     isSidebarHovered: false,
     selectionWritingStats: null,
     sidebarTab: 'files',

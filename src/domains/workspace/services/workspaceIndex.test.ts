@@ -9,6 +9,10 @@ import {
   rankWorkspaceIndexDocuments,
   searchWorkspaceIndex,
 } from './workspaceIndex';
+import {
+  getWorkspaceIndexDocumentRelations,
+  hasWorkspaceIndexDocumentRelations,
+} from './workspaceIndexQuery';
 
 const fileTree: FileNode[] = [
   {
@@ -128,6 +132,16 @@ describe('workspace index', () => {
     expect(getWorkspaceIndexBacklinks(index, '/repo/docs/api.md')).toEqual([
       expect.objectContaining({ path: '/repo/docs/guide.md' }),
     ]);
+    expect(getWorkspaceIndexDocumentRelations(index, '/repo/docs/guide.md')).toMatchObject({
+      hasRelations: true,
+      outgoingLinks: [
+        expect.objectContaining({ resolvedPath: '/repo/docs/api.md' }),
+        expect.objectContaining({ resolvedPath: '/repo/index.md' }),
+      ],
+    });
+    expect(hasWorkspaceIndexDocumentRelations(index, '/repo/docs/api.md')).toBe(true);
+    expect(hasWorkspaceIndexDocumentRelations(index, '/repo/docs/query.sql')).toBe(false);
+    expect(hasWorkspaceIndexDocumentRelations(index, '/repo/missing.md')).toBe(false);
     expect(getWorkspaceIndexLinkFiles(index)).toContainEqual(expect.objectContaining({
       path: '/repo/docs/guide.md',
       title: '入门指南',

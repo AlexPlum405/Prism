@@ -5,7 +5,11 @@ import { AppWorkspaceViewController } from './AppWorkspaceViewController';
 import type { EditorPaneHandle } from '../../domains/editor/components/EditorPane';
 import type { OpenDocument } from '../../domains/document/types';
 import type { WritingStats } from '../../domains/workspace/services';
-import { MARKDOWN_DOCUMENT_PROFILE } from '../../domains/workspace/services';
+import {
+  buildWorkspaceIndex,
+  MARKDOWN_DOCUMENT_PROFILE,
+  TEXT_DOCUMENT_PROFILE,
+} from '../../domains/workspace/services';
 
 const workspaceControllerMock = vi.hoisted(() => vi.fn((props: any) => (
   <div>
@@ -121,6 +125,19 @@ function renderController(overrides: Partial<Parameters<typeof AppWorkspaceViewC
   return props;
 }
 
+function buildRelationIndex(documents: Array<{ content: string; path: string }>) {
+  return buildWorkspaceIndex({
+    fileTree: [
+      { path: '/repo/current.md', name: 'current.md', kind: 'file', modifiedAt: 10, size: 100 },
+      { path: '/repo/target.md', name: 'target.md', kind: 'file', modifiedAt: 20, size: 100 },
+      { path: '/repo/source.md', name: 'source.md', kind: 'file', modifiedAt: 30, size: 100 },
+      { path: '/repo/query.sql', name: 'query.sql', kind: 'file', modifiedAt: 40, size: 100 },
+    ],
+    workspaceRoot: '/repo',
+    documents,
+  });
+}
+
 describe('AppWorkspaceViewController', () => {
   beforeEach(() => {
     workspaceControllerMock.mockClear();
@@ -136,8 +153,69 @@ describe('AppWorkspaceViewController', () => {
     expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
       activePath: '/repo/current.md',
       documentContent: '# Current',
-      hasSavedPath: true,
+      hasDocumentRelations: false,
       statusBarVisible: true,
+    });
+  });
+
+  it('shows the status bar graph entry for current markdown outgoing links', () => {
+    const workspaceIndex = buildRelationIndex([
+      { path: '/repo/current.md', content: '# Current\n\n[Target](target.md)' },
+      { path: '/repo/target.md', content: '# Target' },
+    ]);
+
+    renderController({ workspaceIndex });
+
+    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
+      hasDocumentRelations: true,
+    });
+  });
+
+  it('shows the status bar graph entry for backlinks to the current markdown document', () => {
+    const workspaceIndex = buildRelationIndex([
+      { path: '/repo/current.md', content: '# Current' },
+      { path: '/repo/source.md', content: '# Source\n\n[Current](current.md)' },
+    ]);
+
+    renderController({ workspaceIndex });
+
+    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
+      hasDocumentRelations: true,
+    });
+  });
+
+  it('hides the status bar graph entry without resolved document relations', () => {
+    const workspaceIndex = buildRelationIndex([
+      { path: '/repo/current.md', content: '# Current\n\n[Web](https://example.com)\n\n[Missing](missing.md)' },
+      { path: '/repo/target.md', content: '# Target' },
+    ]);
+
+    renderController({ workspaceIndex });
+
+    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
+      hasDocumentRelations: false,
+    });
+  });
+
+  it('hides the status bar graph entry for text documents', () => {
+    const workspaceIndex = buildRelationIndex([
+      { path: '/repo/query.sql', content: 'select "[[target]]";' },
+      { path: '/repo/target.md', content: '# Target' },
+    ]);
+
+    renderController({
+      activePath: '/repo/query.sql',
+      currentDocument: createDocument({
+        path: '/repo/query.sql',
+        profile: TEXT_DOCUMENT_PROFILE,
+        name: 'query.sql',
+        content: 'select "[[target]]";',
+      }),
+      workspaceIndex,
+    });
+
+    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
+      hasDocumentRelations: false,
     });
   });
 

@@ -85,7 +85,9 @@ export {
 } from './workspaceIndex';
 export {
   getWorkspaceIndexBacklinks,
+  getWorkspaceIndexDocumentRelations,
   getWorkspaceIndexLinkFiles,
+  hasWorkspaceIndexDocumentRelations,
   rankWorkspaceIndexDocuments,
   searchWorkspaceIndex,
 } from './workspaceIndexQuery';

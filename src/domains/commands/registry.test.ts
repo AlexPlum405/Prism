@@ -82,6 +82,7 @@ import {
 import { DEFAULT_SETTINGS } from '../settings/types';
 import { builtInThemeContracts } from '../themes';
 import { __themeRegistryTesting } from '../themes/themeRegistry';
+import { buildWorkspaceIndex } from '../workspace/services';
 
 function createCommandContext(overrides: Partial<CommandContext> = {}): CommandContext {
   return {
@@ -407,6 +408,17 @@ describe('command registry', () => {
     const openDocumentLinks = vi.fn();
     const openBacklinks = vi.fn();
     const openRelationGraph = vi.fn();
+    const workspaceIndex = buildWorkspaceIndex({
+      fileTree: [
+        { path: '/notes/report.md', name: 'report.md', kind: 'file', modifiedAt: 1, size: 100 },
+        { path: '/notes/source.md', name: 'source.md', kind: 'file', modifiedAt: 2, size: 100 },
+      ],
+      workspaceRoot: '/notes',
+      documents: [
+        { path: '/notes/report.md', content: '# Report' },
+        { path: '/notes/source.md', content: '# Source\n\n[Report](report.md)' },
+      ],
+    });
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
@@ -424,6 +436,7 @@ describe('command registry', () => {
           saveStatus: 'saved',
         },
       },
+      workspaceIndex,
       openDocumentProperties,
       openDocumentLinks,
       openBacklinks,

@@ -95,6 +95,7 @@ export function useAppCommandContext({
     documentStore: useDocumentStore.getState(),
     settingsStore: useSettingsStore.getState(),
     workspaceStore: useWorkspaceStore.getState(),
+    workspaceIndex,
     showToast,
     requestExportPath,
     requestSavePath,
@@ -120,6 +121,7 @@ export function useAppCommandContext({
     requestExportPath,
     requestSavePath,
     showToast,
+    workspaceIndex,
   ]);
 
   const commandContext = useMemo(() => createCommandContext(), [

@@ -3,12 +3,13 @@ import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import type { CommandContext, CommandDefinition } from '../types';
 import { openDialog } from '../../../platform/tauri/dialogs';
+import { hasWorkspaceIndexDocumentRelations } from '../../workspace/services';
 
-function hasSavedMarkdownDocument(context: CommandContext): boolean {
-  return Boolean(
-    context.documentStore.currentDocument?.path
-    && context.documentStore.currentDocument.profile?.supportsRelationGraph !== false,
-  );
+function hasCurrentDocumentRelations(context: CommandContext): boolean {
+  const currentDocument = context.documentStore.currentDocument;
+  if (!currentDocument?.path || currentDocument.profile?.supportsRelationGraph === false) return false;
+  if (!context.workspaceIndex) return false;
+  return hasWorkspaceIndexDocumentRelations(context.workspaceIndex, currentDocument.path);
 }
 
 async function handleOpenFolder(context: CommandContext): Promise<void> {
@@ -51,7 +52,7 @@ export function createWorkspaceCommands(): CommandDefinition[] {
       category: 'view',
       keywords: ['graph', 'relation', '关系', '图谱'],
       shortcuts: [{ code: 'KeyG', mod: true, alt: true }],
-      enabled: hasSavedMarkdownDocument,
+      enabled: hasCurrentDocumentRelations,
       run: (context) => context.openRelationGraph?.(),
     },
   ] satisfies CommandDefinition[];

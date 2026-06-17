@@ -3,6 +3,7 @@ import type { useSettingsStore } from '../settings/store';
 import type { useWorkspaceStore } from '../workspace/store';
 import type { ExportFormat } from '../export/types';
 import type { ToastInput } from '../../lib/toast';
+import type { WorkspaceIndex } from '../workspace/services';
 
 export type CommandCategory =
   | 'file'
@@ -180,6 +181,7 @@ export interface CommandContext {
   documentStore: ReturnType<typeof useDocumentStore.getState>;
   settingsStore: ReturnType<typeof useSettingsStore.getState>;
   workspaceStore: ReturnType<typeof useWorkspaceStore.getState>;
+  workspaceIndex?: WorkspaceIndex | null;
   showToast?: (toast: ToastInput) => void;
   requestExportPath?: (input: {
     format: ExportFormat;

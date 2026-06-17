@@ -111,6 +111,37 @@ describe('StatusBar', () => {
     expect(onBacklinksClick).not.toHaveBeenCalled();
   });
 
+  it('shows the relation graph button only when the current document has relations', () => {
+    const onRelationGraphClick = vi.fn();
+    const { rerender } = render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        hasDocumentRelations={false}
+        onRelationGraphClick={onRelationGraphClick}
+      />
+    );
+
+    expect(screen.queryByTitle(/关系图谱/)).not.toBeInTheDocument();
+
+    rerender(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        hasDocumentRelations={true}
+        onRelationGraphClick={onRelationGraphClick}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle(/关系图谱/));
+
+    expect(onRelationGraphClick).toHaveBeenCalledTimes(1);
+  });
+
   it('does not render document metadata in the status bar', () => {
     const onDocumentPropertiesClick = vi.fn();
     render(

@@ -1,6 +1,7 @@
 import type {
   WorkspaceIndex,
   WorkspaceIndexBacklink,
+  WorkspaceIndexLink,
   WorkspaceIndexedDocument,
   WorkspaceIndexSearchResult,
 } from './workspaceIndex';
@@ -152,6 +153,49 @@ export function rankWorkspaceIndexDocuments(
 
 export function getWorkspaceIndexBacklinks(index: WorkspaceIndex, path: string): WorkspaceIndexBacklink[] {
   return index.backlinksByPath.get(normalizePathForCompare(path)) ?? [];
+}
+
+export interface WorkspaceIndexDocumentRelations {
+  backlinks: WorkspaceIndexBacklink[];
+  hasRelations: boolean;
+  outgoingLinks: WorkspaceIndexLink[];
+}
+
+function getMarkdownDocumentKeys(index: WorkspaceIndex) {
+  return new Set(
+    index.documents
+      .filter((document) => document.profile === 'markdown')
+      .map((document) => normalizePathForCompare(document.path)),
+  );
+}
+
+export function getWorkspaceIndexDocumentRelations(
+  index: WorkspaceIndex,
+  path: string,
+): WorkspaceIndexDocumentRelations {
+  const documentKey = normalizePathForCompare(path);
+  const document = index.documentByPath.get(documentKey);
+  if (!document || document.profile !== 'markdown') {
+    return { backlinks: [], hasRelations: false, outgoingLinks: [] };
+  }
+
+  const markdownDocumentKeys = getMarkdownDocumentKeys(index);
+  const outgoingLinks = document.links.filter((link) => {
+    if (!link.resolvedPath) return false;
+    const targetKey = normalizePathForCompare(link.resolvedPath);
+    return targetKey !== documentKey && markdownDocumentKeys.has(targetKey);
+  });
+  const backlinks = getWorkspaceIndexBacklinks(index, path);
+
+  return {
+    backlinks,
+    hasRelations: outgoingLinks.length > 0 || backlinks.length > 0,
+    outgoingLinks,
+  };
+}
+
+export function hasWorkspaceIndexDocumentRelations(index: WorkspaceIndex, path: string): boolean {
+  return getWorkspaceIndexDocumentRelations(index, path).hasRelations;
 }
 
 export function getWorkspaceIndexLinkFiles(index: WorkspaceIndex) {

@@ -5,7 +5,11 @@ import type { OpenDocument } from '../../domains/document/types';
 import type { WorkspaceContextMenuState } from './WorkspaceController';
 import { WorkspaceController } from './WorkspaceController';
 import type { FileActionInput } from '../../lib/fileActions';
-import type { WorkspaceIndex, WritingStats } from '../../domains/workspace/services';
+import {
+  hasWorkspaceIndexDocumentRelations,
+  type WorkspaceIndex,
+  type WritingStats,
+} from '../../domains/workspace/services';
 import type { useWorkspaceStore } from '../../domains/workspace/store';
 
 interface AppWorkspaceViewControllerProps {
@@ -81,6 +85,13 @@ export function AppWorkspaceViewController({
   onShowExportProgress,
   onTypographyDiagnosticsClick,
 }: AppWorkspaceViewControllerProps) {
+  const hasDocumentRelations = Boolean(
+    currentDocument?.path
+    && currentDocument.profile?.supportsRelationGraph !== false
+    && workspaceIndex
+    && hasWorkspaceIndexDocumentRelations(workspaceIndex, currentDocument.path),
+  );
+
   return (
     <WorkspaceController
       activePath={activePath}
@@ -106,10 +117,7 @@ export function AppWorkspaceViewController({
       firstActionableMessage={firstActionableMessage}
       firstTypographyMessage={firstTypographyMessage}
       globalContextMenu={globalContextMenu}
-      hasSavedPath={Boolean(
-        currentDocument?.path
-        && currentDocument.profile?.supportsRelationGraph !== false,
-      )}
+      hasDocumentRelations={hasDocumentRelations}
       isSidebarHovered={isSidebarHovered}
       selectionWritingStats={selectionWritingStats}
       sidebarTab={workspace.sidebarTab}

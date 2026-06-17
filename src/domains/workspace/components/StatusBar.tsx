@@ -83,7 +83,7 @@ interface StatusBarProps {
   typographyIssueTitle?: string;
   onTypographyDiagnosticsClick?: () => void;
   onRelationGraphClick?: () => void;
-  hasSavedPath?: boolean;
+  hasDocumentRelations?: boolean;
   exportProgress?: string | null;
   exportProgressInBackground?: boolean;
   onShowExportProgress?: () => void;
@@ -112,7 +112,7 @@ export function StatusBar({
   linkIssueTitle,
   onLinkDiagnosticsClick,
   onRelationGraphClick,
-  hasSavedPath = false,
+  hasDocumentRelations = false,
   exportProgress = null,
   exportProgressInBackground = false,
   onShowExportProgress,
@@ -206,7 +206,7 @@ export function StatusBar({
               <span className={styles.exportStatusText}>{t('status.exporting')}</span>
             </button>
           )}
-          {hasSavedPath && onRelationGraphClick && (
+          {hasDocumentRelations && onRelationGraphClick && (
             <button
               className={`${styles.btn} ${styles.iconBtn}`}
               onClick={onRelationGraphClick}
