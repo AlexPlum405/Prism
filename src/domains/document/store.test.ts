@@ -1,8 +1,10 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { useDocumentStore } from './store';
+import { useSettingsStore } from '../settings/store';
 
 beforeEach(() => {
   useDocumentStore.setState({ currentDocument: null });
+  useSettingsStore.setState({ defaultViewMode: 'split' });
 });
 
 describe('document store save status', () => {
@@ -29,6 +31,18 @@ describe('document store save status', () => {
       saveStatus: 'saved',
       saveError: null,
       scrollState: { editorRatio: 0, previewRatio: 0 },
+    });
+  });
+
+  it('opens text documents in edit mode even when the default view uses preview', () => {
+    useSettingsStore.setState({ defaultViewMode: 'preview' });
+
+    useDocumentStore.getState().openDocument('/tmp/query.sql', 'query.sql', 'select 1;');
+    useDocumentStore.getState().setViewMode('preview');
+
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      profile: expect.objectContaining({ kind: 'text', supportsPreview: false }),
+      viewMode: 'edit',
     });
   });
 

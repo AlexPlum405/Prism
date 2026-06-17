@@ -2,6 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentDiagnosticsModel } from './useDocumentDiagnosticsModel';
 import { scanChineseTypography } from '../domains/editor/extensions/typographyDiagnostics';
+import { MARKDOWN_DOCUMENT_PROFILE, TEXT_DOCUMENT_PROFILE } from '../domains/workspace/services';
+import type { FileNode } from '../domains/workspace/types';
+import type { OpenDocument } from '../domains/document/types';
+
+const EMPTY_FILE_TREE: FileNode[] = [];
 
 vi.mock('../domains/editor/extensions/typographyDiagnostics', () => ({
   scanChineseTypography: vi.fn(() => [
@@ -15,7 +20,11 @@ vi.mock('../domains/editor/extensions/typographyDiagnostics', () => ({
   ]),
 }));
 
-function createDocument(content = '# 标题\n\n这是Prism编辑器') {
+vi.mock('../domains/export/preflight', () => ({
+  scanMarkdownRenderDiagnostics: vi.fn(async () => []),
+}));
+
+function createDocument(content = '# 标题\n\n这是Prism编辑器'): OpenDocument {
   return {
     content,
     isDirty: false,
@@ -24,19 +33,22 @@ function createDocument(content = '# 标题\n\n这是Prism编辑器') {
     lastSavedAt: 0,
     name: 'note.md',
     path: '/workspace/note.md',
+    profile: MARKDOWN_DOCUMENT_PROFILE,
     saveError: null,
     saveIssue: null,
     saveStatus: 'saved',
     scrollState: { editorRatio: 0, previewRatio: 0 },
     viewMode: 'edit',
-  } as Parameters<typeof useDocumentDiagnosticsModel>[0]['currentDocument'];
+  };
 }
 
 function renderDiagnosticsModel(content?: string) {
+  const currentDocument = createDocument(content);
+  const existsPath = vi.fn(async () => true);
   return renderHook(() => useDocumentDiagnosticsModel({
-    currentDocument: createDocument(content),
-    existsPath: vi.fn(async () => true),
-    fileTree: [],
+    currentDocument,
+    existsPath,
+    fileTree: EMPTY_FILE_TREE,
     jumpToLine: vi.fn(),
     rootPath: '/workspace',
   }));
@@ -47,8 +59,12 @@ describe('useDocumentDiagnosticsModel', () => {
     vi.clearAllMocks();
   });
 
-  it('does not run typography diagnostics during initial document diagnostics render', () => {
+  it('does not run typography diagnostics during initial document diagnostics render', async () => {
     const { result } = renderDiagnosticsModel();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(result.current.typographyDiagnostics).toEqual([]);
     expect(result.current.typographyDiagnosticsVisible).toBe(false);
@@ -68,5 +84,33 @@ describe('useDocumentDiagnosticsModel', () => {
     });
 
     expect(scanChineseTypography).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not run Markdown diagnostics for text documents', async () => {
+    const currentDocument = {
+      ...createDocument('select * from notes where body like "[[Current]]";'),
+      name: 'query.sql',
+      path: '/workspace/query.sql',
+      profile: TEXT_DOCUMENT_PROFILE,
+    };
+    const existsPath = vi.fn(async () => true);
+    const { result } = renderHook(() => useDocumentDiagnosticsModel({
+      currentDocument,
+      existsPath,
+      fileTree: EMPTY_FILE_TREE,
+      jumpToLine: vi.fn(),
+      rootPath: '/workspace',
+    }));
+
+    act(() => {
+      result.current.handleLinkDiagnosticsClick();
+      result.current.handleTypographyDiagnosticsClick();
+    });
+
+    await waitFor(() => {
+      expect(result.current.documentDiagnostics).toEqual([]);
+      expect(result.current.typographyDiagnosticsVisible).toBe(false);
+    });
+    expect(scanChineseTypography).not.toHaveBeenCalled();
   });
 });

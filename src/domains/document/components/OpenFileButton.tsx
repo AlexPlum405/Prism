@@ -1,7 +1,7 @@
 import { openDialog } from '../../../platform/tauri/dialogs';
 import { useDocumentStore } from '../store';
 import { useWorkspaceStore } from '../../workspace/store';
-import { MARKDOWN_FILE_FILTERS } from '../../workspace/services';
+import { DOCUMENT_FILE_FILTERS } from '../../workspace/services';
 import { useI18n } from '../../i18n';
 import { openSelectedDocument } from '../../../lib/openDocumentFlow';
 
@@ -12,7 +12,7 @@ export function OpenFileButton() {
     try {
       const selected = await openDialog({
         multiple: false,
-        filters: MARKDOWN_FILE_FILTERS,
+        filters: DOCUMENT_FILE_FILTERS,
       });
 
       if (typeof selected !== 'string') return;

@@ -18,6 +18,7 @@ const fileTree: FileNode[] = [
     children: [
       { path: '/repo/docs/guide.md', name: 'guide.md', kind: 'file', modifiedAt: 20, size: 120 },
       { path: '/repo/docs/api.md', name: 'api.md', kind: 'file', modifiedAt: 30, size: 160 },
+      { path: '/repo/docs/query.sql', name: 'query.sql', kind: 'file', modifiedAt: 35, size: 80 },
       { path: '/repo/docs/image.png', name: 'image.png', kind: 'file' },
     ],
   },
@@ -53,6 +54,10 @@ describe('workspace index', () => {
           ].join('\n'),
         },
         {
+          path: '/repo/docs/query.sql',
+          content: 'select * from notes where body like "[[index]]";',
+        },
+        {
           path: '/repo/index.md',
           content: [
             '# 首页',
@@ -70,9 +75,16 @@ describe('workspace index', () => {
     expect(index.documents.map((document) => document.relativePath)).toEqual([
       'docs/api.md',
       'docs/guide.md',
+      'docs/query.sql',
       'index.md',
     ]);
     expect(index.documents.map((document) => document.name)).not.toContain('image.png');
+    expect(index.documentByPath.get('/repo/docs/query.sql')).toMatchObject({
+      profile: 'text',
+      title: 'query',
+      headings: [],
+      links: [],
+    });
 
     const guide = index.documentByPath.get('/repo/docs/guide.md');
     expect(guide).toMatchObject({
@@ -121,6 +133,9 @@ describe('workspace index', () => {
       title: '入门指南',
       headings: [{ slug: '开始', title: '开始' }],
     }));
+    expect(getWorkspaceIndexLinkFiles(index)).not.toContainEqual(expect.objectContaining({
+      path: '/repo/docs/query.sql',
+    }));
     expect(index.backlinksByPath.get('/repo/docs/guide.md')).toEqual([
       expect.objectContaining({
         path: '/repo/index.md',
@@ -166,6 +181,7 @@ describe('workspace index', () => {
     expect(rankWorkspaceIndexDocuments(index, '').map((result) => result.document.relativePath)).toEqual([
       'index.md',
       'docs/api.md',
+      'docs/query.sql',
       'docs/guide.md',
     ]);
     expect(rankWorkspaceIndexDocuments(index, '入门')[0]).toMatchObject({

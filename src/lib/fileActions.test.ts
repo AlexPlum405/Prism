@@ -286,8 +286,11 @@ describe('executeFileAction openFile workspace sync', () => {
 
     expect(readTextFile).not.toHaveBeenCalled();
     expect(showToast).toHaveBeenCalledWith(
-      '操作失败: 当前版本仅支持 .md / .markdown / .txt 文件。',
+      expect.stringContaining('.sql'),
     );
+    const message = showToast.mock.calls[0]?.[0] ?? '';
+    expect(message).not.toContain('.tsx');
+    expect(message).not.toContain('.py');
   });
 
   it('does not reload the current dirty document when the same file is selected again', async () => {

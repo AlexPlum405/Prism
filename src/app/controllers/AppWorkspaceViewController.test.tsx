@@ -5,6 +5,7 @@ import { AppWorkspaceViewController } from './AppWorkspaceViewController';
 import type { EditorPaneHandle } from '../../domains/editor/components/EditorPane';
 import type { OpenDocument } from '../../domains/document/types';
 import type { WritingStats } from '../../domains/workspace/services';
+import { MARKDOWN_DOCUMENT_PROFILE } from '../../domains/workspace/services';
 
 const workspaceControllerMock = vi.hoisted(() => vi.fn((props: any) => (
   <div>
@@ -36,6 +37,7 @@ const writingStats: WritingStats = {
 function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
   return {
     path: '/repo/current.md',
+    profile: MARKDOWN_DOCUMENT_PROFILE,
     name: 'current.md',
     content: '# Current',
     isDirty: false,

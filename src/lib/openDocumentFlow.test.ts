@@ -49,10 +49,13 @@ describe('openDocumentFlow policy', () => {
     });
   });
 
-  it('centralizes the current supported document type boundary before DocumentProfile expands it', () => {
+  it('centralizes the supported Markdown and Text Document type boundary', () => {
     expect(isSupportedOpenDocumentPath('/repo/readme.md')).toBe(true);
     expect(isSupportedOpenDocumentPath('/repo/readme.markdown')).toBe(true);
     expect(isSupportedOpenDocumentPath('/repo/notes.txt')).toBe(true);
+    expect(isSupportedOpenDocumentPath('/repo/query.sql')).toBe(true);
+    expect(isSupportedOpenDocumentPath('/repo/settings.JSON')).toBe(true);
+    expect(isSupportedOpenDocumentPath('/repo/.env')).toBe(true);
     expect(isSupportedOpenDocumentPath('/repo/app.ts')).toBe(false);
   });
 

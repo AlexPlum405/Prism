@@ -3,6 +3,11 @@ import { DocumentSaveIssue, DocumentScrollState, DocumentState } from './types';
 import type { FileSnapshot } from './fileSnapshot';
 import { useSettingsStore } from '../settings/store';
 import { t } from '../i18n';
+import {
+  getDocumentProfileForPath,
+  MARKDOWN_DOCUMENT_PROFILE,
+  type DocumentProfile,
+} from '../workspace/services';
 
 interface DocumentStore extends DocumentState {
   openDocument: (path: string, name: string, content: string, snapshot?: FileSnapshot | null) => void;
@@ -30,13 +35,19 @@ const DEFAULT_SCROLL_STATE: DocumentScrollState = {
   previewRatio: 0,
 };
 
+function viewModeForProfile(profile: DocumentProfile, requested: 'edit' | 'split' | 'preview') {
+  return profile.supportsPreview ? requested : 'edit';
+}
+
 export const useDocumentStore = create<DocumentStore>((set) => ({
   currentDocument: null,
 
   openDocument: (path, name, content, snapshot = null) => {
+    const profile = getDocumentProfileForPath(path) ?? MARKDOWN_DOCUMENT_PROFILE;
     set({
       currentDocument: {
         path,
+        profile,
         name,
         content,
         isDirty: false,
@@ -46,7 +57,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
         saveStatus: 'saved',
         saveError: null,
         saveIssue: null,
-        viewMode: useSettingsStore.getState().defaultViewMode,
+        viewMode: viewModeForProfile(profile, useSettingsStore.getState().defaultViewMode),
         scrollState: { ...DEFAULT_SCROLL_STATE },
       },
     });
@@ -58,9 +69,11 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
 
   createNewDocument: (content = '', name = 'Untitled.md') => {
     const hasInitialContent = content.length > 0;
+    const profile = getDocumentProfileForPath(name) ?? MARKDOWN_DOCUMENT_PROFILE;
     set({
       currentDocument: {
         path: '',
+        profile,
         name,
         content,
         isDirty: hasInitialContent,
@@ -70,7 +83,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
         saveStatus: hasInitialContent ? 'dirty' : 'saved',
         saveError: null,
         saveIssue: null,
-        viewMode: useSettingsStore.getState().defaultViewMode,
+        viewMode: viewModeForProfile(profile, useSettingsStore.getState().defaultViewMode),
         scrollState: { ...DEFAULT_SCROLL_STATE },
       },
     });
@@ -95,11 +108,14 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
   updateDocumentPath: (oldPath, newPath, name) => {
     set((state) => {
       if (!state.currentDocument || state.currentDocument.path !== oldPath) return state;
+      const profile = getDocumentProfileForPath(newPath) ?? state.currentDocument.profile ?? MARKDOWN_DOCUMENT_PROFILE;
       return {
         currentDocument: {
           ...state.currentDocument,
           path: newPath,
+          profile,
           name,
+          viewMode: viewModeForProfile(profile, state.currentDocument.viewMode),
         },
       };
     });
@@ -136,10 +152,11 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
   setViewMode: (viewMode) => {
     set((state) => {
       if (!state.currentDocument) return state;
+      const profile = state.currentDocument.profile ?? MARKDOWN_DOCUMENT_PROFILE;
       return {
         currentDocument: {
           ...state.currentDocument,
-          viewMode,
+          viewMode: viewModeForProfile(profile, viewMode),
         },
       };
     });

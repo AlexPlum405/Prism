@@ -11,7 +11,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use super::error::{PrismCommandError, PrismResult};
 use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
 
-const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown", "txt"];
+const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown"];
+const TEXT_DOCUMENT_EXTENSIONS: &[&str] = &[
+    "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv", "tsv",
+    "log", "ini", "conf", "env",
+];
+const DOCUMENT_EXTENSIONS: &[&str] = &[
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
+    "csv", "tsv", "log", "ini", "conf", "env",
+];
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CurrentDocumentOverride {
@@ -118,6 +126,7 @@ pub struct WorkspaceIndexedDocumentDto {
     pub modified_at: Option<f64>,
     pub name: String,
     pub path: String,
+    pub profile: String,
     pub recent_rank: Option<usize>,
     pub relative_path: String,
     pub size: Option<u64>,
@@ -367,15 +376,45 @@ fn strip_markdown_extension(value: &str) -> String {
     value.to_string()
 }
 
-fn is_supported_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| {
-            MARKDOWN_EXTENSIONS
-                .iter()
-                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
-        })
-        .unwrap_or(false)
+fn strip_document_extension(value: &str) -> String {
+    for extension in DOCUMENT_EXTENSIONS {
+        let suffix = format!(".{extension}");
+        if value.to_lowercase().ends_with(&suffix) {
+            return value[..value.len() - suffix.len()].to_string();
+        }
+    }
+    value.to_string()
+}
+
+fn extension_for_path(path: &Path) -> Option<String> {
+    let name = path.file_name()?.to_string_lossy();
+    let (_, extension) = name.rsplit_once('.')?;
+    if extension.is_empty() {
+        None
+    } else {
+        Some(extension.to_ascii_lowercase())
+    }
+}
+
+fn document_profile_for_path(path: &Path) -> Option<&'static str> {
+    let extension = extension_for_path(path)?;
+    if MARKDOWN_EXTENSIONS
+        .iter()
+        .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+    {
+        return Some("markdown");
+    }
+    if TEXT_DOCUMENT_EXTENSIONS
+        .iter()
+        .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+    {
+        return Some("text");
+    }
+    None
+}
+
+fn is_supported_document_path(path: &Path) -> bool {
+    document_profile_for_path(path).is_some()
 }
 
 fn relative_path(path: &Path, root: &Path) -> String {
@@ -415,7 +454,7 @@ fn collect_workspace_files(
             collect_workspace_files(root, &path, out, stage, options, scanned_files)?;
             continue;
         }
-        if !file_type.is_file() || !is_supported_markdown_path(&path) {
+        if !file_type.is_file() || !is_supported_document_path(&path) {
             continue;
         }
 
@@ -776,32 +815,58 @@ fn excerpt_for_line(content: &str, line: usize) -> String {
         .collect()
 }
 
+fn empty_front_matter() -> FrontMatterDto {
+    FrontMatterDto {
+        author: String::new(),
+        date: String::new(),
+        description: String::new(),
+        error: None,
+        export_raw: String::new(),
+        has_front_matter: false,
+        status: String::new(),
+        tags: Vec::new(),
+        title: String::new(),
+    }
+}
+
 fn build_document(
     file: &WorkspaceFile,
     content: String,
     recent: Option<(f64, usize)>,
 ) -> WorkspaceIndexedDocumentDto {
-    let parsed = parse_front_matter(&content);
-    let headings = parse_headings(&parsed.body, parsed.front_matter_line_offset);
-    let title = if parsed.front_matter.title.is_empty() {
-        headings
-            .first()
-            .map(|heading| heading.title.clone())
-            .unwrap_or_else(|| strip_markdown_extension(&file.name))
+    let profile = document_profile_for_path(&file.path).unwrap_or("markdown");
+    let (front_matter, headings, links, title) = if profile == "markdown" {
+        let parsed = parse_front_matter(&content);
+        let headings = parse_headings(&parsed.body, parsed.front_matter_line_offset);
+        let title = if parsed.front_matter.title.is_empty() {
+            headings
+                .first()
+                .map(|heading| heading.title.clone())
+                .unwrap_or_else(|| strip_markdown_extension(&file.name))
+        } else {
+            parsed.front_matter.title.clone()
+        };
+        (parsed.front_matter, headings, parse_links(&parsed.body), title)
     } else {
-        parsed.front_matter.title.clone()
+        (
+            empty_front_matter(),
+            Vec::new(),
+            Vec::new(),
+            strip_document_extension(&file.name),
+        )
     };
 
     WorkspaceIndexedDocumentDto {
         content,
-        front_matter: parsed.front_matter,
+        front_matter,
         has_content: true,
         headings,
         last_opened: recent.map(|item| item.0),
-        links: parse_links(&parsed.body),
+        links,
         modified_at: file.modified_at,
         name: file.name.clone(),
         path: path_to_string(&file.path),
+        profile: profile.to_string(),
         recent_rank: recent.map(|item| item.1),
         relative_path: file.relative_path.clone(),
         size: file.size,
@@ -931,7 +996,7 @@ fn build_workspace_documents(
     report_workspace_index_progress(
         options,
         "scan",
-        format!("Found {} Markdown files", files.len()),
+        format!("Found {} supported documents", files.len()),
         0.30,
         scanned_files,
         0,
@@ -1101,13 +1166,22 @@ pub fn build_workspace_index_with_options(
         .map(|document| document.path.clone())
         .collect();
     let resolved_documents = documents.clone();
+    let markdown_documents = resolved_documents
+        .iter()
+        .filter(|document| document.profile == "markdown")
+        .cloned()
+        .collect::<Vec<_>>();
     for (index, document) in documents.iter_mut().enumerate() {
         check_workspace_index_cancelled(&options, "build_workspace_index")?;
+        if document.profile != "markdown" {
+            document.links.clear();
+            continue;
+        }
         for link in document.links.iter_mut() {
             link.resolved_path = if link.kind == "wiki" {
-                resolve_wiki_link(&link.target, &resolved_documents)
+                resolve_wiki_link(&link.target, &markdown_documents)
             } else {
-                resolve_markdown_link(&document_paths[index], &link.target, &resolved_documents)
+                resolve_markdown_link(&document_paths[index], &link.target, &markdown_documents)
             };
         }
     }
@@ -1258,6 +1332,9 @@ pub fn query_workspace_link_targets(
     let mut targets = Vec::new();
 
     for document in &index.documents {
+        if document.profile != "markdown" {
+            continue;
+        }
         let target = link_target_for_document(document, current_path);
         match input.mode {
             WorkspaceLinkTargetModeDto::Markdown => {
@@ -1584,11 +1661,15 @@ fn collect_relation_edges(index: &WorkspaceIndexDto) -> Vec<RawRelationEdge> {
     let document_keys = index
         .documents
         .iter()
+        .filter(|document| document.profile == "markdown")
         .map(|document| normalize_path(&document.path))
         .collect::<HashSet<_>>();
     let mut edges = Vec::new();
 
     for document in &index.documents {
+        if document.profile != "markdown" {
+            continue;
+        }
         let source_key = normalize_path(&document.path);
         for link in &document.links {
             let Some(resolved_path) = link.resolved_path.as_ref() else {
@@ -1675,6 +1756,7 @@ pub fn build_relation_graph(
     let document_by_key = index
         .documents
         .iter()
+        .filter(|document| document.profile == "markdown")
         .map(|document| (normalize_path(&document.path), document))
         .collect::<HashMap<_, _>>();
     let current_document_exists =
@@ -1685,6 +1767,7 @@ pub fn build_relation_graph(
         index
             .documents
             .iter()
+            .filter(|document| document.profile == "markdown")
             .map(|document| (normalize_path(&document.path), 0))
             .collect::<HashMap<_, _>>()
     };
@@ -1692,6 +1775,7 @@ pub fn build_relation_graph(
     let mut filtered_documents = index
         .documents
         .iter()
+        .filter(|document| document.profile == "markdown")
         .filter(|document| selected_keys.contains(&normalize_path(&document.path)))
         .filter(|document| document_matches_relation_query(document, &normalized_query))
         .collect::<Vec<_>>();
@@ -1879,6 +1963,8 @@ mod tests {
             "# Dependency Notes",
         )
         .expect("write node_modules");
+        fs::write(root.join("settings.json"), "{\"needle\": true}").expect("write json");
+        fs::write(root.join(".env"), "TOKEN=local").expect("write env");
         fs::create_dir_all(root.join("empty")).expect("create empty");
         fs::write(root.join("image.png"), "png").expect("write image");
 
@@ -1902,11 +1988,22 @@ mod tests {
                 ".cache/cached.md",
                 ".claude/README.md",
                 ".codex/agents/oec-dev.md",
+                ".env",
                 ".git/notes.md",
                 ".idea/notes.md",
                 ".venv/notes.md",
                 "node_modules/notes.md",
+                "settings.json",
             ]
+        );
+        assert_eq!(
+            index
+                .documents
+                .iter()
+                .find(|document| document.relative_path == "settings.json")
+                .expect("settings")
+                .profile,
+            "text"
         );
 
         let _ = fs::remove_dir_all(root);
@@ -1918,8 +2015,10 @@ mod tests {
         fs::create_dir_all(root.join("docs")).expect("create docs");
         let guide = root.join("docs").join("guide.md");
         let api = root.join("docs").join("api.md");
+        let query = root.join("docs").join("query.sql");
         fs::write(&guide, "# Guide\n\nneedle target content").expect("write guide");
         fs::write(&api, "# API Reference\n\ninvoke contract").expect("write api");
+        fs::write(&query, "select * from orders where status = 'needle';").expect("write sql");
 
         let quick_results = query_workspace_index(QueryWorkspaceIndexInput {
             root_path: path_to_string(&root),
@@ -1968,8 +2067,15 @@ mod tests {
         .expect("query full text");
 
         assert_eq!(full_text_results[0].match_kind, "content");
-        assert_eq!(full_text_results[0].document.relative_path, "docs/guide.md");
+        assert_eq!(
+            full_text_results
+                .iter()
+                .map(|result| result.document.relative_path.as_str())
+                .collect::<Vec<_>>(),
+            ["docs/guide.md", "docs/query.sql"]
+        );
         assert!(full_text_results[0].snippet.contains("needle"));
+        assert_eq!(full_text_results[1].document.profile, "text");
 
         let _ = fs::remove_dir_all(root);
     }
@@ -2006,9 +2112,11 @@ mod tests {
         let alpha = root.join("docs").join("alpha.md");
         let beta = root.join("docs").join("beta.md");
         let gamma = root.join("docs").join("gamma.md");
+        let query = root.join("docs").join("query.sql");
         fs::write(&alpha, "---\ntitle: Alpha\n---\n[Beta](beta.md)").expect("write alpha");
         fs::write(&beta, "# Beta\n[[gamma]]").expect("write beta");
         fs::write(&gamma, "# Gamma").expect("write gamma");
+        fs::write(&query, "select '[[gamma]]';").expect("write sql");
 
         let index = build_workspace_index(BuildWorkspaceIndexInput {
             root_path: path_to_string(&root),
@@ -2041,6 +2149,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["docs/beta.md", "docs/alpha.md", "docs/gamma.md"]
         );
+        assert!(!graph.nodes.iter().any(|node| node.relative_path == "docs/query.sql"));
         assert_eq!(
             graph
                 .edges

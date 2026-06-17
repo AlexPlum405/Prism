@@ -5,7 +5,11 @@ import {
 import type { FileNode } from '../types';
 import { resolveDocumentLinkTarget, type DocumentLinkKind } from './documentLinks';
 import { flattenFiles } from './fileTree';
-import { isSupportedMarkdownPath } from './fileAssociation';
+import {
+  getDocumentProfileForPath,
+  isSupportedDocumentPath,
+  type DocumentProfileKind,
+} from './fileAssociation';
 import { basename, isSamePath, normalizePathForCompare } from './path';
 
 export interface WorkspaceIndexSourceDocument {
@@ -60,6 +64,7 @@ export interface WorkspaceIndexedDocument {
   modifiedAt?: number;
   name: string;
   path: string;
+  profile: DocumentProfileKind;
   recentRank?: number;
   relativePath: string;
   size?: number;
@@ -98,13 +103,13 @@ interface WorkspaceDocumentSearchCache {
   title: string;
 }
 
-const MARKDOWN_EXTENSION_RE = /\.(md|markdown|txt)$/i;
+const DOCUMENT_EXTENSION_RE = /\.(md|markdown|txt|text|sql|jsonc?|ya?ml|toml|xml|csv|tsv|log|ini|conf|env)$/i;
 const workspaceDocumentSearchCache = new WeakMap<WorkspaceIndexedDocument, WorkspaceDocumentSearchCache>();
 
 type WorkspaceIndexFile = Pick<FileNode, 'modifiedAt' | 'name' | 'path' | 'preview' | 'size'>;
 
-function stripMarkdownExtension(value: string) {
-  return value.replace(MARKDOWN_EXTENSION_RE, '');
+function stripDocumentExtension(value: string) {
+  return value.replace(DOCUMENT_EXTENSION_RE, '');
 }
 
 function normalizeSeparators(value: string) {
@@ -139,13 +144,13 @@ function buildRecentRankMap(recentFiles: WorkspaceIndexRecentFile[] = []) {
 }
 
 function fallbackTitleForDocument(name: string, headings: WorkspaceIndexHeading[]) {
-  return headings[0]?.title || stripMarkdownExtension(basename(name));
+  return headings[0]?.title || stripDocumentExtension(basename(name));
 }
 
 function getWorkspaceIndexFiles(fileTree: FileNode[], rootPath: string | null) {
   return flattenFiles(fileTree, rootPath)
     .map(({ node }) => node)
-    .filter((node) => isSupportedMarkdownPath(node.path));
+    .filter((node) => isSupportedDocumentPath(node.path));
 }
 
 function hasStableMetadata(file: WorkspaceIndexFile) {
@@ -188,22 +193,36 @@ function buildUnresolvedDocument(input: {
     recent,
     rootPath,
   } = input;
-  const model = parseMarkdownDocumentModel(content);
-  const title = model.frontMatter.title || fallbackTitleForDocument(file.name, model.headings);
+  const profile = getDocumentProfileForPath(file.path)?.kind ?? 'markdown';
+  const model = profile === 'markdown' ? parseMarkdownDocumentModel(content) : null;
+  const frontMatter = model?.frontMatter ?? {
+    author: '',
+    date: '',
+    description: '',
+    error: null,
+    exportRaw: '',
+    hasFrontMatter: false,
+    status: '',
+    tags: [],
+    title: '',
+  };
+  const headings = model?.headings ?? [];
+  const title = frontMatter.title || fallbackTitleForDocument(file.name, headings);
 
   return {
     content,
-    frontMatter: model.frontMatter,
-    headings: model.headings,
+    frontMatter,
+    headings,
     hasContent,
     lastOpened: recent?.lastOpened,
-    links: model.links.map((link) => ({
+    links: profile === 'markdown' ? model?.links.map((link) => ({
       ...link,
       resolvedPath: null,
-    })),
+    })) ?? [] : [],
     modifiedAt: file.modifiedAt,
     name: file.name,
     path: file.path,
+    profile,
     recentRank: recent?.rank,
     relativePath: getWorkspaceRelativePath(file.path, rootPath),
     size: file.size,
@@ -222,16 +241,18 @@ function resolveWorkspaceDocumentLinks(
   documents: WorkspaceIndexedDocument[],
   rootPath: string | null,
 ) {
-  const workspaceFiles = documents.map((document) => ({
-    headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
-    name: document.name,
-    path: document.path,
-    title: document.title,
-  }));
+  const workspaceFiles = documents
+    .filter((document) => document.profile === 'markdown')
+    .map((document) => ({
+      headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
+      name: document.name,
+      path: document.path,
+      title: document.title,
+    }));
 
   return documents.map((document) => ({
     ...document,
-    links: document.links.map((link) => ({
+    links: document.profile === 'markdown' ? document.links.map((link) => ({
       ...link,
       resolvedPath: resolveDocumentLinkTarget({
         kind: link.kind,
@@ -240,7 +261,7 @@ function resolveWorkspaceDocumentLinks(
         workspaceFiles,
         workspaceRoot: rootPath,
       })?.path ?? null,
-    })),
+    })) : [],
   }));
 }
 
@@ -358,7 +379,7 @@ export function applyWorkspaceIndexOverlay(
   },
 ): WorkspaceIndex {
   const recentByPath = buildRecentRankMap(input.recentFiles);
-  const currentDocument = input.currentDocument?.path && MARKDOWN_EXTENSION_RE.test(input.currentDocument.path)
+  const currentDocument = input.currentDocument?.path && isSupportedDocumentPath(input.currentDocument.path)
     ? input.currentDocument
     : null;
   const currentDocumentKey = currentDocument
@@ -529,10 +550,12 @@ export function getWorkspaceIndexBacklinks(index: WorkspaceIndex, path: string):
 }
 
 export function getWorkspaceIndexLinkFiles(index: WorkspaceIndex) {
-  return index.documents.map((document) => ({
-    headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
-    name: document.name,
-    path: document.path,
-    title: document.title,
-  }));
+  return index.documents
+    .filter((document) => document.profile === 'markdown')
+    .map((document) => ({
+      headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
+      name: document.name,
+      path: document.path,
+      title: document.title,
+    }));
 }

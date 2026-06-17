@@ -5,14 +5,27 @@ use tauri_plugin_fs::FsExt;
 
 use crate::{canonicalize_existing_path, domain::path};
 
-fn is_supported_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
+const DOCUMENT_EXTENSIONS: &[&str] = &[
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
+    "csv", "tsv", "log", "ini", "conf", "env",
+];
+
+fn extension_for_path(path: &Path) -> Option<String> {
+    let name = path.file_name()?.to_string_lossy();
+    let (_, extension) = name.rsplit_once('.')?;
+    if extension.is_empty() {
+        None
+    } else {
+        Some(extension.to_ascii_lowercase())
+    }
+}
+
+fn is_supported_document_path(path: &Path) -> bool {
+    extension_for_path(path)
         .map(|extension| {
-            matches!(
-                extension.to_ascii_lowercase().as_str(),
-                "md" | "markdown" | "txt"
-            )
+            DOCUMENT_EXTENSIONS
+                .iter()
+                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
         })
         .unwrap_or(false)
 }
@@ -69,7 +82,7 @@ fn is_sensitive_directory(app: &AppHandle, path: &Path) -> bool {
 pub fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), String> {
     let file_path = canonicalize_existing_path(&path)?;
     path::ensure_file(&file_path, "grant_markdown_file_scope").map_err(|error| error.message)?;
-    if !is_supported_markdown_path(&file_path) {
+    if !is_supported_document_path(&file_path) {
         return Err("Only Markdown / Text documents can be authorized".to_string());
     }
 
@@ -111,15 +124,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn recognizes_supported_markdown_extensions() {
-        assert!(is_supported_markdown_path(Path::new("draft.md")));
-        assert!(is_supported_markdown_path(Path::new("draft.markdown")));
-        assert!(is_supported_markdown_path(Path::new("notes.TXT")));
+    fn recognizes_supported_document_extensions() {
+        assert!(is_supported_document_path(Path::new("draft.md")));
+        assert!(is_supported_document_path(Path::new("draft.markdown")));
+        assert!(is_supported_document_path(Path::new("notes.TXT")));
+        assert!(is_supported_document_path(Path::new("query.SQL")));
+        assert!(is_supported_document_path(Path::new(".env")));
     }
 
     #[test]
-    fn rejects_unsupported_markdown_extensions() {
-        assert!(!is_supported_markdown_path(Path::new("image.png")));
-        assert!(!is_supported_markdown_path(Path::new("draft")));
+    fn rejects_unsupported_document_extensions() {
+        assert!(!is_supported_document_path(Path::new("image.png")));
+        assert!(!is_supported_document_path(Path::new("draft")));
+        assert!(!is_supported_document_path(Path::new("app.ts")));
     }
 }

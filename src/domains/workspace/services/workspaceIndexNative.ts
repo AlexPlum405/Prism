@@ -22,6 +22,7 @@ import type {
   WorkspaceIndexSearchResult,
 } from './workspaceIndex';
 import { normalizePathForCompare } from './path';
+import { getDocumentProfileForPath } from './fileAssociation';
 
 interface NativeWorkspaceIndexDto {
   backlinksByPath?: Record<string, WorkspaceIndexBacklink[]>;
@@ -215,13 +216,20 @@ function workspaceIndexJobFromNativeDto(dto: NativeWorkspaceIndexJobDto): Worksp
 }
 
 export function workspaceIndexFromNativeDto(dto: NativeWorkspaceIndexDto): WorkspaceIndex {
-  const documents = dto.documents ?? [];
+  const documents = (dto.documents ?? []).map((document) => ({
+    ...document,
+    profile: document.profile ?? getDocumentProfileForPath(document.path)?.kind ?? 'markdown',
+  }));
+  const recentDocuments = (dto.recentDocuments ?? []).map((document) => ({
+    ...document,
+    profile: document.profile ?? getDocumentProfileForPath(document.path)?.kind ?? 'markdown',
+  }));
   return {
     backlinksByPath: new Map(Object.entries(dto.backlinksByPath ?? {})),
     documentByPath: new Map(documents.map((document) => [normalizePathForCompare(document.path), document])),
     documents,
     generatedAt: dto.generatedAt ?? Date.now(),
-    recentDocuments: dto.recentDocuments ?? [],
+    recentDocuments,
     rootPath: dto.rootPath ?? null,
   };
 }

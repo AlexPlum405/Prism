@@ -43,7 +43,17 @@ function getCurrentDocumentExportHistory(context: CommandContext): ExportHistory
 }
 
 function hasCurrentDocumentExportHistory(context: CommandContext): boolean {
-  return Boolean(getCurrentDocumentExportHistory(context));
+  return Boolean(
+    context.documentStore.currentDocument?.profile?.supportsExport !== false
+    && getCurrentDocumentExportHistory(context),
+  );
+}
+
+function hasExportableDocument(context: CommandContext): boolean {
+  return Boolean(
+    context.documentStore.currentDocument
+    && context.documentStore.currentDocument.profile?.supportsExport !== false,
+  );
 }
 
 function createExportHistorySettings(settings: SettingsState): ExportHistorySettings {
@@ -402,38 +412,36 @@ async function handleExportWithPrevious(context: CommandContext, overwrite: bool
   });
 }
 
-export function createExportCommands(deps: {
+export function createExportCommands(_deps: {
   hasDocument: (context: CommandContext) => boolean;
 }): CommandDefinition[] {
-  const { hasDocument } = deps;
-
   return [
     {
       id: 'exportPdf',
       category: 'file',
       keywords: ['export', 'pdf'],
-      enabled: hasDocument,
+      enabled: hasExportableDocument,
       run: (context) => handleExport('pdf', context),
     },
     {
       id: 'exportDocx',
       category: 'file',
       keywords: ['export', 'word', 'docx'],
-      enabled: hasDocument,
+      enabled: hasExportableDocument,
       run: (context) => handleExport('docx', context),
     },
     {
       id: 'exportHtml',
       category: 'file',
       keywords: ['export', 'html'],
-      enabled: hasDocument,
+      enabled: hasExportableDocument,
       run: (context) => handleExport('html', context),
     },
     {
       id: 'exportPng',
       category: 'file',
       keywords: ['export', 'png', 'image'],
-      enabled: hasDocument,
+      enabled: hasExportableDocument,
       run: (context) => handleExport('png', context),
     },
     {

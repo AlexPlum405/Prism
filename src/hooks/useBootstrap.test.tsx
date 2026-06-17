@@ -163,8 +163,8 @@ describe('useBootstrap', () => {
     (invoke as ReturnType<typeof vi.fn>).mockImplementation(async (command: string) => {
       if (command === 'get_pending_files') {
         return [
-          'C:/docs/first.md',
-          'C:/docs/second file.md',
+          'C:/docs/first.sql',
+          'C:/docs/second file.json',
           'C:/docs/第三.markdown',
         ];
       }
@@ -176,16 +176,17 @@ describe('useBootstrap', () => {
     renderHook(() => useBootstrap(true));
 
     await waitFor(() => {
-      expect(useDocumentStore.getState().currentDocument?.path).toBe('C:/docs/first.md');
+      expect(useDocumentStore.getState().currentDocument?.path).toBe('C:/docs/first.sql');
     });
 
     expect(useDocumentStore.getState().currentDocument?.content).toBe('first content');
-    expect(openPrismWindow).toHaveBeenCalledWith({ filePath: 'C:/docs/second file.md' });
+    expect(useDocumentStore.getState().currentDocument?.profile?.kind).toBe('text');
+    expect(openPrismWindow).toHaveBeenCalledWith({ filePath: 'C:/docs/second file.json' });
     expect(openPrismWindow).toHaveBeenCalledWith({ filePath: 'C:/docs/第三.markdown' });
   });
 
-  it('opens encoded explicit markdown paths before pending files and last session', async () => {
-    const explicitPath = 'C:/docs/中文 文档.markdown';
+  it('opens encoded explicit supported document paths before pending files and last session', async () => {
+    const explicitPath = 'C:/docs/中文 文档.json';
     window.history.replaceState({}, '', `/?file=${encodeURIComponent(explicitPath)}`);
     useSettingsStore.setState({
       restoreLastSession: true,
@@ -210,6 +211,7 @@ describe('useBootstrap', () => {
     });
 
     expect(useDocumentStore.getState().currentDocument?.content).toBe('explicit content');
+    expect(useDocumentStore.getState().currentDocument?.profile?.kind).toBe('text');
     expect(readTextFile).not.toHaveBeenCalledWith('C:/docs/last.md');
     expect(invoke).not.toHaveBeenCalledWith('get_pending_files');
     expect(openPrismWindow).not.toHaveBeenCalled();

@@ -4,7 +4,7 @@ import type { OpenDocument } from '../../document/types';
 import type { RecentFileEntry } from '../../settings/types';
 import type { FileNode } from '../types';
 import { flattenFiles } from '../services/fileTree';
-import { isSupportedMarkdownPath } from '../services/fileAssociation';
+import { isSupportedDocumentPath } from '../services/fileAssociation';
 import { normalizePathForCompare } from '../services/path';
 import type { WorkspaceIndex, WorkspaceIndexSourceDocument } from '../services/workspaceIndex';
 import {
@@ -202,7 +202,7 @@ export function useWorkspaceIndexModel(input: {
 
       const files = flattenFiles(fileTree, rootPath)
         .map(({ node }) => node)
-        .filter((node) => isSupportedMarkdownPath(node.path));
+        .filter((node) => isSupportedDocumentPath(node.path));
 
       if (fallbackIndexCacheRef.current.rootPath !== rootPath) {
         fallbackIndexCacheRef.current = {

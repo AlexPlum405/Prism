@@ -42,6 +42,7 @@ export function useDocumentDiagnosticsModel({
   const [preflightDiagnostics, setPreflightDiagnostics] = useState<PrismDiagnostic[] | null>(null);
   const [typographyDiagnostics, setTypographyDiagnostics] = useState<ReturnType<typeof scanChineseTypography>>([]);
   const [typographyDiagnosticsVisible, setTypographyDiagnosticsVisible] = useState(false);
+  const supportsMarkdownDiagnostics = currentDocument?.profile?.kind !== 'text';
 
   const workspaceFilePaths = useMemo(
     () => flattenFiles(fileTree, rootPath).map(({ node }) => node.path),
@@ -54,22 +55,22 @@ export function useDocumentDiagnosticsModel({
   );
 
   const linkDiagnostics = useMemo(() => {
-    if (!currentDocument) return [];
+    if (!currentDocument || !supportsMarkdownDiagnostics) return [];
     return scanMarkdownLinks(currentDocument.content, {
       currentPath: currentDocument.path || undefined,
       normalizedWorkspaceFiles,
       workspaceRoot: rootPath,
     });
-  }, [currentDocument?.content, currentDocument?.path, normalizedWorkspaceFiles, rootPath]);
+  }, [currentDocument?.content, currentDocument?.path, normalizedWorkspaceFiles, rootPath, supportsMarkdownDiagnostics]);
 
   const headingDiagnostics = useMemo(
-    () => currentDocument ? scanHeadingAnchorDiagnostics(currentDocument.content) : [],
-    [currentDocument?.content],
+    () => currentDocument && supportsMarkdownDiagnostics ? scanHeadingAnchorDiagnostics(currentDocument.content) : [],
+    [currentDocument?.content, supportsMarkdownDiagnostics],
   );
 
   useEffect(() => {
     let cancelled = false;
-    if (!currentDocument) {
+    if (!currentDocument || !supportsMarkdownDiagnostics) {
       setImageDiagnostics([]);
       return () => {
         cancelled = true;
@@ -86,11 +87,11 @@ export function useDocumentDiagnosticsModel({
     return () => {
       cancelled = true;
     };
-  }, [currentDocument?.content, currentDocument?.path, existsPath]);
+  }, [currentDocument?.content, currentDocument?.path, existsPath, supportsMarkdownDiagnostics]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!currentDocument) {
+    if (!currentDocument || !supportsMarkdownDiagnostics) {
       setRenderDiagnostics([]);
       return () => {
         cancelled = true;
@@ -114,12 +115,13 @@ export function useDocumentDiagnosticsModel({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [currentDocument?.content]);
+  }, [currentDocument?.content, supportsMarkdownDiagnostics]);
 
   const handleLinkDiagnosticsClick = useCallback(() => {
+    if (!supportsMarkdownDiagnostics) return;
     if (linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0) return;
     setLinkDiagnosticsVisible(true);
-  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, renderDiagnostics.length]);
+  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, renderDiagnostics.length, supportsMarkdownDiagnostics]);
 
   const handleSelectDocumentDiagnostic = useCallback((line: number) => {
     setLinkDiagnosticsVisible(false);
@@ -134,10 +136,11 @@ export function useDocumentDiagnosticsModel({
 
   useEffect(() => {
     return onAppEvent('diagnostics.open', ({ diagnostics }) => {
+      if (!supportsMarkdownDiagnostics) return;
       if (diagnostics) setPreflightDiagnostics(diagnostics);
       setLinkDiagnosticsVisible(true);
     });
-  }, []);
+  }, [supportsMarkdownDiagnostics]);
 
   useEffect(() => {
     if (
@@ -153,8 +156,8 @@ export function useDocumentDiagnosticsModel({
   }, [currentDocument?.content, currentDocument?.path]);
 
   const tableDiagnostics = useMemo(
-    () => currentDocument ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
-    [currentDocument?.content],
+    () => currentDocument && supportsMarkdownDiagnostics ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
+    [currentDocument?.content, supportsMarkdownDiagnostics],
   );
 
   const documentDiagnostics = useMemo(() => [
@@ -171,9 +174,9 @@ export function useDocumentDiagnosticsModel({
   );
 
   const handleTypographyDiagnosticsClick = useCallback(() => {
-    if (!currentDocument) return;
+    if (!currentDocument || !supportsMarkdownDiagnostics) return;
     setTypographyDiagnosticsVisible(true);
-  }, [currentDocument]);
+  }, [currentDocument, supportsMarkdownDiagnostics]);
 
   const handleSelectTypographyDiagnostic = useCallback((line: number) => {
     setTypographyDiagnosticsVisible(false);
@@ -181,7 +184,7 @@ export function useDocumentDiagnosticsModel({
   }, [jumpToLine]);
 
   useEffect(() => {
-    if (!currentDocument) {
+    if (!currentDocument || !supportsMarkdownDiagnostics) {
       setTypographyDiagnostics([]);
       setTypographyDiagnosticsVisible(false);
       return;
@@ -195,7 +198,7 @@ export function useDocumentDiagnosticsModel({
     if (diagnostics.length === 0) {
       setTypographyDiagnosticsVisible(false);
     }
-  }, [currentDocument?.content, currentDocument?.path, typographyDiagnosticsVisible]);
+  }, [currentDocument?.content, currentDocument?.path, supportsMarkdownDiagnostics, typographyDiagnosticsVisible]);
 
   return {
     actionableDiagnostics,

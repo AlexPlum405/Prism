@@ -56,12 +56,19 @@ function documentMatchesQuery(document: WorkspaceIndexedDocument, query: string)
 
 function collectRawEdges(index: WorkspaceIndex): RawEdge[] {
   const edges: RawEdge[] = [];
-  index.documents.forEach((document) => {
+  const markdownDocumentKeys = new Set(
+    index.documents
+      .filter((document) => document.profile === 'markdown')
+      .map((document) => normalizePathForCompare(document.path)),
+  );
+  index.documents
+    .filter((document) => document.profile === 'markdown')
+    .forEach((document) => {
     const sourceKey = normalizePathForCompare(document.path);
     document.links.forEach((link) => {
       if (!link.resolvedPath) return;
       const targetKey = normalizePathForCompare(link.resolvedPath);
-      if (!index.documentByPath.has(targetKey) || sourceKey === targetKey) return;
+      if (!markdownDocumentKeys.has(targetKey) || sourceKey === targetKey) return;
       edges.push({ sourceKey, targetKey });
     });
   });
@@ -119,16 +126,21 @@ export function buildRelationGraph({
 }: BuildRelationGraphInput): RelationGraph {
   const normalizedQuery = normalizeQuery(query);
   const currentKey = currentPath ? normalizePathForCompare(currentPath) : '';
+  const markdownDocuments = index.documents.filter((document) => document.profile === 'markdown');
+  const markdownDocumentByKey = new Map(markdownDocuments.map((document) => [
+    normalizePathForCompare(document.path),
+    document,
+  ]));
   const rawEdges = collectRawEdges(index);
   const { incoming, outgoing } = buildAdjacency(rawEdges);
-  const currentDocumentExists = currentKey && index.documentByPath.has(currentKey);
+  const currentDocumentExists = currentKey && markdownDocumentByKey.has(currentKey);
 
   const depthByKey = scope === 'current' && currentDocumentExists
     ? collectCurrentScopeKeys({ currentKey, depth, incoming, outgoing })
-    : new Map(index.documents.map((document) => [normalizePathForCompare(document.path), 0]));
+    : new Map(markdownDocuments.map((document) => [normalizePathForCompare(document.path), 0]));
 
   const selectedKeys = new Set(depthByKey.keys());
-  const filteredDocuments = index.documents
+  const filteredDocuments = markdownDocuments
     .filter((document) => selectedKeys.has(normalizePathForCompare(document.path)))
     .filter((document) => documentMatchesQuery(document, normalizedQuery))
     .sort((a, b) => (

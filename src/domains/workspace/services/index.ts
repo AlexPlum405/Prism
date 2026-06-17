@@ -1,7 +1,19 @@
 export {
+  DOCUMENT_FILE_FILTERS,
   MARKDOWN_FILE_FILTERS,
+  MARKDOWN_DOCUMENT_PROFILE,
+  MARKDOWN_DOCUMENT_EXTENSIONS,
   SUPPORTED_MARKDOWN_EXTENSIONS,
+  SUPPORTED_DOCUMENT_EXTENSIONS,
+  TEXT_DOCUMENT_EXTENSIONS,
+  TEXT_DOCUMENT_PROFILE,
+  getDocumentProfileForPath,
+  getDocumentProfileOrMarkdown,
+  isSupportedDocumentPath,
   isSupportedMarkdownPath,
+  isTextDocumentPath,
+  type DocumentProfile,
+  type DocumentProfileKind,
 } from './fileAssociation';
 export {
   collectAncestorDirectoryPaths,

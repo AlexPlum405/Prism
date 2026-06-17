@@ -8,6 +8,10 @@ interface ViewCommandDeps {
 
 export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
   const { hasDocument, handleZoom, handleDevTools } = deps;
+  const canPreview = (context: CommandContext) => {
+    const document = context.documentStore.currentDocument;
+    return Boolean(document && document.profile?.supportsPreview !== false);
+  };
 
   return [
     {
@@ -23,7 +27,7 @@ export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
       id: 'splitMode',
       category: 'view',
       keywords: ['split'],
-      enabled: hasDocument,
+      enabled: canPreview,
       checked: (context) => context.documentStore.currentDocument?.viewMode === 'split',
       run: (context) => context.documentStore.setViewMode('split'),
     },
@@ -31,7 +35,7 @@ export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
       id: 'previewMode',
       category: 'view',
       keywords: ['preview'],
-      enabled: hasDocument,
+      enabled: canPreview,
       checked: (context) => context.documentStore.currentDocument?.viewMode === 'preview',
       run: (context) => context.documentStore.setViewMode('preview'),
     },

@@ -6,6 +6,11 @@ use std::time::UNIX_EPOCH;
 use super::error::{PrismCommandError, PrismResult};
 use super::path::{canonicalize_existing_path, ensure_file, path_to_string};
 
+const DOCUMENT_EXTENSIONS: &[&str] = &[
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
+    "csv", "tsv", "log", "ini", "conf", "env",
+];
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FileSnapshotDto {
@@ -59,14 +64,22 @@ fn file_name(path: &Path) -> String {
         .to_string()
 }
 
+fn extension_for_path(path: &Path) -> Option<String> {
+    let name = path.file_name()?.to_string_lossy();
+    let (_, extension) = name.rsplit_once('.')?;
+    if extension.is_empty() {
+        None
+    } else {
+        Some(extension.to_ascii_lowercase())
+    }
+}
+
 fn is_supported_document_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
+    extension_for_path(path)
         .map(|extension| {
-            matches!(
-                extension.to_ascii_lowercase().as_str(),
-                "md" | "markdown" | "txt"
-            )
+            DOCUMENT_EXTENSIONS
+                .iter()
+                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
         })
         .unwrap_or(false)
 }
@@ -251,6 +264,26 @@ mod tests {
         assert_eq!(session.name, "draft.md");
         assert_eq!(session.content, "# Draft");
         assert!(session.known_snapshot.expect("snapshot").size.is_some());
+
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn reads_text_document_with_snapshot() {
+        let dir = temp_dir("read-text");
+        let path = dir.join("query.sql");
+        fs::write(&path, "select 1;").expect("write sql");
+
+        let session = read_document_file(path_to_string(&path)).expect("read text document");
+
+        assert_eq!(session.name, "query.sql");
+        assert_eq!(session.content, "select 1;");
+        assert!(session.known_snapshot.expect("snapshot").size.is_some());
+
+        let env_path = dir.join(".env");
+        fs::write(&env_path, "TOKEN=local").expect("write env");
+        let env_session = read_document_file(path_to_string(&env_path)).expect("read env document");
+        assert_eq!(env_session.name, ".env");
 
         let _ = fs::remove_dir_all(dir);
     }

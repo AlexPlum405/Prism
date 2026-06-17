@@ -57,6 +57,29 @@
         "description": "Markdown Document",
         "mimeType": "text/markdown",
         "role": "Editor"
+      },
+      {
+        "ext": [
+          "txt",
+          "text",
+          "sql",
+          "json",
+          "jsonc",
+          "yaml",
+          "yml",
+          "toml",
+          "xml",
+          "csv",
+          "tsv",
+          "log",
+          "ini",
+          "conf",
+          "env"
+        ],
+        "name": "Text Document",
+        "description": "Text Document",
+        "mimeType": "text/plain",
+        "role": "Editor"
       }
     ]
   }

@@ -46,10 +46,28 @@ pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
     }
 }
 
+const DOCUMENT_EXTENSIONS: &[&str] = &[
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
+    "csv", "tsv", "log", "ini", "conf", "env",
+];
+
+fn extension_for_path(path: &Path) -> Option<String> {
+    let name = path.file_name()?.to_string_lossy();
+    let (_, extension) = name.rsplit_once('.')?;
+    if extension.is_empty() {
+        None
+    } else {
+        Some(extension.to_ascii_lowercase())
+    }
+}
+
 fn is_supported_startup_document_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "md" | "markdown"))
+    extension_for_path(path)
+        .map(|extension| {
+            DOCUMENT_EXTENSIONS
+                .iter()
+                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+        })
         .unwrap_or(false)
 }
 
@@ -100,38 +118,48 @@ mod tests {
     }
 
     #[test]
-    fn filters_existing_markdown_startup_paths_and_preserves_order() {
+    fn filters_existing_document_startup_paths_and_preserves_order() {
         let root = unique_temp_dir();
         fs::create_dir_all(&root).unwrap();
         let md = write_fixture(&root, "first.md");
         let txt = write_fixture(&root, "notes.txt");
+        let sql = write_fixture(&root, "query.sql");
+        let json = write_fixture(&root, "settings.json");
+        let env = write_fixture(&root, ".env");
+        let ts = write_fixture(&root, "app.ts");
         let markdown = write_fixture(&root, "中文 文档.markdown");
         let missing = root.join("missing.md").to_string_lossy().to_string();
 
         let filtered = filter_existing_startup_file_paths([
             md.clone(),
-            txt,
+            txt.clone(),
+            sql.clone(),
+            json.clone(),
+            env.clone(),
+            ts,
             missing,
             markdown.clone(),
         ]);
 
-        assert_eq!(filtered, vec![md, markdown]);
+        assert_eq!(filtered, vec![md, txt, sql, json, env, markdown]);
         fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
-    fn accepts_startup_markdown_extensions_case_insensitively() {
+    fn accepts_startup_document_extensions_case_insensitively() {
         let root = unique_temp_dir();
         fs::create_dir_all(&root).unwrap();
         let upper_md = write_fixture(&root, "UPPER.MD");
         let upper_markdown = write_fixture(&root, "UPPER.MARKDOWN");
+        let upper_json = write_fixture(&root, "SETTINGS.JSON");
 
         let filtered = filter_existing_startup_file_paths([
             upper_md.clone(),
             upper_markdown.clone(),
+            upper_json.clone(),
         ]);
 
-        assert_eq!(filtered, vec![upper_md, upper_markdown]);
+        assert_eq!(filtered, vec![upper_md, upper_markdown, upper_json]);
         fs::remove_dir_all(root).unwrap();
     }
 }

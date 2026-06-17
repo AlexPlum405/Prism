@@ -41,7 +41,7 @@ function basename(path: string): string {
 }
 
 function stripMarkdownExtension(filename: string): string {
-  return filename.replace(/\.(md|markdown|txt)$/i, '') || 'document';
+  return filename.replace(/\.(md|markdown)$/i, '') || 'document';
 }
 
 export function getClipboardImageExtension(mimeType: string, filename = ''): string {
@@ -72,7 +72,7 @@ export function getMarkdownImageForPath(path: string, alt = ''): string {
 
 export function sanitizeAssetSegment(value: string): string {
   return value
-    .replace(/\.(md|markdown|txt)$/i, '')
+    .replace(/\.(md|markdown)$/i, '')
     .replace(/[^\p{Letter}\p{Number}._-]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     || 'document';

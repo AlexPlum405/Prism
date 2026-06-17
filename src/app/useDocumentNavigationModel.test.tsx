@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpenDocument } from '../domains/document/types';
-import { buildWorkspaceIndex } from '../domains/workspace/services';
+import { buildWorkspaceIndex, MARKDOWN_DOCUMENT_PROFILE, TEXT_DOCUMENT_PROFILE } from '../domains/workspace/services';
 import { useDocumentNavigationModel } from './useDocumentNavigationModel';
 
 const nativeWorkspaceIndexMock = vi.hoisted(() => ({
@@ -13,6 +13,7 @@ vi.mock('../domains/workspace/services/workspaceIndexNative', () => nativeWorksp
 function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
   return {
     path: '/repo/current.md',
+    profile: MARKDOWN_DOCUMENT_PROFILE,
     name: 'current.md',
     content: '# 开始\n\n[跳转](#开始)',
     isDirty: false,
@@ -149,5 +150,37 @@ describe('useDocumentNavigationModel', () => {
       jobId: 'workspace-index-1',
       path: '/repo/current.md',
     });
+  });
+
+  it('does not expose Markdown link panels for text documents', async () => {
+    const { handleFileAction, jumpToLine, result } = renderNavigation({
+      currentDocument: createDocument({
+        path: '/repo/query.sql',
+        profile: TEXT_DOCUMENT_PROFILE,
+        name: 'query.sql',
+        content: 'select * from notes where body like "[[Current]]";',
+      }),
+    });
+
+    expect(result.current.documentLinks).toEqual([]);
+    expect(result.current.backlinks).toEqual([]);
+
+    act(() => {
+      result.current.openBacklinks();
+      result.current.openDocumentLinks();
+      result.current.openRelationGraph();
+    });
+    await act(async () => {
+      await result.current.openDocumentLink('current.md', {
+        kind: 'markdown',
+        sourcePath: '/repo/query.sql',
+      });
+    });
+
+    expect(result.current.backlinksVisible).toBe(false);
+    expect(result.current.documentLinksVisible).toBe(false);
+    expect(result.current.relationGraphVisible).toBe(false);
+    expect(handleFileAction).not.toHaveBeenCalled();
+    expect(jumpToLine).not.toHaveBeenCalled();
   });
 });

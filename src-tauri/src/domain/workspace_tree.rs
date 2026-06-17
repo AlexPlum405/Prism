@@ -8,6 +8,10 @@ use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
 
 const DEFAULT_MAX_DEPTH: usize = 8;
 const PREVIEW_MAX_CHARS: usize = 100;
+const DOCUMENT_EXTENSIONS: &[&str] = &[
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
+    "csv", "tsv", "log", "ini", "conf", "env",
+];
 #[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct LoadWorkspaceTreeOptions {
@@ -34,14 +38,22 @@ fn metadata_time_ms(time: std::io::Result<std::time::SystemTime>) -> Option<f64>
         .map(|duration| duration.as_millis() as f64)
 }
 
-fn is_supported_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
+fn extension_for_path(path: &Path) -> Option<String> {
+    let name = path.file_name()?.to_string_lossy();
+    let (_, extension) = name.rsplit_once('.')?;
+    if extension.is_empty() {
+        None
+    } else {
+        Some(extension.to_ascii_lowercase())
+    }
+}
+
+fn is_supported_document_path(path: &Path) -> bool {
+    extension_for_path(path)
         .map(|extension| {
-            matches!(
-                extension.to_ascii_lowercase().as_str(),
-                "md" | "markdown" | "txt"
-            )
+            DOCUMENT_EXTENSIONS
+                .iter()
+                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
         })
         .unwrap_or(false)
 }
@@ -257,7 +269,7 @@ fn read_folder_children(
 
         if file_type.is_dir() {
             entries.push((name, path, true));
-        } else if file_type.is_file() && is_supported_markdown_path(&path) {
+        } else if file_type.is_file() && is_supported_document_path(&path) {
             entries.push((name, path, false));
         }
     }
@@ -349,11 +361,13 @@ mod tests {
     }
 
     #[test]
-    fn load_workspace_tree_returns_markdown_files_and_prunes_empty_dirs() {
+    fn load_workspace_tree_returns_supported_documents_and_prunes_empty_dirs() {
         let root = temp_dir("tree");
         fs::write(root.join("root.md"), "# Root").expect("write root");
         fs::create_dir_all(root.join("docs")).expect("create docs");
         fs::write(root.join("docs").join("a.txt"), "Alpha").expect("write txt");
+        fs::write(root.join("docs").join("query.sql"), "select 1;").expect("write sql");
+        fs::write(root.join("docs").join(".env"), "TOKEN=local").expect("write env");
         fs::create_dir_all(root.join(".agents")).expect("create agents");
         fs::write(root.join(".agents").join("SKILL.md"), "# Agent Skill")
             .expect("write agent skill");
@@ -401,16 +415,17 @@ mod tests {
                 "root.md"
             ]
         );
-        assert_eq!(
-            tree.iter()
-                .find(|node| node.name == "docs")
-                .expect("docs")
-                .children
-                .as_ref()
-                .expect("children")[0]
-                .name,
-            "a.txt"
-        );
+        let docs_children = tree
+            .iter()
+            .find(|node| node.name == "docs")
+            .expect("docs")
+            .children
+            .as_ref()
+            .expect("children")
+            .iter()
+            .map(|node| node.name.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(docs_children, [".env", "a.txt", "query.sql"]);
         assert_eq!(
             tree.iter()
                 .find(|node| node.name == ".agents")

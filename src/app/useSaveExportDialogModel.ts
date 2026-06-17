@@ -18,7 +18,7 @@ const exportExtensionByFormat: Record<ExportFormat, string> = {
 };
 
 function stripMarkdownExtension(filename: string) {
-  return filename.replace(/\.(md|markdown|txt)$/i, '') || 'Untitled';
+  return filename.replace(/\.(md|markdown)$/i, '') || 'Untitled';
 }
 
 function ensureExportExtension(filename: string, format: ExportFormat) {

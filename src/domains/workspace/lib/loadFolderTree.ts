@@ -1,6 +1,6 @@
 import { readDir, readTextFile, stat } from '../../../platform/tauri/fileSystem';
 import { FileNode } from '../types';
-import { isSupportedMarkdownPath, joinPath } from '../services';
+import { isSupportedDocumentPath, joinPath } from '../services';
 import { loadWorkspaceTreeNative } from '../../../platform/tauri/workspaceTree';
 import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
@@ -101,7 +101,7 @@ async function readFolderChildren(
 
   const visibleEntries = entries
     .filter((entry) => {
-      return entry.isDirectory || (entry.isFile && isSupportedMarkdownPath(entry.name));
+      return entry.isDirectory || (entry.isFile && isSupportedDocumentPath(entry.name));
     })
     .sort((a, b) => {
       if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;

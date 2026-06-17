@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpenDocument } from '../../document/types';
 import type { RecentFileEntry } from '../../settings/types';
-import { buildWorkspaceIndex } from '../services';
+import { buildWorkspaceIndex, MARKDOWN_DOCUMENT_PROFILE } from '../services';
 import {
   readWorkspaceIndexSourcesIncremental,
   readWorkspaceIndexSources,
@@ -24,6 +24,7 @@ vi.mock('../services/workspaceIndexNative', () => nativeIndexMock);
 function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
   return {
     path: '/workspace/current.md',
+    profile: MARKDOWN_DOCUMENT_PROFILE,
     name: 'current.md',
     content: '# Current\n\n[[Other]]',
     isDirty: true,

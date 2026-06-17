@@ -155,12 +155,14 @@ export function getWorkspaceIndexBacklinks(index: WorkspaceIndex, path: string):
 }
 
 export function getWorkspaceIndexLinkFiles(index: WorkspaceIndex) {
-  return index.documents.map((document) => ({
-    headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
-    name: document.name,
-    path: document.path,
-    title: document.title,
-  }));
+  return index.documents
+    .filter((document) => document.profile === 'markdown')
+    .map((document) => ({
+      headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
+      name: document.name,
+      path: document.path,
+      title: document.title,
+    }));
 }
 
 export type {

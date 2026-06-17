@@ -17,7 +17,7 @@ import {
   resolveMarkdownTemplateContent,
   type MarkdownTemplateId,
 } from '../../editor/extensions/templates';
-import { MARKDOWN_FILE_FILTERS, addRecentFile, basename } from '../../workspace/services';
+import { DOCUMENT_FILE_FILTERS, addRecentFile, basename } from '../../workspace/services';
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
@@ -79,7 +79,7 @@ function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: Command
 async function handleOpen(context: CommandContext): Promise<void> {
   const selected = await openDialog({
     multiple: false,
-    filters: MARKDOWN_FILE_FILTERS,
+    filters: DOCUMENT_FILE_FILTERS,
   });
 
   if (!selected || Array.isArray(selected)) return;

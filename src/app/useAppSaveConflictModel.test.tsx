@@ -8,6 +8,7 @@ import {
 } from '../domains/document/services/conflictResolution';
 import { useDocumentStore } from '../domains/document/store';
 import type { OpenDocument } from '../domains/document/types';
+import { MARKDOWN_DOCUMENT_PROFILE } from '../domains/workspace/services';
 import { useAppSaveConflictModel } from './useAppSaveConflictModel';
 
 vi.mock('../domains/document/services/conflictResolution', () => ({
@@ -20,6 +21,7 @@ vi.mock('../domains/document/services/conflictResolution', () => ({
 function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
   return {
     path: '/repo/current.md',
+    profile: MARKDOWN_DOCUMENT_PROFILE,
     name: 'current.md',
     content: '# Current',
     isDirty: true,

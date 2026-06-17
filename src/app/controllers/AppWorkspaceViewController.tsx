@@ -106,7 +106,10 @@ export function AppWorkspaceViewController({
       firstActionableMessage={firstActionableMessage}
       firstTypographyMessage={firstTypographyMessage}
       globalContextMenu={globalContextMenu}
-      hasSavedPath={Boolean(currentDocument?.path)}
+      hasSavedPath={Boolean(
+        currentDocument?.path
+        && currentDocument.profile?.supportsRelationGraph !== false,
+      )}
       isSidebarHovered={isSidebarHovered}
       selectionWritingStats={selectionWritingStats}
       sidebarTab={workspace.sidebarTab}

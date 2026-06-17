@@ -33,7 +33,7 @@ export interface MarkdownLinkCompletionContext {
   workspaceRootPath?: string | null;
 }
 
-const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
+const MARKDOWN_FILE_RE = /\.(md|markdown)$/i;
 
 function normalizePath(path: string): string {
   return path.replace(/\\/g, '/');
@@ -56,7 +56,7 @@ function stripRoot(path: string, rootPath?: string | null): string {
 }
 
 function stripMarkdownExtension(path: string): string {
-  return path.replace(/\.(md|markdown|txt)$/i, '');
+  return path.replace(/\.(md|markdown)$/i, '');
 }
 
 function basename(path: string): string {

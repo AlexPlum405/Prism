@@ -1,11 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { OpenDocument } from '../domains/document/types';
+import { MARKDOWN_DOCUMENT_PROFILE } from '../domains/workspace/services';
 import { useAppWritingStatsModel } from './useAppWritingStatsModel';
 
 function createDocument(overrides: Partial<OpenDocument> = {}): OpenDocument {
   return {
     path: '/repo/current.md',
+    profile: MARKDOWN_DOCUMENT_PROFILE,
     name: 'current.md',
     content: '# 标题\n\nHello Prism',
     isDirty: false,

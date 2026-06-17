@@ -21,7 +21,7 @@ import type { ToastInput } from '../lib/toast';
 import { t } from '../domains/i18n';
 import { extractMarkdownDocumentHeadings } from '../domains/markdown/headings';
 
-const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
+const MARKDOWN_FILE_RE = /\.(md|markdown)$/i;
 
 function safeDecodeURIComponent(value: string): string {
   try {
@@ -78,14 +78,15 @@ export function useDocumentNavigationModel({
     line: number;
     path: string;
   } | null>(null);
+  const supportsMarkdownLinks = currentDocument?.profile?.supportsMarkdownLinks !== false;
 
   const documentLinks = useMemo(
-    () => currentDocument ? extractDocumentLinks(currentDocument.content) : [],
-    [currentDocument?.content],
+    () => currentDocument && supportsMarkdownLinks ? extractDocumentLinks(currentDocument.content) : [],
+    [currentDocument?.content, supportsMarkdownLinks],
   );
 
   useEffect(() => {
-    if (!currentDocument?.path) {
+    if (!currentDocument?.path || !supportsMarkdownLinks) {
       setBacklinks([]);
       return;
     }
@@ -118,15 +119,17 @@ export function useDocumentNavigationModel({
     return () => {
       cancelled = true;
     };
-  }, [currentDocument?.path, workspaceIndex, workspaceIndexJobId]);
+  }, [currentDocument?.path, supportsMarkdownLinks, workspaceIndex, workspaceIndexJobId]);
 
   const openBacklinks = useCallback(() => {
+    if (!supportsMarkdownLinks) return;
     setBacklinksVisible(true);
-  }, []);
+  }, [supportsMarkdownLinks]);
 
   const openDocumentLinks = useCallback(() => {
+    if (!supportsMarkdownLinks) return;
     setDocumentLinksVisible(true);
-  }, []);
+  }, [supportsMarkdownLinks]);
 
   useEffect(() => {
     if (backlinks.length === 0) {
@@ -153,6 +156,8 @@ export function useDocumentNavigationModel({
     target: string,
     options: { kind: 'markdown' | 'wiki'; sourcePath?: string },
   ) => {
+    if (!supportsMarkdownLinks) return;
+
     if (options.kind === 'markdown' && currentDocument) {
       const headingSlug = getSameDocumentHeadingTarget(target);
       if (headingSlug) {
@@ -199,6 +204,7 @@ export function useDocumentNavigationModel({
     rootPath,
     showToast,
     workspaceIndex,
+    supportsMarkdownLinks,
   ]);
 
   const selectDocumentLink = useCallback(async (link: DocumentLinkReference) => {
@@ -220,12 +226,14 @@ export function useDocumentNavigationModel({
   }, [handleFileAction]);
 
   const openRelationGraph = useCallback(() => {
-    if (!workspaceIndex || workspaceIndex.documents.length === 0) {
+    if (currentDocument?.profile?.supportsRelationGraph === false) return;
+    const hasMarkdownDocuments = workspaceIndex?.documents.some((document) => document.profile === 'markdown');
+    if (!workspaceIndex || !hasMarkdownDocuments) {
       showToast(t('app.openMarkdownWorkspaceFirst'));
       return;
     }
     setRelationGraphVisible(true);
-  }, [showToast, workspaceIndex]);
+  }, [currentDocument?.profile?.supportsRelationGraph, showToast, workspaceIndex]);
 
   return {
     backlinks,

@@ -8,7 +8,7 @@ import {
   flattenFiles,
   isPathInside,
   isSamePath,
-  SUPPORTED_MARKDOWN_EXTENSIONS,
+  SUPPORTED_DOCUMENT_EXTENSIONS,
 } from '../domains/workspace/services';
 import type { OpenDocument } from '../domains/document/types';
 import { useDocumentStore } from '../domains/document/store';
@@ -20,7 +20,7 @@ import {
   writeDocumentFileSession,
   type WriteDocumentFileSessionInput,
 } from '../domains/document/services/fileSafety';
-import { isSupportedMarkdownPath } from '../domains/workspace/services/fileAssociation';
+import { isSupportedDocumentPath } from '../domains/workspace/services/fileAssociation';
 import { t } from '../domains/i18n';
 import { grantMarkdownFileScope } from './fileSystemScope';
 import { openPrismWindow } from './openWindow';
@@ -86,11 +86,11 @@ function formatError(err: unknown): string {
 }
 
 function supportedDocumentExtensionsLabel(): string {
-  return SUPPORTED_MARKDOWN_EXTENSIONS.map((extension) => `.${extension}`).join(' / ');
+  return SUPPORTED_DOCUMENT_EXTENSIONS.map((extension) => `.${extension}`).join(' / ');
 }
 
 export function isSupportedOpenDocumentPath(path: string): boolean {
-  return isSupportedMarkdownPath(path);
+  return isSupportedDocumentPath(path);
 }
 
 export function assertSupportedOpenDocumentPath(path: string): void {

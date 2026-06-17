@@ -38,7 +38,7 @@ function normalizePathParts(path: string) {
 }
 
 function stripMarkdownExtension(path: string) {
-  return path.replace(/\.(md|markdown|txt)$/i, '');
+  return path.replace(/\.(md|markdown)$/i, '');
 }
 
 function stripTargetMetadata(target: string) {

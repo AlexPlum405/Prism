@@ -38,7 +38,7 @@ interface DocumentLinkLookup {
   byPath: Map<string, DocumentLinkFile>;
 }
 
-const MARKDOWN_FILE_RE = /\.(md|markdown|txt)$/i;
+const MARKDOWN_FILE_RE = /\.(md|markdown)$/i;
 const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 const lookupCache = new WeakMap<DocumentLinkFile[], Map<string, DocumentLinkLookup>>();
 

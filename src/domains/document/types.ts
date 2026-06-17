@@ -1,8 +1,11 @@
+import type { DocumentProfile } from '../workspace/services';
+
 export type DocumentSaveStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict';
 export type DocumentSaveIssue = 'external-modified' | 'missing' | 'permission-denied' | 'unavailable';
 
 export interface OpenDocument {
   path: string;
+  profile?: DocumentProfile;
   name: string;
   content: string;
   isDirty: boolean;

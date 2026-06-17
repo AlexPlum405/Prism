@@ -8,6 +8,7 @@ const fileTree: FileNode[] = [
   { path: '/repo/b.md', name: 'b.md', kind: 'file' },
   { path: '/repo/c.md', name: 'c.md', kind: 'file' },
   { path: '/repo/d.md', name: 'd.md', kind: 'file' },
+  { path: '/repo/query.sql', name: 'query.sql', kind: 'file' },
 ];
 
 function createIndex() {
@@ -19,6 +20,7 @@ function createIndex() {
       { path: '/repo/b.md', content: '# Beta\n[Gamma](c.md)' },
       { path: '/repo/c.md', content: '# Gamma\n[[d]]' },
       { path: '/repo/d.md', content: '# Delta\n' },
+      { path: '/repo/query.sql', content: 'select "[[a]]";' },
     ],
   });
 }
@@ -66,5 +68,6 @@ describe('relation graph service', () => {
 
     expect(graph.nodes.map((node) => node.relativePath)).toEqual(expect.arrayContaining(['a.md', 'b.md', 'c.md', 'd.md']));
     expect(graph.edges.length).toBeGreaterThan(0);
+    expect(graph.nodes.map((node) => node.relativePath)).not.toContain('query.sql');
   });
 });
