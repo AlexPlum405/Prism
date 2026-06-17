@@ -35,7 +35,7 @@
 | P1-01 统一打开文件策略 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts` |
 | P1-02 DocumentProfile 落地 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
 | P1-03 预览搜索节流和渐进高亮 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
-| P1-04 preview-only 源码定位 ready 队列 | 未开始 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
+| P1-04 preview-only 源码定位 ready 队列 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-05 状态栏图谱条件显示 | 未开始 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
 | P1-06 导出诊断产品化 | 未开始 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
 | P1-07 保存、冲突、导出微反馈统一 | 未开始 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
@@ -176,3 +176,25 @@
 | 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/domains/editor/components/SplitView.test.tsx` |
 | 未验证风险 | 本项未跑真实 Tauri WebView 1MB/3MB 搜索首字延迟实测；当前证据证明输入阶段不会每键同步改写预览 DOM 或滚动，真实长文档搜索体感仍需在后续性能 smoke 或 P0-03 benchmark 迭代中补量化 |
 | 对应提交 | `cf2c60c18812718eec25c7082e425bf0b33b0ec4` |
+
+### P1-04 preview-only 源码定位 ready 队列
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 为 preview-only 下的“跳到源码/在编辑器中定位源码”增加 pending source jump 队列：从预览触发源码定位时先记录目标行并切换到 split，最多等待 60 帧直到 `EditorPane` ref ready 后再执行 `jumpToLine`，从而触发编辑器滚动和行闪烁；重复定位会覆盖 pending 行，避免旧请求晚到；如果编辑器始终不可用，清理 pending 并通过 notice 展示“暂时无法定位源码”反馈；渲染阶段同步 `viewModeRef`，减少 view mode 切换与 rAF 的竞态 |
+| 涉及文件 | `src/domains/editor/components/SplitView.tsx`、`src/domains/editor/components/SplitView.test.tsx`、`src/domains/i18n/resources.ts` |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx --reporter verbose` |
+| 命令结果 | 通过：1 个测试文件，18 个测试用例；新增用例模拟 preview-only 冷启动、`EditorPane` 延迟暴露 ref，确认点击“跳到源码”后先切换到 split，等待 editor ready 后调用 `jumpToLine(9)` |
+| 验证命令 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SearchPanel.test.tsx src/domains/editor/components/previewDomTargets.test.ts --reporter verbose` |
+| 命令结果 | 通过：4 个测试文件，51 个测试用例；覆盖预览源码按钮、链接打开、预览复制、搜索、高亮、DOM target、Mermaid/KaTeX 诊断源码定位回归；输出中有既有 PreviewPane `act(...)` 警告和 jsdom `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm test -- --run src/domains/i18n/i18n.test.ts src/domains/editor/components/SplitView.test.tsx --reporter verbose` |
+| 命令结果 | 通过：2 个测试文件，21 个测试用例；确认新增 `editor.preview.sourceLocateFailed` 在 `zh-CN/en-US/ja-JP` 中完整 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/domains/editor/components/SplitView.test.tsx` |
+| 未验证风险 | 当前为 jsdom 组件级验证，未在真实 Tauri WebView 中手工验证右键菜单“在编辑器中定位源码”和诊断按钮的实际动画体感；快速连续定位已通过 pending 覆盖策略约束，但未录制真实交互视频 |
+| 对应提交 | `4dd96f621af3bc047faf4d01d479fb8f8d48300e` |
