@@ -33,7 +33,7 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       keywords: ['redo'],
       shortcuts: [
         { code: 'KeyZ', mod: true, shift: true },
-        { code: 'KeyY', mod: true, platforms: ['windows'] },
+        { code: 'KeyY', mod: true, platforms: ['windows', 'linux'] },
       ],
       enabled: hasDocument,
       run: () => emitEditorCommand('redo'),

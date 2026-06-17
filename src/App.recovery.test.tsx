@@ -236,6 +236,29 @@ describe('App recovery prompt wiring', () => {
     expect(document.body).not.toHaveClass('platform-windows');
   });
 
+  it('marks Linux separately from Windows for scoped visual compensation', () => {
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'Linux x86_64',
+    });
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (X11; Linux x86_64)',
+    });
+    mockRecoveryQueue(null);
+
+    const { unmount } = render(<App />);
+
+    expect(document.documentElement).toHaveAttribute('data-platform', 'linux');
+    expect(document.body).toHaveClass('platform-linux');
+    expect(document.body).not.toHaveClass('platform-windows');
+
+    unmount();
+
+    expect(document.documentElement).not.toHaveAttribute('data-platform');
+    expect(document.body).not.toHaveClass('platform-linux');
+  });
+
   it('shows the recovery modal from the active startup snapshot and forwards actions', () => {
     render(<App />);
 

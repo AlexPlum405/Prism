@@ -56,6 +56,10 @@
   transform: none;
 }
 
+:global(html[data-platform='linux'][data-content-theme='miaoyan']) .container {
+  transform: none;
+}
+
 :global(html[data-content-theme='miaoyan']) .btn {
   width: 23px;
   height: 23px;

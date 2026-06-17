@@ -164,7 +164,7 @@ export type CommandId =
   | 'feedback'
   | 'about';
 
-export type AppPlatform = 'mac' | 'windows';
+export type AppPlatform = 'mac' | 'windows' | 'linux';
 
 export interface ShortcutBinding {
   code: string;
