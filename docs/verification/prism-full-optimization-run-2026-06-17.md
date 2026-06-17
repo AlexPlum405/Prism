@@ -34,7 +34,7 @@
 | P0-03 真实 Tauri WebView 长文档性能基准 | 已完成：基准已建立，3MB 真实性能风险待后续优化 | 高 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose`、`node scripts/run-preview-webview-benchmark.mjs` |
 | P1-01 统一打开文件策略 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts` |
 | P1-02 DocumentProfile 落地 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
-| P1-03 预览搜索节流和渐进高亮 | 未开始 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
+| P1-03 预览搜索节流和渐进高亮 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-04 preview-only 源码定位 ready 队列 | 未开始 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-05 状态栏图谱条件显示 | 未开始 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
 | P1-06 导出诊断产品化 | 未开始 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
@@ -156,3 +156,23 @@
 | 证据路径 | `.codex-smoke/app-smoke/evidence/00-launch-markdown-chinese-space.png`、`.codex-smoke/app-smoke/evidence/01-launch-source.png`、`.codex-smoke/app-smoke/evidence/failure.log`、本文件；相关 Vitest/Rust/build 命令输出 |
 | 未验证风险 | Windows/Linux 默认 app 文件关联未真机验证；macOS Finder 双击 `.sql/.json/.env` 关联未手工验证；本轮 app smoke 未完成 ERROR 面板之后的导出/设置等后半段交互，失败更像当前环境截图/可视化自动化限制，但仍需后续 P1/P2 阶段复验；P1-05 仍需进一步实现“有链接关系才显示图谱按钮”，本项只保证 Text Document 永不触发图谱 |
 | 对应提交 | `c33648c7cbb0752fba174136702241ebf822bb55` |
+
+### P1-03 预览搜索节流和渐进高亮
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 将预览搜索高亮拆成可取消的任务：输入阶段先清理旧 mark，等待 140ms debounce 后按 `requestAnimationFrame` 分帧批量写入 `.preview-search-match`；Next/Prev 会取消待处理任务并立即重建高亮，且只在切换命中时滚动到 `.preview-search-match--current`；内容或视图恢复时保留搜索高亮但不强制滚动；现有预览复制、右键源码定位和 scroll map 行为保持不变 |
+| 涉及文件 | `src/domains/editor/components/SplitView.tsx`、`src/domains/editor/components/SplitView.test.tsx` |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx --reporter verbose` |
+| 命令结果 | 通过：1 个测试文件，17 个测试用例；新增用例覆盖预览搜索输入 139ms 内不写 mark、不滚动，debounce 后才出现高亮；Next 会立即滚动并把当前命中移动到第二个结果 |
+| 验证命令 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx src/domains/editor/components/SearchPanel.test.tsx src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/previewDomTargets.test.ts --reporter verbose` |
+| 命令结果 | 通过：4 个测试文件，50 个测试用例；覆盖搜索面板 live input、预览复制、源码定位、预览渲染调度、DOM target 扫描和 scroll map 回归；输出中有既有 PreviewPane `act(...)` 警告和 jsdom `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/domains/editor/components/SplitView.test.tsx` |
+| 未验证风险 | 本项未跑真实 Tauri WebView 1MB/3MB 搜索首字延迟实测；当前证据证明输入阶段不会每键同步改写预览 DOM 或滚动，真实长文档搜索体感仍需在后续性能 smoke 或 P0-03 benchmark 迭代中补量化 |
+| 对应提交 | `cf2c60c18812718eec25c7082e425bf0b33b0ec4` |
