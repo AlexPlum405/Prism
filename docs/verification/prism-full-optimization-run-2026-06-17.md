@@ -36,7 +36,7 @@
 | P1-02 DocumentProfile 落地 | 已完成 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
 | P1-03 预览搜索节流和渐进高亮 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
 | P1-04 preview-only 源码定位 ready 队列 | 已完成 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
-| P1-05 状态栏图谱条件显示 | 未开始 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
+| P1-05 状态栏图谱条件显示 | 已完成 | 中 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/components/shell/CommandPalette.test.tsx` |
 | P1-06 导出诊断产品化 | 未开始 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
 | P1-07 保存、冲突、导出微反馈统一 | 未开始 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
 | P2-01 默认阅读排版调优 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
@@ -198,3 +198,21 @@
 | 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/domains/editor/components/SplitView.test.tsx` |
 | 未验证风险 | 当前为 jsdom 组件级验证，未在真实 Tauri WebView 中手工验证右键菜单“在编辑器中定位源码”和诊断按钮的实际动画体感；快速连续定位已通过 pending 覆盖策略约束，但未录制真实交互视频 |
 | 对应提交 | `4dd96f621af3bc047faf4d01d479fb8f8d48300e` |
+
+### P1-05 状态栏图谱条件显示
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 `hasWorkspaceIndexDocumentRelations()` / `getWorkspaceIndexDocumentRelations()` 查询，统一按当前 Markdown Document 的已解析出链和工作区反链判断是否存在文档关系；状态栏 prop 从 `hasSavedPath` 收敛为 `hasDocumentRelations`，无关系时不渲染图谱按钮；Text Document、外部 URL、未解析目标和索引未知状态不触发图谱按钮；命令上下文携带 `workspaceIndex`，`showRelationGraph` 命令启用条件与状态栏同源 |
+| 涉及文件 | `src/domains/workspace/services/workspaceIndexQuery.ts`、`src/domains/workspace/services/index.ts`、`src/domains/workspace/components/StatusBar.tsx`、`src/app/controllers/AppWorkspaceViewController.tsx`、`src/app/controllers/WorkspaceController.tsx`、`src/domains/commands/types.ts`、`src/app/useAppCommandContext.ts`、`src/domains/commands/categories/workspaceCommands.ts` 及对应测试 |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/domains/workspace/components/StatusBar.test.tsx src/app/controllers/AppWorkspaceViewController.test.tsx src/app/controllers/WorkspaceController.test.tsx src/domains/workspace/services/workspaceIndex.test.ts src/domains/commands/categories/workspaceCommands.test.ts src/components/shell/CommandPalette.test.tsx src/domains/commands/registry.test.ts --reporter verbose` |
+| 命令结果 | 通过：7 个测试文件，52 个测试用例；覆盖状态栏图谱按钮显隐、当前文档已解析出链、当前文档反链、Text Document 禁用、外链/未解析目标不触发、工作区命令启用条件、命令面板快速打开/全文搜索回归；输出中有既有 `localStorage.setItem is not a function` mock 警告和 `--localstorage-file` 警告，无失败 |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | 本文件；相关 Vitest/build 命令输出；`src/app/controllers/AppWorkspaceViewController.test.tsx`；`src/domains/workspace/components/StatusBar.test.tsx`；`src/domains/commands/categories/workspaceCommands.test.ts` |
+| 未验证风险 | 当前为 jsdom 和 build 验证，未在真实 Tauri WebView 中手工打开有出链/反链文档观察状态栏按钮显隐；命令启用条件依赖当前 `workspaceIndex`，索引尚未完成时按钮会先隐藏，之后随索引完成出现，未录制真实索引完成前后的视觉过渡 |
+| 对应提交 | `faffd14fa8ec8872c6117d0db04a006be6880491` |
