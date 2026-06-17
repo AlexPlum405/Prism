@@ -3,6 +3,7 @@
  */
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDocumentStore } from '../../document/store';
 import {
   SplitView,
   collectCodeLineElements,
@@ -19,6 +20,7 @@ import {
 const mockState = vi.hoisted(() => ({
   jumpToLine: vi.fn(),
   setScrollRatio: vi.fn(),
+  mountDelayFrames: 0,
   mounts: 0,
   unmounts: 0,
 }));
@@ -32,6 +34,8 @@ vi.mock('./EditorPane', async () => {
       onScrollRatioChange?: (ratio: number) => void;
       onSelectionTextChange?: (text: string) => void;
     }, ref) => {
+      const [ready, setReady] = React.useState(mockState.mountDelayFrames <= 0);
+
       React.useEffect(() => {
         mockState.mounts += 1;
         return () => {
@@ -39,19 +43,44 @@ vi.mock('./EditorPane', async () => {
         };
       }, []);
 
-      React.useImperativeHandle(ref, () => ({
-        focus: vi.fn(),
-        jumpToLine: mockState.jumpToLine,
-        setScrollRatio: mockState.setScrollRatio,
-        scrollToLine: vi.fn(),
-        execSearch: vi.fn(),
-        restoreSearch: vi.fn(),
-        getSelectedText: vi.fn(() => ''),
-      }));
+      React.useEffect(() => {
+        if (ready) return;
+
+        let cancelled = false;
+        let remaining = mockState.mountDelayFrames;
+        let frame: number | null = null;
+        const tick = () => {
+          if (cancelled) return;
+          if (remaining <= 0) {
+            setReady(true);
+            return;
+          }
+          remaining -= 1;
+          frame = requestAnimationFrame(tick);
+        };
+
+        frame = requestAnimationFrame(tick);
+        return () => {
+          cancelled = true;
+          if (frame !== null) cancelAnimationFrame(frame);
+        };
+      }, [ready]);
+
+      React.useImperativeHandle(ref, () => ready
+        ? ({
+            focus: vi.fn(),
+            jumpToLine: mockState.jumpToLine,
+            setScrollRatio: mockState.setScrollRatio,
+            scrollToLine: vi.fn(),
+            execSearch: vi.fn(),
+            restoreSearch: vi.fn(),
+            getSelectedText: vi.fn(() => ''),
+          })
+        : null, [ready]);
 
       return React.createElement(
         'div',
-        { 'data-testid': 'editor-pane' },
+        { 'data-ready': ready ? 'true' : 'false', 'data-testid': 'editor-pane' },
         props.content,
         React.createElement('button', {
           'data-testid': 'editor-scroll-ratio',
@@ -118,8 +147,10 @@ describe('SplitView editor lifecycle', () => {
   beforeEach(() => {
     mockState.jumpToLine.mockClear();
     mockState.setScrollRatio.mockClear();
+    mockState.mountDelayFrames = 0;
     mockState.mounts = 0;
     mockState.unmounts = 0;
+    useDocumentStore.setState({ currentDocument: null });
   });
 
   it('keeps the editor mounted when switching through preview mode so undo history survives', async () => {
@@ -136,14 +167,14 @@ describe('SplitView editor lifecycle', () => {
 
     rerender(<SplitView {...props} viewMode="preview" />);
 
-    expect(screen.getByTestId('editor-pane')).toBeTruthy();
+    expect(screen.getByTestId('editor-pane')).toHaveAttribute('data-ready', 'true');
     expect(screen.getByTestId('preview-pane')).toBeTruthy();
     expect(mockState.mounts).toBe(1);
     expect(mockState.unmounts).toBe(0);
 
     rerender(<SplitView {...props} viewMode="edit" />);
 
-    expect(screen.getByTestId('editor-pane')).toBeTruthy();
+    expect(screen.getByTestId('editor-pane')).toHaveAttribute('data-ready', 'true');
     expect(mockState.mounts).toBe(1);
     expect(mockState.unmounts).toBe(0);
   });
@@ -434,6 +465,48 @@ describe('SplitView editor lifecycle', () => {
     } finally {
       restore();
     }
+  });
+
+  it('queues preview-only source jumps until the editor is mounted', async () => {
+    vi.useFakeTimers();
+    mockState.mountDelayFrames = 2;
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current');
+    useDocumentStore.getState().setViewMode('preview');
+
+    function StoreBackedSplitView() {
+      const currentViewMode = useDocumentStore((state) => state.currentDocument?.viewMode ?? 'preview');
+      return (
+        <SplitView
+          content="Preview block"
+          documentPath="/repo/current.md"
+          viewMode={currentViewMode}
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />
+      );
+    }
+
+    render(<StoreBackedSplitView />);
+
+    fireEvent.click(screen.getByRole('button', { name: '跳到源码' }));
+
+    expect(useDocumentStore.getState().currentDocument?.viewMode).toBe('split');
+    expect(mockState.jumpToLine).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(16 * 12);
+    });
+
+    expect(screen.getByTestId('editor-pane')).toHaveAttribute('data-ready', 'true');
+    await act(async () => {
+      vi.advanceTimersByTime(16 * 4);
+    });
+
+    expect(mockState.jumpToLine).toHaveBeenCalledWith(9);
   });
 });
 

@@ -57,6 +57,7 @@ const DEFAULT_SEARCH_PARAMS: SearchParams = {
 };
 const PREVIEW_SEARCH_INPUT_DEBOUNCE_MS = 140;
 const PREVIEW_SEARCH_BATCH_SIZE = 80;
+const MAX_PENDING_SOURCE_JUMP_FRAMES = 60;
 
 function normalizeSelectionSeed(text: string) {
   const seed = text.replace(/\u00a0/g, ' ');
@@ -366,10 +367,14 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     const previewScrollMapCacheRef = useRef(createPreviewScrollMapCache());
     const previewSearchTaskRef = useRef<PreviewSearchTask | null>(null);
     const previewSearchDebounceTimerRef = useRef<number | null>(null);
+    const pendingSourceJumpLineRef = useRef<number | null>(null);
+    const pendingSourceJumpFrameRef = useRef<number | null>(null);
+    const pendingSourceJumpAttemptsRef = useRef(0);
     const [editorActivated, setEditorActivated] = useState(viewMode !== 'preview');
     // 同步方向锁：防止反馈循环
     const syncingRef = useRef<'editor' | 'preview' | null>(null);
     const syncingTimerRef = useRef<number | null>(null);
+    viewModeRef.current = viewMode;
 
     const cancelPreviewSearchWork = useCallback(() => {
       if (previewSearchDebounceTimerRef.current !== null) {
@@ -437,6 +442,65 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         cancelPreviewSearchWork();
       };
     }, [cancelPreviewSearchWork]);
+
+    const cancelPendingSourceJumpFrame = useCallback(() => {
+      if (pendingSourceJumpFrameRef.current !== null) {
+        cancelAnimationFrame(pendingSourceJumpFrameRef.current);
+        pendingSourceJumpFrameRef.current = null;
+      }
+    }, []);
+
+    const flushPendingSourceJump = useCallback(() => {
+      cancelPendingSourceJumpFrame();
+
+      const flush = () => {
+        const line = pendingSourceJumpLineRef.current;
+        if (line === null) {
+          pendingSourceJumpFrameRef.current = null;
+          pendingSourceJumpAttemptsRef.current = 0;
+          return;
+        }
+
+        if (viewModeRef.current === 'preview' || !editorRef.current) {
+          pendingSourceJumpAttemptsRef.current += 1;
+          if (pendingSourceJumpAttemptsRef.current >= MAX_PENDING_SOURCE_JUMP_FRAMES) {
+            pendingSourceJumpLineRef.current = null;
+            pendingSourceJumpFrameRef.current = null;
+            pendingSourceJumpAttemptsRef.current = 0;
+            onNotice?.(t('editor.preview.sourceLocateFailed'));
+            return;
+          }
+          pendingSourceJumpFrameRef.current = requestAnimationFrame(flush);
+          return;
+        }
+
+        pendingSourceJumpLineRef.current = null;
+        pendingSourceJumpFrameRef.current = null;
+        pendingSourceJumpAttemptsRef.current = 0;
+        editorRef.current.jumpToLine(line);
+      };
+
+      pendingSourceJumpFrameRef.current = requestAnimationFrame(flush);
+    }, [cancelPendingSourceJumpFrame, onNotice]);
+
+    const queueSourceJump = useCallback((line: number) => {
+      pendingSourceJumpLineRef.current = line;
+      pendingSourceJumpAttemptsRef.current = 0;
+      setEditorActivated(true);
+      flushPendingSourceJump();
+    }, [flushPendingSourceJump]);
+
+    useEffect(() => {
+      if (viewMode !== 'preview') {
+        flushPendingSourceJump();
+      }
+    }, [flushPendingSourceJump, viewMode]);
+
+    useEffect(() => {
+      return () => {
+        cancelPendingSourceJumpFrame();
+      };
+    }, [cancelPendingSourceJumpFrame]);
 
     useEffect(() => {
       searchParamsRef.current = searchParams;
@@ -581,12 +645,16 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
 
     const jumpToSourceLine = useCallback((line: number) => {
       if (viewModeRef.current === 'preview') {
+        queueSourceJump(line);
         useDocumentStore.getState().setViewMode('split');
-        requestAnimationFrame(() => editorRef.current?.jumpToLine(line));
+        return;
+      }
+      if (!editorRef.current) {
+        queueSourceJump(line);
         return;
       }
       editorRef.current?.jumpToLine(line);
-    }, []);
+    }, [queueSourceJump]);
 
     const handlePreviewContextMenu = useCallback((event: React.MouseEvent) => {
       event.preventDefault();
