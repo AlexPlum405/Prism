@@ -31,7 +31,7 @@
 |---|---|---|---|
 | P0-01 全局快捷键输入框豁免 | 已完成 | 中 | `npm test -- --run src/app/useAppShortcuts.test.tsx` |
 | P0-02 默认 app 打开与启动 smoke | 已完成 | 高 | `npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts`、`npm run tauri:build:app-smoke` |
-| P0-03 真实 Tauri WebView 长文档性能基准 | 未开始 | 高 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose`、新增真实 app harness |
+| P0-03 真实 Tauri WebView 长文档性能基准 | 已完成：基准已建立，3MB 真实性能风险待后续优化 | 高 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose`、`node scripts/run-preview-webview-benchmark.mjs` |
 | P1-01 统一打开文件策略 | 未开始 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/domains/commands/categories/fileCommands.test.ts` |
 | P1-02 DocumentProfile 落地 | 未开始 | 高 | `npm test -- --run src/lib/fileActions.test.ts src/hooks/useBootstrap.test.tsx`、`cargo test` |
 | P1-03 预览搜索节流和渐进高亮 | 未开始 | 中 | `npm test -- --run src/domains/editor/components/SplitView.test.tsx` |
@@ -95,3 +95,22 @@
 | 证据路径 | `.codex-smoke/app-smoke/evidence/report.json`、`.codex-smoke/app-smoke/evidence/00-launch-markdown-chinese-space.png`、`.codex-smoke/app-smoke/evidence/01-launch-source.png` |
 | 未验证风险 | Windows/Linux 默认 app 真机未验证；macOS Finder 默认 app 双击未直接手工验证，本轮用 `open -n -a Prism.app <file>` 作为真实 app 替代；完整 app smoke 后续 ERROR 面板交互仍需在后续相关阶段修复或复验 |
 | 对应提交 | `e9f59a9196cb2d88874649643858c6b63fda5d42` |
+
+### P0-03 真实 Tauri WebView 长文档性能基准
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成基准建设；测量结果显示 3MB 真实 WebView 预览仍有高风险性能缺口 |
+| 变更摘要 | 新增 `scripts/run-preview-webview-benchmark.mjs`，生成 1MB/3MB Markdown fixture，启动打包后的 Tauri release `.app`，记录窗口可见、`lastSession` ready、截图、滚动、搜索、右键菜单尝试和源码定位自动化覆盖状态；输出 JSON 与 Markdown 报告到 `docs/verification/`；`.gitignore` 增加脚本 allowlist |
+| 涉及文件 | `.gitignore`、`scripts/run-preview-webview-benchmark.mjs`、`docs/verification/prism-preview-webview-benchmark-2026-06-17.json`、`docs/verification/prism-preview-webview-benchmark-2026-06-17.md` |
+| 风险等级 | 高 |
+| 验证命令 | `node --check scripts/run-preview-webview-benchmark.mjs` |
+| 命令结果 | 通过：脚本语法检查无输出 |
+| 验证命令 | `PRISM_PREVIEW_BENCH=1 npm test -- --run src/domains/editor/components/PreviewPane.performance.test.tsx --reporter verbose` |
+| 命令结果 | 通过：1 个测试文件，1 个测试用例；本轮摘要为 `markdownToHtmlMs 61.7ms`、`domWriteMs 577.2ms`、`scrollSyncScanMs 31.8ms`、`domTargetScanMs 106.2ms`、`domDiagnosticsScanMs 183.8ms` |
+| 验证命令 | `node scripts/run-preview-webview-benchmark.mjs` |
+| 命令结果 | 通过：脚本完成并写出 JSON/Markdown 报告；1MB fixture 约 1,049,011 bytes，窗口可见 930.6ms，`lastSession` ready 4,534ms，截图 14,947.3ms，滚动和搜索动作通过；3MB fixture 约 3,146,641 bytes，窗口可见 928ms，但 90 秒内未写入目标 `lastSession`，记录为 `timeout`，截图时间 91,991.9ms |
+| 证据路径 | `docs/verification/prism-preview-webview-benchmark-2026-06-17.json`、`docs/verification/prism-preview-webview-benchmark-2026-06-17.md`、`.codex-smoke/preview-webview-benchmark/evidence/1mb-preview-opened.png`、`.codex-smoke/preview-webview-benchmark/evidence/1mb-preview-scroll.png`、`.codex-smoke/preview-webview-benchmark/evidence/1mb-preview-search.png`、`.codex-smoke/preview-webview-benchmark/evidence/3mb-preview-timeout.png` |
+| 配置恢复检查 | benchmark 后检查本机 Prism config：`defaultViewMode` 仍为 `preview`，`lastSession.filePath` 已恢复为 `docs/reviews/prism-multi-perspective-review-2026-06-16.md`，未停留在 benchmark fixture |
+| 未验证风险 | `tauri-driver` 当前环境未安装，DOM commit 使用 `openCommandToLastSessionMs` 和截图时间作为可观测替代指标；右键菜单在 System Events 中返回 `-25200`，源码定位菜单项未自动选择；Windows/Linux WebView 真机未覆盖；3MB 完整预览在真实 app 中没有达到可用 ready 状态，后续性能优化不能把本项视为体验通过 |
+| 对应提交 | `4ce5157b06d993d63964271b9a133267566e5368` |
