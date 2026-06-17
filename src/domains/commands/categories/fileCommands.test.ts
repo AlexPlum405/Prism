@@ -4,14 +4,20 @@ import type { CommandContext } from '../types';
 import { DEFAULT_SETTINGS } from '../../settings/types';
 
 const openPrismWindowMock = vi.hoisted(() => vi.fn(async () => undefined));
+const openSelectedDocumentMock = vi.hoisted(() => vi.fn(async () => undefined));
+const openDialogMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../lib/openWindow', () => ({
   openPrismWindow: openPrismWindowMock,
 }));
 
+vi.mock('../../../lib/openDocumentFlow', () => ({
+  openSelectedDocument: openSelectedDocumentMock,
+}));
+
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   ask: vi.fn(),
-  open: vi.fn(),
+  open: openDialogMock,
 }));
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
@@ -53,7 +59,7 @@ function createContext(overrides: Partial<CommandContext> = {}): CommandContext 
   };
 }
 
-function getFileCommand(id: 'new' | 'newWindow') {
+function getFileCommand(id: 'new' | 'newWindow' | 'open') {
   const command = createFileCommands().find((entry) => entry.id === id);
   if (!command) throw new Error(`Missing command: ${id}`);
   return command;
@@ -96,5 +102,26 @@ describe('file commands', () => {
     await getFileCommand('newWindow').run(createContext());
 
     expect(openPrismWindowMock).toHaveBeenCalledWith({ newDocument: true });
+  });
+
+  it('opens dialog selections through the shared document flow', async () => {
+    const context = createContext();
+    openDialogMock.mockResolvedValue('/repo/readme.md');
+
+    await getFileCommand('open').run(context);
+
+    expect(openSelectedDocumentMock).toHaveBeenCalledWith(
+      '/repo/readme.md',
+      context,
+      { entryPoint: 'file-command' },
+    );
+  });
+
+  it('does nothing when the open dialog is cancelled', async () => {
+    openDialogMock.mockResolvedValue(null);
+
+    await getFileCommand('open').run(createContext());
+
+    expect(openSelectedDocumentMock).not.toHaveBeenCalled();
   });
 });

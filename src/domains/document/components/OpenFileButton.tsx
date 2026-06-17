@@ -1,18 +1,12 @@
 import { openDialog } from '../../../platform/tauri/dialogs';
 import { useDocumentStore } from '../store';
 import { useWorkspaceStore } from '../../workspace/store';
-import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
-import { MARKDOWN_FILE_FILTERS, dirname } from '../../workspace/services';
-import { openPrismWindow } from '../../../lib/openWindow';
-import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
+import { MARKDOWN_FILE_FILTERS } from '../../workspace/services';
 import { useI18n } from '../../i18n';
-import { readDocumentFileSession } from '../services/fileSafety';
+import { openSelectedDocument } from '../../../lib/openDocumentFlow';
 
 export function OpenFileButton() {
   const { t } = useI18n();
-  const currentDocument = useDocumentStore((s) => s.currentDocument);
-  const openDocument = useDocumentStore((s) => s.openDocument);
-  const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
 
   const handleOpen = async () => {
     try {
@@ -22,18 +16,10 @@ export function OpenFileButton() {
       });
 
       if (typeof selected !== 'string') return;
-      await grantMarkdownFileScope(selected);
-
-      if (!currentDocument) {
-        const session = await readDocumentFileSession(selected);
-        openDocument(session.path, session.name, session.content, session.knownSnapshot);
-
-        const parentDir = dirname(selected);
-        const tree = await loadFolderTree(parentDir);
-        setWorkspace(parentDir, tree);
-      } else {
-        await openPrismWindow({ filePath: selected });
-      }
+      await openSelectedDocument(selected, {
+        documentStore: useDocumentStore.getState(),
+        workspaceStore: useWorkspaceStore.getState(),
+      }, { entryPoint: 'document-open-button' });
     } catch (err) {
       console.error('[OpenFileButton] Failed:', err);
     }

@@ -10,21 +10,23 @@ import {
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 import { confirmDialog as confirm, messageDialog as message } from '../platform/tauri/dialogs';
 import { revealPathInFileManager as revealItemInDir } from '../platform/tauri/opener';
-import { useDocumentStore } from '../domains/document/store';
-import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
 import {
   addRecentFile,
   basename,
   dirname,
-  flattenFiles,
   isPathInside,
   isSamePath,
   joinPath,
   replacePathPrefix,
 } from '../domains/workspace/services';
 import { openPrismWindow } from './openWindow';
-import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from './fileSystemScope';
+import { grantWorkspaceDirectoryScope } from './fileSystemScope';
+import {
+  openDocumentInCurrentWindow,
+  openDocumentInNewWindow,
+  type OpenDocumentFlowContext,
+} from './openDocumentFlow';
 import {
   getUnsupportedFileActionMessage,
   parseFileAction,
@@ -32,30 +34,14 @@ import {
 } from './fileActionCommands';
 import { t } from '../domains/i18n';
 import { emitAppEvent } from '../platform/events/appEvents';
-import type { OpenDocument } from '../domains/document/types';
 import {
-  createKnownFileSnapshot,
-  fileConflictDetector,
-  readDocumentFileSession,
   writeDocumentFileSession,
-  type WriteDocumentFileSessionInput,
 } from '../domains/document/services/fileSafety';
 
 export type { FileActionInput } from './fileActionCommands';
+export type { DirtyDocumentSwitchAction } from './openDocumentFlow';
 
-export type DirtyDocumentSwitchAction = 'save' | 'saveAs' | 'discard' | 'cancel';
-
-interface FileActionContext {
-  documentStore: ReturnType<typeof useDocumentStore.getState>;
-  requestDirtyDocumentAction?: (input: {
-    currentName: string;
-    targetName: string;
-    targetPath: string;
-  }) => Promise<DirtyDocumentSwitchAction>;
-  requestSavePath?: (input: { filename: string; documentPath?: string }) => Promise<string | null>;
-  workspaceStore: ReturnType<typeof useWorkspaceStore.getState>;
-  showToast?: (message: string) => void;
-}
+interface FileActionContext extends OpenDocumentFlowContext {}
 
 type DeletePathMode = 'cancelled' | 'permanent' | 'trash';
 
@@ -182,105 +168,6 @@ async function refreshWorkspace(context: FileActionContext, rootPath = context.w
   context.workspaceStore.setFileTree(tree);
 }
 
-function fileTreeContainsPath(context: FileActionContext, path: string): boolean {
-  return flattenFiles(context.workspaceStore.fileTree, context.workspaceStore.rootPath)
-    .some(({ node }) => isSamePath(node.path, path));
-}
-
-async function syncWorkspaceForOpenedFile(path: string, context: FileActionContext): Promise<void> {
-  const rootPath = context.workspaceStore.rootPath;
-  if (!rootPath || !isPathInside(path, rootPath)) {
-    const parentDir = dirname(path);
-    const tree = await loadFolderTree(parentDir);
-    context.workspaceStore.setWorkspace(parentDir, tree);
-    return;
-  }
-
-  if (!fileTreeContainsPath(context, path)) {
-    await refreshWorkspace(context, rootPath);
-  }
-}
-
-async function saveDirtyDocumentBeforeSwitch(
-  document: OpenDocument,
-  action: Extract<DirtyDocumentSwitchAction, 'save' | 'saveAs'>,
-  context: FileActionContext,
-): Promise<boolean> {
-  let targetPath = action === 'save' ? document.path : '';
-
-  if (!targetPath) {
-    if (!context.requestSavePath) {
-      context.showToast?.(t('command.savePanelUnavailable'));
-      return false;
-    }
-    const chosen = await context.requestSavePath({
-      filename: document.name,
-      documentPath: document.path,
-    });
-    if (!chosen) return false;
-    targetPath = chosen;
-  }
-
-  context.documentStore.markSaving(document.path || undefined);
-  try {
-    let expectedSnapshot: WriteDocumentFileSessionInput['expectedSnapshot'];
-    if (document.path && action === 'save') {
-      const result = await fileConflictDetector.inspect(
-        document.path,
-        createKnownFileSnapshot(document.lastKnownMtime, document.lastKnownSize),
-      );
-      if (result.kind !== 'ok') {
-        context.documentStore.markSaveConflict(result.message, document.path, result.kind);
-        context.showToast?.(result.message);
-        return false;
-      }
-      if (result.changed) {
-        context.documentStore.markSaveConflict(fileConflictDetector.message, document.path);
-        context.showToast?.(fileConflictDetector.message);
-        return false;
-      }
-      expectedSnapshot = result.currentSnapshot;
-    }
-
-    const snapshot = await writeDocumentFileSession({
-      path: targetPath,
-      content: document.content,
-      expectedSnapshot,
-    });
-    if (!document.path || !isSamePath(document.path, targetPath)) {
-      context.documentStore.openDocument(targetPath, basename(targetPath), document.content, snapshot);
-    }
-    addRecentFile(targetPath, basename(targetPath));
-    context.documentStore.markSaved(targetPath, snapshot);
-    return true;
-  } catch (error) {
-    context.documentStore.markSaveFailed(error, document.path || undefined);
-    context.showToast?.(formatError(error));
-    return false;
-  }
-}
-
-async function ensureCanSwitchDocument(path: string, context: FileActionContext): Promise<boolean> {
-  const document = context.documentStore.currentDocument;
-  if (!document?.isDirty) return true;
-  if (document.path && isSamePath(document.path, path)) return false;
-
-  if (!context.requestDirtyDocumentAction) {
-    context.showToast?.(t('file.unsavedSwitchBlocked'));
-    return false;
-  }
-
-  const action = await context.requestDirtyDocumentAction({
-    currentName: document.name,
-    targetName: basename(path),
-    targetPath: path,
-  });
-
-  if (action === 'cancel') return false;
-  if (action === 'discard') return true;
-  return saveDirtyDocumentBeforeSwitch(document, action, context);
-}
-
 async function getUniquePath(parentDir: string, stem: string, ext = ''): Promise<string> {
   for (let index = 0; index < 1000; index += 1) {
     const suffix = index === 0 ? '' : ` (${index})`;
@@ -313,20 +200,7 @@ function getWorkspaceTargetDir(context: FileActionContext, requestedPath?: strin
 }
 
 async function handleOpenFile(path: string, context: FileActionContext): Promise<void> {
-  await grantMarkdownFileScope(path);
-
-  const currentDocument = context.documentStore.currentDocument;
-  if (currentDocument?.path && isSamePath(currentDocument.path, path)) {
-    await syncWorkspaceForOpenedFile(path, context);
-    return;
-  }
-
-  if (!(await ensureCanSwitchDocument(path, context))) return;
-
-  const session = await readDocumentFileSession(path);
-  context.documentStore.openDocument(session.path, session.name, session.content, session.knownSnapshot);
-  addRecentFile(session.path, session.name);
-  await syncWorkspaceForOpenedFile(path, context);
+  await openDocumentInCurrentWindow(path, context, { entryPoint: 'workspace-navigation' });
 }
 
 async function handleOpenNewWindow(path: string | undefined, context: FileActionContext): Promise<void> {
@@ -334,10 +208,10 @@ async function handleOpenNewWindow(path: string | undefined, context: FileAction
     const info = await stat(path);
     if (info.isDirectory) {
       await grantWorkspaceDirectoryScope(path);
+      await openPrismWindow({ folderPath: path });
     } else {
-      await grantMarkdownFileScope(path);
+      await openDocumentInNewWindow(path, context, { entryPoint: 'new-window' });
     }
-    await openPrismWindow(info.isDirectory ? { folderPath: path } : { filePath: path });
     return;
   }
 

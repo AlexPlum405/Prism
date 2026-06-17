@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
+import { ask } from '@tauri-apps/plugin-dialog';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
@@ -22,6 +23,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
+  ask: vi.fn(),
   confirm: vi.fn(),
   message: vi.fn(),
 }));
@@ -55,6 +57,7 @@ beforeEach(() => {
     sidebarVisible: true,
   });
   (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# Opened from Finder');
+  (ask as ReturnType<typeof vi.fn>).mockResolvedValue(true);
   (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 20, mtimeMs: 1000 });
   (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([
     { kind: 'file', name: 'opened.md', path: '/new/project/opened.md' },
@@ -254,6 +257,37 @@ describe('executeFileAction openFile workspace sync', () => {
         children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
       },
     ]);
+  });
+
+  it('does not open a large file when the shared large-file confirmation is cancelled', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ size: 11 * 1024 * 1024 });
+    (ask as ReturnType<typeof vi.fn>).mockResolvedValueOnce(false);
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/docs/large.md' },
+      fileActionContext(),
+    );
+
+    expect(ask).toHaveBeenCalledWith(
+      '文件大小为 11.00 MB，可能影响性能。是否继续打开？',
+      expect.objectContaining({ title: '大文件警告' }),
+    );
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toBeNull();
+  });
+
+  it('rejects unsupported document types before granting or reading the file', async () => {
+    const showToast = vi.fn();
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/docs/app.ts' },
+      fileActionContext({ showToast }),
+    );
+
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(
+      '操作失败: 当前版本仅支持 .md / .markdown / .txt 文件。',
+    );
   });
 
   it('does not reload the current dirty document when the same file is selected again', async () => {

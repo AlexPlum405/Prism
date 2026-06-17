@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { executeFileAction, type DirtyDocumentSwitchAction, type FileActionInput } from '../lib/fileActions';
-import { openPrismWindow } from '../lib/openWindow';
+import { openSelectedDocument } from '../lib/openDocumentFlow';
 import { useStartupFileOpen } from './useStartupFileOpen';
 
 interface DirtySwitchPromptState {
@@ -54,13 +54,14 @@ export function useAppFileActionsModel({
   }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
 
   const handleStartupFileOpen = useCallback(async (path: string) => {
-    if (useDocumentStore.getState().currentDocument) {
-      await openPrismWindow({ filePath: path });
-      return;
-    }
-
-    await handleFileAction({ action: 'openFile', path });
-  }, [handleFileAction]);
+    await openSelectedDocument(path, {
+      documentStore: useDocumentStore.getState(),
+      requestDirtyDocumentAction,
+      requestSavePath: requestMarkdownSavePath,
+      workspaceStore: useWorkspaceStore.getState(),
+      showToast,
+    }, { entryPoint: 'system' });
+  }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
 
   useStartupFileOpen({ onOpenFilePath: handleStartupFileOpen });
 

@@ -5,10 +5,9 @@ import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
-import { addRecentFile, dirname, getRuntimePlatform } from '../domains/workspace/services';
-import { grantMarkdownFileScope, grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
-import { readDocumentFileSession } from '../domains/document/services/fileSafety';
-import { openPrismWindow } from '../lib/openWindow';
+import { getRuntimePlatform } from '../domains/workspace/services';
+import { grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
+import { openDocumentInCurrentWindow, openDocumentInNewWindow } from '../lib/openDocumentFlow';
 
 const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800] as const;
 const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
@@ -53,9 +52,6 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
   } = normalizeUseBootstrapInput(input);
   const currentDocument = useDocumentStore((s) => s.currentDocument);
   const createNewDocument = useDocumentStore((s) => s.createNewDocument);
-  const openDocument = useDocumentStore((s) => s.openDocument);
-  const setViewMode = useDocumentStore((s) => s.setViewMode);
-  const updateScrollState = useDocumentStore((s) => s.updateScrollState);
   const restoreLastSession = useSettingsStore((s) => s.restoreLastSession);
   const lastSession = useSettingsStore((s) => s.lastSession);
   const { setSidebarVisible, setSidebarTab, setWorkspace } = useWorkspaceStore();
@@ -75,21 +71,18 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
       restoreViewMode?: 'edit' | 'split' | 'preview',
       restoreScrollState?: { editorRatio: number; previewRatio: number },
     ) => {
-      await grantMarkdownFileScope(path);
       if (!(await exists(path))) return false;
-      const session = await readDocumentFileSession(path);
-      if (cancelled || useDocumentStore.getState().currentDocument) return true;
-
-      openDocument(session.path, session.name, session.content, session.knownSnapshot);
-      if (restoreViewMode) setViewMode(restoreViewMode);
-      if (restoreScrollState) updateScrollState(restoreScrollState);
-      addRecentFile(session.path, session.name);
-
-      const parentDir = dirname(session.path);
-      const tree = await loadFolderTree(parentDir);
-      if (cancelled) return true;
-      setWorkspace(parentDir, tree);
-      return true;
+      const result = await openDocumentInCurrentWindow(path, {
+        documentStore: useDocumentStore.getState(),
+        workspaceStore: useWorkspaceStore.getState(),
+      }, {
+        confirmLargeDocument: false,
+        entryPoint: 'startup',
+        restoreScrollState,
+        restoreViewMode,
+        shouldAbort: () => cancelled || Boolean(useDocumentStore.getState().currentDocument),
+      });
+      return result.status !== 'cancelled-large-file';
     };
 
     const openFolder = async (path: string) => {
@@ -112,7 +105,13 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
 
       await Promise.all(additionalFiles.map(async (path) => {
         try {
-          await openPrismWindow({ filePath: path });
+          await openDocumentInNewWindow(path, {
+            documentStore: useDocumentStore.getState(),
+            workspaceStore: useWorkspaceStore.getState(),
+          }, {
+            confirmLargeDocument: false,
+            entryPoint: 'startup',
+          });
         } catch (err) {
           console.error('[useBootstrap] Failed to open additional startup file:', err);
         }
@@ -184,14 +183,11 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     enabled,
     createNewDocument,
     lastSession,
-    openDocument,
     pendingFilePollDelays,
     restoreLastSession,
     setSidebarTab,
     setSidebarVisible,
     setWorkspace,
-    setViewMode,
-    updateScrollState,
     wait,
   ]);
 }

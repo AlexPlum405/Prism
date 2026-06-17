@@ -434,6 +434,7 @@ export const zhCN = {
   'file.missingCopyPath': '缺少复制路径',
   'file.missingPropertiesPath': '缺少属性路径',
   'file.unsupportedAction': '未知文件操作: {command}',
+  'file.unsupportedDocumentType': '当前版本仅支持 {extensions} 文件。',
 
   'about.title': '关于 Prism',
   'about.copy': '一个把留白视为最强元素的 Markdown 桌面编辑器，采用 Tauri 2 + React + TypeScript 构建。',
@@ -1488,6 +1489,7 @@ const enUS: Record<I18nKey, string> = {
   'file.missingCopyPath': 'Missing copy path',
   'file.missingPropertiesPath': 'Missing properties path',
   'file.unsupportedAction': 'Unknown file action: {command}',
+  'file.unsupportedDocumentType': 'This version only supports {extensions} files.',
   'about.title': 'About Prism',
   'about.copy': 'A desktop Markdown editor built with Tauri 2, React, and TypeScript, using whitespace as its strongest element.',
   'about.version': 'Version',
@@ -2520,6 +2522,7 @@ const jaJP: Record<I18nKey, string> = {
   'file.missingCopyPath': 'コピーパスがありません',
   'file.missingPropertiesPath': 'プロパティパスがありません',
   'file.unsupportedAction': '不明なファイル操作: {command}',
+  'file.unsupportedDocumentType': 'このバージョンは {extensions} ファイルのみ対応しています。',
   'about.title': 'Prism について',
   'about.copy': '余白を最も強い要素として扱う、Tauri 2 + React + TypeScript 製の Markdown デスクトップエディターです。',
   'about.version': 'バージョン',

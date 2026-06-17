@@ -1,16 +1,14 @@
 import { askDialog, openDialog } from '../../../platform/tauri/dialogs';
-import { stat } from '../../../platform/tauri/fileSystem';
 import {
   openPathWithDefaultApp,
   revealPathInFileManager,
 } from '../../../platform/tauri/opener';
 import { openPrismWindow } from '../../../lib/openWindow';
-import { grantMarkdownFileScope } from '../../../lib/fileSystemScope';
+import { openSelectedDocument } from '../../../lib/openDocumentFlow';
 import {
   createDocumentFileSession,
   fileConflictDetector,
   isFileConflictError,
-  readDocumentFileSession,
   recoverySnapshotStore,
   writeDocumentFileSession,
 } from '../../document/services/fileSafety';
@@ -19,8 +17,7 @@ import {
   resolveMarkdownTemplateContent,
   type MarkdownTemplateId,
 } from '../../editor/extensions/templates';
-import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
-import { MARKDOWN_FILE_FILTERS, addRecentFile, basename, dirname } from '../../workspace/services';
+import { MARKDOWN_FILE_FILTERS, addRecentFile, basename } from '../../workspace/services';
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
@@ -86,40 +83,9 @@ async function handleOpen(context: CommandContext): Promise<void> {
   });
 
   if (!selected || Array.isArray(selected)) return;
-  await grantMarkdownFileScope(selected);
 
   try {
-    const fileInfo = await stat(selected);
-    const fileSizeMB = fileInfo.size / (1024 * 1024);
-
-    if (fileSizeMB > 10) {
-      const shouldContinue = await askDialog(
-        t('command.largeFileWarning', { size: fileSizeMB.toFixed(2) }),
-        { title: t('command.largeFileTitle'), kind: 'warning' },
-      );
-      if (!shouldContinue) return;
-    }
-  } catch (err) {
-    console.error('[Command] Failed to check file size:', err);
-  }
-
-  if (context.documentStore.currentDocument) {
-    await openPrismWindow({ filePath: selected });
-    return;
-  }
-
-  try {
-    const session = await readDocumentFileSession(selected);
-    context.documentStore.openDocument(session.path, session.name, session.content, session.knownSnapshot);
-    addRecentFile(session.path, session.name);
-
-    try {
-      const parentDir = dirname(selected);
-      const tree = await loadFolderTree(parentDir);
-      context.workspaceStore.setWorkspace(parentDir, tree);
-    } catch (err) {
-      console.error('[Command] Failed to load parent folder tree:', err);
-    }
+    await openSelectedDocument(selected, context, { entryPoint: 'file-command' });
   } catch (err) {
     console.error('[Command] Failed to open file:', err);
     const message = formatError(err);

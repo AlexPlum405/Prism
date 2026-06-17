@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentStore } from '../domains/document/store';
 import { executeFileAction } from '../lib/fileActions';
-import { openPrismWindow } from '../lib/openWindow';
+import { openSelectedDocument } from '../lib/openDocumentFlow';
 import { useStartupFileOpen } from './useStartupFileOpen';
 import { useAppFileActionsModel } from './useAppFileActionsModel';
 
@@ -10,8 +10,8 @@ vi.mock('../lib/fileActions', () => ({
   executeFileAction: vi.fn(),
 }));
 
-vi.mock('../lib/openWindow', () => ({
-  openPrismWindow: vi.fn(),
+vi.mock('../lib/openDocumentFlow', () => ({
+  openSelectedDocument: vi.fn(),
 }));
 
 vi.mock('./useStartupFileOpen', () => ({
@@ -80,7 +80,7 @@ describe('useAppFileActionsModel', () => {
     expect(result.current.dirtySwitchPrompt).toBeNull();
   });
 
-  it('opens startup files through the same file action path', async () => {
+  it('opens startup files through the shared system-open document flow', async () => {
     renderHook(() => useAppFileActionsModel({
       requestMarkdownSavePath,
       showToast,
@@ -92,13 +92,17 @@ describe('useAppFileActionsModel', () => {
       await input.onOpenFilePath('/repo/startup.md');
     });
 
-    expect(executeFileAction).toHaveBeenCalledWith(
-      { action: 'openFile', path: '/repo/startup.md' },
-      expect.any(Object),
+    expect(openSelectedDocument).toHaveBeenCalledWith(
+      '/repo/startup.md',
+      expect.objectContaining({
+        requestSavePath: requestMarkdownSavePath,
+        showToast,
+      }),
+      { entryPoint: 'system' },
     );
   });
 
-  it('opens running-app startup files in a new window when a document is already active', async () => {
+  it('routes running-app startup files through the system-open policy when a document is already active', async () => {
     useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current');
 
     renderHook(() => useAppFileActionsModel({
@@ -112,7 +116,11 @@ describe('useAppFileActionsModel', () => {
       await input.onOpenFilePath('/repo/from-system.markdown');
     });
 
-    expect(openPrismWindow).toHaveBeenCalledWith({ filePath: '/repo/from-system.markdown' });
+    expect(openSelectedDocument).toHaveBeenCalledWith(
+      '/repo/from-system.markdown',
+      expect.any(Object),
+      { entryPoint: 'system' },
+    );
     expect(executeFileAction).not.toHaveBeenCalled();
   });
 });
