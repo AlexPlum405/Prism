@@ -191,4 +191,4 @@ AI 暂不纳入当前核心实现，避免把 Prism 从可靠的本地 Markdown 
 每一阶段必须同时满足四个完成标准：功能可用、视觉不破坏、已有功能不回退、有最小验证。功能可用指用户能在真实 app 里完成核心动作；视觉不破坏指 UI 符合当前 Prism 妙言风格；已有功能不回退指编辑、预览、保存、导出、快捷键、文件树等既有链路不受影响；最小验证按风险分层，小 UI 改动跑相关测试与人工 smoke，涉及导出、索引、文件系统的阶段跑更完整验证。
 
 ### 令牌体系（Design tokens）
-颜色命名直接沿用原型：`--c-void` / `--c-canvas` / `--c-fog` / `--c-chalk` / `--c-graphite` / `--c-ash` / `--c-hair` / `--c-hover` / `--c-selection`。不再使用 Fluent 式 `--bg-*` / `--text-*` / `--accent-*` 命名。详见 ADR-0002。
+当前设计令牌按四层治理，详见 ADR-0008。`--c-void` / `--c-canvas` / `--c-fog` / `--c-chalk` / `--c-graphite` / `--c-ash` / `--c-hair` / `--c-hover` / `--c-selection` 是历史核心层和基础真源；`--bg-*` / `--text-*` / `--accent*` / `--stroke-*` 等是旧 module CSS 和导出链路的过渡兼容层，允许既有代码读取但新增 UI 不应扩展；`--theme-*`、`--miaoyan-*`、各内置主题前缀、`--preview-*` 与 `themeContract.ts` 共同构成主题层；`--compat-*` 等只允许作为组件局部变量。P2 之前不做大爆炸重命名，后续按组件渐进迁移。

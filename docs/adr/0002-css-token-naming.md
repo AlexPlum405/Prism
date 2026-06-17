@@ -1,5 +1,7 @@
 # CSS 令牌命名沿用原型的 `--c-*` 语义词
 
+状态：已被 ADR-0008 收束。`--c-*` 仍作为历史核心层保留，但 `--bg-*` / `--text-*` / `--accent*` 过渡别名并未一次性移除；后续按组件渐进迁移，新增 UI 不再扩展旧别名。
+
 2026-05-10：`global.css` 重写时直接采用原型的语义色命名 `--c-void / --c-canvas / --c-fog / --c-chalk / --c-graphite / --c-ash / --c-hair / --c-hover / --c-selection`，而非行业常见的 `--bg-primary / --text-primary / --border-subtle` 等功能命名。全代码库 module CSS 的引用随之迁移。
 
 ## Considered Options

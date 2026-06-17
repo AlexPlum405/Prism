@@ -40,7 +40,7 @@
 | P1-06 导出诊断产品化 | 已完成 | 高 | `npm test -- --run src/domains/export/preflight.test.ts` |
 | P1-07 保存、冲突、导出微反馈统一 | 已完成 | 中 | `npm test -- --run src/lib/fileActions.test.ts` 和相关 UI/store tests |
 | P2-01 默认阅读排版调优 | 已完成 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts`、截图记录 |
-| P2-02 token 语义审计 | 未开始 | 低 | `git diff --check`、必要 theme tests |
+| P2-02 token 语义审计 | 已完成 | 低 | `git diff --check`、必要 theme tests |
 | P2-03 迁移帮助页 | 未开始 | 低 | 文档检查、相关命令/快捷键测试 |
 | P2-04 命令面板信息架构 | 未开始 | 中 | `npm test -- --run src/components/shell/CommandPalette.test.tsx` |
 | P2-05 主题截图回归 | 未开始 | 中 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts`、截图记录 |
@@ -279,3 +279,23 @@
 | 截图审查 | 已用本地图片检查 `miaoyan-1440.png` 与 `nocturne-1440.png`：截图非空，正文、普通引用、Callout、Toggle、表格均可见，暗色块边界和正文对比可辨 |
 | 未验证风险 | 当前截图是 Playwright 渲染的独立 preview fixture，不是完整 Tauri WebView 真实窗口截图；Windows/Linux 字体渲染差异、真实系统 chrome 密度和 WebView 滚动体感仍需 P2-06 或跨平台真机补验；本项只调默认/暗色阅读排版，不把所有内置主题同步重排，完整主题截图回归留给 P2-05 |
 | 对应提交 | `19a7502f5731d70d00d9172b3b3c9cb168c84234` |
+
+### P2-02 token 语义审计
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 新增 ADR-0008 固化设计令牌治理分层；更新 `CONTEXT.md` 的 Design tokens 领域术语，纠正“旧别名已不使用”的过期口径；标注 ADR-0002 已被 ADR-0008 收束；更新 `tokens.css` 顶部注释和过渡别名注释，明确 `--c-*` 是历史核心层、`--bg-*` / `--text-*` / `--accent*` 是过渡兼容层、新 UI 不新增 OpenAI-only / Fluent-only / AppKit-only token；新增 token audit 文档记录当前 rg 证据、分层规则和风险 |
+| 涉及文件 | `CONTEXT.md`、`docs/adr/0002-css-token-naming.md`、`docs/adr/0008-design-token-governance.md`、`docs/verification/prism-design-token-audit-2026-06-17.md`、`src/styles/tokens.css` |
+| 风险等级 | 低 |
+| 验证命令 | `rg -n -- "ADR-0008|过渡兼容层|组件局部变量|OpenAI-only|--theme-|--compat-" CONTEXT.md docs/adr/0002-css-token-naming.md docs/adr/0008-design-token-governance.md docs/verification/prism-design-token-audit-2026-06-17.md src/styles/tokens.css` |
+| 命令结果 | 通过：关键术语均命中，证明本轮文档覆盖 ADR、上下文、审计记录和 CSS 注释 |
+| 验证命令 | `rg -n -- "OpenAI 风格设计令牌系统|TODO Batch-5" src/styles/tokens.css CONTEXT.md docs/adr/0008-design-token-governance.md docs/verification/prism-design-token-audit-2026-06-17.md` |
+| 命令结果 | 通过：无输出，退出码 1；旧 OpenAI-only 标题和过期 Batch TODO 不再存在于当前 token 治理入口 |
+| 验证命令 | `npm test -- --run src/domains/themes/themeContract.test.ts src/domains/themes/themeCss.test.ts --reporter verbose` |
+| 命令结果 | 通过：2 个测试文件，7 个测试用例；确认主题契约完整、Mermaid 配置可用、默认/暗色阅读宽度边界和用户主题 CSS 安全校验未回退 |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 证据路径 | `docs/adr/0008-design-token-governance.md`、`docs/verification/prism-design-token-audit-2026-06-17.md` |
+| 未验证风险 | 本项只做语义审计、ADR、上下文和 CSS 注释治理，没有改 token 运行时值，因此未新增截图；硬编码主题色、`!important` 覆盖、跨平台字体 fallback 和真实 shell 密度仍留给 P2-05/P2-06/P2-07 继续验证 |
+| 对应提交 | 待提交后回填 |
