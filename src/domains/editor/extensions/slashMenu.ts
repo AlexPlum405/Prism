@@ -173,8 +173,24 @@ export function getSlashMenuTrigger(linePrefix: string): { fromOffset: number; q
   };
 }
 
-export function getSlashMenuCompletionOptions(): Completion[] {
-  return getSlashMenuItems().map((item) => ({
+function normalizeSlashQuery(value: string): string {
+  return value.trim().toLocaleLowerCase();
+}
+
+function slashItemMatchesQuery(item: SlashMenuItem, query: string): boolean {
+  const normalizedQuery = normalizeSlashQuery(query);
+  if (!normalizedQuery) return true;
+
+  return [
+    item.label,
+    item.detail,
+    item.id,
+    ...item.keywords,
+  ].some((value) => normalizeSlashQuery(String(value)).includes(normalizedQuery));
+}
+
+export function getSlashMenuCompletionOptions(query = ''): Completion[] {
+  return getSlashMenuItems().filter((item) => slashItemMatchesQuery(item, query)).map((item) => ({
     apply: item.insert,
     boost: item.id.startsWith('template-') ? 0 : 1,
     detail: item.detail,
@@ -194,7 +210,8 @@ export function createSlashMenuCompletionSource() {
 
     return {
       from: slashFrom + 1,
-      options: getSlashMenuCompletionOptions().map((option) => ({
+      filter: false,
+      options: getSlashMenuCompletionOptions(trigger.query).map((option) => ({
         ...option,
         apply: (view, completion, from, to) => {
           const insert = typeof option.apply === 'string' ? option.apply : completion.label;

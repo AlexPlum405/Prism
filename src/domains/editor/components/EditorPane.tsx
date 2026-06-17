@@ -190,6 +190,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     const editorFontSource = useSettingsStore((s) => s.editorFontSource);
     const editorLineHeight = useSettingsStore((s) => s.editorLineHeight);
     const shortcutStyle = useSettingsStore((s) => s.shortcutStyle);
+    const enableMarkdownCompletions = useDocumentStore((s) => s.currentDocument?.profile?.kind !== 'text');
     const typewriterMode = useWorkspaceStore((s) => s.typewriterMode);
     const typewriterModeRef = useRef(typewriterMode);
     const workspaceLinkFiles = useMemo(
@@ -484,6 +485,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       onSelectionTextChangeRef,
       onTopLineChangeRef,
       queryWorkspaceLinkTargets,
+      enableMarkdownCompletions,
       showLineNumbers,
       t,
       typewriterModeRef,

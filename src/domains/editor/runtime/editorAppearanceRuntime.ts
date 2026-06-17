@@ -115,15 +115,19 @@ export function getTypographyExtension(
 
 export function getLinkCompletionExtension(input: {
   currentDocumentPath?: string;
+  enableMarkdownCompletions?: boolean;
   queryWorkspaceLinkTargets?: QueryWorkspaceLinkTargets;
   workspaceFiles: WorkspaceLinkFile[];
   workspaceRootPath?: string | null;
 }) {
+  const enableMarkdownCompletions = input.enableMarkdownCompletions !== false;
   return autocompletion({
     activateOnTyping: true,
-    override: [
-      createSlashMenuCompletionSource(),
-      createMarkdownLinkCompletionSource(() => input),
-    ],
+    override: enableMarkdownCompletions
+      ? [
+          createSlashMenuCompletionSource(),
+          createMarkdownLinkCompletionSource(() => input),
+        ]
+      : [],
   });
 }

@@ -7,7 +7,7 @@ import { EditorView } from '@codemirror/view';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentStore } from '../../document/store';
 import { useWorkspaceStore } from '../../workspace/store';
-import { buildWorkspaceIndex, type WorkspaceIndex } from '../../workspace/services';
+import { buildWorkspaceIndex, TEXT_DOCUMENT_PROFILE, type WorkspaceIndex } from '../../workspace/services';
 import { EditorPane } from './EditorPane';
 
 const imagePasteMock = vi.hoisted(() => ({
@@ -697,6 +697,46 @@ describe('EditorPane command event integration', () => {
         '模板：会议纪要',
         '导出设置块',
       ]));
+    });
+  });
+
+  it('keeps markdown slash snippets out of Text Document editor sessions', async () => {
+    useDocumentStore.setState({
+      currentDocument: {
+        path: '/repo/data.json',
+        profile: TEXT_DOCUMENT_PROFILE,
+        name: 'data.json',
+        content: '',
+        isDirty: false,
+        lastSavedAt: 1000,
+        lastKnownMtime: 1000,
+        lastKnownSize: 0,
+        saveStatus: 'saved',
+        saveError: null,
+        viewMode: 'edit',
+        scrollState: { editorRatio: 0, previewRatio: 0 },
+      },
+    });
+    const { changes } = await renderEditorPane('');
+
+    act(() => {
+      const view = getMountedEditorView();
+      view.dispatch({
+        changes: { from: 0, insert: '/' },
+        selection: { anchor: 1 },
+      });
+    });
+
+    await waitFor(() => {
+      expect(latestChange(changes)).toBe('/');
+    });
+
+    act(() => {
+      startCompletion(getMountedEditorView());
+    });
+
+    await waitFor(() => {
+      expect(currentCompletions(getMountedEditorView().state)).toHaveLength(0);
     });
   });
 

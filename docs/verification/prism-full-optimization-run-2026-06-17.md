@@ -47,7 +47,7 @@
 | P2-06 跨平台壳与控件密度审计 | 已完成 | 中 | 截图审查、相关 component tests |
 | P2-07 微反馈与动效节奏统一 | 已完成 | 中 | UI tests、reduced-motion 检查、build |
 | P2-08 品牌与空状态收口 | 已完成 | 低 | 文档检查、截图审查、i18n/UI tests、build |
-| P2-09 斜杠菜单第一版 | 未开始 | 中 | 新增 editor extension tests、必要 SplitView tests |
+| P2-09 斜杠菜单第一版 | 已完成 | 中 | editor extension tests、EditorPane/SplitView tests、build |
 | P2-10 选区浮动工具栏第一版 | 未开始 | 中 | EditorPane tests 或手工 smoke + 截图 |
 | P2-11 图标规范 | 未开始 | 低 | 文档检查、截图审查、相关 UI tests |
 
@@ -421,3 +421,21 @@
 | 证据路径 | `docs/verification/prism-brand-empty-state-snapshots-2026-06-18/README.md`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1200.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/miaoyan-brand-empty-about-1440.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/nocturne-brand-empty-about-1200.png`、`docs/verification/prism-brand-empty-state-snapshots-2026-06-18/nocturne-brand-empty-about-1440.png`、本文件、相关 Vitest/build 命令输出 |
 | 未验证风险 | 当前截图是 Playwright 复合 fixture，不是真实 Tauri WebView；About 中的轻量字母 mark 不是最终 app icon 渲染替代，真实 macOS/Windows/Linux app icon、系统 About 菜单、窗口 chrome 和字体 fallback 仍需后续真机 smoke；本项只收口品牌表达和空状态，不新增 AI、云、协作、插件市场或知识库工作台定位 |
 | 对应提交 | `9f5c26a150d43df3982e8d1858b26801b72ab123` |
+
+### P2-09 斜杠菜单第一版
+
+| 项 | 结果 |
+|---|---|
+| 状态 | 已完成 |
+| 变更摘要 | 保留现有 CodeMirror autocomplete 斜杠菜单，不引入 Notion block editor；将斜杠菜单过滤改成显式 query 匹配，`label`、`detail`、`id` 和 `keywords` 均参与匹配，并关闭 CodeMirror 默认过滤，保证中文界面下 `/table`、`/mer`、`/diagram`、`/callout`、`/template` 等英文 alias 稳定可用；将 Markdown 专属 completion gate 到 Markdown Document，Text Document 不再安装斜杠菜单和 Markdown link completion。 |
+| 涉及文件 | `src/domains/editor/extensions/slashMenu.ts`、`src/domains/editor/extensions/slashMenu.test.ts`、`src/domains/editor/runtime/editorAppearanceRuntime.ts`、`src/domains/editor/components/useEditorRuntimeModel.ts`、`src/domains/editor/components/EditorPane.tsx`、`src/domains/editor/components/EditorPane.integration.test.tsx` |
+| 风险等级 | 中 |
+| 验证命令 | `npm test -- --run src/domains/editor/extensions/slashMenu.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/components/SplitView.test.tsx --reporter verbose` |
+| 命令结果 | 通过：3 个测试文件，52 个测试用例；覆盖 `/` 触发条件、标准 Markdown/HTML 片段清单、CodeMirror completion 映射、英文 alias 过滤、EditorPane 中斜杠菜单可见、Text Document 不显示 Markdown 斜杠菜单、SplitView preview-only/源码定位/搜索回归；输出中有既有 React `act(...)` 警告，无失败 |
+| 验证命令 | `git diff --check` |
+| 命令结果 | 通过：无 whitespace error |
+| 验证命令 | `npm run build` |
+| 命令结果 | 通过：`tsc` 和 `vite build` 均成功；Vite 仍输出既有 chunk-size warning |
+| 证据路径 | 本文件；`src/domains/editor/extensions/slashMenu.test.ts`；`src/domains/editor/components/EditorPane.integration.test.tsx` |
+| 未验证风险 | 当前验证以 unit/integration tests 和 production build 为主，未在真实 Tauri WebView 手工按键验证 completion tooltip 的像素位置；第一版仍使用 CodeMirror completion UI，不提供 Notion 式块编辑、拖拽块、数据库属性或跨块重排；`export-settings` 仍作为 YAML Front Matter 片段保留，但它只是源码插入项，不改变导出设置产品边界 |
+| 对应提交 | 待提交后回填 |

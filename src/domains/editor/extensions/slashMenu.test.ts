@@ -62,4 +62,17 @@ describe('slashMenu', () => {
     expect(template?.apply).toContain('# 会议纪要');
     expect(template?.type).toBe('text');
   });
+
+  it('filters completion options by labels, ids, and aliases before CodeMirror filtering', () => {
+    expect(getSlashMenuCompletionOptions('table').map((option) => option.label)).toEqual(['表格']);
+    expect(getSlashMenuCompletionOptions('mer').map((option) => option.label)).toEqual(['Mermaid 图表']);
+    expect(getSlashMenuCompletionOptions('diagram').map((option) => option.label)).toEqual(['Mermaid 图表']);
+    expect(getSlashMenuCompletionOptions('callout').map((option) => option.label)).toEqual([
+      '提示块：普通',
+      '提示块：警告',
+      '提示块：技巧',
+      '提示块：重点',
+    ]);
+    expect(getSlashMenuCompletionOptions('template').some((option) => option.label === '模板：会议纪要')).toBe(true);
+  });
 });

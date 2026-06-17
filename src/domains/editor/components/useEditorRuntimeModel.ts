@@ -62,6 +62,7 @@ interface UseEditorRuntimeModelInput {
   editorLineHeight: number;
   editorRef: RefObject<HTMLElement | null>;
   editorUsesThemeFont: boolean;
+  enableMarkdownCompletions: boolean;
   isEditorDark: boolean;
   isUpdatingFromPropsRef: MutableRefObject<boolean>;
   locale: unknown;
@@ -113,6 +114,7 @@ export function useEditorRuntimeModel({
   editorLineHeight,
   editorRef,
   editorUsesThemeFont,
+  enableMarkdownCompletions,
   isEditorDark,
   isUpdatingFromPropsRef,
   locale,
@@ -223,6 +225,7 @@ export function useEditorRuntimeModel({
         closeBrackets(),
         editorLinkCompletionCompartment.of(getLinkCompletionExtension({
           currentDocumentPath,
+          enableMarkdownCompletions,
           queryWorkspaceLinkTargets,
           workspaceFiles: workspaceLinkFiles,
           workspaceRootPath,
@@ -417,12 +420,13 @@ export function useEditorRuntimeModel({
     view.dispatch({
       effects: editorLinkCompletionCompartment.reconfigure(getLinkCompletionExtension({
         currentDocumentPath,
+        enableMarkdownCompletions,
         queryWorkspaceLinkTargets,
         workspaceFiles: workspaceLinkFiles,
         workspaceRootPath,
       })),
     });
-  }, [currentDocumentPath, queryWorkspaceLinkTargets, viewRef, workspaceLinkFiles, workspaceRootPath]);
+  }, [currentDocumentPath, enableMarkdownCompletions, queryWorkspaceLinkTargets, viewRef, workspaceLinkFiles, workspaceRootPath]);
 
   const getEditorScroller = useCallback(() => {
     return viewRef.current?.scrollDOM ?? null;
