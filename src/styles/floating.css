@@ -16,7 +16,12 @@
   z-index: 2900;
   animation: prism-overlay-in var(--duration-popover) var(--ease-out) both;
 }
-body.dark .cmdk-overlay,
+body:not(.dark) .cmdk-overlay {
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+body.dark .cmdk-overlay { background: rgba(0, 0, 0, 0.36); }
 body.dark .sp-overlay,
 body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 
@@ -38,7 +43,7 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
   background: var(--c-canvas);
   border: 1px solid var(--c-fog);
   border-radius: var(--r-card);
-  box-shadow: var(--shadow-flyout);
+  box-shadow: 0 18px 44px rgba(17, 20, 24, 0.16), 0 2px 8px rgba(17, 20, 24, 0.08);
   overflow: hidden;
   animation: prism-cmdk-in var(--duration-toast) var(--ease-spring);
 }

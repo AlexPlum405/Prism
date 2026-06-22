@@ -211,13 +211,33 @@
 }
 
 :global(html[data-content-theme='miaoyan']) .brand {
-  gap: 0;
+  gap: 8px;
 }
 
-:global(html[data-content-theme='miaoyan']) .logo,
-:global(html[data-content-theme='miaoyan']) .sep,
+:global(html[data-content-theme='miaoyan']) .logo {
+  width: 14px;
+  height: 14px;
+  display: grid;
+  border: 1px solid var(--miaoyan-divider);
+  border-radius: 4px;
+  background: var(--miaoyan-panel-secondary);
+  color: var(--miaoyan-secondary-text);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+:global(html[data-content-theme='miaoyan']) .sep {
+  display: inline;
+  margin: 0 7px;
+  color: var(--miaoyan-tertiary-text);
+}
+
 :global(html[data-content-theme='miaoyan']) .app {
-  display: none;
+  display: inline;
+  color: var(--miaoyan-tertiary-text);
+  font-size: 12px;
+  flex: 0 0 auto;
 }
 
 :global(html[data-content-theme='miaoyan']) .title {
@@ -227,6 +247,7 @@
 :global(html[data-content-theme='miaoyan']) .docName {
   color: var(--miaoyan-text);
   font-weight: 400;
+  min-width: 0;
 }
 
 :global(html[data-content-theme='miaoyan']) .saveBadge {

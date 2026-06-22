@@ -13,12 +13,12 @@ use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
 
 const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown"];
 const TEXT_DOCUMENT_EXTENSIONS: &[&str] = &[
-    "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv", "tsv",
-    "log", "ini", "conf", "env",
+    "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv", "tsv", "log",
+    "ini", "conf", "env",
 ];
 const DOCUMENT_EXTENSIONS: &[&str] = &[
-    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
-    "csv", "tsv", "log", "ini", "conf", "env",
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv",
+    "tsv", "log", "ini", "conf", "env",
 ];
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -717,6 +717,60 @@ fn strip_target_metadata(target: &str) -> &str {
         .trim()
 }
 
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn percent_decode_target_path(target: &str) -> Option<String> {
+    let bytes = target.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    let mut changed = false;
+
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            let Some(high) = bytes.get(index + 1).and_then(|byte| hex_value(*byte)) else {
+                return None;
+            };
+            let Some(low) = bytes.get(index + 2).and_then(|byte| hex_value(*byte)) else {
+                return None;
+            };
+            decoded.push((high << 4) | low);
+            index += 3;
+            changed = true;
+        } else {
+            decoded.push(bytes[index]);
+            index += 1;
+        }
+    }
+
+    if changed {
+        String::from_utf8(decoded).ok()
+    } else {
+        None
+    }
+}
+
+fn target_path_variants(target: &str) -> Vec<String> {
+    let stripped = strip_target_metadata(target);
+    if stripped.is_empty() {
+        return Vec::new();
+    }
+
+    let mut variants = vec![stripped.to_string()];
+    if let Some(decoded) = percent_decode_target_path(stripped) {
+        if decoded != stripped {
+            variants.push(decoded);
+        }
+    }
+    variants
+}
+
 fn is_external_target(target: &str) -> bool {
     target.starts_with("//") || target.contains("://")
 }
@@ -746,26 +800,29 @@ fn resolve_markdown_link(
     target: &str,
     documents: &[WorkspaceIndexedDocumentDto],
 ) -> Option<String> {
-    let target = strip_target_metadata(target);
-    if target.is_empty() || is_external_target(&target) {
+    let stripped = strip_target_metadata(target);
+    if stripped.is_empty() || is_external_target(stripped) {
         return None;
     }
     let source_dir = Path::new(source_path)
         .parent()
         .map(path_to_string)
         .unwrap_or_default();
-    let resolved = if target.starts_with('/') {
-        normalize_path_parts(target)
-    } else {
-        normalize_path_parts(&path_to_string(&Path::new(&source_dir).join(target)))
-    };
-    let mut candidates = vec![resolved.clone()];
-    if !MARKDOWN_EXTENSIONS
-        .iter()
-        .any(|extension| resolved.to_lowercase().ends_with(&format!(".{extension}")))
-    {
-        candidates.push(format!("{resolved}.md"));
-        candidates.push(format!("{resolved}.markdown"));
+    let mut candidates = Vec::new();
+    for target in target_path_variants(target) {
+        let resolved = if target.starts_with('/') {
+            normalize_path_parts(&target)
+        } else {
+            normalize_path_parts(&path_to_string(&Path::new(&source_dir).join(&target)))
+        };
+        candidates.push(resolved.clone());
+        if !MARKDOWN_EXTENSIONS
+            .iter()
+            .any(|extension| resolved.to_lowercase().ends_with(&format!(".{extension}")))
+        {
+            candidates.push(format!("{resolved}.md"));
+            candidates.push(format!("{resolved}.markdown"));
+        }
     }
 
     documents
@@ -793,14 +850,23 @@ fn wiki_aliases(document: &WorkspaceIndexedDocumentDto) -> Vec<String> {
 }
 
 fn resolve_wiki_link(target: &str, documents: &[WorkspaceIndexedDocumentDto]) -> Option<String> {
-    let target = strip_markdown_extension(strip_target_metadata(target));
-    if target.is_empty() || is_external_target(&target) {
+    let stripped = strip_target_metadata(target);
+    if stripped.is_empty() || is_external_target(stripped) {
         return None;
     }
-    let normalized_target = normalize_path(&normalize_path_parts(&target));
+    let normalized_targets = target_path_variants(target)
+        .into_iter()
+        .map(|target| strip_markdown_extension(&target))
+        .map(|target| normalize_path(&normalize_path_parts(&target)))
+        .collect::<Vec<_>>();
     documents
         .iter()
-        .find(|document| wiki_aliases(document).contains(&normalized_target))
+        .find(|document| {
+            let aliases = wiki_aliases(document);
+            normalized_targets
+                .iter()
+                .any(|target| aliases.contains(target))
+        })
         .map(|document| document.path.clone())
 }
 
@@ -846,7 +912,12 @@ fn build_document(
         } else {
             parsed.front_matter.title.clone()
         };
-        (parsed.front_matter, headings, parse_links(&parsed.body), title)
+        (
+            parsed.front_matter,
+            headings,
+            parse_links(&parsed.body),
+            title,
+        )
     } else {
         (
             empty_front_matter(),
@@ -2149,7 +2220,10 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["docs/beta.md", "docs/alpha.md", "docs/gamma.md"]
         );
-        assert!(!graph.nodes.iter().any(|node| node.relative_path == "docs/query.sql"));
+        assert!(!graph
+            .nodes
+            .iter()
+            .any(|node| node.relative_path == "docs/query.sql"));
         assert_eq!(
             graph
                 .edges
@@ -2182,6 +2256,73 @@ mod tests {
         );
         assert_eq!(filtered.nodes[0].relative_path, "docs/gamma.md");
         assert!(filtered.edges.is_empty());
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn resolves_url_encoded_markdown_links_in_relation_graph() {
+        let root = temp_dir("encoded-relation");
+        let current = root.join("Prism UI Audit.md");
+        let linked = root.join("Linked Note.md");
+        fs::write(
+            &current,
+            "# Prism UI Audit\n\nThis links to [Linked Note](Linked%20Note.md).",
+        )
+        .expect("write current");
+        fs::write(&linked, "# Linked Note").expect("write linked");
+
+        let index = build_workspace_index(BuildWorkspaceIndexInput {
+            root_path: path_to_string(&root),
+            current_document_override: None,
+            recent_files: vec![],
+        })
+        .expect("build index");
+        let current_path = path_to_string(&current.canonicalize().expect("canonical current"));
+        let linked_path = path_to_string(&linked.canonicalize().expect("canonical linked"));
+        let current_document = index
+            .documents
+            .iter()
+            .find(|document| document.path == current_path)
+            .expect("current document");
+
+        assert_eq!(current_document.links[0].target, "Linked%20Note.md");
+        assert_eq!(
+            current_document.links[0].resolved_path,
+            Some(linked_path.clone())
+        );
+        assert_eq!(
+            get_workspace_index_backlinks(&index, &linked_path)[0].path,
+            current_path
+        );
+
+        let graph = build_relation_graph(
+            &index,
+            BuildRelationGraphInput {
+                current_path: Some(current_path.clone()),
+                depth: 1,
+                limit: 80,
+                query: None,
+                scope: RelationGraphScopeDto::Current,
+            },
+        );
+
+        assert_eq!(
+            graph
+                .nodes
+                .iter()
+                .map(|node| node.relative_path.as_str())
+                .collect::<Vec<_>>(),
+            ["Prism UI Audit.md", "Linked Note.md"]
+        );
+        assert_eq!(
+            graph
+                .edges
+                .iter()
+                .map(|edge| edge.id.as_str())
+                .collect::<Vec<_>>(),
+            [normalize_path(&format!("{current_path}->{linked_path}"))]
+        );
 
         let _ = fs::remove_dir_all(root);
     }

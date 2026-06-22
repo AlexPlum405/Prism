@@ -3,7 +3,7 @@ import { DocumentView } from '../../domains/document/components/DocumentView';
 import { Sidebar } from '../../domains/workspace/components/Sidebar';
 import { StatusBar } from '../../domains/workspace/components/StatusBar';
 import type { FileNode, SidebarTab } from '../../domains/workspace/types';
-import type { WorkspaceIndex, WritingStats } from '../../domains/workspace/services';
+import type { DocumentProfileKind, WorkspaceIndex, WritingStats } from '../../domains/workspace/services';
 import { ContextMenu, type ContextMenuItem } from '../../components/shell/ContextMenu';
 import type { ExportFeedbackState } from '../../hooks/useExportTaskUi';
 
@@ -20,6 +20,7 @@ interface WorkspaceControllerProps {
   backlinkCount: number;
   cursor: { line: number; column: number };
   documentContent: string;
+  documentProfileKind?: DocumentProfileKind;
   documentView?: ReactNode;
   exportFeedback: ExportFeedbackState | null;
   exportProgress: string | null;
@@ -67,6 +68,7 @@ export function WorkspaceController({
   backlinkCount,
   cursor,
   documentContent,
+  documentProfileKind,
   documentView,
   exportFeedback,
   exportProgress,
@@ -168,6 +170,7 @@ export function WorkspaceController({
             exportFeedback={exportFeedback}
             exportProgress={exportProgress}
             exportProgressInBackground={exportProgressInBackground}
+            documentProfileKind={documentProfileKind}
             onShowExportFailure={onShowExportFailure}
             onShowExportProgress={onShowExportProgress}
           />

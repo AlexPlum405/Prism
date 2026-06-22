@@ -6,8 +6,8 @@ use tauri_plugin_fs::FsExt;
 use crate::{canonicalize_existing_path, domain::path};
 
 const DOCUMENT_EXTENSIONS: &[&str] = &[
-    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
-    "csv", "tsv", "log", "ini", "conf", "env",
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv",
+    "tsv", "log", "ini", "conf", "env",
 ];
 
 fn extension_for_path(path: &Path) -> Option<String> {

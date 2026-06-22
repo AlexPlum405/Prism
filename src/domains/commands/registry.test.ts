@@ -84,7 +84,10 @@ import {
 import { DEFAULT_SETTINGS } from '../settings/types';
 import { builtInThemeContracts } from '../themes';
 import { __themeRegistryTesting } from '../themes/themeRegistry';
-import { buildWorkspaceIndex } from '../workspace/services';
+import {
+  buildWorkspaceIndex,
+  TEXT_DOCUMENT_PROFILE,
+} from '../workspace/services';
 
 function createCommandContext(overrides: Partial<CommandContext> = {}): CommandContext {
   return {
@@ -751,9 +754,68 @@ describe('command registry', () => {
       documentStore: context.documentStore,
     }))['导出'];
     expect(noHistoryExportMenu).toEqual(expect.arrayContaining([
-      expect.objectContaining({ action: 'exportWithPrevious', disabled: true }),
-      expect.objectContaining({ action: 'exportOverwritePrevious', disabled: true }),
+      expect.objectContaining({
+        action: 'exportWithPrevious',
+        disabled: true,
+        disabledReason: '暂无上次导出记录',
+      }),
+      expect.objectContaining({
+        action: 'exportOverwritePrevious',
+        disabled: true,
+        disabledReason: '暂无上次导出记录',
+      }),
       expect.objectContaining({ action: 'exportSettings' }),
+    ]));
+  });
+
+  it('explains why export actions are disabled for text files and empty windows', () => {
+    const textContext = createCommandContext({
+      documentStore: {
+        ...createCommandContext().documentStore,
+        currentDocument: {
+          path: '/tmp/query.sql',
+          name: 'query.sql',
+          profile: TEXT_DOCUMENT_PROFILE,
+          content: 'select 1;',
+          isDirty: false,
+          lastSavedAt: 0,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          saveStatus: 'saved',
+          saveError: null,
+          viewMode: 'edit',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+        },
+      },
+    });
+    const textExportMenu = getMenuSections(textContext)['导出'];
+
+    expect(textExportMenu).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        action: 'exportPdf',
+        disabled: true,
+        disabledReason: '仅 Markdown 文稿可导出',
+      }),
+      expect.objectContaining({
+        action: 'exportWithPrevious',
+        disabled: true,
+        disabledReason: '仅 Markdown 文稿可导出',
+      }),
+      expect.objectContaining({ action: 'exportSettings', disabled: false }),
+    ]));
+
+    const emptyExportMenu = getMenuSections(createCommandContext())['导出'];
+    expect(emptyExportMenu).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        action: 'exportPdf',
+        disabled: true,
+        disabledReason: '先打开 Markdown 文稿',
+      }),
+      expect.objectContaining({
+        action: 'exportWithPrevious',
+        disabled: true,
+        disabledReason: '先打开 Markdown 文稿',
+      }),
     ]));
   });
 

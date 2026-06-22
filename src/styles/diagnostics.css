@@ -1598,6 +1598,8 @@ body.dark .prism-toast::after {
   color: var(--c-void);
   cursor: pointer;
   user-select: none;
+  min-height: 32px;
+  box-sizing: border-box;
   transition:
     background var(--duration-hover) var(--ease-out),
     color var(--duration-hover) var(--ease-out);
@@ -1626,10 +1628,29 @@ body.dark .custom-context-menu .menu-item.danger { color: #ff6b5e; }
   color: var(--c-void);
   flex-shrink: 0;
 }
-.custom-context-menu .menu-label {
+.custom-context-menu .menu-label-wrap {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.custom-context-menu .menu-label {
+  min-width: 0;
   font-size: 13px;
   color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.custom-context-menu .menu-disabled-reason {
+  min-width: 0;
+  color: color-mix(in srgb, var(--c-graphite) 78%, var(--c-ash));
+  font-size: 11px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .custom-context-menu .menu-shortcut {
   font-family: var(--font-mono);

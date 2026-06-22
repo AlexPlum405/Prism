@@ -1,0 +1,9 @@
+{
+  "purpose": "Visual audit sample for Prism Text Document support",
+  "checks": [
+    "text document chrome",
+    "Markdown-only affordance suppression",
+    "source typography",
+    "status bar behavior"
+  ]
+}

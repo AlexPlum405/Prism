@@ -65,6 +65,29 @@
   gap: 2px;
 }
 
+.documentType {
+  display: inline-flex;
+  align-items: center;
+  max-width: 116px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--c-void) 10%, var(--c-fog));
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-chalk));
+  color: var(--c-graphite);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.documentTypeText {
+  color: color-mix(in srgb, var(--c-void) 86%, var(--c-graphite));
+  border-color: color-mix(in srgb, var(--c-void) 16%, var(--c-fog));
+}
+
 .exportStatus {
   display: inline-flex;
   align-items: center;
@@ -350,6 +373,26 @@ button.exportStatus:hover {
 :global(html[data-content-theme='miaoyan']) .left,
 :global(html[data-content-theme='miaoyan']) .right {
   gap: 6px;
+}
+
+:global(html[data-content-theme='miaoyan']) .documentType {
+  height: 19px;
+  max-width: 108px;
+  padding: 0 6px;
+  border-color: var(--miaoyan-divider);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--miaoyan-tertiary-text);
+  font-family: var(--miaoyan-font);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+
+:global(html[data-content-theme='miaoyan']) .documentTypeText {
+  border-color: color-mix(in srgb, var(--miaoyan-text) 12%, var(--miaoyan-divider));
+  background: var(--miaoyan-panel-secondary);
+  color: var(--miaoyan-secondary-text);
 }
 
 :global(html[data-content-theme='miaoyan']) .exportStatus {

@@ -4,6 +4,7 @@ import { extractDocumentLinks, resolveDocumentLinkTarget } from './documentLinks
 const workspaceFiles = [
   { path: '/repo/docs/manual-test.md', name: 'manual-test.md', title: '人工测试手册' },
   { path: '/repo/docs/linking-note.md', name: 'linking-note.md' },
+  { path: '/repo/docs/Linked Note.md', name: 'Linked Note.md' },
   { path: '/repo/README.md', name: 'README.md' },
 ];
 
@@ -46,6 +47,26 @@ describe('resolveDocumentLinkTarget', () => {
       workspaceRoot: '/repo',
       workspaceFiles,
     })).toEqual({ path: '/repo/docs/manual-test.md' });
+  });
+
+  it('resolves url-encoded markdown link paths', () => {
+    expect(resolveDocumentLinkTarget({
+      kind: 'markdown',
+      target: 'Linked%20Note.md',
+      sourcePath: '/repo/docs/manual-test.md',
+      workspaceRoot: '/repo',
+      workspaceFiles,
+    })).toEqual({ path: '/repo/docs/Linked Note.md' });
+  });
+
+  it('resolves url-encoded wiki link aliases without losing raw aliases', () => {
+    expect(resolveDocumentLinkTarget({
+      kind: 'wiki',
+      target: 'Linked%20Note',
+      sourcePath: '/repo/docs/manual-test.md',
+      workspaceRoot: '/repo',
+      workspaceFiles,
+    })).toEqual({ path: '/repo/docs/Linked Note.md' });
   });
 
   it('ignores external links', () => {

@@ -10,6 +10,7 @@ export interface ContextMenuItem {
   type?: 'separator' | 'item';
   danger?: boolean;
   disabled?: boolean;
+  disabledReason?: string;
   children?: ContextMenuItem[];
   hidden?: boolean;
 }
@@ -120,6 +121,7 @@ function ContextMenuItems({
             role="menuitem"
             aria-haspopup={hasSubmenu ? true : undefined}
             aria-disabled={item.disabled ? true : undefined}
+            title={item.disabledReason}
             onClick={(e) => {
               e.stopPropagation();
               if (item.disabled || hasSubmenu) return;
@@ -131,7 +133,12 @@ function ContextMenuItems({
               {item.icon}
               {item.checked && <span className="check-mark" />}
             </div>
-            <span className="menu-label">{item.label}</span>
+            <span className="menu-label-wrap">
+              <span className="menu-label">{item.label}</span>
+              {item.disabled && item.disabledReason ? (
+                <span className="menu-disabled-reason">{item.disabledReason}</span>
+              ) : null}
+            </span>
             {item.shortcut && <span className="menu-shortcut">{item.shortcut}</span>}
             {hasSubmenu && <span className="menu-submenu-arrow">›</span>}
           </div>

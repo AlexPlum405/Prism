@@ -157,18 +157,9 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
 
     const { stem, ext } = stripExtension(node.name);
     return (
-      <div
-        style={{
-          fontSize: '13px',
-          fontWeight: isActive ? 600 : 500,
-          color: isActive ? 'var(--text-primary)' : 'var(--text-primary)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {stem}
-        <span style={{ opacity: 0.4, fontWeight: 400 }}>{ext}</span>
+      <div className={`file-tree-file-name ${isActive ? 'is-active' : ''}`}>
+        <span className="file-tree-file-stem">{stem}</span>
+        <span className="file-tree-file-ext">{ext}</span>
       </div>
     );
   };
@@ -211,18 +202,7 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
         )}
 
         {node.preview && (
-          <div
-            className="file-tree-preview"
-            style={{
-              fontSize: '11px',
-              color: isActive ? 'var(--text-secondary)' : 'var(--text-tertiary)',
-              lineHeight: '1.45',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
+          <div className="file-tree-preview">
             {node.preview}
           </div>
         )}
@@ -322,6 +302,26 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
         .file-tree-item:hover {
           background: var(--bg-hover);
         }
+        .file-tree-file-name {
+          min-width: 0;
+          overflow: hidden;
+          color: var(--text-primary);
+          font-size: 13px;
+          font-weight: 500;
+          line-height: 1.25;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .file-tree-file-name.is-active {
+          font-weight: 600;
+        }
+        .file-tree-file-stem {
+          min-width: 0;
+        }
+        .file-tree-file-ext {
+          color: var(--text-tertiary);
+          font-weight: 400;
+        }
         .file-tree-item:active {
           transform: scale(0.98);
           background: var(--bg-active);
@@ -383,9 +383,22 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
         .file-tree-folder-label {
           font-size: 10.5px;
           color: var(--text-tertiary);
+          line-height: 1.25;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        .file-tree-preview {
+          display: -webkit-box;
+          overflow: hidden;
+          color: var(--text-tertiary);
+          font-size: 11px;
+          line-height: 1.45;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+        .file-tree-item.is-active .file-tree-preview {
+          color: var(--text-secondary);
         }
         .file-tree-empty {
           padding: 48px 16px;

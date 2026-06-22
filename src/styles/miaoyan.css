@@ -616,9 +616,9 @@ html[data-content-theme='miaoyan'] .modal-overlay {
 }
 
 html[data-content-theme='miaoyan'] .cmdk-overlay {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(1.5px);
-  -webkit-backdrop-filter: blur(1.5px);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
 }
 
 html[data-content-theme='miaoyan'] .cmdk,
@@ -665,7 +665,7 @@ html[data-content-theme='miaoyan'] .prism-callout-picker__description {
 html[data-content-theme='miaoyan'] .cmdk {
   top: 12%;
   max-width: 480px;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.10), 0 2px 7px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09), 0 1px 5px rgba(0, 0, 0, 0.05);
 }
 
 html[data-content-theme='miaoyan'] .cmdk-titlebar {
@@ -873,6 +873,13 @@ html[data-content-theme='miaoyan'] .custom-context-menu .menu-shortcut {
   font-family: var(--miaoyan-code-font);
 }
 
+html[data-content-theme='miaoyan'] .custom-context-menu .menu-disabled-reason {
+  color: var(--miaoyan-tertiary-text);
+  font-family: var(--miaoyan-font);
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
 html[data-content-theme='miaoyan'] .modal-footer .pill-ghost,
 html[data-content-theme='miaoyan'] .modal-footer .pill-filled {
   min-height: 28px;
@@ -936,6 +943,12 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-shortcut {
   color: var(--theme-secondary-text);
   font-family: var(--theme-code-font);
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-disabled-reason {
+  color: var(--theme-tertiary-text);
+  font-size: 11px;
+  letter-spacing: 0.2px;
 }
 
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-submenu-arrow,

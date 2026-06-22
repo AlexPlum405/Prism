@@ -65,6 +65,20 @@ function stripTargetMetadata(target: string) {
   return withoutQuery.trim();
 }
 
+function decodeTargetPath(target: string) {
+  try {
+    return decodeURIComponent(target);
+  } catch {
+    return target;
+  }
+}
+
+function targetPathVariants(target: string) {
+  const stripped = stripTargetMetadata(target);
+  const decoded = decodeTargetPath(stripped);
+  return [...new Set([stripped, decoded])].filter(Boolean);
+}
+
 function isExternalTarget(target: string) {
   return URL_SCHEME_RE.test(target) || target.startsWith('//');
 }
@@ -79,22 +93,21 @@ function getWorkspaceRelativePath(path: string, rootPath?: string | null) {
 }
 
 function markdownCandidates(input: ResolveDocumentLinkInput) {
-  const target = stripTargetMetadata(input.target);
-  if (!target || isExternalTarget(target)) return [];
+  if (!stripTargetMetadata(input.target) || isExternalTarget(input.target)) return [];
 
   const baseDir = input.sourcePath
     ? dirname(input.sourcePath)
     : input.workspaceRoot ?? '';
-  const resolved = target.startsWith('/')
-    ? normalizePathParts(target)
-    : normalizePathParts(joinPath(baseDir, target));
-  const candidates = [resolved];
+  const candidates = targetPathVariants(input.target).flatMap((target) => {
+    const resolved = target.startsWith('/')
+      ? normalizePathParts(target)
+      : normalizePathParts(joinPath(baseDir, target));
+    return MARKDOWN_FILE_RE.test(resolved)
+      ? [resolved]
+      : [resolved, `${resolved}.md`, `${resolved}.markdown`];
+  });
 
-  if (!MARKDOWN_FILE_RE.test(resolved)) {
-    candidates.push(`${resolved}.md`, `${resolved}.markdown`);
-  }
-
-  return candidates;
+  return [...new Set(candidates)];
 }
 
 function wikiAliases(file: DocumentLinkFile, rootPath?: string | null) {
@@ -157,12 +170,13 @@ function resolveMarkdownLink(input: ResolveDocumentLinkInput): ResolvedDocumentL
 }
 
 function resolveWikiLink(input: ResolveDocumentLinkInput): ResolvedDocumentLink | null {
-  const target = stripTargetMetadata(input.target);
-  if (!target || isExternalTarget(target)) return null;
+  if (!stripTargetMetadata(input.target) || isExternalTarget(input.target)) return null;
 
-  const normalizedTarget = normalizePathForCompare(normalizePathParts(stripMarkdownExtension(target)));
   const lookup = getDocumentLinkLookup(input.workspaceFiles, input.workspaceRoot);
-  const match = lookup.byAlias.get(normalizedTarget);
+  const match = targetPathVariants(input.target)
+    .map((target) => normalizePathForCompare(normalizePathParts(stripMarkdownExtension(target))))
+    .map((target) => lookup.byAlias.get(target))
+    .find(Boolean);
   return match ? { path: match.path } : null;
 }
 

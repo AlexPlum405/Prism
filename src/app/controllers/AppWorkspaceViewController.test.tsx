@@ -218,6 +218,7 @@ describe('AppWorkspaceViewController', () => {
 
     expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
       hasDocumentRelations: false,
+      documentProfileKind: 'text',
     });
   });
 

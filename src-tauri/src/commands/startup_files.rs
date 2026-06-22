@@ -34,10 +34,11 @@ pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
 
     #[cfg(target_os = "macos")]
     if let tauri::RunEvent::Opened { urls } = event {
-        let paths = filter_existing_startup_file_paths(urls
-            .iter()
-            .filter_map(|u| u.to_file_path().ok())
-            .filter_map(|p| p.to_str().map(|s| s.to_string())));
+        let paths = filter_existing_startup_file_paths(
+            urls.iter()
+                .filter_map(|u| u.to_file_path().ok())
+                .filter_map(|p| p.to_str().map(|s| s.to_string())),
+        );
         if !paths.is_empty() {
             let state: State<PendingFiles> = app.state();
             state.0.lock().unwrap().extend(paths.clone());
@@ -47,8 +48,8 @@ pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
 }
 
 const DOCUMENT_EXTENSIONS: &[&str] = &[
-    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
-    "csv", "tsv", "log", "ini", "conf", "env",
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv",
+    "tsv", "log", "ini", "conf", "env",
 ];
 
 fn extension_for_path(path: &Path) -> Option<String> {

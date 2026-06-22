@@ -7,8 +7,8 @@ use super::error::{PrismCommandError, PrismResult};
 use super::path::{canonicalize_existing_path, ensure_file, path_to_string};
 
 const DOCUMENT_EXTENSIONS: &[&str] = &[
-    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
-    "csv", "tsv", "log", "ini", "conf", "env",
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv",
+    "tsv", "log", "ini", "conf", "env",
 ];
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

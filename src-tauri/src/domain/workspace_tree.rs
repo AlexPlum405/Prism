@@ -9,8 +9,8 @@ use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
 const DEFAULT_MAX_DEPTH: usize = 8;
 const PREVIEW_MAX_CHARS: usize = 100;
 const DOCUMENT_EXTENSIONS: &[&str] = &[
-    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml",
-    "csv", "tsv", "log", "ini", "conf", "env",
+    "md", "markdown", "txt", "text", "sql", "json", "jsonc", "yaml", "yml", "toml", "xml", "csv",
+    "tsv", "log", "ini", "conf", "env",
 ];
 #[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(rename_all = "camelCase")]

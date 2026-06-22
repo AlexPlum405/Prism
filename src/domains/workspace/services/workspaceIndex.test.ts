@@ -22,6 +22,7 @@ const fileTree: FileNode[] = [
     children: [
       { path: '/repo/docs/guide.md', name: 'guide.md', kind: 'file', modifiedAt: 20, size: 120 },
       { path: '/repo/docs/api.md', name: 'api.md', kind: 'file', modifiedAt: 30, size: 160 },
+      { path: '/repo/docs/Linked Note.md', name: 'Linked Note.md', kind: 'file', modifiedAt: 32, size: 140 },
       { path: '/repo/docs/query.sql', name: 'query.sql', kind: 'file', modifiedAt: 35, size: 80 },
       { path: '/repo/docs/image.png', name: 'image.png', kind: 'file' },
     ],
@@ -47,7 +48,7 @@ describe('workspace index', () => {
             'status: draft',
             '---',
             '# 开始',
-            '阅读 [API](api.md) 和 [[index]]。',
+            '阅读 [API](api.md)、[Linked Note](Linked%20Note.md) 和 [[index]]。',
           ].join('\n'),
         },
         {
@@ -56,6 +57,10 @@ describe('workspace index', () => {
             '# API 设计',
             '被 guide 引用。',
           ].join('\n'),
+        },
+        {
+          path: '/repo/docs/Linked Note.md',
+          content: '# Linked Note',
         },
         {
           path: '/repo/docs/query.sql',
@@ -79,6 +84,7 @@ describe('workspace index', () => {
     expect(index.documents.map((document) => document.relativePath)).toEqual([
       'docs/api.md',
       'docs/guide.md',
+      'docs/Linked Note.md',
       'docs/query.sql',
       'index.md',
     ]);
@@ -113,6 +119,11 @@ describe('workspace index', () => {
         resolvedPath: '/repo/docs/api.md',
       }),
       expect.objectContaining({
+        kind: 'markdown',
+        target: 'Linked%20Note.md',
+        resolvedPath: '/repo/docs/Linked Note.md',
+      }),
+      expect.objectContaining({
         kind: 'wiki',
         target: 'index',
         resolvedPath: '/repo/index.md',
@@ -136,6 +147,7 @@ describe('workspace index', () => {
       hasRelations: true,
       outgoingLinks: [
         expect.objectContaining({ resolvedPath: '/repo/docs/api.md' }),
+        expect.objectContaining({ resolvedPath: '/repo/docs/Linked Note.md' }),
         expect.objectContaining({ resolvedPath: '/repo/index.md' }),
       ],
     });
@@ -196,6 +208,7 @@ describe('workspace index', () => {
       'index.md',
       'docs/api.md',
       'docs/query.sql',
+      'docs/Linked Note.md',
       'docs/guide.md',
     ]);
     expect(rankWorkspaceIndexDocuments(index, '入门')[0]).toMatchObject({

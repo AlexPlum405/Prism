@@ -54,6 +54,34 @@ describe('StatusBar', () => {
     expect(screen.getByText('选区 6 字 · 1:1')).toBeInTheDocument();
   });
 
+  it('shows the current document type without changing writing stats', () => {
+    const { rerender } = render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 3, column: 5 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        documentProfileKind="markdown"
+      />,
+    );
+
+    expect(screen.getByText('Markdown 文稿')).toHaveAttribute('title', '当前文档类型：Markdown 文稿');
+    expect(screen.getByText('60 字 · 3:5')).toBeInTheDocument();
+
+    rerender(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 3, column: 5 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        documentProfileKind="text"
+      />,
+    );
+
+    expect(screen.getByText('文本文件')).toHaveAttribute('title', '当前文档类型：文本文件');
+    expect(screen.queryByText('Markdown 文稿')).not.toBeInTheDocument();
+  });
+
   it('aggregates actionable diagnostics as ERROR count', () => {
     const onDiagnosticsClick = vi.fn();
     render(

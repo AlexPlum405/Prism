@@ -54,6 +54,24 @@ function localizeMenuLabel(label: string) {
   return key ? t(key) : label;
 }
 
+function getCommandDisabledReason(command: CommandId, context: CommandContext): string | undefined {
+  const currentDocument = context.documentStore.currentDocument;
+  const isExportCommand = command === 'exportPdf'
+    || command === 'exportDocx'
+    || command === 'exportHtml'
+    || command === 'exportPng';
+  const isPreviousExportCommand = command === 'exportWithPrevious'
+    || command === 'exportOverwritePrevious';
+
+  if (!isExportCommand && !isPreviousExportCommand) return undefined;
+
+  if (!currentDocument) return t('menu.disabled.noDocumentForExport');
+  if (currentDocument.profile?.supportsExport === false) return t('menu.disabled.markdownExportOnly');
+  if (isPreviousExportCommand) return t('menu.disabled.noPreviousExport');
+
+  return undefined;
+}
+
 const menuModel: MenuModel = {
   file: [
     { command: 'new' },
@@ -289,12 +307,14 @@ function toMenuItem(
   if (!('command' in item)) return null;
 
   const definition = getCommandDefinition(item.command);
+  const disabled = !isCommandEnabled(definition.id, context);
   return {
     label: item.label ? localizeMenuLabel(item.label) : getLocalizedCommandLabel(definition.id),
     action: definition.id,
     shortcut: getPrimaryShortcutLabel(definition.id, displayStyle),
     checked: definition.checked?.(context) ?? false,
-    disabled: !isCommandEnabled(definition.id, context),
+    disabled,
+    disabledReason: disabled ? getCommandDisabledReason(definition.id, context) : undefined,
   };
 }
 

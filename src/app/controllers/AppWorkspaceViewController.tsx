@@ -104,6 +104,7 @@ export function AppWorkspaceViewController({
       backlinkCount={backlinkCount}
       cursor={cursor}
       documentContent={currentDocument?.content ?? ''}
+      documentProfileKind={currentDocument?.profile?.kind}
       documentView={(
         <DocumentView
           key={currentDocument?.path || 'new-doc'}

@@ -61,12 +61,18 @@ export function MenuDropdown({ items, onAction, onClose }: MenuDropdownProps) {
               role="menuitem"
               aria-disabled={item.disabled ? true : undefined}
               aria-haspopup={item.submenu || submenuItems.length > 0 ? true : undefined}
+              title={item.disabledReason}
               onClick={() => handleItemClick(item)}
             >
               <div className={styles.check}>
                 {item.checked ? <CheckIcon /> : null}
               </div>
-              <span className={styles.label}>{item.label}</span>
+              <span className={styles.labelWrap}>
+                <span className={styles.label}>{item.label}</span>
+                {item.disabled && item.disabledReason ? (
+                  <span className={styles.disabledReason}>{item.disabledReason}</span>
+                ) : null}
+              </span>
               <span className={styles.meta}>
                 {item.shortcut ? (
                   <span className={styles.shortcut}>{item.shortcut}</span>
@@ -92,12 +98,18 @@ export function MenuDropdown({ items, onAction, onClose }: MenuDropdownProps) {
                       className={childClassName}
                       role="menuitem"
                       aria-disabled={child.disabled ? true : undefined}
+                      title={child.disabledReason}
                       onClick={() => handleItemClick(child)}
                     >
                       <div className={styles.check}>
                         {child.checked ? <CheckIcon /> : null}
                       </div>
-                      <span className={styles.label}>{child.label}</span>
+                      <span className={styles.labelWrap}>
+                        <span className={styles.label}>{child.label}</span>
+                        {child.disabled && child.disabledReason ? (
+                          <span className={styles.disabledReason}>{child.disabledReason}</span>
+                        ) : null}
+                      </span>
                       <span className={styles.meta}>
                         {child.shortcut ? <span className={styles.shortcut}>{child.shortcut}</span> : null}
                       </span>

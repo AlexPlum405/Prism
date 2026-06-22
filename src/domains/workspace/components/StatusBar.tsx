@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import styles from './StatusBar.module.css';
 import { useWorkspaceStore } from '../../workspace/store';
-import type { WritingStats } from '../services';
+import type { DocumentProfileKind, WritingStats } from '../services';
 import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
@@ -88,6 +88,7 @@ interface StatusBarProps {
   exportFeedback?: ExportFeedbackState | null;
   exportProgress?: string | null;
   exportProgressInBackground?: boolean;
+  documentProfileKind?: DocumentProfileKind;
   onShowExportFailure?: () => void;
   onShowExportProgress?: () => void;
 }
@@ -119,6 +120,7 @@ export function StatusBar({
   exportFeedback = null,
   exportProgress = null,
   exportProgressInBackground = false,
+  documentProfileKind,
   onShowExportFailure,
   onShowExportProgress,
 }: StatusBarProps) {
@@ -141,6 +143,9 @@ export function StatusBar({
     line: cursor.line,
     column: cursor.column,
   });
+  const documentTypeLabel = documentProfileKind
+    ? t(documentProfileKind === 'text' ? 'status.documentType.text' : 'status.documentType.markdown')
+    : null;
 
   const rootName = useMemo(() => {
     if (!rootPath) return 'Documents';
@@ -192,6 +197,14 @@ export function StatusBar({
         </div>
 
         <div className={styles.right}>
+          {documentTypeLabel && (
+            <span
+              className={`${styles.documentType} ${documentProfileKind === 'text' ? styles.documentTypeText : ''}`}
+              title={t('status.documentTypeTitle', { type: documentTypeLabel })}
+            >
+              {documentTypeLabel}
+            </span>
+          )}
           {linkIssueCount > 0 && (
             <button
               className={styles.diagnostic}
