@@ -103,7 +103,6 @@ export function TitleBar({
       {IS_MACOS ? (
         <>
           <div className={styles.brand}>
-            <div className={styles.logo}>P</div>
             <div className={styles.titleGroup}>
               <div className={styles.title}>
                 <span className={styles.docName}>{displayDocName}</span>

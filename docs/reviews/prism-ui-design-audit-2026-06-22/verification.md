@@ -27,6 +27,7 @@
 | `12-sql-export-disabled-reasons.png` | SQL 文本文件导出菜单显示“仅 Markdown 文稿可导出” |
 | `13-json-text-document-statusbar-no-graph.png` | JSON 文本文件不显示图谱按钮 |
 | `14-markdown-export-enabled-menu.png` | Markdown 文稿导出格式可用，未显示“仅 Markdown 文稿可导出” |
+| `15-titlebar-no-p-icon.png` | 标题栏文件名前不再显示 `P` 图标 |
 
 ## 本轮重点确认
 

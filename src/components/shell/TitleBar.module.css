@@ -30,19 +30,6 @@
   pointer-events: none;
 }
 
-.logo {
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--c-void);
-  color: var(--c-canvas);
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
 .titleGroup {
   display: flex;
   flex-direction: column;
@@ -214,19 +201,6 @@
   gap: 8px;
 }
 
-:global(html[data-content-theme='miaoyan']) .logo {
-  width: 14px;
-  height: 14px;
-  display: grid;
-  border: 1px solid var(--miaoyan-divider);
-  border-radius: 4px;
-  background: var(--miaoyan-panel-secondary);
-  color: var(--miaoyan-secondary-text);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
 :global(html[data-content-theme='miaoyan']) .sep {
   display: inline;
   margin: 0 7px;
@@ -323,16 +297,12 @@
   gap: 0;
 }
 
-:global(html[data-content-theme='inkstone']) .logo,
 :global(html[data-content-theme='inkstone']) .sep,
 :global(html[data-content-theme='inkstone']) .app,
-:global(html[data-content-theme='slate']) .logo,
 :global(html[data-content-theme='slate']) .sep,
 :global(html[data-content-theme='slate']) .app,
-:global(html[data-content-theme='mono']) .logo,
 :global(html[data-content-theme='mono']) .sep,
 :global(html[data-content-theme='mono']) .app,
-:global(html[data-content-theme='nocturne']) .logo,
 :global(html[data-content-theme='nocturne']) .sep,
 :global(html[data-content-theme='nocturne']) .app {
   display: none;
