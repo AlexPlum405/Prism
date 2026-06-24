@@ -14,18 +14,12 @@ pub fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
 }
 
 pub fn register_startup_files(app: &mut tauri::App) {
-    #[cfg(not(target_os = "macos"))]
-    {
-        let paths = extract_file_paths_from_args();
-        if !paths.is_empty() {
-            let state: State<PendingFiles> = app.state();
-            state.0.lock().unwrap().extend(paths.clone());
-            let _ = app.emit("file-opened", &paths);
-        }
+    let paths = extract_file_paths_from_args();
+    if !paths.is_empty() {
+        let state: State<PendingFiles> = app.state();
+        state.0.lock().unwrap().extend(paths.clone());
+        let _ = app.emit("file-opened", &paths);
     }
-
-    #[cfg(target_os = "macos")]
-    let _ = app;
 }
 
 pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
@@ -91,7 +85,6 @@ where
         .collect()
 }
 
-#[cfg(not(target_os = "macos"))]
 fn extract_file_paths_from_args() -> Vec<String> {
     filter_existing_startup_file_paths(std::env::args().skip(1))
 }

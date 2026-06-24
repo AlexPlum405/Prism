@@ -18,6 +18,8 @@ export interface DocxThemeContract {
   border: string;
 }
 
+export type ThemePreviewMaxWidth = number | 'none';
+
 export interface ThemeContract {
   id: ContentTheme;
   label: string;
@@ -36,7 +38,7 @@ export interface ThemeContract {
     fontFamily: string;
     fontSize: number;
     lineHeight: number;
-    maxWidth: number;
+    maxWidth: ThemePreviewMaxWidth;
     writeClass: string;
   };
   search: {
@@ -95,7 +97,7 @@ export const builtInThemeContracts = {
         "'TsangerJinKai02-W04', 'TsangerJinKai02 W04', 'TsangerJinKai02', 'PingFangSC-Regular', -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
       fontSize: 16,
       lineHeight: 1.74,
-      maxWidth: 920,
+      maxWidth: 'none',
       writeClass: 'markdown-body heti',
     },
     search: {
@@ -122,50 +124,50 @@ export const builtInThemeContracts = {
     },
     code: {
       background: '#f7f7f7',
-      inlineBackground: '#eef1f2',
-      text: '#262626',
-      comment: '#888888',
-      keyword: '#7a3dad',
-      string: '#1c5d33',
-      meta: '#d14',
-      attribute: '#0d69d9',
-      symbol: '#826b29',
+      inlineBackground: '#f7f7f7',
+      text: '#24292e',
+      comment: '#6a737d',
+      keyword: '#d73a49',
+      string: '#032f62',
+      meta: '#208bff',
+      attribute: '#e36209',
+      symbol: '#8250df',
     },
     mermaid: {
-      theme: 'neutral',
+      theme: 'base',
       fontSize: 15,
       fontFamily:
         "'TsangerJinKai02 W04', 'TsangerJinKai02', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', Arial, sans-serif",
       fontLoadFamily: '"TsangerJinKai02-W04"',
       themeVariables: {
-        background: '#FFFFFF',
-        textColor: '#1f2933',
-        primaryColor: '#FFFFFF',
+        background: '#f7f7f7',
+        textColor: '#262626',
+        primaryColor: '#ffffff',
         primaryTextColor: '#1f2933',
-        primaryBorderColor: '#262626',
+        primaryBorderColor: '#d0d7e2',
         secondaryColor: '#f0f3f6',
         secondaryTextColor: '#1f2933',
-        secondaryBorderColor: '#262626',
-        tertiaryColor: '#FFFFFF',
+        secondaryBorderColor: '#d0d7e2',
+        tertiaryColor: '#ffffff',
         tertiaryTextColor: '#333333',
-        tertiaryBorderColor: '#262626',
+        tertiaryBorderColor: '#d0d7e2',
         lineColor: '#1C5D33',
-        mainBkg: '#FFFFFF',
+        mainBkg: '#ffffff',
         secondBkg: '#f0f3f6',
         nodeBorder: '#262626',
-        nodeBkg: '#FFFFFF',
+        nodeBkg: '#ffffff',
         clusterBkg: '#f0f3f6',
         clusterBorder: '#262626',
         edgeLabelBackground: 'transparent',
-        edgeLabelTextColor: '#1f2933',
-        actorBkg: '#FFFFFF',
+        edgeLabelTextColor: '#262626',
+        actorBkg: '#ffffff',
         actorBorder: '#262626',
-        actorTextColor: '#1f2933',
+        actorTextColor: '#262626',
         signalColor: '#1C5D33',
-        signalTextColor: '#1f2933',
+        signalTextColor: '#262626',
         noteBkgColor: '#f0f3f6',
         noteBorderColor: '#262626',
-        noteTextColor: '#1f2933',
+        noteTextColor: '#262626',
         arrowheadColor: '#1C5D33',
         relationColor: '#1C5D33',
         titleColor: '#1C5D33',
@@ -556,10 +558,16 @@ export function getMermaidThemeConfig(theme: ContentTheme) {
     flowchart: {
       useMaxWidth: true,
       htmlLabels: true,
-      curve: 'basis' as const,
       nodeSpacing: 80,
       rankSpacing: 80,
       padding: 30,
+      curve: 'basis' as const,
+    },
+    elk: {
+      nodeSpacing: 80,
+      rankSpacing: 80,
+      padding: 40,
+      mergeEdges: true,
     },
     sequence: { useMaxWidth: true },
     gantt: { useMaxWidth: true },

@@ -3,6 +3,8 @@ export interface PreviewDomTargetHints {
   media: boolean;
   katexErrors: boolean;
   mermaid: boolean;
+  markmap: boolean;
+  plantUml: boolean;
 }
 
 export interface PreviewDomPostProcessTargets {
@@ -10,6 +12,8 @@ export interface PreviewDomPostProcessTargets {
   mediaElements: Array<HTMLImageElement | HTMLSourceElement>;
   katexErrorElements: HTMLElement[];
   mermaidPlaceholders: HTMLElement[];
+  markmapPlaceholders: HTMLElement[];
+  plantUmlPlaceholders: HTMLElement[];
 }
 
 const EMPTY_PREVIEW_DOM_TARGETS: PreviewDomPostProcessTargets = {
@@ -17,6 +21,8 @@ const EMPTY_PREVIEW_DOM_TARGETS: PreviewDomPostProcessTargets = {
   mediaElements: [],
   katexErrorElements: [],
   mermaidPlaceholders: [],
+  markmapPlaceholders: [],
+  plantUmlPlaceholders: [],
 };
 
 const MEDIA_HTML_PATTERN = /<(?:img|source)\b/i;
@@ -27,6 +33,8 @@ export function getPreviewDomTargetHints(html: string, documentPath?: string): P
     media: Boolean(documentPath && MEDIA_HTML_PATTERN.test(html)),
     katexErrors: html.includes('katex-error'),
     mermaid: html.includes('mermaid-placeholder'),
+    markmap: html.includes('markmap-placeholder'),
+    plantUml: html.includes('plantuml-placeholder'),
   };
 }
 
@@ -39,7 +47,7 @@ export function collectPreviewDomPostProcessTargets(
   write: HTMLElement,
   hints: PreviewDomTargetHints,
 ): PreviewDomPostProcessTargets {
-  if (!hints.katexPlaceholders && !hints.media && !hints.katexErrors && !hints.mermaid) {
+  if (!hints.katexPlaceholders && !hints.media && !hints.katexErrors && !hints.mermaid && !hints.markmap && !hints.plantUml) {
     return EMPTY_PREVIEW_DOM_TARGETS;
   }
 
@@ -47,6 +55,8 @@ export function collectPreviewDomPostProcessTargets(
   const mediaElements: Array<HTMLImageElement | HTMLSourceElement> = [];
   const katexErrorElements: HTMLElement[] = [];
   const mermaidPlaceholders: HTMLElement[] = [];
+  const markmapPlaceholders: HTMLElement[] = [];
+  const plantUmlPlaceholders: HTMLElement[] = [];
   const walker = write.ownerDocument.createTreeWalker(write, NodeFilter.SHOW_ELEMENT);
 
   let element = walker.currentNode as HTMLElement | null;
@@ -63,6 +73,12 @@ export function collectPreviewDomPostProcessTargets(
     if (hints.mermaid && element.classList.contains('mermaid-placeholder')) {
       mermaidPlaceholders.push(element);
     }
+    if (hints.markmap && element.classList.contains('markmap-placeholder')) {
+      markmapPlaceholders.push(element);
+    }
+    if (hints.plantUml && element.classList.contains('plantuml-placeholder')) {
+      plantUmlPlaceholders.push(element);
+    }
     element = walker.nextNode() as HTMLElement | null;
   }
 
@@ -71,5 +87,7 @@ export function collectPreviewDomPostProcessTargets(
     mediaElements,
     katexErrorElements,
     mermaidPlaceholders,
+    markmapPlaceholders,
+    plantUmlPlaceholders,
   };
 }

@@ -40,10 +40,14 @@ const openerMock = vi.hoisted(() => ({
   openUrl: vi.fn(),
   revealItemInDir: vi.fn(),
 }));
+const updateMock = vi.hoisted(() => ({
+  checkForAppUpdate: vi.fn(),
+}));
 
 vi.mock('@tauri-apps/plugin-fs', () => fsMock);
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }));
 vi.mock('@tauri-apps/plugin-opener', () => openerMock);
+vi.mock('../update/updateService', () => updateMock);
 
 vi.mock('../document/services/recovery', () => recoveryMock);
 
@@ -214,6 +218,7 @@ describe('command registry', () => {
     openerMock.openUrl.mockResolvedValue(undefined);
     openerMock.revealItemInDir.mockReset();
     openerMock.revealItemInDir.mockResolvedValue(undefined);
+    updateMock.checkForAppUpdate.mockReset();
     __themeRegistryTesting.setRuntimeEntries([], []);
   });
 
@@ -316,6 +321,71 @@ describe('command registry', () => {
     expect(openerMock.openUrl).toHaveBeenCalledWith(
       'https://github.com/AlexPlum405/Prism/blob/main/docs/help/prism-migration-guide.md',
     );
+  });
+
+  it('shows a final toast when update check finds no update', async () => {
+    const showToast = vi.fn();
+    updateMock.checkForAppUpdate.mockResolvedValue({ status: 'none' });
+
+    await runCommand('checkUpdate', createCommandContext({ showToast }));
+
+    expect(showToast.mock.calls.map(([toast]) => toast)).toEqual([
+      '正在检查更新...',
+      '当前已是最新版本',
+    ]);
+  });
+
+  it('shows a final toast when update check is unavailable', async () => {
+    const showToast = vi.fn();
+    updateMock.checkForAppUpdate.mockResolvedValue({
+      reason: '当前发布通道暂未提供可用的更新清单',
+      status: 'unavailable',
+    });
+
+    await runCommand('checkUpdate', createCommandContext({ showToast }));
+
+    expect(showToast.mock.calls.map(([toast]) => toast)).toEqual([
+      '正在检查更新...',
+      '检查更新暂不可用: 当前发布通道暂未提供可用的更新清单',
+    ]);
+  });
+
+  it('shows an actionable final toast when an update is available', async () => {
+    const showToast = vi.fn();
+    updateMock.checkForAppUpdate.mockResolvedValue({
+      currentVersion: '1.4.0',
+      status: 'available',
+      version: '1.4.1',
+    });
+
+    await runCommand('checkUpdate', createCommandContext({ showToast }));
+
+    expect(showToast).toHaveBeenCalledWith('正在检查更新...');
+    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({
+      actions: [expect.objectContaining({ label: '打开' })],
+      message: '发现新版本 1.4.1（当前 1.4.0）。是否打开 GitHub Releases？',
+      title: '检查更新',
+    }));
+
+    const updateToast = showToast.mock.calls.find(([toast]) => (
+      typeof toast !== 'string' && toast.title === '检查更新'
+    ))?.[0] as any;
+
+    await updateToast.actions[0].onClick();
+
+    expect(openerMock.openUrl).toHaveBeenCalledWith('https://github.com/AlexPlum405/Prism/releases/latest');
+  });
+
+  it('shows a final toast when update check fails', async () => {
+    const showToast = vi.fn();
+    updateMock.checkForAppUpdate.mockRejectedValue(new Error('network offline'));
+
+    await runCommand('checkUpdate', createCommandContext({ showToast }));
+
+    expect(showToast.mock.calls.map(([toast]) => toast)).toEqual([
+      '正在检查更新...',
+      '检查更新失败: network offline',
+    ]);
   });
 
   it('does not expose deferred platform features in menus', () => {

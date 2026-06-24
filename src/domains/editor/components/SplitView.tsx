@@ -126,6 +126,68 @@ function findPreviewSourceAction(target: Element | null): number | null {
   return Number.isFinite(line) ? line : null;
 }
 
+function findPreviewTaskCheckbox(target: Element | null): HTMLInputElement | null {
+  const checkbox = target?.closest<HTMLInputElement>('input[type="checkbox"][data-task-checkbox-index]');
+  return checkbox instanceof HTMLInputElement ? checkbox : null;
+}
+
+function parseFiniteNumber(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+const MARKDOWN_TASK_MARKER_PATTERN = /^(\s*(?:[-+*]|\d+[.)])\s+\[)[ xX](\])/;
+
+function setMarkdownTaskLineChecked(line: string, checked: boolean) {
+  if (!MARKDOWN_TASK_MARKER_PATTERN.test(line)) return null;
+  return line.replace(MARKDOWN_TASK_MARKER_PATTERN, `$1${checked ? 'x' : ' '}$2`);
+}
+
+function updateTaskCheckboxBySourceLine(content: string, sourceLine: number | null, checked: boolean) {
+  if (sourceLine === null || sourceLine < 1) return null;
+
+  const lines = content.split(/\r?\n/);
+  const targetIndex = sourceLine - 1;
+  const currentLine = lines[targetIndex];
+  if (currentLine === undefined) return null;
+
+  const nextLine = setMarkdownTaskLineChecked(currentLine, checked);
+  if (nextLine === null || nextLine === currentLine) return null;
+
+  lines[targetIndex] = nextLine;
+  return lines.join(content.includes('\r\n') ? '\r\n' : '\n');
+}
+
+function updateTaskCheckboxByIndex(content: string, checkboxIndex: number | null, checked: boolean) {
+  if (checkboxIndex === null || checkboxIndex < 0) return null;
+
+  const lines = content.split(/\r?\n/);
+  let currentCheckboxIndex = -1;
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const nextLine = setMarkdownTaskLineChecked(lines[lineIndex], checked);
+    if (nextLine === null) continue;
+
+    currentCheckboxIndex += 1;
+    if (currentCheckboxIndex !== checkboxIndex) continue;
+    if (nextLine === lines[lineIndex]) return null;
+
+    lines[lineIndex] = nextLine;
+    return lines.join(content.includes('\r\n') ? '\r\n' : '\n');
+  }
+
+  return null;
+}
+
+function updateTaskCheckboxMarkdown(
+  content: string,
+  options: { checked: boolean; checkboxIndex: number | null; sourceLine: number | null },
+) {
+  return updateTaskCheckboxBySourceLine(content, options.sourceLine, options.checked)
+    ?? updateTaskCheckboxByIndex(content, options.checkboxIndex, options.checked);
+}
+
 function getScrollRatio(element: HTMLElement): number {
   const maxScroll = element.scrollHeight - element.clientHeight;
   return maxScroll > 0 ? element.scrollTop / maxScroll : 0;
@@ -675,6 +737,27 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     const handlePreviewClick = useCallback((event: React.MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return;
       const target = event.target instanceof Element ? event.target : null;
+      const taskCheckbox = findPreviewTaskCheckbox(target);
+      if (taskCheckbox) {
+        event.stopPropagation();
+        const sourceLine = findSourceLineElement(taskCheckbox, previewContainerRef.current)?.line
+          ?? parseFiniteNumber(taskCheckbox.getAttribute('data-source-line') ?? taskCheckbox.getAttribute('data-line'));
+        const checkboxIndex = parseFiniteNumber(taskCheckbox.getAttribute('data-task-checkbox-index'));
+        const checked = taskCheckbox.checked;
+        const nextContent = updateTaskCheckboxMarkdown(contentRef.current, {
+          checked,
+          checkboxIndex,
+          sourceLine,
+        });
+
+        if (nextContent !== null) {
+          const listItem = taskCheckbox.closest('li');
+          listItem?.classList.toggle('strike', checked);
+          onChange(nextContent);
+        }
+        return;
+      }
+
       const explicitSourceLine = findPreviewSourceAction(target);
       if (explicitSourceLine !== null) {
         event.preventDefault();
@@ -701,7 +784,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       if (!event.metaKey && !event.ctrlKey && !event.altKey) return;
       event.preventDefault();
       jumpToSourceLine(sourceLine.line);
-    }, [jumpToSourceLine]);
+    }, [jumpToSourceLine, onChange]);
 
     const handlePreviewContextMenuAction = useCallback(async (action: string) => {
       const preview = previewContainerRef.current?.querySelector<HTMLElement>('#write') ?? null;
@@ -763,6 +846,10 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     }, [getPreviewSelectedText]);
 
     const activateSearch = useCallback((mode: SearchMode) => {
+      if (mode === 'replace' && viewModeRef.current === 'preview') {
+        useDocumentStore.getState().setViewMode('split');
+      }
+
       const seed = getSearchSeed();
       setSearchMode(mode);
       setSearchVisible(true);

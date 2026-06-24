@@ -124,6 +124,23 @@ describe('useBootstrap', () => {
     expect(readTextFile).toHaveBeenCalledWith('C:/docs/bootstrap.md');
   });
 
+  it('does not require a pre-grant fs exists check before opening an explicit file', async () => {
+    const explicitPath = 'C:/external/妙言 Markdown 语法指南.md';
+    window.history.replaceState({}, '', `/?file=${encodeURIComponent(explicitPath)}`);
+    (exists as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('path not allowed'));
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# external content');
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    renderHook(() => useBootstrap(true));
+
+    await waitFor(() => {
+      expect(useDocumentStore.getState().currentDocument?.path).toBe(explicitPath);
+    });
+
+    expect(useDocumentStore.getState().currentDocument?.content).toBe('# external content');
+    expect(exists).not.toHaveBeenCalledWith(explicitPath);
+  });
+
   it('opens pending files before last session once bootstrap is enabled', async () => {
     window.history.replaceState({}, '', '/');
     useSettingsStore.setState({

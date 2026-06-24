@@ -4,6 +4,7 @@ export {
   type DocxThemeContract,
   type MermaidThemeContract,
   type ThemeContract,
+  type ThemePreviewMaxWidth,
 } from './themeContract';
 export {
   applyThemeRuntime,

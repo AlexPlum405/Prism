@@ -109,6 +109,22 @@ vi.mock('./PreviewPane', () => ({
   }) => (
     <div data-testid="preview-pane" data-render-strategy={renderStrategy}>
       <div id="write">
+        {content.includes('- [ ]') ? (
+          <ul className="cb">
+            <li data-source-line="1">
+              <input type="checkbox" data-task-checkbox-index="0" />
+              First task
+            </li>
+          </ul>
+        ) : null}
+        {content.includes('- [x]') ? (
+          <ul className="cb">
+            <li className="strike" data-source-line="1">
+              <input type="checkbox" data-task-checkbox-index="0" defaultChecked />
+              First task
+            </li>
+          </ul>
+        ) : null}
         <p data-source-line="6">{content}</p>
         <button type="button" data-preview-source-line="9">跳到源码</button>
         <button
@@ -254,6 +270,41 @@ describe('SplitView editor lifecycle', () => {
     fireEvent.click(screen.getByRole('button', { name: '跳到源码' }));
 
     expect(mockState.jumpToLine).toHaveBeenCalledWith(9);
+  });
+
+  it('toggles task list checkboxes in preview-only mode without mounting the editor', () => {
+    const onChange = vi.fn();
+    render(
+      <SplitView
+        content="- [ ] First task"
+        viewMode="preview"
+        onChange={onChange}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    expect(onChange).toHaveBeenCalledWith('- [x] First task');
+    expect(mockState.jumpToLine).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('editor-pane')).toBeNull();
+  });
+
+  it('unchecks task list checkboxes from the preview DOM', () => {
+    const onChange = vi.fn();
+    render(
+      <SplitView
+        content="- [x] First task"
+        viewMode="preview"
+        onChange={onChange}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    expect(onChange).toHaveBeenCalledWith('- [ ] First task');
+    expect(mockState.jumpToLine).not.toHaveBeenCalled();
   });
 
   it('forwards preview document link clicks', () => {
@@ -465,6 +516,34 @@ describe('SplitView editor lifecycle', () => {
     } finally {
       restore();
     }
+  });
+
+  it('switches from preview to split before opening replace', async () => {
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', 'alpha beta alpha');
+    useDocumentStore.getState().setViewMode('preview');
+
+    function StoreBackedSplitView() {
+      const currentViewMode = useDocumentStore((state) => state.currentDocument?.viewMode ?? 'preview');
+      return (
+        <SplitView
+          content="alpha beta alpha"
+          documentPath="/repo/current.md"
+          viewMode={currentViewMode}
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />
+      );
+    }
+
+    render(<StoreBackedSplitView />);
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-search', { detail: { action: 'replace' } }));
+    });
+
+    expect(useDocumentStore.getState().currentDocument?.viewMode).toBe('split');
+    expect(await screen.findByPlaceholderText('替换')).toBeTruthy();
+    expect(screen.getByTestId('editor-pane')).toBeTruthy();
   });
 
   it('queues preview-only source jumps until the editor is mounted', async () => {

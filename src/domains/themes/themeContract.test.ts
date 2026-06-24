@@ -27,6 +27,10 @@ describe('theme contract', () => {
       expect(contract.editor.fontFamily).toBeTruthy();
       expect(contract.editor.codeFontFamily).toBeTruthy();
       expect(contract.preview.writeClass).toContain('markdown-body');
+      if (contract.preview.maxWidth !== 'none') {
+        expect(contract.preview.maxWidth).toBeGreaterThanOrEqual(520);
+        expect(contract.preview.maxWidth).toBeLessThanOrEqual(1280);
+      }
       expect(contract.search.fieldBackground).toBeTruthy();
       expect(contract.export.docx.font).toBeTruthy();
       expect(contract.export.docx.codeFont).toBeTruthy();
@@ -40,15 +44,53 @@ describe('theme contract', () => {
   it('exposes Mermaid config through the contract source', () => {
     const config = getMermaidThemeConfig('miaoyan');
 
-    expect(config.theme).toBe('neutral');
+    expect(config.theme).toBe('base');
     expect(config.securityLevel).toBe('loose');
     expect(config.fontFamily).toBe(getThemeContract('miaoyan').mermaid.fontFamily);
-    expect(config.themeVariables.primaryBorderColor).toBe('#262626');
+    expect(config.fontSize).toBe(15);
+    expect(getThemeContract('miaoyan').preview.fontSize).toBe(16);
+    expect(config.themeVariables.primaryBorderColor).toBe('#d0d7e2');
+    expect(config.themeVariables.lineColor).toBe('#1C5D33');
+    expect(config.themeVariables.edgeLabelBackground).toBe('transparent');
     expect(config.flowchart.htmlLabels).toBe(true);
+    expect(config.flowchart.useMaxWidth).toBe(true);
+    expect(config.flowchart.nodeSpacing).toBe(80);
+    expect(config.flowchart.rankSpacing).toBe(80);
+    expect(config.flowchart.padding).toBe(30);
+    expect(config.sequence.useMaxWidth).toBe(true);
+    expect(config.gantt.useMaxWidth).toBe(true);
+    expect(config.journey.useMaxWidth).toBe(true);
+    expect(config.flowchart.curve).toBe('basis');
   });
 
-  it('keeps the default and dark reading measure bounded for wide screens', () => {
-    expect(getThemeContract('miaoyan').preview.maxWidth).toBe(920);
+  it('keeps the MiaoYan code color tokens aligned with its light preview palette', () => {
+    expect(getThemeContract('miaoyan').code).toMatchObject({
+      background: '#f7f7f7',
+      inlineBackground: '#f7f7f7',
+      text: '#24292e',
+      comment: '#6a737d',
+      keyword: '#d73a49',
+      string: '#032f62',
+      meta: '#208bff',
+      attribute: '#e36209',
+      symbol: '#8250df',
+    });
+  });
+
+  it('keeps MiaoYan Mermaid runtime stroke colors aligned with theme-manager.js', () => {
+    expect(getThemeContract('miaoyan').mermaid.themeVariables).toMatchObject({
+      nodeBorder: '#262626',
+      clusterBorder: '#262626',
+      actorBorder: '#262626',
+      noteBorderColor: '#262626',
+    });
+  });
+
+  it('keeps Miaoyan full-width and other reading themes explicitly bounded', () => {
+    expect(getThemeContract('miaoyan').preview.maxWidth).toBe('none');
+    expect(getThemeContract('inkstone').preview.maxWidth).toBe(1000);
+    expect(getThemeContract('slate').preview.maxWidth).toBe(1000);
+    expect(getThemeContract('mono').preview.maxWidth).toBe(1000);
     expect(getThemeContract('nocturne').preview.maxWidth).toBe(920);
   });
 });

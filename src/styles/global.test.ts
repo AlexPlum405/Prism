@@ -104,6 +104,166 @@ describe('modal visual rules', () => {
   });
 });
 
+describe('Miaoyan content surface rules', () => {
+  const css = readCssWithImports('global.css');
+
+  it('keeps preview content full-width with the MiaoYan source padding', () => {
+    const writeRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan #write {");
+    const writeRuleEnd = css.indexOf('}', writeRuleStart);
+    const writeRule = css.slice(writeRuleStart, writeRuleEnd);
+
+    expect(css).toContain('--preview-max-width: 100%');
+    expect(writeRuleStart).toBeGreaterThan(-1);
+    expect(writeRule).toContain('margin: 0');
+    expect(writeRule).toContain('max-width: var(--preview-max-width, 100%)');
+    expect(writeRule).toContain('padding: 0 28px 80px');
+  });
+
+  it('keeps editor content full-width with MiaoYan 24px horizontal inset', () => {
+    const editorRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .cm-editor {");
+    const editorRuleEnd = css.indexOf('}', editorRuleStart);
+    const editorRule = css.slice(editorRuleStart, editorRuleEnd);
+    const contentRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .cm-editor .cm-content {");
+    const contentRuleEnd = css.indexOf('}', contentRuleStart);
+    const contentRule = css.slice(contentRuleStart, contentRuleEnd);
+
+    expect(editorRuleStart).toBeGreaterThan(-1);
+    expect(editorRule).toContain('--miaoyan-editor-gutter: 24px');
+    expect(contentRuleStart).toBeGreaterThan(-1);
+    expect(contentRule).toContain('max-width: none');
+    expect(contentRule).toContain('margin: 0');
+    expect(contentRule).toContain('padding: 10px var(--miaoyan-editor-gutter) 96px');
+  });
+
+  it('keeps MiaoYan preview links blue while editor link text and destinations use separate colors', () => {
+    const linkTextRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .cm-md-link-text {");
+    const linkTextRuleEnd = css.indexOf('}', linkTextRuleStart);
+    const linkTextRule = css.slice(linkTextRuleStart, linkTextRuleEnd);
+    const linkUrlRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .cm-md-link-url {");
+    const linkUrlRuleEnd = css.indexOf('}', linkUrlRuleStart);
+    const linkUrlRule = css.slice(linkUrlRuleStart, linkUrlRuleEnd);
+    const imageMarkRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .cm-md-image-mark {");
+    const imageMarkRuleEnd = css.indexOf('}', imageMarkRuleStart);
+    const imageMarkRule = css.slice(imageMarkRuleStart, imageMarkRuleEnd);
+    const syntaxRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .cm-md-link-syntax,");
+    const syntaxRuleEnd = css.indexOf('}', syntaxRuleStart);
+    const syntaxRule = css.slice(syntaxRuleStart, syntaxRuleEnd);
+
+    expect(css).toContain('--miaoyan-link: #0C6ADA');
+    expect(linkTextRuleStart).toBeGreaterThan(-1);
+    expect(linkTextRule).toContain('color: #05A699');
+    expect(linkUrlRuleStart).toBeGreaterThan(-1);
+    expect(linkUrlRule).toContain('color: #0C6ADA');
+    expect(css).toContain("html[data-content-theme='miaoyan'] .cm-md-image-url");
+    expect(imageMarkRuleStart).toBeGreaterThan(-1);
+    expect(imageMarkRule).toContain('color: #05A699');
+    expect(syntaxRuleStart).toBeGreaterThan(-1);
+    expect(syntaxRule).toContain('color: var(--miaoyan-editor-text)');
+    expect(syntaxRule).toContain('.cm-editor .cm-url');
+  });
+
+  it('keeps MiaoYan editor fenced-code tokens aligned with atom-one-light rendering', () => {
+    const miaoyanCodeSectionStart = css.indexOf('/* MiaoYan edit view uses Highlightr atom-one-light colors inside fenced code. */');
+    const miaoyanCodeSectionEnd = css.indexOf('/* Inkstone Light editor compatibility mode */', miaoyanCodeSectionStart);
+    const miaoyanCodeSection = css.slice(miaoyanCodeSectionStart, miaoyanCodeSectionEnd);
+
+    expect(miaoyanCodeSectionStart).toBeGreaterThan(-1);
+    expect(miaoyanCodeSectionEnd).toBeGreaterThan(miaoyanCodeSectionStart);
+    expect(miaoyanCodeSection).toContain("html[data-content-theme='miaoyan'] .cm-editor .cm-code-token");
+    expect(miaoyanCodeSection).toContain("html[data-content-theme='miaoyan'] .cm-editor .hljs-variable");
+    expect(miaoyanCodeSection).toContain("font-family: 'Menlo', 'JetBrains Mono', monospace !important");
+    expect(miaoyanCodeSection).toContain('color: #A626A4 !important');
+    expect(miaoyanCodeSection).toContain('color: #50A14F !important');
+    expect(miaoyanCodeSection).toContain('color: #986801 !important');
+    expect(miaoyanCodeSection).toContain('color: #E45649 !important');
+    expect(css).toContain("html[data-content-theme='miaoyan'] .cm-md-math-token");
+    expect(css).not.toContain('.cm-md-diagram-syntax');
+    expect(css).not.toContain('.cm-md-diagram-label');
+  });
+
+  it('keeps MiaoYan preview emphasis italic and tables full line width', () => {
+    const emRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan em {");
+    const emRuleEnd = css.indexOf('}', emRuleStart);
+    const emRule = css.slice(emRuleStart, emRuleEnd);
+    const tableRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan table {");
+    const tableRuleEnd = css.indexOf('}', tableRuleStart);
+    const tableRule = css.slice(tableRuleStart, tableRuleEnd);
+
+    expect(emRuleStart).toBeGreaterThan(-1);
+    expect(emRule).toContain('font-style: italic');
+    expect(tableRuleStart).toBeGreaterThan(-1);
+    expect(tableRule).toContain('width: 100%');
+  });
+
+  it('keeps MiaoYan KaTeX transparent and centered instead of card-like', () => {
+    const katexRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex {");
+    const katexRuleEnd = css.indexOf('}', katexRuleStart);
+    const katexRule = css.slice(katexRuleStart, katexRuleEnd);
+    const displayRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex-display {");
+    const displayRuleEnd = css.indexOf('}', displayRuleStart);
+    const displayRule = css.slice(displayRuleStart, displayRuleEnd);
+    const katexSectionStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex {");
+    const katexSectionEnd = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan code.language-mermaid", katexSectionStart);
+    const katexSection = css.slice(katexSectionStart, katexSectionEnd);
+
+    expect(katexRuleStart).toBeGreaterThan(-1);
+    expect(katexSectionEnd).toBeGreaterThan(katexSectionStart);
+    expect(katexRule).toContain('font: normal 1.21em KaTeX_Main');
+    expect(katexRule).toContain('background: transparent !important');
+    expect(katexRule).toContain('border: 0 !important');
+    expect(katexRule).toContain('box-shadow: none !important');
+    expect(displayRuleStart).toBeGreaterThan(-1);
+    expect(displayRule).toContain('margin: 1em 0 !important');
+    expect(displayRule).toContain('text-align: center !important');
+    expect(css).toContain(".katex-placeholder[data-katex-display='true']");
+    expect(css).toContain(".preview-compat--miaoyan .katex .katex-mathml");
+    expect(katexSection).not.toContain('width: min-content !important');
+    expect(katexSection).not.toContain(".preview-compat--miaoyan .katex svg {");
+    expect(katexSection).not.toContain('stroke-width: 1 !important');
+  });
+
+  it('keeps MiaoYan diagrams on the source gray canvas with bundled Markmap colors', () => {
+    const placeholderRuleStart = css.indexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder,");
+    const placeholderRuleEnd = css.indexOf('}', placeholderRuleStart);
+    const placeholderRule = css.slice(placeholderRuleStart, placeholderRuleEnd);
+    const plantUmlImageRuleStart = css.lastIndexOf("html[data-content-theme='miaoyan'] .preview-compat--miaoyan .plantuml-image {");
+    const plantUmlImageRuleEnd = css.indexOf('}', plantUmlImageRuleStart);
+    const plantUmlImageRule = css.slice(plantUmlImageRuleStart, plantUmlImageRuleEnd);
+
+    expect(placeholderRuleStart).toBeGreaterThan(-1);
+    expect(placeholderRule).toContain('.plantuml-placeholder');
+    expect(placeholderRule).toContain('.markmap-placeholder');
+    expect(placeholderRule).toContain('background: var(--miaoyan-diagram-bg)');
+    expect(placeholderRule).toContain('border: none');
+    expect(placeholderRule).toContain('border-radius: 6px');
+    expect(placeholderRule).toContain('padding: 12px');
+    expect(plantUmlImageRuleStart).toBeGreaterThan(-1);
+    expect(plantUmlImageRule).toContain('display: block');
+    expect(plantUmlImageRule).toContain('margin-inline: auto');
+    expect(plantUmlImageRule).toContain('max-width: 100%');
+    expect(plantUmlImageRule).toContain('width: auto');
+    expect(plantUmlImageRule).toContain('height: auto');
+    expect(css).toContain('--miaoyan-diagram-bg: #f7f7f7');
+    expect(css).toContain('--miaoyan-mermaid-line: #1C5D33');
+    expect(css).toContain('.plantuml-image');
+    expect(css).toContain('.markmap-placeholder .markmap-svg');
+    expect(css).toContain('height: 450px !important');
+    expect(css).toContain('min-height: 450px');
+    expect(css).toContain('.markmap-placeholder .markmap-node text');
+    expect(css).toContain('.markmap-placeholder .markmap-node line');
+    expect(css).not.toContain('stroke: var(--miaoyan-markmap-line)');
+    expect(css).toContain('.mermaid-placeholder .edgeLabel foreignObject div');
+    expect(css).toContain('background-color: #e8e8e8 !important');
+    expect(css).toContain('fill: transparent !important');
+    expect(css).toContain('line-height: 1.2 !important');
+    expect(css).toContain('shape-rendering: geometricPrecision');
+    expect(css).not.toContain('.mermaid-placeholder .flowchart-link');
+    expect(css).not.toContain('.mermaid-placeholder marker path');
+    expect(css).not.toContain('.mermaid-placeholder .node .label-container');
+    expect(css).not.toContain('.mermaid-placeholder .edgeLabel .labelBkg');
+  });
+});
+
 describe('motion and microfeedback rules', () => {
   const css = readCssWithImports('global.css');
 

@@ -508,9 +508,15 @@ html[data-content-theme='inkstone'] .preview-compat--inkstone .hljs-link,
 html[data-content-theme='inkstone'] .preview-compat--inkstone .hljs-symbol { color: #6d4c9f; }
 html[data-content-theme='inkstone'] .preview-compat--inkstone .hljs-emphasis { font-style: italic; }
 html[data-content-theme='inkstone'] .preview-compat--inkstone .hljs-strong { font-weight: bold; -webkit-font-smoothing: antialiased; }
-html[data-content-theme='inkstone'] .preview-compat--inkstone code.language-mermaid { display: block; text-align: center; }
-html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
-html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder svg { display: block; margin-inline: auto; max-width: 100%; height: auto; overflow: visible; }
+html[data-content-theme='inkstone'] .preview-compat--inkstone code.language-mermaid,
+html[data-content-theme='inkstone'] .preview-compat--inkstone code.language-markmap,
+html[data-content-theme='inkstone'] .preview-compat--inkstone code.language-plantuml { display: block; text-align: center; }
+html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder,
+html[data-content-theme='inkstone'] .preview-compat--inkstone .markmap-placeholder,
+html[data-content-theme='inkstone'] .preview-compat--inkstone .plantuml-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
+html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder svg,
+html[data-content-theme='inkstone'] .preview-compat--inkstone .markmap-placeholder svg,
+html[data-content-theme='inkstone'] .preview-compat--inkstone .plantuml-image { display: block; margin-inline: auto; max-width: 100%; width: auto; height: auto; overflow: visible; }
 html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder foreignObject,
 html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder .nodeLabel,
 html[data-content-theme='inkstone'] .preview-compat--inkstone .mermaid-placeholder .edgeLabel,
@@ -1023,9 +1029,15 @@ html[data-content-theme='slate'] .preview-compat--slate .hljs-link,
 html[data-content-theme='slate'] .preview-compat--slate .hljs-symbol { color: #587a85; }
 html[data-content-theme='slate'] .preview-compat--slate .hljs-emphasis { font-style: italic; }
 html[data-content-theme='slate'] .preview-compat--slate .hljs-strong { font-weight: bold; -webkit-font-smoothing: antialiased; }
-html[data-content-theme='slate'] .preview-compat--slate code.language-mermaid { display: block; text-align: center; }
-html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
-html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder svg { display: block; margin-inline: auto; max-width: 100%; height: auto; overflow: visible; }
+html[data-content-theme='slate'] .preview-compat--slate code.language-mermaid,
+html[data-content-theme='slate'] .preview-compat--slate code.language-markmap,
+html[data-content-theme='slate'] .preview-compat--slate code.language-plantuml { display: block; text-align: center; }
+html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder,
+html[data-content-theme='slate'] .preview-compat--slate .markmap-placeholder,
+html[data-content-theme='slate'] .preview-compat--slate .plantuml-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
+html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder svg,
+html[data-content-theme='slate'] .preview-compat--slate .markmap-placeholder svg,
+html[data-content-theme='slate'] .preview-compat--slate .plantuml-image { display: block; margin-inline: auto; max-width: 100%; width: auto; height: auto; overflow: visible; }
 html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder foreignObject,
 html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder .nodeLabel,
 html[data-content-theme='slate'] .preview-compat--slate .mermaid-placeholder .edgeLabel,
@@ -1538,9 +1550,15 @@ html[data-content-theme='mono'] .preview-compat--mono .hljs-link,
 html[data-content-theme='mono'] .preview-compat--mono .hljs-symbol { color: #3b6f48; }
 html[data-content-theme='mono'] .preview-compat--mono .hljs-emphasis { font-style: italic; }
 html[data-content-theme='mono'] .preview-compat--mono .hljs-strong { font-weight: bold; -webkit-font-smoothing: antialiased; }
-html[data-content-theme='mono'] .preview-compat--mono code.language-mermaid { display: block; text-align: center; }
-html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
-html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder svg { display: block; margin-inline: auto; max-width: 100%; height: auto; overflow: visible; }
+html[data-content-theme='mono'] .preview-compat--mono code.language-mermaid,
+html[data-content-theme='mono'] .preview-compat--mono code.language-markmap,
+html[data-content-theme='mono'] .preview-compat--mono code.language-plantuml { display: block; text-align: center; }
+html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder,
+html[data-content-theme='mono'] .preview-compat--mono .markmap-placeholder,
+html[data-content-theme='mono'] .preview-compat--mono .plantuml-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
+html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder svg,
+html[data-content-theme='mono'] .preview-compat--mono .markmap-placeholder svg,
+html[data-content-theme='mono'] .preview-compat--mono .plantuml-image { display: block; margin-inline: auto; max-width: 100%; width: auto; height: auto; overflow: visible; }
 html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder foreignObject,
 html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder .nodeLabel,
 html[data-content-theme='mono'] .preview-compat--mono .mermaid-placeholder .edgeLabel,
@@ -2069,9 +2087,15 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne .hljs-link,
 html[data-content-theme='nocturne'] .preview-compat--nocturne .hljs-symbol { color: #86a878; }
 html[data-content-theme='nocturne'] .preview-compat--nocturne .hljs-emphasis { font-style: italic; }
 html[data-content-theme='nocturne'] .preview-compat--nocturne .hljs-strong { font-weight: bold; -webkit-font-smoothing: antialiased; }
-html[data-content-theme='nocturne'] .preview-compat--nocturne code.language-mermaid { display: block; text-align: center; }
-html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
-html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder svg { display: block; margin-inline: auto; max-width: 100%; height: auto; overflow: visible; }
+html[data-content-theme='nocturne'] .preview-compat--nocturne code.language-mermaid,
+html[data-content-theme='nocturne'] .preview-compat--nocturne code.language-markmap,
+html[data-content-theme='nocturne'] .preview-compat--nocturne code.language-plantuml { display: block; text-align: center; }
+html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder,
+html[data-content-theme='nocturne'] .preview-compat--nocturne .markmap-placeholder,
+html[data-content-theme='nocturne'] .preview-compat--nocturne .plantuml-placeholder { width: 100%; min-height: 120px; overflow: auto; justify-content: center; }
+html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder svg,
+html[data-content-theme='nocturne'] .preview-compat--nocturne .markmap-placeholder svg,
+html[data-content-theme='nocturne'] .preview-compat--nocturne .plantuml-image { display: block; margin-inline: auto; max-width: 100%; width: auto; height: auto; overflow: visible; }
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder foreignObject,
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder .nodeLabel,
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder .edgeLabel,
@@ -2081,3 +2105,12 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placehold
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder .edgeLabel,
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder .label { line-height: 1.35 !important; }
 html[data-content-theme='nocturne'] .preview-compat--nocturne kbd { background: #252a24; border: 1px solid #33382f; border-radius: 4px; padding: 2px 6px; font-family: var(--nocturne-code-font); font-size: 0.9em; color: #e5e1d7; }
+
+.preview-compat .markmap-placeholder .markmap-svg {
+  display: block;
+  width: 100% !important;
+  height: 450px !important;
+  min-height: 450px;
+  margin-inline: auto;
+  overflow: visible;
+}

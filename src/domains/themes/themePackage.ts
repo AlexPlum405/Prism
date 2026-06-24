@@ -5,7 +5,7 @@ import {
   type ContentTheme,
 } from '../settings/types';
 import { t } from '../i18n';
-import type { DocxThemeContract, ThemeContract } from './themeContract';
+import type { DocxThemeContract, ThemeContract, ThemePreviewMaxWidth } from './themeContract';
 import { builtInThemeContracts } from './themeContract';
 import { ThemeError } from './themeErrors';
 import { validateThemeCss } from './themeCss';
@@ -69,6 +69,12 @@ function stringValue(value: unknown, fallback: string, maxLength = 240) {
 function numberValue(value: unknown, fallback: number, min: number, max: number) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
+}
+
+function previewMaxWidthValue(value: unknown, fallback: ThemePreviewMaxWidth): ThemePreviewMaxWidth {
+  if (value === 'none') return 'none';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.min(1280, Math.max(520, value));
 }
 
 function objectValue<T extends object>(value: unknown): Partial<T> {
@@ -155,7 +161,7 @@ export function buildUserThemeContract(manifest: ThemeManifest): ThemeContract {
       fontFamily: stringValue(preview.fontFamily, base.preview.fontFamily, 400),
       fontSize: numberValue(preview.fontSize, base.preview.fontSize, 10, 36),
       lineHeight: numberValue(preview.lineHeight, base.preview.lineHeight, 1.1, 3),
-      maxWidth: numberValue(preview.maxWidth, base.preview.maxWidth, 520, 1280),
+      maxWidth: previewMaxWidthValue(preview.maxWidth, base.preview.maxWidth),
       writeClass: stringValue(preview.writeClass, base.preview.writeClass, 320),
     },
     search: {

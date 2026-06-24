@@ -23,7 +23,6 @@ import { findMarkdownTableBlock } from '../extensions/tables';
 import {
   compatibilityMarkdownPlugin,
 } from '../extensions/markdownHighlight';
-import { taskListCheckboxExtension } from '../extensions/taskListCheckbox';
 import { createHiddenSearchPanel } from '../extensions/search';
 import { editorSelectionPlugin, lineFlashField } from '../extensions/selection';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
@@ -221,7 +220,6 @@ export function useEditorRuntimeModel({
           editorUsesThemeFont,
         )),
         compatibilityMarkdownPlugin,
-        taskListCheckboxExtension,
         editorSelectionPlugin,
         bracketMatching(),
         closeBrackets(),
@@ -297,11 +295,14 @@ export function useEditorRuntimeModel({
 
       const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
       const selection = view.state.selection.main;
+      const target = event.target instanceof Element ? event.target : null;
+      const rightClickedSelectionDom = Boolean(target?.closest('.cm-selectionBackground'));
       const rightClickedInsideSelection =
-        pos !== null &&
         selection.from !== selection.to &&
-        pos >= selection.from &&
-        pos <= selection.to;
+        (
+          rightClickedSelectionDom ||
+          (pos !== null && pos >= selection.from && pos <= selection.to)
+        );
 
       if (pos !== null && !rightClickedInsideSelection) {
         view.dispatch({ selection: { anchor: pos } });

@@ -3,11 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { useSettingsStore } from '../../settings/store';
 import { DEFAULT_SETTINGS } from '../../settings/types';
+import { PLANT_UML_SVG_ENDPOINT } from './plantUml';
 import { __previewPaneTesting, PreviewPane } from './PreviewPane';
 
 const mermaidMock = vi.hoisted(() => ({
   initialize: vi.fn(),
   render: vi.fn(),
+}));
+const markmapMock = vi.hoisted(() => ({
+  create: vi.fn(),
+  fit: vi.fn(),
+  setData: vi.fn(),
+  transform: vi.fn(),
 }));
 const katexMock = vi.hoisted(() => ({
   renderToString: vi.fn((value: string, options: { displayMode?: boolean } = {}) => (
@@ -38,6 +45,20 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
 
 vi.mock('mermaid', () => ({
   default: mermaidMock,
+}));
+
+vi.mock('markmap-lib', () => ({
+  Transformer: vi.fn(function Transformer() {
+    return {
+      transform: markmapMock.transform,
+    };
+  }),
+}));
+
+vi.mock('markmap-view', () => ({
+  Markmap: {
+    create: markmapMock.create,
+  },
 }));
 
 vi.mock('katex', () => ({
@@ -94,6 +115,22 @@ describe('PreviewPane theme switching', () => {
     mermaidMock.initialize.mockReset();
     mermaidMock.render.mockReset();
     mermaidMock.render.mockResolvedValue({ svg: '<svg viewBox="0 0 10 10"></svg>' });
+    markmapMock.create.mockReset();
+    markmapMock.create.mockReturnValue({ destroy: vi.fn(), fit: markmapMock.fit, setData: markmapMock.setData });
+    markmapMock.fit.mockReset();
+    markmapMock.fit.mockResolvedValue(undefined);
+    markmapMock.setData.mockReset();
+    markmapMock.setData.mockImplementation((root) => {
+      const svg = document.querySelector('.markmap-placeholder svg.markmap-svg');
+      if (svg) {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.classList.add('markmap-node');
+        svg.append(group);
+      }
+      return Promise.resolve(root);
+    });
+    markmapMock.transform.mockReset();
+    markmapMock.transform.mockReturnValue({ root: { content: 'Root', children: [] } });
     katexMock.renderToString.mockClear();
     openerMock.openUrl.mockReset();
     fsMock.readFile.mockReset();
@@ -119,6 +156,7 @@ describe('PreviewPane theme switching', () => {
     });
     __previewPaneTesting.clearKatexCache();
     __previewPaneTesting.clearMermaidCache();
+    __previewPaneTesting.clearMarkmapCache();
     __previewPaneTesting.clearPreviewMediaCache();
   });
 
@@ -157,6 +195,15 @@ describe('PreviewPane theme switching', () => {
     const write = document.querySelector<HTMLElement>('#write');
     expect(write?.style.fontFamily).toBe('Georgia, serif');
     expect(write?.style.fontSize).toBe('21px');
+  });
+
+  it('uses the active theme preview font size while the user setting is still default', () => {
+    document.documentElement.setAttribute('data-content-theme', 'miaoyan');
+
+    render(<PreviewPane content="# Hello" />);
+
+    const write = document.querySelector<HTMLElement>('#write');
+    expect(write?.style.fontSize).toBe('16px');
   });
 
   it('debounces expensive markdown rendering across rapid content changes', async () => {
@@ -202,6 +249,8 @@ describe('PreviewPane theme switching', () => {
     expect(__previewPaneTesting.getKatexPreviewBatchSize(25)).toBe(12);
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(10)).toBe(1);
     expect(__previewPaneTesting.getMermaidPreviewBatchSize(11)).toBe(3);
+    expect(__previewPaneTesting.getMermaidDisplayScale('miaoyan')).toBe(1);
+    expect(__previewPaneTesting.getMermaidDisplayScale('inkstone')).toBe(1);
   });
 
   it('throttles large-document preview updates and shows a lightweight pending status', async () => {
@@ -390,6 +439,120 @@ describe('PreviewPane theme switching', () => {
     expect(screen.getByText('Syntax error in text')).toBeInTheDocument();
   });
 
+  it('renders PlantUML placeholders as remote SVG images', async () => {
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      `<div class="plantuml-placeholder" data-plantuml="${encodeURIComponent('@startuml\nAlice -> Bob\n@enduml')}" data-source-line="4"></div>`,
+    );
+
+    render(<PreviewPane content="```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```" renderStrategy="immediate" />);
+
+    const image = await screen.findByAltText('PlantUML diagram');
+    const imageSrc = image.getAttribute('src') ?? '';
+    expect(image).toHaveClass('plantuml-image');
+    expect(imageSrc.startsWith(PLANT_UML_SVG_ENDPOINT)).toBe(true);
+    expect(imageSrc).not.toContain('@startuml');
+  });
+
+  it('renders PlantUML load failures as source-locatable diagnostics', async () => {
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      `<div class="plantuml-placeholder" data-plantuml="${encodeURIComponent('@startuml\nAlice -> Bob\n@enduml')}" data-source-line="8"></div>`,
+    );
+
+    render(<PreviewPane content="```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```" renderStrategy="immediate" />);
+
+    const image = await screen.findByAltText('PlantUML diagram');
+    fireEvent.error(image);
+
+    await waitFor(() => {
+      expect(screen.getByText('PlantUML 渲染失败')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Failed to load PlantUML SVG')).toBeInTheDocument();
+    expect(screen.getByText('源码行 8')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '跳到源码' })).toHaveAttribute('data-preview-source-line', '8');
+  });
+
+  it('renders Markmap placeholders as interactive SVG diagrams', async () => {
+    document.documentElement.setAttribute('data-content-theme', 'miaoyan');
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      `<div class="markmap-placeholder" data-markmap="${encodeURIComponent('# 项目\n- 用户\n- 场景')}" data-source-line="6"></div>`,
+    );
+
+    render(<PreviewPane content="```markmap\n# 项目\n- 用户\n- 场景\n```" renderStrategy="immediate" />);
+
+    await waitFor(() => {
+      expect(markmapMock.transform).toHaveBeenCalledWith('# 项目\n- 用户\n- 场景');
+    });
+    expect(markmapMock.create).toHaveBeenCalledTimes(1);
+    expect(markmapMock.create).toHaveBeenCalledWith(expect.any(SVGElement), expect.any(Object));
+    await waitFor(() => {
+      expect(markmapMock.setData).toHaveBeenCalledWith({ content: 'Root', children: [] });
+      expect(markmapMock.fit).toHaveBeenCalledTimes(1);
+    });
+    const svg = document.querySelector('.markmap-placeholder svg.markmap-svg');
+    expect(svg).toBeInTheDocument();
+    expect(svg).toHaveAttribute('aria-label', 'Markmap diagram');
+    expect(svg).toHaveStyle({ height: '450px', minHeight: '450px', width: '100%' });
+  });
+
+  it('uses a static SVG Markmap fallback on WebKit so macOS WebView does not render a blank canvas', async () => {
+    const originalUserAgent = window.navigator.userAgent;
+    Object.defineProperty(window.navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    });
+    markmapMock.transform.mockReturnValueOnce({
+      root: {
+        content: '&#x804a;&#x658b;&#x5fd7;&#x5f02;&#xb7;&#x5a74;&#x5b81;',
+        children: [
+          { content: '<strong>&#x738b;&#x5b50;&#x670d;</strong>', children: [{ content: '&#x8eab;&#x4efd;&#xff1a;&#x4e66;&#x751f;' }] },
+          { content: '<strong>&#x5a74;&#x5b81;</strong>', children: [{ content: '&#x7279;&#x5f81;&#xff1a;&#x5584;&#x7b11;&#x5982;&#x82b1;' }] },
+        ],
+      },
+    });
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      `<div class="markmap-placeholder" data-markmap="${encodeURIComponent('# 聊斋志异·婴宁\n- 王子服\n- 婴宁')}" data-source-line="6"></div>`,
+    );
+
+    try {
+      render(<PreviewPane content="```markmap\n# 聊斋志异·婴宁\n- 王子服\n- 婴宁\n```" renderStrategy="immediate" />);
+
+      await waitFor(() => {
+        expect(document.querySelectorAll('.markmap-placeholder .markmap-node').length).toBeGreaterThan(0);
+      });
+
+      const svg = document.querySelector('.markmap-placeholder svg.markmap-svg');
+      expect(svg).toHaveAttribute('data-markmap-renderer', 'static');
+      expect(svg?.textContent).toContain('聊斋志异·婴宁');
+      expect(svg?.textContent).toContain('王子服');
+      expect(svg?.textContent).toContain('婴宁');
+      expect(markmapMock.create).not.toHaveBeenCalled();
+      expect(markmapMock.setData).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window.navigator, 'userAgent', {
+        configurable: true,
+        value: originalUserAgent,
+      });
+    }
+  });
+
+  it('renders Markmap failures as source-locatable diagnostics', async () => {
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      `<div class="markmap-placeholder" data-markmap="${encodeURIComponent('# 项目\n- 用户')}" data-source-line="9"></div>`,
+    );
+    markmapMock.transform.mockImplementationOnce(() => {
+      throw new Error('bad markmap');
+    });
+
+    render(<PreviewPane content="```markmap\n# 项目\n- 用户\n```" renderStrategy="immediate" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Markmap 渲染失败')).toBeInTheDocument();
+    });
+    expect(screen.getByText('bad markmap')).toBeInTheDocument();
+    expect(screen.getByText('源码行 9')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '跳到源码' })).toHaveAttribute('data-preview-source-line', '9');
+  });
+
   it('reuses cached Mermaid SVG for the same diagram and content theme', async () => {
     const mermaidHtml = `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent('graph TD; A-->B')}" data-source-line="2"></div>`;
     vi.mocked(markdownToHtml).mockReturnValue(mermaidHtml);
@@ -408,6 +571,34 @@ describe('PreviewPane theme switching', () => {
     });
     expect(mermaidMock.render).toHaveBeenCalledTimes(1);
     expect(mermaidMock.initialize).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps rendered Mermaid SVGs at their natural diagram size instead of stretching to the preview width', async () => {
+    document.documentElement.setAttribute('data-content-theme', 'miaoyan');
+    const mermaidHtml = `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent('graph TD; A-->B')}" data-source-line="2"></div>`;
+    vi.mocked(markdownToHtml).mockReturnValue(mermaidHtml);
+    mermaidMock.render.mockResolvedValueOnce({
+      svg: '<svg width="100%" height="360" viewBox="0 0 420 360"><text>Diagram</text></svg>',
+    });
+
+    render(<PreviewPane content="```mermaid\ngraph TD; A-->B\n```" renderStrategy="immediate" />);
+
+    await waitFor(() => {
+      const svg = document.querySelector<SVGSVGElement>('.mermaid-placeholder svg');
+      expect(svg).toBeInTheDocument();
+      expect(svg?.style.width).toBe('420px');
+    });
+    const svg = document.querySelector<SVGSVGElement>('.mermaid-placeholder svg');
+    expect(svg?.getAttribute('width')).toBe('420');
+    expect(svg?.getAttribute('height')).toBe('360');
+    expect(svg?.style.maxWidth).toBe('min(100%, 920px)');
+    expect(svg?.style.height).toBe('auto');
+    expect(mermaidMock.initialize).toHaveBeenCalledWith(expect.objectContaining({
+      flowchart: expect.objectContaining({ useMaxWidth: true, curve: 'basis' }),
+      sequence: expect.objectContaining({ useMaxWidth: true }),
+      gantt: expect.objectContaining({ useMaxWidth: true }),
+      journey: expect.objectContaining({ useMaxWidth: true }),
+    }));
   });
 
   it('applies cached Mermaid SVGs without waiting for frame batches', async () => {
@@ -637,7 +828,10 @@ describe('PreviewPane theme switching', () => {
 
     render(<PreviewPane content="$\\bad$" />);
 
-    expect(await screen.findByText('\\bad')).toHaveClass('preview-katex-error');
+    const katexError = await screen.findByText('\\bad');
+    await waitFor(() => {
+      expect(katexError).toHaveClass('preview-katex-error');
+    });
     expect(screen.getByText('\\bad')).toHaveAttribute('data-preview-source-line', '7');
     expect(screen.getByRole('button', { name: '跳到源码' })).toHaveAttribute('data-preview-source-line', '7');
   });

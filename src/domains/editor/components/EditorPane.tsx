@@ -47,6 +47,8 @@ import {
 } from '../extensions/calloutSnippets';
 import {
   MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT,
+  collectMiaoyanInlineMarkdownDecorationRanges,
+  collectMiaoyanMathDecorationRanges,
   getMiaoyanCodeHighlightRanges,
   getMiaoyanCodeLanguage,
   loadMiaoyanCodeHighlighterForTesting,
@@ -147,6 +149,8 @@ const TOGGLE_BLOCK_TITLE_START = TOGGLE_BLOCK_SNIPPET.indexOf('标题');
 const TOGGLE_BLOCK_TITLE_END = TOGGLE_BLOCK_TITLE_START + '标题'.length;
 
 export const __editorPaneTesting = {
+  collectMiaoyanInlineMarkdownDecorationRanges,
+  collectMiaoyanMathDecorationRanges,
   getMiaoyanCodeLanguage,
   getMiaoyanCodeHighlightRanges,
   loadMiaoyanCodeHighlighterForTesting,

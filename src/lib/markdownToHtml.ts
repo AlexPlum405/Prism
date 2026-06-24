@@ -19,13 +19,90 @@ import {
 } from '../domains/editor/extensions/frontMatterProperties';
 import { t } from '../domains/i18n/runtime';
 
+const MERMAID_ALIAS_DIRECTIVES: Record<string, string> = {
+  architecture: 'architecture-beta',
+  block: 'block-beta',
+  blockdiagram: 'block-beta',
+  c4: 'C4Context',
+  class: 'classDiagram',
+  classdiagram: 'classDiagram',
+  er: 'erDiagram',
+  erdiagram: 'erDiagram',
+  flowchart: 'flowchart',
+  gantt: 'gantt',
+  gitgraph: 'gitGraph',
+  graph: 'graph',
+  journey: 'journey',
+  kanban: 'kanban',
+  mindmap: 'mindmap',
+  packet: 'packet-beta',
+  pie: 'pie',
+  quadrant: 'quadrantChart',
+  quadrantchart: 'quadrantChart',
+  requirement: 'requirementDiagram',
+  requirementdiagram: 'requirementDiagram',
+  sequence: 'sequenceDiagram',
+  sequencediagram: 'sequenceDiagram',
+  state: 'stateDiagram-v2',
+  statediagram: 'stateDiagram-v2',
+  timeline: 'timeline',
+  xy: 'xychart-beta',
+  xychart: 'xychart-beta',
+};
+
+const MERMAID_DIRECTIVE_PATTERN = /^(?:architecture-beta|block-beta|C4(?:Context|Container|Component|Dynamic|Deployment)?|classDiagram|erDiagram|flowchart|gantt|gitGraph|graph|journey|kanban|mindmap|packet-beta|pie|quadrantChart|requirementDiagram|sequenceDiagram|stateDiagram(?:-v2)?|timeline|xychart-beta)\b/i;
+const MARKMAP_MARKDOWN_PATTERN = /^\s{0,3}(?:#{1,6}\s+\S|[-+*]\s+\S|\d+[.)]\s+\S)/m;
+
+function normalizeDiagramLanguage(language: unknown) {
+  return String(language ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+function looksLikeMarkmapMarkdown(source: string) {
+  return MARKMAP_MARKDOWN_PATTERN.test(source);
+}
+
+function isMarkmapLanguage(language: unknown, source = '') {
+  const normalized = normalizeDiagramLanguage(language);
+  if (normalized === 'markmap') return true;
+  return normalized === 'mindmap' && looksLikeMarkmapMarkdown(source);
+}
+
+function normalizeMermaidAliasSource(directive: string, source: string) {
+  const trimmed = source.trimStart();
+  if (MERMAID_DIRECTIVE_PATTERN.test(trimmed)) return source;
+
+  if (directive === 'flowchart' || directive === 'graph') {
+    const lines = source.split('\n');
+    const firstLine = lines[0] ?? '';
+    const directionMatch = /^(\s*)(TB|BT|RL|LR|TD)\b(.*)$/i.exec(firstLine);
+    if (directionMatch) {
+      const [, indent = '', direction = '', rest = ''] = directionMatch;
+      return [
+        `${indent}${directive} ${direction}${rest}`,
+        ...lines.slice(1),
+      ].join('\n');
+    }
+  }
+
+  return `${directive}\n${source}`;
+}
+
+function getMermaidSourceForLanguage(language: unknown, source: string) {
+  const normalized = normalizeDiagramLanguage(language);
+  if (normalized === 'mermaid') return source;
+  if (isMarkmapLanguage(language, source)) return null;
+  const directive = MERMAID_ALIAS_DIRECTIVES[normalized];
+  return directive ? normalizeMermaidAliasSource(directive, source) : null;
+}
+
 function remarkMermaid() {
   return (tree: any) => {
     visit(tree, 'code', (node: any, index, parent) => {
-      if (node.lang !== 'mermaid') return;
+      const source = getMermaidSourceForLanguage(node.lang, node.value);
+      if (source === null) return;
       if (index === undefined || !parent) return;
 
-      const encoded = encodeURIComponent(node.value);
+      const encoded = encodeURIComponent(source);
       const line = node.position?.start?.line;
       parent.children[index] = {
         type: 'mermaid',
@@ -49,11 +126,163 @@ function remarkMermaid() {
   };
 }
 
+function isPlantUmlLanguage(language: unknown) {
+  const normalized = normalizeDiagramLanguage(language);
+  return normalized === 'plantuml' || normalized === 'puml';
+}
+
+function remarkPlantUml() {
+  return (tree: any) => {
+    visit(tree, 'code', (node: any, index, parent) => {
+      if (!isPlantUmlLanguage(node.lang)) return;
+      if (index === undefined || !parent) return;
+
+      const encoded = encodeURIComponent(node.value);
+      const line = node.position?.start?.line;
+      parent.children[index] = {
+        type: 'plantUml',
+        data: {
+          hName: 'div',
+          hProperties: {
+            className: ['plantuml-placeholder'],
+            dataPlantuml: encoded,
+            ...(Number.isFinite(line)
+              ? {
+                  'data-source-line': String(line),
+                  'data-line': String(line),
+                  dataLine: String(line),
+                }
+              : {}),
+          },
+        },
+        children: [],
+      };
+    });
+  };
+}
+
+function remarkMarkmap() {
+  return (tree: any) => {
+    visit(tree, 'code', (node: any, index, parent) => {
+      if (!isMarkmapLanguage(node.lang, node.value)) return;
+      if (index === undefined || !parent) return;
+
+      const encoded = encodeURIComponent(node.value);
+      const line = node.position?.start?.line;
+      parent.children[index] = {
+        type: 'markmap',
+        data: {
+          hName: 'div',
+          hProperties: {
+            className: ['markmap-placeholder'],
+            dataMarkmap: encoded,
+            ...(Number.isFinite(line)
+              ? {
+                  'data-source-line': String(line),
+                  'data-line': String(line),
+                  dataLine: String(line),
+                }
+              : {}),
+          },
+        },
+        children: [],
+      };
+    });
+  };
+}
+
 function remarkCollectMathLines(mathLines: number[]) {
   return (tree: any) => {
     visit(tree, 'math', (node: any) => {
       const line = node.position?.start?.line;
       if (Number.isFinite(line)) mathLines.push(line);
+    });
+  };
+}
+
+function remarkPromoteSingleLineDisplayMath(source: string) {
+  function isNodeAloneOnSourceLine(startOffset: number, endOffset: number) {
+    const lineStart = source.lastIndexOf('\n', startOffset - 1) + 1;
+    const nextLineBreak = source.indexOf('\n', endOffset);
+    const lineEnd = nextLineBreak === -1 ? source.length : nextLineBreak;
+    const line = source.slice(lineStart, lineEnd);
+    const raw = source.slice(startOffset, endOffset);
+    return line.trim() === raw.trim();
+  }
+
+  function getDisplayMathSource(node: any, allowStandaloneInlineMath: boolean) {
+    const startOffset = node.position?.start?.offset;
+    const endOffset = node.position?.end?.offset;
+    if (!Number.isFinite(startOffset) || !Number.isFinite(endOffset)) return null;
+
+    const raw = source.slice(startOffset, endOffset).trim();
+    const displayMatch = /^\$\$([\s\S]+)\$\$$/.exec(raw);
+    if (displayMatch) return (displayMatch[1] ?? node.value ?? '').trim();
+
+    const canPromoteInlineMath = allowStandaloneInlineMath || isNodeAloneOnSourceLine(startOffset, endOffset);
+    const standaloneInlineMathMatch = canPromoteInlineMath ? /^\$([^$\n]+)\$$/.exec(raw) : null;
+    return standaloneInlineMathMatch ? (standaloneInlineMathMatch[1] ?? node.value ?? '').trim() : null;
+  }
+
+  function createDisplayMathNode(node: any, value: string) {
+    return {
+      ...node,
+      type: 'math',
+      value,
+      data: {
+        hName: 'code',
+        hProperties: { className: ['language-math', 'math-display'] },
+        hChildren: [{ type: 'text', value }],
+      },
+      position: node.position,
+    };
+  }
+
+  function createParagraphNode(sourceNode: any, children: any[]) {
+    return {
+      ...sourceNode,
+      children,
+      position: {
+        start: children[0]?.position?.start ?? sourceNode.position?.start,
+        end: children[children.length - 1]?.position?.end ?? sourceNode.position?.end,
+      },
+    };
+  }
+
+  return (tree: any) => {
+    visit(tree, 'paragraph', (node: any, index, parent: any) => {
+      if (typeof index !== 'number' || !parent || !Array.isArray(node.children)) return;
+      if (!Array.isArray(node.children)) return;
+
+      const replacement: any[] = [];
+      let paragraphChildren: any[] = [];
+      let promoted = false;
+      const allowStandaloneInlineMath = node.children.length === 1 && node.children[0]?.type === 'inlineMath';
+
+      node.children.forEach((child: any) => {
+        const displayMathSource = child?.type === 'inlineMath'
+          ? getDisplayMathSource(child, allowStandaloneInlineMath)
+          : null;
+        if (displayMathSource === null) {
+          paragraphChildren.push(child);
+          return;
+        }
+
+        if (paragraphChildren.length > 0) {
+          replacement.push(createParagraphNode(node, paragraphChildren));
+          paragraphChildren = [];
+        }
+        replacement.push(createDisplayMathNode(child, displayMathSource));
+        promoted = true;
+      });
+
+      if (!promoted) return;
+      if (paragraphChildren.length > 0) {
+        replacement.push(createParagraphNode(node, paragraphChildren));
+      }
+
+      parent.children.splice(index, 1, ...replacement);
+      return ['skip', index] as any;
     });
   };
 }
@@ -178,6 +407,85 @@ function rehypePreviewUrlSafety() {
         }
       });
     });
+  };
+}
+
+function ensureClassName(properties: Record<string, unknown>, className: string) {
+  const current = properties.className;
+  const classNames = Array.isArray(current)
+    ? current.map(String)
+    : typeof current === 'string'
+      ? current.split(/\s+/).filter(Boolean)
+      : [];
+  if (!classNames.includes(className)) classNames.push(className);
+  properties.className = classNames;
+}
+
+function hasClassName(properties: Record<string, unknown> | undefined, className: string) {
+  const current = properties?.className;
+  const classNames = Array.isArray(current)
+    ? current.map(String)
+    : typeof current === 'string'
+      ? current.split(/\s+/).filter(Boolean)
+      : [];
+  return classNames.includes(className);
+}
+
+function isCheckboxInput(node: any) {
+  if (node?.type !== 'element' || node.tagName !== 'input') return false;
+  const type = node.properties?.type;
+  return typeof type === 'string' && type.toLowerCase() === 'checkbox';
+}
+
+function findClosestElementAncestor(ancestors: any[], tagName: string) {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const ancestor = ancestors[index];
+    if (ancestor?.type === 'element' && ancestor.tagName === tagName) return ancestor;
+  }
+  return null;
+}
+
+function rehypeInteractiveTaskListItems() {
+  return (tree: any) => {
+    let checkboxIndex = 0;
+
+    function visitNode(node: any, ancestors: any[]) {
+      if (isCheckboxInput(node)) {
+        const li = findClosestElementAncestor(ancestors, 'li');
+        if (!li || !hasClassName(li.properties, 'task-list-item')) {
+          return;
+        }
+
+        node.properties = node.properties || {};
+        delete node.properties.disabled;
+        node.properties['data-task-checkbox-index'] = String(checkboxIndex);
+
+        const ul = findClosestElementAncestor(ancestors, 'ul');
+
+        li.properties = li.properties || {};
+        const sourceLine = li.properties['data-source-line'] ?? li.properties.dataLine ?? li.properties['data-line'];
+        if (sourceLine !== undefined) {
+          node.properties['data-source-line'] = String(sourceLine);
+          node.properties['data-line'] = String(sourceLine);
+          node.properties.dataLine = String(sourceLine);
+        }
+        if (node.properties.checked === true || node.properties.checked === '') {
+          ensureClassName(li.properties, 'strike');
+        }
+
+        if (ul) {
+          ul.properties = ul.properties || {};
+          ensureClassName(ul.properties, 'cb');
+        }
+
+        checkboxIndex += 1;
+      }
+
+      if (!Array.isArray(node?.children)) return;
+      node.children.forEach((child: any) => visitNode(child, [...ancestors, node]));
+    }
+
+    visitNode(tree, []);
   };
 }
 
@@ -590,6 +898,8 @@ interface MarkdownPreviewFeatureHints {
   mark: boolean;
   math: boolean;
   mermaid: boolean;
+  markmap: boolean;
+  plantUml: boolean;
   rawHtml: boolean;
   wikiLinks: boolean;
 }
@@ -597,7 +907,9 @@ interface MarkdownPreviewFeatureHints {
 const FRONT_MATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
 const HTML_CANDIDATE_PATTERN = /<\/?[A-Za-z][A-Za-z0-9:-]*(?:\s|>|\/>)/;
 const CODE_CANDIDATE_PATTERN = /(^|\n)(```|~~~)|<pre(?:\s|>)|<code(?:\s|>)/i;
-const MERMAID_FENCE_PATTERN = /(^|\n)(```|~~~)\s*mermaid(?:\s|\n|$)/i;
+const MERMAID_FENCE_PATTERN = /(^|\n)(```|~~~)\s*(?:mermaid|architecture[-_\s]?beta|architecture|block[-_\s]?beta|block(?:diagram)?|c4|class(?:diagram)?|er(?:diagram)?|flowchart|gantt|gitgraph|graph|journey|kanban|mind[-_\s]?map|packet[-_\s]?beta|packet|pie|quadrant(?:chart)?|requirement(?:diagram)?|sequence(?:diagram)?|state(?:diagram)?|timeline|xy(?:chart)?)(?:\s|\n|$)/i;
+const MARKMAP_FENCE_PATTERN = /(^|\n)(```|~~~)\s*(?:mark[-_\s]?map|mind[-_\s]?map)(?:\s|\n|$)/i;
+const PLANTUML_FENCE_PATTERN = /(^|\n)(```|~~~)\s*(?:plantuml|puml)(?:\s|\n|$)/i;
 const MATH_FENCE_PATTERN = /(^|\n)(```|~~~)\s*math(?:\s|\n|$)/i;
 const CALLOUT_PATTERN = /(^|\n)\s*>\s*\[![A-Za-z]+\]/;
 const GFM_TABLE_SEPARATOR_PATTERN = /(^|\n)\s{0,3}\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*(?:\n|$)/;
@@ -990,6 +1302,7 @@ function renderCommonPreviewCodeBlock(
   const fenceChar = fence[0];
   const closePattern = new RegExp(`^\\s{0,3}${escapeRegExp(fenceChar.repeat(fence.length))}${fenceChar}*\\s*$`);
   const language = (match[2] ?? '').trim();
+  const normalizedLanguage = language.toLowerCase();
   const codeLines: string[] = [];
   let index = startIndex + 1;
   while (index < lines.length && !closePattern.test(lines[index])) {
@@ -1000,10 +1313,25 @@ function renderCommonPreviewCodeBlock(
 
   const sourceLine = startIndex + 1;
   const code = codeLines.join('\n');
-  if (language === 'mermaid') {
+  const mermaidSource = getMermaidSourceForLanguage(normalizedLanguage, code);
+  if (mermaidSource !== null) {
     const escapedLine = escapeGeneratedHtml(String(sourceLine));
     return {
-      html: `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(code)}" data-line="${escapedLine}"></div>`,
+      html: `<div class="mermaid-placeholder" data-mermaid="${encodeURIComponent(mermaidSource)}" data-line="${escapedLine}"></div>`,
+      nextIndex: index + 1,
+    };
+  }
+  if (isMarkmapLanguage(normalizedLanguage, code)) {
+    const escapedLine = escapeGeneratedHtml(String(sourceLine));
+    return {
+      html: `<div class="markmap-placeholder" data-markmap="${encodeURIComponent(code)}" data-line="${escapedLine}"></div>`,
+      nextIndex: index + 1,
+    };
+  }
+  if (isPlantUmlLanguage(normalizedLanguage)) {
+    const escapedLine = escapeGeneratedHtml(String(sourceLine));
+    return {
+      html: `<div class="plantuml-placeholder" data-plantuml="${encodeURIComponent(code)}" data-line="${escapedLine}"></div>`,
       nextIndex: index + 1,
     };
   }
@@ -1624,6 +1952,8 @@ function detectMarkdownPreviewFeatures(content: string): MarkdownPreviewFeatureH
     mark: content.includes('=='),
     math: content.includes('$') || content.includes('\\(') || content.includes('\\[') || MATH_FENCE_PATTERN.test(content),
     mermaid: MERMAID_FENCE_PATTERN.test(content),
+    markmap: MARKMAP_FENCE_PATTERN.test(content),
+    plantUml: PLANTUML_FENCE_PATTERN.test(content),
     rawHtml: HTML_CANDIDATE_PATTERN.test(content),
     wikiLinks: content.includes('[['),
   };
@@ -1667,7 +1997,8 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
     processor = processor.use(remarkKatexPlaceholders);
   } else if (featureHints.math) {
     processor = processor
-      .use(remarkMath);
+      .use(remarkMath)
+      .use(() => remarkPromoteSingleLineDisplayMath(largePreTablePreview.content));
   }
   if (largePreTablePreview.sourceLineOffsets.length > 0) {
     processor = processor.use(() => remarkApplySourceLineOffsets(largePreTablePreview.sourceLineOffsets));
@@ -1681,6 +2012,8 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   processor = processor.use(remarkBlockLines);
   if (featureHints.callouts) processor = processor.use(remarkCallouts);
   if (featureHints.mermaid) processor = processor.use(remarkMermaid);
+  if (featureHints.markmap) processor = processor.use(remarkMarkmap);
+  if (featureHints.plantUml) processor = processor.use(remarkPlantUml);
 
   processor = processor.use(remarkRehype, { allowDangerousHtml: featureHints.rawHtml });
   if (featureHints.rawHtml) processor = processor.use(rehypeRaw);
@@ -1698,6 +2031,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   }
 
   const result = processor
+    .use(rehypeInteractiveTaskListItems)
     .use(rehypePreviewUrlSafety)
     .use(rehypeStringify, { allowDangerousHtml: true })
     .processSync(largePreTablePreview.content);

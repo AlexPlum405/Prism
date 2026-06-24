@@ -3,6 +3,11 @@ import type { ToastInput } from '../lib/toast';
 import { EXPORT_TRANSIENT_FEEDBACK_MS } from '../lib/feedbackTiming';
 import { t } from '../domains/i18n';
 import { onAppEvent } from '../platform/events/appEvents';
+import {
+  openPathWithDefaultApp,
+  revealPathInFileManager,
+} from '../platform/tauri/opener';
+import { openPathWithSystemNative } from '../platform/tauri/nativeCommands';
 
 export interface ExportFailureState {
   diagnostic: string;
@@ -64,6 +69,9 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
 
   useEffect(() => {
     return onAppEvent('export.result', (detail) => {
+      const title = detail.title ?? (
+        detail.status === 'success' ? t('status.exported') : t('status.exportCancelled')
+      );
       setExportProgress(null);
       setExportProgressInBackground(false);
       setExportFailure(null);
@@ -71,11 +79,48 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
       setExportFeedback({
         message: detail.message,
         status: detail.status,
-        title: detail.title ?? (detail.status === 'success' ? t('status.exported') : t('status.exportCancelled')),
+        title,
       });
+
+      if (detail.status === 'success') {
+        const outputPath = detail.outputPath ?? null;
+        showToast({
+          actions: outputPath
+            ? [
+                {
+                  label: t('export.openAction'),
+                  onClick: async () => {
+                    try {
+                      await openPathWithSystemNative(outputPath);
+                    } catch {
+                      try {
+                        await openPathWithDefaultApp(outputPath);
+                      } catch {
+                        showToast({ tone: 'error', title: t('export.openFailed') });
+                      }
+                    }
+                  },
+                },
+                {
+                  label: t('export.revealAction'),
+                  onClick: async () => {
+                    try {
+                      await revealPathInFileManager(outputPath);
+                    } catch {
+                      showToast({ tone: 'error', title: t('export.revealFailed') });
+                    }
+                  },
+                },
+              ]
+            : [],
+          message: detail.message,
+          title,
+          tone: 'success',
+        });
+      }
       scheduleTransientFeedbackClear();
     });
-  }, [scheduleTransientFeedbackClear]);
+  }, [scheduleTransientFeedbackClear, showToast]);
 
   useEffect(() => {
     return onAppEvent('export.failed', (detail) => {

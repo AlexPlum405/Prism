@@ -28,6 +28,7 @@ scripts/*
 !scripts/run-preview-typography-snapshots.mjs
 !scripts/run-theme-visual-snapshots.mjs
 !scripts/run-shell-density-snapshots.mjs
+!scripts/run-prism-issue-regression.mjs
 src-tauri/icons_backup/
 docs/assets/prism-app-icon-redesign-ai-v3-selected.png
 docs/assets/prism-logo-ai-v3/

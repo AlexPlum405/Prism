@@ -132,13 +132,24 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       return;
     }
 
-    const shouldOpen = await askDialog(
-      t('command.updateAvailable', { version: result.version, currentVersion: result.currentVersion }),
-      { title: t('command.checkUpdate'), kind: 'info' },
-    );
-    if (shouldOpen) {
-      await openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest');
+    const updateMessage = t('command.updateAvailable', {
+      currentVersion: result.currentVersion,
+      version: result.version,
+    });
+    if (context.showToast) {
+      context.showToast({
+        actions: [{
+          label: t('common.open'),
+          onClick: () => openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest'),
+        }],
+        message: updateMessage,
+        title: t('command.checkUpdate'),
+      });
+      return;
     }
+
+    const shouldOpen = await askDialog(updateMessage, { title: t('command.checkUpdate'), kind: 'info' });
+    if (shouldOpen) await openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest');
   } catch (error) {
     context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
   }

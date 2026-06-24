@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { currentCompletions, startCompletion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -366,6 +366,36 @@ describe('EditorPane command event integration', () => {
     }
   });
 
+  it('keeps right-click selection actions enabled when clicking a rendered selection background', async () => {
+    const posSpy = vi.spyOn(EditorView.prototype, 'posAtCoords').mockReturnValue(null);
+    await renderEditorPane('hello world');
+    const view = getMountedEditorView();
+
+    try {
+      act(() => {
+        view.dispatch({ selection: { anchor: 0, head: 5 } });
+      });
+
+      const selectionBackground = document.createElement('span');
+      selectionBackground.className = 'cm-selectionBackground';
+      view.dom.appendChild(selectionBackground);
+
+      fireEvent.contextMenu(selectionBackground, {
+        bubbles: true,
+        cancelable: true,
+        clientX: 12,
+        clientY: 12,
+      });
+
+      const menu = (await screen.findAllByRole('menu'))[0];
+      expect(menu).toBeInTheDocument();
+      expect(within(menu).getByText('复制').closest('[role="menuitem"]')).not.toHaveAttribute('aria-disabled');
+      expect(within(menu).getByText('链接').closest('[role="menuitem"]')).not.toHaveAttribute('aria-disabled');
+    } finally {
+      posSpy.mockRestore();
+    }
+  });
+
   it('handles heading events from menus and the command palette', async () => {
     const { changes, onChange } = await renderEditorPane('Section title');
 
@@ -561,22 +591,12 @@ describe('EditorPane command event integration', () => {
     });
   });
 
-  it('toggles markdown task list checkboxes from the source editor', async () => {
-    const { changes, onChange } = await renderEditorPane('- [ ] Review UX options');
+  it('keeps markdown task list markers as source text in the editor', async () => {
+    await renderEditorPane('- [ ] Review UX options');
     const checkbox = document.querySelector<HTMLInputElement>('.cm-task-list-checkbox');
 
-    expect(checkbox).toBeInTheDocument();
-    expect(checkbox?.checked).toBe(false);
-
-    await act(async () => {
-      checkbox?.click();
-      await Promise.resolve();
-    });
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalled();
-      expect(latestChange(changes)).toBe('- [x] Review UX options');
-    });
+    expect(checkbox).not.toBeInTheDocument();
+    expect(document.querySelector('.cm-content')?.textContent).toContain('- [ ] Review UX options');
   });
 
   it('surfaces markdown link completions from the mounted CodeMirror editor context', async () => {

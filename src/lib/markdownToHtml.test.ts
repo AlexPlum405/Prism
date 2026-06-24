@@ -257,11 +257,123 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('data-line="3"');
   });
 
+  it('supports common Mermaid fenced-block language aliases', () => {
+    const sequenceHtml = markdownToHtml('```sequence\nAlice->>Bob: hello\n```');
+    const flowchartHtml = markdownToHtml('```flowchart\nTD\nA --> B\n```');
+
+    expect(sequenceHtml).toContain('class="mermaid-placeholder"');
+    expect(sequenceHtml).toContain(`data-mermaid="${encodeURIComponent('sequenceDiagram\nAlice->>Bob: hello')}"`);
+    expect(sequenceHtml).not.toContain('language-sequence');
+    expect(flowchartHtml).toContain(`data-mermaid="${encodeURIComponent('flowchart TD\nA --> B')}"`);
+    expect(flowchartHtml).not.toContain('language-flowchart');
+  });
+
+  it('keeps Markmap placeholders mapped to their source line', () => {
+    const source = [
+      'Intro',
+      '',
+      '```markmap',
+      '# 项目',
+      '- 用户',
+      '- 场景',
+      '```',
+    ].join('\n');
+    const markmapSource = '# 项目\n- 用户\n- 场景';
+    const html = markdownToHtml(source);
+
+    expect(html).toContain('class="markmap-placeholder"');
+    expect(html).toContain(`data-markmap="${encodeURIComponent(markmapSource)}"`);
+    expect(html).toContain('data-source-line="3"');
+    expect(html).toContain('data-line="3"');
+    expect(html).not.toContain('language-markmap');
+  });
+
+  it('routes Markdown-outline mindmap fences to Markmap', () => {
+    const source = [
+      '```mindmap',
+      '# Root',
+      '- Branch A',
+      '  - Leaf',
+      '```',
+    ].join('\n');
+    const html = markdownToHtml(source);
+
+    expect(html).toContain('class="markmap-placeholder"');
+    expect(html).toContain(`data-markmap="${encodeURIComponent('# Root\n- Branch A\n  - Leaf')}"`);
+    expect(html).not.toContain('class="mermaid-placeholder"');
+    expect(html).not.toContain('language-mindmap');
+  });
+
+  it('routes Mermaid mindmap fences to Mermaid when the source is Mermaid syntax', () => {
+    const html = markdownToHtml('```mindmap\nroot((Root))\n  Branch\n```');
+
+    expect(html).toContain('class="mermaid-placeholder"');
+    expect(html).toContain(`data-mermaid="${encodeURIComponent('mindmap\nroot((Root))\n  Branch')}"`);
+    expect(html).not.toContain('class="markmap-placeholder"');
+    expect(html).not.toContain('language-mindmap');
+  });
+
+  it('keeps PlantUML placeholders mapped to their source line', () => {
+    const source = [
+      'Intro',
+      '',
+      '```plantuml',
+      '@startuml',
+      'object "张三" as zhangsan',
+      'object "项目 A" as projectA',
+      'zhangsan --> projectA : 负责',
+      '@enduml',
+      '```',
+    ].join('\n');
+    const html = markdownToHtml(source);
+
+    expect(html).toContain('class="plantuml-placeholder"');
+    expect(html).toContain(`data-plantuml="${encodeURIComponent([
+      '@startuml',
+      'object "张三" as zhangsan',
+      'object "项目 A" as projectA',
+      'zhangsan --> projectA : 负责',
+      '@enduml',
+    ].join('\n'))}"`);
+    expect(html).toContain('data-source-line="3"');
+    expect(html).toContain('data-line="3"');
+    expect(html).not.toContain('language-plantuml');
+  });
+
+  it('supports puml as a PlantUML fenced-block alias', () => {
+    const html = markdownToHtml('```puml\n@startuml\nAlice -> Bob\n@enduml\n```');
+
+    expect(html).toContain('class="plantuml-placeholder"');
+    expect(html).toContain(`data-plantuml="${encodeURIComponent('@startuml\nAlice -> Bob\n@enduml')}"`);
+    expect(html).not.toContain('language-puml');
+  });
+
   it('keeps display math mapped to its source line for diagnostics', () => {
     const html = markdownToHtml('Intro\n\n$$\nx^2\n$$');
 
     expect(html).toContain('data-source-line="3"');
     expect(html).toContain('data-line="3"');
+  });
+
+  it('treats single-line double-dollar math as display math', () => {
+    const html = markdownToHtml([
+      'Intro',
+      '',
+      '$$\\phi = \\frac{1 + \\sqrt{5}}{2}$$',
+      '',
+      'Inline $a^2$.',
+      '',
+      '古人云："数学之美，在于：',
+      '$$\\sum_{n=1}^{\\infty} \\frac{element_n}{time^n} = eternal\\_beauty$$',
+    ].join('\n'));
+
+    expect(html.match(/class="katex-display"/g)).toHaveLength(2);
+    expect(html).toContain('data-source-line="3"');
+    expect(html).toContain('data-source-line="8"');
+    expect(html).toContain('data-line="3"');
+    expect(html).toContain('\\phi = \\frac{1 + \\sqrt{5}}{2}');
+    expect(html).toContain('\\sum_{n=1}^{\\infty} \\frac{element_n}{time^n} = eternal\\_beauty');
+    expect(html).toContain('Inline <span class="katex"');
   });
 
   it('can defer KaTeX rendering for large preview renders', () => {
@@ -337,6 +449,42 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).not.toContain('PrismLargePreTablePlaceholder');
   });
 
+  it('keeps PlantUML placeholders in the common large-preview fast path', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '```plantuml',
+      '@startuml',
+      'Alice -> Bob',
+      '@enduml',
+      '```',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(markdown.length).toBeGreaterThan(300 * 1024);
+    expect(html).toContain('class="plantuml-placeholder"');
+    expect(html).toContain(`data-plantuml="${encodeURIComponent('@startuml\nAlice -> Bob\n@enduml')}"`);
+    expect(html).not.toContain('language-plantuml');
+  });
+
+  it('keeps Markmap placeholders in the common large-preview fast path', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '```markmap',
+      '# 项目',
+      '- 用户',
+      '- 场景',
+      '```',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(markdown.length).toBeGreaterThan(300 * 1024);
+    expect(html).toContain('class="markmap-placeholder"');
+    expect(html).toContain(`data-markmap="${encodeURIComponent('# 项目\n- 用户\n- 场景')}"`);
+    expect(html).not.toContain('language-markmap');
+  });
+
   it('renders common fast path plain tables as lightweight preview grids', () => {
     const html = markdownToHtml(buildCommonFastPathMarkdown(), largePreviewRenderOptions);
 
@@ -402,10 +550,32 @@ describe('markdownToHtml compatibility modes', () => {
       '~~删除~~ https://example.com',
     ].join('\n'));
 
-    expect(html).toContain('type="checkbox" checked disabled');
-    expect(html).toContain('type="checkbox" disabled');
+    expect(html).toContain('type="checkbox" checked');
+    expect(html).toContain('data-task-checkbox-index="0"');
+    expect(html).toContain('data-task-checkbox-index="1"');
+    expect(html).toContain('class="task-list-item strike"');
+    expect(html).toContain('class="contains-task-list cb"');
+    expect(html).not.toContain('disabled');
     expect(html).toContain('<del>删除</del>');
     expect(html).toContain('<a href="https://example.com">https://example.com</a>');
+  });
+
+  it('promotes standalone single-dollar math to display math like MiaoYan preview', () => {
+    const html = markdownToHtml([
+      '婴宁的美貌可用数学公式表达：',
+      '$Beauty = \\lim_{time \\to \\infty} \\frac{inner\\_beauty}{outer\\_beauty} = constant$',
+    ].join('\n'));
+
+    expect(html).toContain('婴宁的美貌可用数学公式表达：');
+    expect(html).toContain('class="katex-display"');
+    expect(html).toContain('data-source-line="2"');
+  });
+
+  it('keeps sentence inline single-dollar math inline', () => {
+    const html = markdownToHtml('黄金比例 $\\phi$ 很美。');
+
+    expect(html).toContain('class="katex"');
+    expect(html).not.toContain('class="katex-display"');
   });
 
   it('renders Pandoc citekeys as preview citation placeholders', () => {

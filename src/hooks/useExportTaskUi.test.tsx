@@ -1,9 +1,27 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const openerMock = vi.hoisted(() => ({
+  openPathWithDefaultApp: vi.fn(),
+  revealPathInFileManager: vi.fn(),
+}));
+const nativeMock = vi.hoisted(() => ({
+  openPathWithSystemNative: vi.fn(),
+}));
+
+vi.mock('../platform/tauri/opener', () => openerMock);
+vi.mock('../platform/tauri/nativeCommands', () => nativeMock);
+
 import { useExportTaskUi } from './useExportTaskUi';
 
 describe('useExportTaskUi', () => {
   beforeEach(() => {
+    openerMock.openPathWithDefaultApp.mockReset();
+    openerMock.openPathWithDefaultApp.mockResolvedValue(undefined);
+    openerMock.revealPathInFileManager.mockReset();
+    openerMock.revealPathInFileManager.mockResolvedValue(undefined);
+    nativeMock.openPathWithSystemNative.mockReset();
+    nativeMock.openPathWithSystemNative.mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -46,7 +64,7 @@ describe('useExportTaskUi', () => {
     expect(result.current.exportFeedback).toBeNull();
   });
 
-  it('keeps completed and cancelled export feedback briefly', () => {
+  it('keeps completed and cancelled export feedback briefly', async () => {
     vi.useFakeTimers();
     const showToast = vi.fn();
     const { result } = renderHook(() => useExportTaskUi(showToast));
@@ -73,6 +91,28 @@ describe('useExportTaskUi', () => {
       status: 'success',
       title: 'PDF 导出完成',
     });
+    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({
+      actions: expect.arrayContaining([
+        expect.objectContaining({ label: '打开' }),
+        expect.objectContaining({ label: '显示位置' }),
+      ]),
+      message: 'report.pdf',
+      title: 'PDF 导出完成',
+      tone: 'success',
+    }));
+
+    const successToast = showToast.mock.calls.find(([toast]) => (
+      typeof toast !== 'string' && toast.title === 'PDF 导出完成'
+    ))?.[0] as any;
+    expect(successToast).toBeTruthy();
+
+    await act(async () => {
+      await successToast.actions[0].onClick();
+      await successToast.actions[1].onClick();
+    });
+    expect(nativeMock.openPathWithSystemNative).toHaveBeenCalledWith('/tmp/report.pdf');
+    expect(openerMock.openPathWithDefaultApp).not.toHaveBeenCalled();
+    expect(openerMock.revealPathInFileManager).toHaveBeenCalledWith('/tmp/report.pdf');
 
     act(() => {
       vi.advanceTimersByTime(2200);

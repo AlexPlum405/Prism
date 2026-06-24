@@ -1,0 +1,324 @@
+{
+  "settingsVersion": 1,
+  "locale": "zh-CN",
+  "theme": "light",
+  "contentTheme": "miaoyan",
+  "fontSize": 15,
+  "editorFontFamily": "Cascadia Code, Consolas, monospace",
+  "editorLineHeight": 1.72,
+  "previewFontFamily": "inherit",
+  "previewFontSize": 13,
+  "defaultViewMode": "edit",
+  "exportDefaults": {
+    "format": "pdf",
+    "pngScale": 4,
+    "htmlIncludeTheme": true,
+    "pdfPaper": "a4",
+    "pdfMargin": "standard",
+    "pdfPageNumbers": false,
+    "pageHeaderFooter": true,
+    "pageHeaderText": "{title}",
+    "pageFooterText": "{filename}",
+    "templateId": "theme",
+    "frontMatterOverrides": false,
+    "toc": false,
+    "defaultLocation": "document",
+    "customDirectory": "",
+    "docxFontPolicy": "theme",
+    "docxCustomFontId": ""
+  },
+  "shortcutStyle": "auto",
+  "autoSaveEnabled": true,
+  "autoSaveInterval": 8000,
+  "autoSaveStrategy": "battery",
+  "showLineNumbers": false,
+  "wordWrap": true,
+  "customFonts": [],
+  "editorFontSource": {
+    "kind": "theme",
+    "value": ""
+  },
+  "previewFontSource": {
+    "kind": "theme",
+    "value": ""
+  },
+  "recentFiles": [
+    {
+      "path": "/Users/Alex/Documents/MiaoYan/Examples/妙言 Markdown 语法指南.md",
+      "name": "妙言 Markdown 语法指南.md",
+      "lastOpened": 1782268711125
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/01-markdown-showcase.md",
+      "name": "01-markdown-showcase.md",
+      "lastOpened": 1782234396318
+    },
+    {
+      "path": "/Users/Alex/Documents/MiaoYan/Examples/妙言 PPT.md",
+      "name": "妙言 PPT.md",
+      "lastOpened": 1782216739251
+    },
+    {
+      "path": "/Users/Alex/Documents/MiaoYan/Notes/欢迎使用.md",
+      "name": "欢迎使用.md",
+      "lastOpened": 1782181552494
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/06-table-heavy.md",
+      "name": "06-table-heavy.md",
+      "lastOpened": 1782179438539
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/07-export-frontmatter.md",
+      "name": "07-export-frontmatter.md",
+      "lastOpened": 1782179438213
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/08-typography-issues.md",
+      "name": "08-typography-issues.md",
+      "lastOpened": 1782179437985
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/10-editing-smoke.md",
+      "name": "10-editing-smoke.md",
+      "lastOpened": 1782179437679
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/plain.txt",
+      "name": "plain.txt",
+      "lastOpened": 1782179436897
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/04-linked-note.md",
+      "name": "04-linked-note.md",
+      "lastOpened": 1782179435541
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/02-long-document.md",
+      "name": "02-long-document.md",
+      "lastOpened": 1782179435208
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/09-invalid-frontmatter.md",
+      "name": "09-invalid-frontmatter.md",
+      "lastOpened": 1782127010387
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/05-broken-links.md",
+      "name": "05-broken-links.md",
+      "lastOpened": 1782122761203
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/query.sql",
+      "name": "query.sql",
+      "lastOpened": 1782122515055
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/data.json",
+      "name": "data.json",
+      "lastOpened": 1782122384959
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-ui-design-audit-2026-06-22/workspace/Prism UI Audit.md",
+      "name": "Prism UI Audit.md",
+      "lastOpened": 1782119004377
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-ui-design-audit-2026-06-22/workspace/data.json",
+      "name": "data.json",
+      "lastOpened": 1782118929626
+    },
+    {
+      "path": "/Users/Alex/AI/project/Prism/docs/reviews/prism-ui-design-audit-2026-06-22/workspace/query.sql",
+      "name": "query.sql",
+      "lastOpened": 1782118672067
+    },
+    {
+      "path": "/Users/Alex/work/方舟coding众测/方舟第29期Hermes Agent众测/平台上传材料/task-01/task01_eclipse_8分_上传备注.md",
+      "name": "task01_eclipse_8分_上传备注.md",
+      "lastOpened": 1781924063932
+    },
+    {
+      "path": "/Users/Alex/work/方舟coding众测/方舟第28期coding众测/平台上传材料/task-01/task01_zenith_6.5分_上传备注.md",
+      "name": "task01_zenith_6.5分_上传备注.md",
+      "lastOpened": 1781924045131
+    }
+  ],
+  "recentFilesLimit": 20,
+  "exportHistory": [
+    {
+      "documentPath": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/07-export-frontmatter.md",
+      "documentName": "07-export-frontmatter.md",
+      "format": "pdf",
+      "outputPath": "/Users/Alex/AI/project/Prism/docs/reviews/prism-full-feature-test-2026-06-22/fixtures/07-export-frontmatter-second.pdf",
+      "settings": {
+        "contentTheme": "mono",
+        "htmlIncludeTheme": true,
+        "pngScale": 4,
+        "pdfPaper": "a4",
+        "pdfMargin": "standard",
+        "pdfPageNumbers": false,
+        "pageHeaderFooter": true,
+        "pageHeaderText": "{title}",
+        "pageFooterText": "{filename}",
+        "templateId": "theme",
+        "frontMatterOverrides": false,
+        "toc": false,
+        "defaultLocation": "document",
+        "docxFontPolicy": "theme",
+        "docxCustomFontId": ""
+      },
+      "exportedAt": 1782130491357
+    },
+    {
+      "documentPath": "/Users/Alex/hermes-test/spark/prompt3/analysis.md",
+      "documentName": "analysis.md",
+      "format": "docx",
+      "outputPath": "/Users/Alex/hermes-test/spark/prompt3/analysis.docx",
+      "settings": {
+        "contentTheme": "miaoyan",
+        "htmlIncludeTheme": true,
+        "pngScale": 4,
+        "pdfPaper": "a4",
+        "pdfMargin": "standard",
+        "pdfPageNumbers": false,
+        "pageHeaderFooter": false,
+        "pageHeaderText": "{title}",
+        "pageFooterText": "{filename}",
+        "templateId": "theme",
+        "frontMatterOverrides": false,
+        "toc": false,
+        "defaultLocation": "document",
+        "docxFontPolicy": "theme",
+        "docxCustomFontId": ""
+      },
+      "exportedAt": 1780107554573
+    },
+    {
+      "documentPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/target.md",
+      "documentName": "target.md",
+      "format": "pdf",
+      "outputPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/target.pdf",
+      "settings": {
+        "contentTheme": "miaoyan",
+        "htmlIncludeTheme": true,
+        "pngScale": 4,
+        "pdfPaper": "a4",
+        "pdfMargin": "standard",
+        "pdfPageNumbers": false,
+        "pageHeaderFooter": false,
+        "pageHeaderText": "{title}",
+        "pageFooterText": "{filename}",
+        "templateId": "theme",
+        "frontMatterOverrides": false,
+        "toc": false,
+        "defaultLocation": "document",
+        "docxFontPolicy": "theme",
+        "docxCustomFontId": ""
+      },
+      "exportedAt": 1779238204792
+    },
+    {
+      "documentPath": "/Users/Alex/AI/project/Prism/.codex-smoke/docx-rich-export/docx-rich-export.md",
+      "documentName": "docx-rich-export.md",
+      "format": "pdf",
+      "outputPath": "/Users/Alex/AI/project/Prism/.codex-smoke/docx-rich-export/docx-rich-export.pdf",
+      "settings": {
+        "contentTheme": "miaoyan",
+        "htmlIncludeTheme": true,
+        "pngScale": 4,
+        "pdfPaper": "a4",
+        "pdfMargin": "standard",
+        "pdfPageNumbers": false,
+        "pageHeaderFooter": false,
+        "pageHeaderText": "{title}",
+        "pageFooterText": "{filename}",
+        "templateId": "theme",
+        "frontMatterOverrides": false,
+        "toc": false,
+        "defaultLocation": "document",
+        "docxFontPolicy": "theme",
+        "docxCustomFontId": ""
+      },
+      "exportedAt": 1779172381432
+    },
+    {
+      "documentPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-heavy/preview-heavy.md",
+      "documentName": "preview-heavy.md",
+      "format": "pdf",
+      "outputPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-heavy/preview-heavy-webkit-smoke.pdf",
+      "settings": {
+        "contentTheme": "miaoyan",
+        "htmlIncludeTheme": true,
+        "pngScale": 2,
+        "pdfPaper": "a4",
+        "pdfMargin": "standard",
+        "pdfPageNumbers": false,
+        "pageHeaderFooter": false,
+        "pageHeaderText": "{title}",
+        "pageFooterText": "{filename}",
+        "templateId": "theme",
+        "frontMatterOverrides": false,
+        "toc": false,
+        "defaultLocation": "document",
+        "docxFontPolicy": "theme",
+        "docxCustomFontId": ""
+      },
+      "exportedAt": 1779031641974
+    },
+    {
+      "documentPath": "/Users/Alex/AI/project/Prism/.codex-smoke/complex-export/complex-export.md",
+      "documentName": "complex-export.md",
+      "format": "docx",
+      "outputPath": "/Users/Alex/AI/project/Prism/.codex-smoke/complex-export/ui-raster-fixed.docx",
+      "settings": {
+        "contentTheme": "miaoyan",
+        "htmlIncludeTheme": true,
+        "pngScale": 2,
+        "pdfPaper": "a4",
+        "pdfMargin": "standard",
+        "pdfPageNumbers": false,
+        "pageHeaderFooter": false,
+        "pageHeaderText": "{title}",
+        "pageFooterText": "{filename}",
+        "templateId": "theme",
+        "frontMatterOverrides": false,
+        "toc": false,
+        "defaultLocation": "document",
+        "docxFontPolicy": "theme",
+        "docxCustomFontId": ""
+      },
+      "exportedAt": 1778845373049
+    }
+  ],
+  "pandoc": {
+    "path": "",
+    "detected": true,
+    "version": "pandoc 3.9.0.2",
+    "lastCheckedAt": 1782126825537,
+    "lastError": ""
+  },
+  "citation": {
+    "bibliographyPath": "",
+    "cslStylePath": ""
+  },
+  "restoreLastSession": false,
+  "lastSession": {
+    "filePath": "/Users/Alex/Documents/MiaoYan/Examples/妙言 Markdown 语法指南.md",
+    "folderPath": "/Users/Alex/Documents/MiaoYan/Examples",
+    "viewMode": "preview",
+    "scrollState": {
+      "editorRatio": 0,
+      "previewRatio": 0.5178638117764223
+    },
+    "sidebarVisible": false,
+    "sidebarTab": "files",
+    "updatedAt": 1782266871810
+  },
+  "windowState": {
+    "width": 1200,
+    "height": 800,
+    "x": 100,
+    "y": 100
+  }
+}

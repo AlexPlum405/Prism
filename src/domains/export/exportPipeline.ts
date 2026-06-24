@@ -383,13 +383,13 @@ function normalizeMermaidSvg(svg: SVGSVGElement) {
 
   svg.querySelectorAll<HTMLElement>('.nodeLabel, .edgeLabel, .label, .cluster-label').forEach((label) => {
     label.style.overflow = 'visible';
-    label.style.lineHeight = '1.35';
+    label.style.lineHeight = '1.2';
   });
 
   try {
     const box = svg.getBBox();
     if (box.width > 0 && box.height > 0) {
-      const padding = 28;
+      const padding = 12;
       svg.setAttribute(
         'viewBox',
         `${Math.floor(box.x - padding)} ${Math.floor(box.y - padding)} ${Math.ceil(box.width + padding * 2)} ${Math.ceil(box.height + padding * 2)}`,
@@ -432,7 +432,7 @@ async function renderMermaidPlaceholders(root: HTMLElement, contentTheme: Conten
       placeholder.innerHTML = svg;
       placeholder.style.display = 'flex';
       placeholder.style.justifyContent = 'center';
-      placeholder.style.margin = '1.5em 0';
+      placeholder.style.margin = '8px 0';
       const svgEl = placeholder.querySelector('svg');
       if (svgEl) normalizeMermaidSvg(svgEl);
     } catch (err) {

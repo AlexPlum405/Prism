@@ -1,0 +1,9 @@
+Prism plain text fixture
+
+This file verifies that common text documents can open and edit without Markdown-only UI creating confusion.
+
+Expected:
+- editable text
+- no relation graph button unless links are detected
+- export Markdown-specific actions disabled or explained
+

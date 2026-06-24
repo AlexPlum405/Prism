@@ -28,9 +28,9 @@ html[data-content-theme='miaoyan'] .cm-editor .cm-content {
   color: var(--miaoyan-editor-text) !important;
   letter-spacing: 0.5px;
   box-sizing: border-box;
-  max-width: calc(1000px + (var(--miaoyan-editor-gutter) * 2)) !important;
-  margin: 0 auto !important;
-  padding: 14px var(--miaoyan-editor-gutter) 96px !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 10px var(--miaoyan-editor-gutter) 96px !important;
   caret-color: var(--miaoyan-editor-text);
   font-weight: 400;
 }
@@ -96,52 +96,72 @@ html[data-content-theme='miaoyan'] .cm-md-link-text {
   color: #05A699 !important;
   text-decoration: none !important;
 }
+html[data-content-theme='miaoyan'] .cm-md-link-url {
+  color: #0C6ADA !important;
+  text-decoration: none !important;
+}
+html[data-content-theme='miaoyan'] .cm-md-image-url {
+  color: #05A699 !important;
+  text-decoration: none !important;
+}
+html[data-content-theme='miaoyan'] .cm-md-link-syntax,
+html[data-content-theme='miaoyan'] .cm-md-image-syntax,
+html[data-content-theme='miaoyan'] .cm-editor .cm-link,
+html[data-content-theme='miaoyan'] .cm-editor .cm-url {
+  color: var(--miaoyan-editor-text) !important;
+  text-decoration: none !important;
+}
 html[data-content-theme='miaoyan'] .cm-md-image-mark {
   color: #05A699 !important;
   text-decoration: none !important;
 }
+html[data-content-theme='miaoyan'] .cm-md-math-token {
+  color: #7A3DAD !important;
+  text-decoration: none !important;
+}
 
-/* 妙言源码使用 Highlightr：浅色代码块主题为 atom-one-light。 */
+/* MiaoYan edit view uses Highlightr atom-one-light colors inside fenced code. */
 html[data-content-theme='miaoyan'] .cm-editor .cm-code-token {
   background: transparent !important;
   font-family: 'Menlo', 'JetBrains Mono', monospace !important;
+  color: inherit !important;
 }
 html[data-content-theme='miaoyan'] .cm-editor .hljs-comment,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-quote {
-  color: #a0a1a7 !important;
+  color: #A0A1A7 !important;
   font-style: italic !important;
 }
 html[data-content-theme='miaoyan'] .cm-editor .hljs-doctag,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-keyword,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-formula {
-  color: #a626a4 !important;
+  color: #A626A4 !important;
+  font-weight: normal !important;
 }
-html[data-content-theme='miaoyan'] .cm-editor .hljs-section,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-name,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-selector-tag,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-deletion,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-subst {
-  color: #e45649 !important;
+  color: #E45649 !important;
+  font-weight: normal !important;
 }
-html[data-content-theme='miaoyan'] .cm-editor .hljs-literal {
-  color: #0184bb !important;
-}
-html[data-content-theme='miaoyan'] .cm-editor .hljs-string,
-html[data-content-theme='miaoyan'] .cm-editor .hljs-regexp,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-addition,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-attribute,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-string,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-regexp,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-meta .hljs-string {
-  color: #50a14f !important;
+  color: #50A14F !important;
+  font-weight: normal !important;
 }
-html[data-content-theme='miaoyan'] .cm-editor .hljs-attr,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-literal,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-number,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-variable,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-template-variable,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-type,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-selector-class,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-selector-attr,
-html[data-content-theme='miaoyan'] .cm-editor .hljs-selector-pseudo,
-html[data-content-theme='miaoyan'] .cm-editor .hljs-number {
+html[data-content-theme='miaoyan'] .cm-editor .hljs-selector-pseudo {
   color: #986801 !important;
+  font-weight: normal !important;
 }
 html[data-content-theme='miaoyan'] .cm-editor .hljs-symbol,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-bullet,
@@ -149,12 +169,21 @@ html[data-content-theme='miaoyan'] .cm-editor .hljs-link,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-meta,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-selector-id,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-title {
-  color: #4078f2 !important;
+  color: #4078F2 !important;
+  font-weight: normal !important;
 }
 html[data-content-theme='miaoyan'] .cm-editor .hljs-built_in,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-title.class_,
 html[data-content-theme='miaoyan'] .cm-editor .hljs-class .hljs-title {
-  color: #c18401 !important;
+  color: #C18401 !important;
+  font-weight: normal !important;
+}
+html[data-content-theme='miaoyan'] .cm-editor .hljs-section,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-tag,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-template-tag,
+html[data-content-theme='miaoyan'] .cm-editor .hljs-attr {
+  color: #E45649 !important;
+  font-weight: normal !important;
 }
 html[data-content-theme='miaoyan'] .cm-editor .hljs-emphasis {
   font-style: italic !important;

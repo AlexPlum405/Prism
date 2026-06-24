@@ -246,6 +246,12 @@ export function getMermaidThemeConfig(theme: ContentTheme) {
       rankSpacing: 80,
       padding: 30,
     },
+    elk: {
+      mergeEdges: true,
+      padding: 40,
+      nodeSpacing: 80,
+      rankSpacing: 80,
+    },
     sequence: { useMaxWidth: true },
     gantt: { useMaxWidth: true },
     journey: { useMaxWidth: true },

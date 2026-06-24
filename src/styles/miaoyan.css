@@ -144,13 +144,21 @@ html[data-content-theme='miaoyan'] {
   --miaoyan-divider: var(--miaoyan-hairline);
   --miaoyan-border: var(--miaoyan-hairline);
   --miaoyan-code-bg: #f7f7f7;
-  --miaoyan-inline-code-bg: #eef1f2;
+  --miaoyan-inline-code-bg: #f7f7f7;
+  --miaoyan-diagram-bg: #f7f7f7;
   --miaoyan-accent: #1c5d33;
   --miaoyan-title: #7a3dad;
-  --miaoyan-link: #05a699;
+  --miaoyan-link: #0C6ADA;
   --miaoyan-list: #826b29;
   --miaoyan-html: #f28a21;
   --miaoyan-highlight: #0d69d9;
+  --miaoyan-mermaid-node-bg: #ffffff;
+  --miaoyan-mermaid-text: #262626;
+  --miaoyan-mermaid-border: #262626;
+  --miaoyan-mermaid-line: #1C5D33;
+  --miaoyan-mermaid-edge-label-bg: transparent;
+  --miaoyan-blockquote-border: #d0d0d0;
+  --miaoyan-markmap-node: #262626;
   --miaoyan-toolbar-icon: #282828;
   --miaoyan-toast-bg: rgba(26, 26, 26, 0.95);
   --miaoyan-panel-secondary: rgba(0, 0, 0, 0.035);
@@ -198,7 +206,7 @@ html[data-content-theme='miaoyan'] {
   --preview-font: var(--miaoyan-font);
   --preview-font-size: 16px;
   --preview-line-height: 1.74;
-  --preview-max-width: 920px;
+  --preview-max-width: 100%;
 }
 
 html[data-content-theme='miaoyan'] body,
@@ -1027,7 +1035,7 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan {
   color: #262626;
   background: #FFFFFF;
   font-family: var(--preview-font);
-  font-size: 16px;
+  font-size: var(--preview-font-size, 16px);
   font-display: block;
   -webkit-font-smoothing: subpixel-antialiased;
   overscroll-behavior: none;
@@ -1035,10 +1043,10 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan {
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan #write {
-  margin: 0 auto;
-  max-width: var(--preview-max-width, 920px);
+  margin: 0;
+  max-width: var(--preview-max-width, 100%);
   width: 100%;
-  padding: 0 32px 88px;
+  padding: 0 28px 80px;
   box-sizing: border-box;
 }
 
@@ -1052,7 +1060,7 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markdown-body {
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti {
   font-family: var(--preview-font);
   font-weight: 400;
-  line-height: 1.74;
+  line-height: var(--preview-line-height, 1.74);
   letter-spacing: 0.04em;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -1085,6 +1093,16 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti > h6:first-chi
   margin-block-start: 10px !important;
 }
 
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti > ol:first-child {
+  margin-block-start: 5px !important;
+  padding-inline-start: calc(12px + 1em);
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti > ul:first-child {
+  margin-block-start: 5px !important;
+  padding-inline-start: 20px;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti > *:last-child,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti section > *:last-child,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti td > *:last-child {
@@ -1100,7 +1118,7 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan h6 {
   position: relative;
   margin: 0;
   color: #262626;
-  line-height: 1.42;
+  line-height: 1.8;
   margin-block-start: 1.6em;
   margin-block-end: 0.8em;
   font-weight: bold;
@@ -1108,23 +1126,20 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan h6 {
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h1 {
-  font-size: 1.92em;
-  margin-block-start: 1.72em;
-  margin-block-end: 0.92em;
+  font-size: 2em;
 }
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h2 {
-  font-size: 1.42em;
-  margin-block-start: 1.56em;
-  margin-block-end: 0.74em;
+  font-size: 1.5em;
 }
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3 { font-size: 1.18em; }
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3 {
+  font-size: 1.25em;
+}
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h4,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h5,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan h6 {
-  line-height: 1.5;
-  margin-block-start: 1em;
+  margin-block-start: 0.6em;
   margin-block-end: 0.6em;
 }
 
@@ -1154,15 +1169,52 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan h5 + h6 {
   margin-block-start: 0.8em;
 }
 
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h3,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h4,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h5,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan h6 {
+  margin-block-start: 0.6em;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan p {
   color: #262626;
-  margin-block-start: 1.35em;
-  margin-block-end: 1.35em;
+  margin-block-start: 1.6em;
+  margin-block-end: 1.6em;
+  text-align: left;
+  font-variant-emoji: text;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan p[align='center'] {
+  text-align: center;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan p[align='left'] {
   text-align: left;
 }
 
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan p[align='right'] {
+  text-align: right;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan div[align='center'] p {
+  text-align: center;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan div[align='left'] p {
+  text-align: left;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan div[align='right'] p {
+  text-align: right;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti > p > small {
+  display: inherit;
+  margin-top: -1.2em;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan a {
-  color: #0C6ADA;
+  color: var(--miaoyan-link);
   cursor: pointer;
   text-decoration: none;
 }
@@ -1177,6 +1229,7 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan a:has(img),
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan a:has(img):hover {
   padding-block-end: 0;
   border-block-end: none;
+  text-decoration: none;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan b,
@@ -1190,9 +1243,12 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan dfn {
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan address,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan cite,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan dfn,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan dt,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan em {
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan dt {
   font-style: normal;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan em {
+  font-style: italic;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan i {
@@ -1203,16 +1259,16 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan ul,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ol,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan dl {
   margin-block-start: 0.8em;
-  margin-block-end: 1.35em;
+  margin-block-end: 1.6em;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ul {
-  padding-inline-start: calc(22px + 0.5em);
+  padding-inline-start: calc(24px + 0.5em);
   list-style-type: disc;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ol {
-  padding-inline-start: calc(22px + 1em);
+  padding-inline-start: calc(24px + 1em);
   list-style-type: decimal;
 }
 
@@ -1238,6 +1294,15 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan ol ol ul {
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan li {
   list-style-type: unset;
+  font-variant-emoji: text;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan li::marker {
+  color: currentColor;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan ::marker {
+  letter-spacing: -1px !important;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan ul.cb {
@@ -1255,21 +1320,21 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan input[type='checkbox
   height: 1rem;
   top: 0.1rem;
   cursor: pointer;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--miaoyan-hairline);
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote {
   margin: 0;
   margin-block-start: 0.8em;
-  margin-block-end: 1.35em;
-  padding: 2px 16px;
-  border-radius: 0;
-  color: #666666;
-  border-left: 3px solid #d2d2d2;
-  line-height: inherit;
-  overflow: visible;
+  margin-block-end: 1.6em;
+  padding: 0 15px;
+  border-radius: 8px;
+  color: #777;
+  border-left: 4px solid var(--miaoyan-blockquote-border, #d0d0d0);
+  line-height: 1;
+  overflow: hidden;
   box-sizing: border-box;
-  width: auto;
+  width: fit-content;
   max-width: 100%;
   background: transparent;
   font-style: normal;
@@ -1286,35 +1351,46 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote blockquot
   padding-right: 0;
 }
 
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote ol,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote ul {
+  margin-block-end: 0.4em !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote ol,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote ul,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan blockquote li {
+  line-height: 1.74 !important;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan table {
   box-sizing: border-box;
-  display: block;
   table-layout: auto;
+  max-width: 100%;
+  width: 100%;
   margin-block-start: 0.8em;
-  margin-block-end: 1.35em;
+  margin-block-end: 1.6em;
   margin-inline-start: auto;
   margin-inline-end: auto;
   margin-right: auto;
-  margin-left: 0;
+  margin-left: 0px;
   border-collapse: collapse;
-  border: 1px solid #e6e6e6;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #e6e6e6;
   word-break: break-word;
   color: #262626;
-  overflow-x: auto;
-  max-width: 100%;
-  width: max-content;
   font-family: inherit;
-  font-size: 0.94em;
-  line-height: 1.52;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan th,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan td {
-  padding-block-start: 7px;
-  padding-block-end: 7px;
-  padding-inline-start: 10px;
-  padding-inline-end: 10px;
-  border: 1px solid #e6e6e6;
+  padding-block-start: 6px;
+  padding-block-end: 6px;
+  padding-inline-start: 8px;
+  padding-inline-end: 8px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #e6e6e6;
   color: #262626;
   font-family: inherit;
 }
@@ -1415,6 +1491,12 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan q {
   quotes: '「' '」' '『' '』';
 }
 
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan q:not(:lang(zh)):not(:lang(ja)):not(:lang(kr)),
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan q:not(:lang(zh)) {
+  quotes: initial;
+  quotes: auto;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan rt {
   font-size: 0.875em;
   font-weight: 400;
@@ -1438,12 +1520,64 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan sup {
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan sub { bottom: -0.25em; }
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan sup { top: -0.5em; }
 
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan sup:target,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan sup a:target {
+  background-color: #dbedff;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan u[title] {
+  cursor: help;
+  border-block-end-width: 3px;
+  border-block-end-style: double;
+  border-block-end-color: rgba(0, 0, 0, 0.54);
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan summary {
+  padding-inline-start: 1em;
+  outline: 0;
+  cursor: pointer;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan summary::-webkit-details-marker {
+  width: 0.6em;
+  margin-inline-end: 0.4em;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .footnotes,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan section.footnotes,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti-fn {
+  margin-block-start: 59px;
+  border-block-start: 1px solid #e6e6e6;
+  font-size: 14px;
+  line-height: 24px;
+  color: #262626;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .footnotes hr,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan section.footnotes hr {
+  width: 7em;
+  height: 1px;
+  margin: 0;
+  background-color: #e6e6e6;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .footnotes ol,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan section.footnotes ol,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti-fn ol {
+  margin-block-start: 0.8em;
+  margin-block-end: 0;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .heti-fn li:target {
+  background-color: #dbedff;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan code {
   margin-inline-start: 0.25em;
   margin-inline-end: 0.25em;
   font-family: SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.92em;
-  background-color: #f7f7f7;
+  font-size: 1em;
+  background-color: var(--miaoyan-code-bg);
   padding: 2px 6px;
   border-radius: 4px;
   border: 0;
@@ -1452,33 +1586,31 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan code {
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan p > code,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan li > code {
-  background-color: #eef1f2;
-  padding: 2px 5px;
-  border-radius: 5px;
+  background-color: var(--miaoyan-inline-code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre {
   font-family: SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
-  background-color: #f7f7f7;
+  background-color: var(--miaoyan-code-bg);
   max-width: 100%;
   overflow-x: auto;
   box-sizing: border-box;
   margin-block-start: 0.8em;
-  margin-block-end: 1.35em;
+  margin-block-end: 1.6em;
   margin-inline-start: 0;
   margin-inline-end: 0;
-  padding-block-start: 14px;
-  padding-block-end: 14px;
+  padding-block-start: 12px;
+  padding-block-end: 12px;
   padding-inline-start: 16px;
   padding-inline-end: 16px;
   overflow: auto;
   white-space: pre;
   word-wrap: normal;
-  border: 1px solid #eeeeee;
+  border: 0;
   border-radius: 8px;
   box-shadow: none;
-  font-size: 0.94em;
-  line-height: 1.58;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre code {
@@ -1500,39 +1632,60 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan pre code span {
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs {
-  background: #f8f8f8;
-  color: #000;
+  background: transparent;
+  color: #24292e;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-comment,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-quote,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-variable {
-  color: #035c21;
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-quote {
+  color: #6a737d;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-keyword,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-selector-tag,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-deletion {
+  color: #d73a49;
+  font-weight: normal;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-built_in,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-keyword,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-name,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-selector-tag,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-tag {
   color: #0a69d9;
   font-weight: normal;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-addition,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-attribute,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-string {
+  color: #032f62;
+  font-weight: normal;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-literal,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-number {
+  color: #005cc5;
+  font-weight: normal;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-attribute,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-variable {
+  color: #e36209;
+  font-weight: normal;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-section,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-string,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-title {
+  color: #6f42c1;
+  font-weight: normal;
+}
+
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-template-tag,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-template-variable,
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-title,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-type {
   color: #bf3889;
   font-weight: normal;
 }
 
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-deletion,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-meta,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-selector-attr,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-selector-pseudo {
@@ -1545,7 +1698,6 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-doctag {
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-attr {
   color: #cf212e;
-  font-weight: normal;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-bullet,
@@ -1563,24 +1715,143 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan .hljs-strong {
   -webkit-font-smoothing: antialiased;
 }
 
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan code.language-mermaid {
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex {
+  color: #262626 !important;
+  text-rendering: auto !important;
+  font: normal 1.21em KaTeX_Main, "Times New Roman", serif !important;
+  line-height: 1.2 !important;
+  text-indent: 0 !important;
+  letter-spacing: normal !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex-placeholder {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #262626 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex-placeholder[data-katex-display='true'] {
+  display: block !important;
+  margin: 1em 0 !important;
+  text-align: center !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex * {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: currentColor;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex .katex-mathml {
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  border: 0 !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  width: 1px !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex-display {
+  display: block !important;
+  margin: 1em 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .katex-display > .katex {
+  display: block !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan code.language-mermaid,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan code.language-markmap,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan code.language-plantuml {
   display: block;
   text-align: center;
 }
 
-html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder {
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .plantuml-placeholder {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
-  min-height: 120px;
+  min-height: 0;
+  margin: 8px 0;
+  padding: 12px;
   overflow: auto;
-  justify-content: center;
+  background: var(--miaoyan-diagram-bg);
+  border: none;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .mermaid,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder svg,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder svg,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .plantuml-placeholder,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .plantuml-image {
+  background-color: var(--miaoyan-diagram-bg) !important;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder svg {
   display: block;
   margin-inline: auto;
-  max-width: 100%;
+  max-width: min(100%, 920px);
   height: auto;
   overflow: visible;
+  border-radius: 6px;
+  shape-rendering: geometricPrecision;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder .markmap-svg {
+  display: block;
+  width: 100% !important;
+  height: 450px !important;
+  min-height: 450px;
+  margin-inline: auto;
+  overflow: visible;
+  border-radius: 6px;
+  shape-rendering: geometricPrecision;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .plantuml-image {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  border-radius: 6px;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder svg * {
+  shape-rendering: geometricPrecision;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder foreignObject,
@@ -1594,7 +1865,120 @@ html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .nodeLabel,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgeLabel,
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .label {
-  line-height: 1.35 !important;
+  line-height: 1.2 !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder *,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder text,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder tspan,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder foreignObject div,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .nodeLabel,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgeLabel,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .label {
+  font-family: var(--miaoyan-font), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .label,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder text,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder span {
+  color: var(--miaoyan-mermaid-text) !important;
+  fill: var(--miaoyan-mermaid-text) !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .node rect,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .node circle,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .node polygon {
+  fill: var(--miaoyan-mermaid-node-bg) !important;
+  stroke: var(--miaoyan-mermaid-border) !important;
+  stroke-width: 1px !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .cluster rect {
+  fill: var(--miaoyan-mermaid-node-bg) !important;
+  stroke: var(--miaoyan-mermaid-border) !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .cluster text {
+  fill: var(--miaoyan-mermaid-text) !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgePath path,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder line,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder polyline {
+  stroke: var(--miaoyan-mermaid-line) !important;
+  stroke-width: 1px !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .arrowheadPath {
+  fill: var(--miaoyan-mermaid-line) !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgeLabel,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgeLabel rect {
+  background-color: var(--miaoyan-mermaid-edge-label-bg) !important;
+  fill: transparent !important;
+  opacity: 1 !important;
+  stroke: none !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgeLabel foreignObject div,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .mermaid-placeholder .edgeLabel foreignObject span {
+  background-color: #e8e8e8 !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder {
+  min-height: 450px;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder .markmap-node text,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder foreignObject,
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder foreignObject div {
+  color: var(--miaoyan-markmap-node) !important;
+  font-family: var(--miaoyan-font), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder foreignObject {
+  width: auto !important;
+  min-width: 80px;
+  overflow: visible !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder foreignObject div {
+  white-space: nowrap;
+  padding: 0 12px 0 4px;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder .markmap-node line {
+  stroke-width: 2px !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder .markmap-link {
+  stroke-width: 2px !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder .markmap-node circle {
+  fill: var(--miaoyan-diagram-bg) !important;
+  stroke-width: 2px !important;
+}
+
+html[data-content-theme='miaoyan'] .preview-compat--miaoyan .markmap-placeholder .markmap-node-circle {
+  r: 6 !important;
+  stroke-width: 2px !important;
 }
 
 html[data-content-theme='miaoyan'] .preview-compat--miaoyan kbd {

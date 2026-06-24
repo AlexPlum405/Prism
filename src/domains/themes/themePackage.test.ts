@@ -32,9 +32,32 @@ describe('theme package validation', () => {
     expect(contract.id).toBe('warm-paper');
     expect(contract.label).toBe('暖纸');
     expect(contract.preview.writeClass).toBe('markdown-body heti warm-paper-write');
+    expect(contract.preview.maxWidth).toBe('none');
     expect(contract.export.docx.font).toBe('Songti SC');
     expect(contract.export.docx.text).toBe('25211C');
     expect(contract.editor.fontFamily).toBeTruthy();
+  });
+
+  it('normalizes user preview width as full-width or bounded reading measure', () => {
+    const fullWidth = buildUserThemeContract(parseThemeManifest(JSON.stringify({
+      schemaVersion: 1,
+      id: 'wide-paper',
+      name: 'Wide Paper',
+      contract: {
+        preview: { maxWidth: 'none' },
+      },
+    })));
+    const bounded = buildUserThemeContract(parseThemeManifest(JSON.stringify({
+      schemaVersion: 1,
+      id: 'bounded-paper',
+      name: 'Bounded Paper',
+      contract: {
+        preview: { maxWidth: 1440 },
+      },
+    })));
+
+    expect(fullWidth.preview.maxWidth).toBe('none');
+    expect(bounded.preview.maxWidth).toBe(1280);
   });
 
   it('rejects built-in theme ids for user packages', () => {

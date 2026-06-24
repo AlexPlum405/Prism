@@ -71,7 +71,6 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
       restoreViewMode?: 'edit' | 'split' | 'preview',
       restoreScrollState?: { editorRatio: number; previewRatio: number },
     ) => {
-      if (!(await exists(path))) return false;
       const result = await openDocumentInCurrentWindow(path, {
         documentStore: useDocumentStore.getState(),
         workspaceStore: useWorkspaceStore.getState(),

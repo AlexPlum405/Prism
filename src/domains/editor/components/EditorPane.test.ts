@@ -5,6 +5,77 @@ import { describe, expect, it } from 'vitest';
 import { __editorPaneTesting } from './EditorPane';
 
 describe('EditorPane Miaoyan code highlighting', () => {
+  it('splits inline links into MiaoYan syntax, text, and destination colors', () => {
+    const markdown = '[Prism](https://example.com)';
+    const ranges = __editorPaneTesting.collectMiaoyanInlineMarkdownDecorationRanges(markdown)
+      .map((range) => ({
+        kind: range.kind,
+        text: markdown.slice(range.from, range.to),
+      }));
+
+    expect(ranges).toEqual([
+      { kind: 'linkSyntax', text: '[' },
+      { kind: 'linkText', text: 'Prism' },
+      { kind: 'linkSyntax', text: ']' },
+      { kind: 'linkSyntax', text: '(' },
+      { kind: 'linkUrl', text: 'https://example.com' },
+      { kind: 'linkSyntax', text: ')' },
+    ]);
+  });
+
+  it('keeps image alt text neutral while coloring the destination like MiaoYan', () => {
+    const markdown = '![Alt](images/a.png)';
+    const ranges = __editorPaneTesting.collectMiaoyanInlineMarkdownDecorationRanges(markdown)
+      .map((range) => ({
+        kind: range.kind,
+        text: markdown.slice(range.from, range.to),
+      }));
+
+    expect(ranges).toEqual([
+      { kind: 'imageMark', text: '![' },
+      { kind: 'imageSyntax', text: ']' },
+      { kind: 'imageSyntax', text: '(' },
+      { kind: 'imageUrl', text: 'images/a.png' },
+      { kind: 'imageSyntax', text: ')' },
+    ]);
+  });
+
+  it('handles MiaoYan-style reference links without coloring brackets as links', () => {
+    const markdown = '[Prism][note]';
+    const ranges = __editorPaneTesting.collectMiaoyanInlineMarkdownDecorationRanges(markdown)
+      .map((range) => ({
+        kind: range.kind,
+        text: markdown.slice(range.from, range.to),
+      }));
+
+    expect(ranges).toEqual([
+      { kind: 'linkSyntax', text: '[' },
+      { kind: 'linkText', text: 'Prism' },
+      { kind: 'linkSyntax', text: ']' },
+      { kind: 'linkSyntax', text: '[' },
+      { kind: 'linkUrl', text: 'note' },
+      { kind: 'linkSyntax', text: ']' },
+    ]);
+  });
+
+  it('colors MiaoYan math source tokens without changing the markdown text', () => {
+    const markdown = '$Beauty = \\lim_{time \\to \\infty} \\frac{inner\\_beauty}{outer\\_beauty}$';
+    const ranges = __editorPaneTesting.collectMiaoyanMathDecorationRanges(markdown)
+      .map((range) => markdown.slice(range.from, range.to));
+
+    expect(ranges).toEqual([
+      '\\lim',
+      '_{time \\to \\infty}',
+      '\\frac',
+    ]);
+  });
+
+  it('keeps diagram fences on the regular MiaoYan code highlighting path', () => {
+    expect(__editorPaneTesting.getMiaoyanCodeLanguage('```mermaid\ngraph TD\n```')).toBeUndefined();
+    expect(__editorPaneTesting.getMiaoyanCodeLanguage('```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```')).toBeUndefined();
+    expect(__editorPaneTesting.getMiaoyanCodeLanguage('```markmap\n# Root\n- Child\n```')).toBeUndefined();
+  });
+
   it('matches MiaoYan fenced language rules', () => {
     expect(__editorPaneTesting.getMiaoyanCodeLanguage('```swift\nlet title = "miaoyan"\n```')).toBe('swift');
     expect(__editorPaneTesting.getMiaoyanCodeLanguage('```go\nfmt.Println("miaoyan")\n```')).toBeUndefined();

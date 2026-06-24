@@ -32,4 +32,24 @@ describe('ContextMenu', () => {
     expect(onAction).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('closes when Escape is pressed', () => {
+    const onAction = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <ContextMenu
+        x={24}
+        y={32}
+        items={[{ label: '复制', action: 'copy' }]}
+        onAction={onAction}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(onAction).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

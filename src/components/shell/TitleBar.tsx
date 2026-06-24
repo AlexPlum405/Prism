@@ -31,6 +31,16 @@ const IconClose = () => (
   </svg>
 );
 
+type WindowControls = Pick<ReturnType<typeof getCurrentWindow>, 'close' | 'minimize' | 'toggleMaximize'>;
+
+function getSafeWindowControls(): WindowControls | null {
+  try {
+    return getCurrentWindow();
+  } catch {
+    return null;
+  }
+}
+
 function getSaveFeedback(
   saveStatus: DocumentSaveStatus,
   saveError: string | null | undefined,
@@ -80,18 +90,21 @@ export function TitleBar({
   saveStatus,
 }: TitleBarProps) {
   const { t } = useI18n();
-  const [window] = useState(() => getCurrentWindow());
+  const [window] = useState(() => getSafeWindowControls());
   const displayDocName = docName.replace(/\.md$/i, '');
   const effectiveSaveStatus = saveStatus ?? (isDirty ? 'dirty' : 'saved');
   const saveFeedback = getSaveFeedback(effectiveSaveStatus, saveError, t);
 
   const handleMinimize = async () => {
+    if (!window) return;
     try { await window.minimize(); } catch (e) { console.error('minimize failed', e); }
   };
   const handleMaximize = async () => {
+    if (!window) return;
     try { await window.toggleMaximize(); } catch (e) { console.error('toggleMaximize failed', e); }
   };
   const handleClose = async () => {
+    if (!window) return;
     try { await window.close(); } catch (e) { console.error('close failed', e); }
   };
 

@@ -16,8 +16,13 @@ const compatibilityDecos = {
   strong: Decoration.mark({ class: 'cm-md-strong' }),
   emphasis: Decoration.mark({ class: 'cm-md-emphasis' }),
   strike: Decoration.mark({ class: 'cm-md-strike' }),
+  linkSyntax: Decoration.mark({ class: 'cm-md-link-syntax' }),
   linkText: Decoration.mark({ class: 'cm-md-link-text' }),
+  linkUrl: Decoration.mark({ class: 'cm-md-link-url' }),
+  imageSyntax: Decoration.mark({ class: 'cm-md-image-syntax' }),
+  imageUrl: Decoration.mark({ class: 'cm-md-image-url' }),
   imageMark: Decoration.mark({ class: 'cm-md-image-mark' }),
+  mathToken: Decoration.mark({ class: 'cm-md-math-token' }),
 };
 
 type HighlightTokenRange = {
@@ -31,6 +36,16 @@ type MiaoyanCodeHighlightTarget = {
   offset: number;
   language?: string;
 };
+
+type MiaoyanInlineDecorationKind = 'linkSyntax' | 'linkText' | 'linkUrl' | 'imageSyntax' | 'imageUrl' | 'imageMark';
+
+type MiaoyanInlineDecorationRange = {
+  from: number;
+  to: number;
+  kind: MiaoyanInlineDecorationKind;
+};
+
+type AddDecoration = (from: number, to: number, decoration: Decoration) => void;
 
 export const MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT = 3000;
 const COMPATIBILITY_CODE_HIGHLIGHT_THEMES = new Set<ContentTheme>(['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne']);
@@ -170,6 +185,121 @@ function collectHighlightTokenRanges(html: string, originalLength: number) {
   return offset === originalLength ? ranges : [];
 }
 
+function findInlineDestinationBounds(markdown: string, closeBracket: number) {
+  if (closeBracket < 0 || markdown[closeBracket + 1] !== '(') return null;
+  const closeParen = markdown.lastIndexOf(')');
+  if (closeParen <= closeBracket + 1) return null;
+
+  return {
+    openParen: closeBracket + 1,
+    destinationStart: closeBracket + 2,
+    destinationEnd: closeParen,
+    closeParen,
+  };
+}
+
+export function collectMiaoyanInlineMarkdownDecorationRanges(markdown: string) {
+  const ranges: MiaoyanInlineDecorationRange[] = [];
+  const isImage = markdown.startsWith('![');
+  const isLink = !isImage && markdown.startsWith('[');
+  if (!isImage && !isLink) return ranges;
+
+  const openEnd = isImage ? 2 : 1;
+  const closeBracket = markdown.indexOf(']', openEnd);
+  if (closeBracket === -1) return ranges;
+
+  const openingKind: MiaoyanInlineDecorationKind = isImage ? 'imageMark' : 'linkSyntax';
+  const syntaxKind: MiaoyanInlineDecorationKind = isImage ? 'imageSyntax' : 'linkSyntax';
+  ranges.push({ from: 0, to: openEnd, kind: openingKind });
+
+  if (isLink && closeBracket > openEnd) {
+    ranges.push({ from: openEnd, to: closeBracket, kind: 'linkText' });
+  }
+
+  ranges.push({ from: closeBracket, to: closeBracket + 1, kind: syntaxKind });
+
+  const destination = findInlineDestinationBounds(markdown, closeBracket);
+  if (destination) {
+    ranges.push({ from: destination.openParen, to: destination.openParen + 1, kind: syntaxKind });
+    if (destination.destinationEnd > destination.destinationStart) {
+      ranges.push({
+        from: destination.destinationStart,
+        to: destination.destinationEnd,
+        kind: isImage ? 'imageUrl' : 'linkUrl',
+      });
+    }
+    ranges.push({ from: destination.closeParen, to: destination.closeParen + 1, kind: syntaxKind });
+    return ranges;
+  }
+
+  if (markdown[closeBracket + 1] === '[') {
+    const referenceEnd = markdown.indexOf(']', closeBracket + 2);
+    if (referenceEnd > closeBracket + 1) {
+      ranges.push({ from: closeBracket + 1, to: closeBracket + 2, kind: syntaxKind });
+      ranges.push({
+        from: closeBracket + 2,
+        to: referenceEnd,
+        kind: isImage ? 'imageUrl' : 'linkUrl',
+      });
+      ranges.push({ from: referenceEnd, to: referenceEnd + 1, kind: syntaxKind });
+    }
+  }
+
+  return ranges;
+}
+
+function addMiaoyanInlineMarkdownDecorations(
+  addDecoration: AddDecoration,
+  view: EditorView,
+  from: number,
+  to: number,
+) {
+  const markdown = view.state.doc.sliceString(from, to);
+  const ranges = collectMiaoyanInlineMarkdownDecorationRanges(markdown);
+  for (const range of ranges) {
+    if (range.from === range.to) continue;
+    addDecoration(from + range.from, from + range.to, compatibilityDecos[range.kind]);
+  }
+}
+
+const MIAOYAN_MATH_TOKEN_PATTERN = /\\[A-Za-z]+|(?<!\\)[_^]\{[^}\n]+\}|(?<!\\)[_^][A-Za-z0-9]+/g;
+const MIAOYAN_INLINE_MATH_PATTERN = /(^|[^\\$])(\$\$?)([^$\n]+?)\2(?!\$)/g;
+
+export function collectMiaoyanMathDecorationRanges(markdown: string) {
+  const ranges: Array<{ from: number; to: number }> = [];
+
+  for (const mathMatch of markdown.matchAll(MIAOYAN_INLINE_MATH_PATTERN)) {
+    const prefix = mathMatch[1] ?? '';
+    const delimiter = mathMatch[2] ?? '$';
+    const content = mathMatch[3] ?? '';
+    const contentStart = (mathMatch.index ?? 0) + prefix.length + delimiter.length;
+
+    for (const tokenMatch of content.matchAll(MIAOYAN_MATH_TOKEN_PATTERN)) {
+      const tokenStart = tokenMatch.index ?? 0;
+      const token = tokenMatch[0] ?? '';
+      ranges.push({
+        from: contentStart + tokenStart,
+        to: contentStart + tokenStart + token.length,
+      });
+    }
+  }
+
+  return ranges;
+}
+
+function addMiaoyanMathDecorations(
+  addDecoration: AddDecoration,
+  view: EditorView,
+  from: number,
+  to: number,
+) {
+  const markdown = view.state.doc.sliceString(from, to);
+  const ranges = collectMiaoyanMathDecorationRanges(markdown);
+  for (const range of ranges) {
+    addDecoration(from + range.from, from + range.to, compatibilityDecos.mathToken);
+  }
+}
+
 function getMiaoyanCodeHighlightTarget(code: string): MiaoyanCodeHighlightTarget {
   const language = getMiaoyanCodeLanguage(code);
   if (!code.startsWith('```')) {
@@ -237,7 +367,7 @@ export function getMiaoyanCodeHighlightRanges(code: string, onHighlighterLoaded?
 }
 
 function addMiaoyanCodeHighlightDecorations(
-  builder: RangeSetBuilder<Decoration>,
+  addDecoration: AddDecoration,
   view: EditorView,
   from: number,
   to: number,
@@ -247,7 +377,7 @@ function addMiaoyanCodeHighlightDecorations(
   const tokenRanges = getMiaoyanCodeHighlightRanges(code, onHighlighterLoaded);
   for (const tokenRange of tokenRanges) {
     if (tokenRange.from === tokenRange.to) continue;
-    builder.add(
+    addDecoration(
       from + tokenRange.from,
       from + tokenRange.to,
       getCodeHighlightDecoration(tokenRange.className),
@@ -264,7 +394,15 @@ export function shouldHighlightCompatibilityCodeTheme(theme: ContentTheme) {
 }
 
 function buildCompatibilityDecorations(view: EditorView, onHighlighterLoaded?: () => void): DecorationSet {
+  const decorations: Array<{ from: number; to: number; decoration: Decoration }> = [];
+  const addDecoration: AddDecoration = (from, to, decoration) => {
+    if (from >= to) return;
+    decorations.push({ from, to, decoration });
+  };
   const builder = new RangeSetBuilder<Decoration>();
+  const contentTheme = view.state.facet(contentThemeFacet);
+  const useMiaoyanInlineMarkdown = contentTheme === 'miaoyan';
+  const useMiaoyanMath = contentTheme === 'miaoyan';
   const enableCodeHighlight = shouldHighlightCompatibilityCode(view);
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(view.state).iterate({
@@ -272,42 +410,52 @@ function buildCompatibilityDecorations(view: EditorView, onHighlighterLoaded?: (
       to,
       enter: (node) => {
         const name = node.name;
+        if (useMiaoyanMath && name === 'Paragraph') {
+          addMiaoyanMathDecorations(addDecoration, view, node.from, node.to);
+          return;
+        }
         if (/^ATXHeading[1-6]$/.test(name) || name === 'SetextHeading1' || name === 'SetextHeading2') {
-          builder.add(node.from, node.to, compatibilityDecos.heading);
+          addDecoration(node.from, node.to, compatibilityDecos.heading);
           return false;
         }
         if (name === 'ListMark') {
-          builder.add(node.from, node.to, compatibilityDecos.listMark);
+          addDecoration(node.from, node.to, compatibilityDecos.listMark);
           return;
         }
         if (name === 'Blockquote') {
-          builder.add(node.from, node.to, compatibilityDecos.quote);
+          addDecoration(node.from, node.to, compatibilityDecos.quote);
           return;
         }
         if (name === 'InlineCode') {
-          builder.add(node.from, node.to, compatibilityDecos.codeInline);
+          addDecoration(node.from, node.to, compatibilityDecos.codeInline);
           return false;
         }
         if (name === 'FencedCode' || name === 'CodeBlock') {
-          builder.add(node.from, node.to, compatibilityDecos.fencedCode);
           if (enableCodeHighlight) {
-            addMiaoyanCodeHighlightDecorations(builder, view, node.from, node.to, onHighlighterLoaded);
+            addDecoration(node.from, node.to, compatibilityDecos.fencedCode);
+            addMiaoyanCodeHighlightDecorations(addDecoration, view, node.from, node.to, onHighlighterLoaded);
+          } else {
+            addDecoration(node.from, node.to, compatibilityDecos.fencedCode);
           }
           return false;
         }
         if (name === 'StrongEmphasis') {
-          builder.add(node.from, node.to, compatibilityDecos.strong);
+          addDecoration(node.from, node.to, compatibilityDecos.strong);
           return false;
         }
         if (name === 'Emphasis') {
-          builder.add(node.from, node.to, compatibilityDecos.emphasis);
+          addDecoration(node.from, node.to, compatibilityDecos.emphasis);
           return false;
         }
         if (name === 'Strikethrough') {
-          builder.add(node.from, node.to, compatibilityDecos.strike);
+          addDecoration(node.from, node.to, compatibilityDecos.strike);
           return false;
         }
         if (name === 'Link') {
+          if (useMiaoyanInlineMarkdown) {
+            addMiaoyanInlineMarkdownDecorations(addDecoration, view, node.from, node.to);
+            return false;
+          }
           const cursor = node.node.cursor();
           let firstMarkEnd = -1;
           let secondMarkStart = -1;
@@ -323,17 +471,24 @@ function buildCompatibilityDecorations(view: EditorView, onHighlighterLoaded?: (
             } while (cursor.nextSibling());
           }
           if (firstMarkEnd !== -1 && secondMarkStart !== -1 && firstMarkEnd < secondMarkStart) {
-            builder.add(firstMarkEnd, secondMarkStart, compatibilityDecos.linkText);
+            addDecoration(firstMarkEnd, secondMarkStart, compatibilityDecos.linkText);
           }
           return false;
         }
         if (name === 'Image') {
-          builder.add(node.from, node.to, compatibilityDecos.imageMark);
+          if (useMiaoyanInlineMarkdown) {
+            addMiaoyanInlineMarkdownDecorations(addDecoration, view, node.from, node.to);
+            return false;
+          }
+          addDecoration(node.from, node.to, compatibilityDecos.imageMark);
           return false;
         }
       },
     });
   }
+  decorations
+    .sort((first, second) => first.from - second.from || first.to - second.to)
+    .forEach((range) => builder.add(range.from, range.to, range.decoration));
   return builder.finish();
 }
 

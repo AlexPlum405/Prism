@@ -1,0 +1,8 @@
+{
+  "project": "Prism",
+  "purpose": "plain text mode screenshot and test",
+  "extensions": [".json", ".sql", ".txt"],
+  "graphButtonExpected": false,
+  "exportExpected": "disabled"
+}
+
