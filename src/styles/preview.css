@@ -29,6 +29,13 @@ html[data-content-theme='nocturne'] .preview-compat {
   --preview-search-current-text: var(--nocturne-main-bg);
 }
 
+html[data-content-theme='carbon'] .preview-compat {
+  --preview-search-match-bg: color-mix(in srgb, var(--carbon-accent) 24%, transparent);
+  --preview-search-current-bg: var(--carbon-accent);
+  --preview-search-current-ring: color-mix(in srgb, var(--carbon-accent) 68%, transparent);
+  --preview-search-current-text: var(--carbon-main-bg);
+}
+
 .preview-render-status {
   position: sticky;
   top: 12px;
@@ -57,7 +64,7 @@ html[data-content-theme='miaoyan'] .preview-render-status {
   color: var(--miaoyan-secondary-text);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .preview-render-status {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .preview-render-status {
   border-color: var(--theme-hairline);
   background: color-mix(in srgb, var(--theme-main-bg) 90%, transparent);
   color: var(--theme-secondary-text);
@@ -264,6 +271,12 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne .prism-simple-tabl
   color: #e5e1d7;
 }
 
+html[data-content-theme='carbon'] .preview-compat--carbon .prism-simple-table {
+  --prism-simple-table-border: #262626;
+  --prism-simple-table-header-bg: #111111;
+  color: #f2f2f2;
+}
+
 .prism-citation {
   display: inline-flex;
   align-items: center;
@@ -288,7 +301,7 @@ html[data-content-theme='miaoyan'] .prism-citation {
   font-family: var(--miaoyan-code-font);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .prism-citation {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .prism-citation {
   border-color: var(--theme-hairline);
   background: var(--theme-panel-secondary);
   color: var(--theme-secondary-text);
@@ -331,7 +344,7 @@ html[data-content-theme='miaoyan'] .preview-compat .prism-frontmatter-preview {
   --frontmatter-preview-tag-surface: var(--miaoyan-main-bg);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .preview-compat .prism-frontmatter-preview {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .preview-compat .prism-frontmatter-preview {
   --frontmatter-preview-border: var(--theme-hairline);
   --frontmatter-preview-muted: var(--theme-secondary-text);
   --frontmatter-preview-text: var(--theme-main-text);

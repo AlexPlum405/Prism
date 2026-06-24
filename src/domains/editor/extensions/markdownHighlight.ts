@@ -48,7 +48,7 @@ type MiaoyanInlineDecorationRange = {
 type AddDecoration = (from: number, to: number, decoration: Decoration) => void;
 
 export const MIAOYAN_CODE_BLOCK_HIGHLIGHT_LIMIT = 3000;
-const COMPATIBILITY_CODE_HIGHLIGHT_THEMES = new Set<ContentTheme>(['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne']);
+const COMPATIBILITY_CODE_HIGHLIGHT_THEMES = new Set<ContentTheme>(['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne', 'carbon']);
 const PRISM_KNOWN_CODE_LANGUAGES = new Set([
   'bash',
   'c',

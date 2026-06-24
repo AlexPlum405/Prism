@@ -32,5 +32,11 @@ export function createThemeCommands(): CommandDefinition[] {
       checked: (context) => context.settingsStore.contentTheme === 'nocturne',
       run: (context) => context.settingsStore.setContentTheme('nocturne'),
     },
+    {
+      id: 'themeCarbon',
+      category: 'theme',
+      checked: (context) => context.settingsStore.contentTheme === 'carbon',
+      run: (context) => context.settingsStore.setContentTheme('carbon'),
+    },
   ] satisfies CommandDefinition[];
 }

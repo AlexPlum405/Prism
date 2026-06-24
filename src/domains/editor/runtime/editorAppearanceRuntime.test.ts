@@ -9,6 +9,7 @@ import {
 describe('editorAppearanceRuntime', () => {
   it('maps content themes to the expected editor color mode', () => {
     expect(shouldUseDarkEditor('nocturne', 'light')).toBe(true);
+    expect(shouldUseDarkEditor('carbon', 'light')).toBe(true);
     expect(shouldUseDarkEditor('miaoyan', 'dark')).toBe(false);
     expect(shouldUseDarkEditor('custom-theme', 'dark')).toBe(true);
   });

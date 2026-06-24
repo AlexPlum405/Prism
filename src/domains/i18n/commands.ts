@@ -141,6 +141,7 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   themeSlate: 'command.themeSlate',
   themeMono: 'command.themeMono',
   themeNocturne: 'command.themeNocturne',
+  themeCarbon: 'command.themeCarbon',
   minimize: 'command.minimize',
   fullscreen: 'command.fullscreen',
   alwaysOnTop: 'command.alwaysOnTop',

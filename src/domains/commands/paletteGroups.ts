@@ -166,6 +166,7 @@ const paletteGroupByCommand = {
   themeSlate: 'settings',
   themeMono: 'settings',
   themeNocturne: 'settings',
+  themeCarbon: 'settings',
   minimize: 'settings',
   fullscreen: 'settings',
   alwaysOnTop: 'settings',

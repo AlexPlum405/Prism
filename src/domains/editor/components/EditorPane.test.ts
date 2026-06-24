@@ -118,6 +118,7 @@ describe('EditorPane Miaoyan code highlighting', () => {
     expect(__editorPaneTesting.shouldHighlightCompatibilityCodeTheme('slate')).toBe(true);
     expect(__editorPaneTesting.shouldHighlightCompatibilityCodeTheme('mono')).toBe(true);
     expect(__editorPaneTesting.shouldHighlightCompatibilityCodeTheme('nocturne')).toBe(true);
+    expect(__editorPaneTesting.shouldHighlightCompatibilityCodeTheme('carbon')).toBe(true);
   });
 });
 

@@ -106,10 +106,11 @@ describe('theme contract', () => {
     expect(getThemeContract('slate').preview.maxWidth).toBe(1000);
     expect(getThemeContract('mono').preview.maxWidth).toBe(1000);
     expect(getThemeContract('nocturne').preview.maxWidth).toBe(920);
+    expect(getThemeContract('carbon').preview.maxWidth).toBe(960);
   });
 
   it('keeps non-MiaoYan Mermaid runtime palettes complete for diagram families', () => {
-    for (const theme of ['inkstone', 'slate', 'mono', 'nocturne'] as const) {
+    for (const theme of ['inkstone', 'slate', 'mono', 'nocturne', 'carbon'] as const) {
       const variables = getThemeContract(theme).mermaid.themeVariables;
 
       for (const key of mermaidRuntimeKeys) {
@@ -122,5 +123,48 @@ describe('theme contract', () => {
       expect(variables.actorTextColor).toBe(variables.textColor);
       expect(variables.noteTextColor).toBe(variables.textColor);
     }
+  });
+
+  it('keeps Inkstone distinct from MiaoYan and Carbon as a true black theme', () => {
+    expect(getThemeContract('inkstone').preview.fontFamily).not.toContain('TsangerJinKai02');
+    expect(getThemeContract('inkstone').preview.fontFamily).toContain('Songti SC');
+    expect(getThemeContract('carbon')).toMatchObject({
+      isDark: true,
+      editor: {
+        background: '#000000',
+        text: '#f2f2f2',
+      },
+      preview: {
+        background: '#000000',
+        text: '#f2f2f2',
+      },
+    });
+    expect(getThemeContract('carbon').code).toMatchObject({
+      keyword: '#ffb86c',
+      string: '#8be9fd',
+      meta: '#bd93f9',
+      attribute: '#ff79c6',
+      symbol: '#50fa7b',
+    });
+  });
+
+  it('keeps built-in themes separated by distinct focus, title, link, and code colors', () => {
+    const expected = {
+      miaoyan: { focus: '#1c5d33', codeKeyword: '#d73a49', codeString: '#032f62' },
+      inkstone: { focus: '#b75a2a', codeKeyword: '#b75a2a', codeString: '#2458a6' },
+      slate: { focus: '#d97706', codeKeyword: '#315f9d', codeString: '#0b7a99' },
+      mono: { focus: '#be123c', codeKeyword: '#5b21b6', codeString: '#047857' },
+      nocturne: { focus: '#c084fc', codeKeyword: '#f0c674', codeString: '#7dd3fc' },
+      carbon: { focus: '#bd93f9', codeKeyword: '#ffb86c', codeString: '#8be9fd' },
+    } as const;
+
+    for (const theme of CONTENT_THEMES) {
+      expect(getThemeContract(theme).search.focus).toBe(expected[theme].focus);
+      expect(getThemeContract(theme).code.keyword).toBe(expected[theme].codeKeyword);
+      expect(getThemeContract(theme).code.string).toBe(expected[theme].codeString);
+    }
+
+    const focusColors = CONTENT_THEMES.map((theme) => getThemeContract(theme).search.focus);
+    expect(new Set(focusColors).size).toBe(focusColors.length);
   });
 });

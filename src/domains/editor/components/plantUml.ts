@@ -29,10 +29,19 @@ export function encodePlantUmlSource(source: string) {
 }
 
 function isDarkPlantUmlTheme(contentTheme: ContentTheme) {
-  return contentTheme === 'nocturne';
+  return contentTheme === 'nocturne' || contentTheme === 'carbon';
 }
 
 function getPlantUmlThemeColors(contentTheme: ContentTheme) {
+  if (contentTheme === 'carbon') {
+    return {
+      background: '#000000',
+      lineColor: '#FFB86C',
+      primaryColor: '#111111',
+      textColor: '#F2F2F2',
+    };
+  }
+
   if (isDarkPlantUmlTheme(contentTheme)) {
     return {
       background: '#282e33',

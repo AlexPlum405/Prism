@@ -19,7 +19,7 @@ const MARKMAP_LIGHT_COLORS = MIAOYAN_MARKMAP_COLORS;
 const MARKMAP_DARK_COLORS = ['#54C59F', '#E7E9EA', '#F7CC8F', '#8FFCCD', '#ED716C', '#C084FC', '#60A5FA'];
 
 function isDarkMarkmapTheme(contentTheme: ContentTheme) {
-  return contentTheme === 'nocturne' || contentTheme === 'slate';
+  return contentTheme === 'nocturne' || contentTheme === 'carbon' || contentTheme === 'slate';
 }
 
 export function getMarkmapPalette(contentTheme: ContentTheme) {

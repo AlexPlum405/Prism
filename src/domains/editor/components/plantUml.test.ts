@@ -51,4 +51,12 @@ describe('PlantUML rendering helpers', () => {
     expect(source).toContain('skinparam defaultTextColor #E7E9EA');
     expect(source).toContain('skinparam arrowColor #54C59F');
   });
+
+  it('uses true black diagram colors for the Carbon theme', () => {
+    const source = preparePlantUmlSource('@startuml\nAlice -> Bob\n@enduml', 'carbon');
+
+    expect(source).toContain('skinparam backgroundColor #000000');
+    expect(source).toContain('skinparam defaultTextColor #F2F2F2');
+    expect(source).toContain('skinparam arrowColor #FFB86C');
+  });
 });

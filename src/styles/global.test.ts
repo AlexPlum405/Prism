@@ -25,7 +25,7 @@ function readRule(css: string, selector: string): string {
   return css.slice(ruleStart, ruleEnd);
 }
 
-const nonMiaoyanThemes = ['inkstone', 'slate', 'mono', 'nocturne'] as const;
+const nonMiaoyanThemes = ['inkstone', 'slate', 'mono', 'nocturne', 'carbon'] as const;
 
 describe('global Windows visual compensation', () => {
   const css = readCssWithImports('global.css');
@@ -278,6 +278,36 @@ describe('Miaoyan content surface rules', () => {
 describe('Non-MiaoYan content theme quality rules', () => {
   const css = readCssWithImports('global.css');
 
+  it('keeps every non-MiaoYan theme on a visibly distinct accent family', () => {
+    expect(css).toContain('--inkstone-accent: #b75a2a');
+    expect(css).toContain('--inkstone-title: #7a3e1d');
+    expect(css).toContain('--inkstone-link: #2458a6');
+    expect(css).toContain("--inkstone-font: 'Songti SC', 'STSong'");
+
+    expect(css).toContain('--slate-accent: #d97706');
+    expect(css).toContain('--slate-title: #315f9d');
+    expect(css).toContain('--slate-link: #0b7a99');
+
+    expect(css).toContain('--mono-accent: #be123c');
+    expect(css).toContain('--mono-title: #5b21b6');
+    expect(css).toContain('--mono-link: #047857');
+
+    expect(css).toContain('--nocturne-accent: #c084fc');
+    expect(css).toContain('--nocturne-title: #f0c674');
+    expect(css).toContain('--nocturne-link: #7dd3fc');
+
+    expect(css).toContain('--carbon-accent: #bd93f9');
+    expect(css).toContain('--carbon-title: #ffb86c');
+    expect(css).toContain('--carbon-link: #8be9fd');
+    expect(css).toContain('--carbon-main-bg: #000000');
+    expect(css).toContain('--preview-bg: #000000');
+
+    expect(css).not.toContain('rgba(70, 111, 87');
+    expect(css).not.toContain('rgba(88, 122, 133');
+    expect(css).not.toContain('rgba(59, 111, 72');
+    expect(css).not.toContain('rgba(134, 168, 120');
+  });
+
   it('keeps reading tables full-line and backed by each theme palette', () => {
     for (const theme of nonMiaoyanThemes) {
       const tableRule = readRule(css, `html[data-content-theme='${theme}'] .preview-compat--${theme} table {`);
@@ -293,7 +323,7 @@ describe('Non-MiaoYan content theme quality rules', () => {
   });
 
   it('keeps formulas transparent and centered across non-MiaoYan themes', () => {
-    expect(css).toContain("html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])");
+    expect(css).toContain("html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])");
     expect(css).toContain('font: normal 1.16em KaTeX_Main');
     expect(css).toContain('color: var(--theme-text) !important');
     expect(css).toContain('background: transparent !important');

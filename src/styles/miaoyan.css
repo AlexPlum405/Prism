@@ -2,24 +2,24 @@
 
 /* ---- Other theme AppKit layout compatibility
    和 MiaoYan 使用相同外壳/侧栏/文件树布局，只由各主题 token 换色换字。 ---- */
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) body,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) #root,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .app-main {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) body,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) #root,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .app-main {
   background: var(--theme-main-bg);
   color: var(--theme-text);
   font-family: var(--theme-font);
   letter-spacing: 0.6px;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .app-main {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .app-main {
   box-shadow: none;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) button {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) button {
   font-weight: 400;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .app-sidebar {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .app-sidebar {
   flex: 0 0 var(--sidebar-w) !important;
   width: var(--sidebar-w) !important;
   min-width: var(--sidebar-min-w) !important;
@@ -28,7 +28,7 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   box-sizing: border-box;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar {
   width: var(--sidebar-w) !important;
   min-width: var(--sidebar-min-w) !important;
   background: var(--theme-pane-bg) !important;
@@ -36,14 +36,14 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   color: var(--theme-text);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tabs {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs {
   padding: 13px 12px 8px !important;
   gap: 6px !important;
   background: var(--theme-pane-bg) !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tabs button,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tab-button {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tab-button {
   height: 30px !important;
   padding: 0 10px !important;
   border-radius: 8px !important;
@@ -58,33 +58,33 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   transition: background 120ms ease, color 120ms ease !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tabs button:hover,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tab-button:hover {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button:hover,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tab-button:hover {
   background: var(--theme-panel-secondary) !important;
   color: var(--theme-text) !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tabs button[style*='scale(1.02)'],
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tab-button[data-active='true'] {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button[style*='scale(1.02)'],
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tab-button[data-active='true'] {
   background: var(--theme-selection) !important;
   color: var(--theme-text) !important;
   font-weight: 600 !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar-tabs button > div {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button > div {
   display: none !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .sidebar,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-directory,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-folder-label,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-directory-name,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-empty {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-item,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-directory,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-folder-label,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-directory-name,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-empty {
   font-family: var(--theme-font);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-directory {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-directory {
   height: 32px !important;
   margin: 0 6px !important;
   border-radius: 8px !important;
@@ -93,24 +93,24 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   transition: background 120ms ease, color 120ms ease !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-directory:hover {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-directory:hover {
   background: var(--theme-panel-secondary) !important;
   color: var(--theme-text) !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-directory-name {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-directory-name {
   font-size: 14px !important;
   font-weight: 400 !important;
   color: var(--theme-text) !important;
   letter-spacing: 0.6px !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-caret {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-caret {
   color: var(--theme-secondary-text) !important;
   font-weight: 400 !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-item {
   min-height: 52px !important;
   margin: 0 8px !important;
   padding: 7px 12px !important;
@@ -120,12 +120,12 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   transition: background 120ms ease, color 120ms ease !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item:hover {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-item:hover {
   background: var(--theme-panel-secondary) !important;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item .file-name,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .file-tree-item [class*='file-name'] {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-item .file-name,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-item [class*='file-name'] {
   font-weight: 400 !important;
   color: var(--theme-text) !important;
   font-size: 14px !important;
@@ -401,7 +401,7 @@ html[data-content-theme='miaoyan'] .compat-search-panel {
   --compat-search-font: var(--miaoyan-search-font);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .compat-search-panel {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .compat-search-panel {
   --compat-search-bg: var(--theme-search-bg);
   --compat-search-text: var(--theme-text);
   --compat-search-secondary: var(--theme-secondary-text);
@@ -926,45 +926,45 @@ html[data-content-theme='miaoyan'] .modal-footer .pill-filled:disabled {
   opacity: 1;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-submenu {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-submenu {
   background: var(--theme-main-bg);
   border-color: var(--theme-divider);
   color: var(--theme-text);
   font-family: var(--theme-font);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-item {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-item {
   color: var(--theme-text);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-item:hover {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-item:hover {
   background: var(--theme-selection);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-item.disabled,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-item.disabled:hover {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-item.disabled,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-item.disabled:hover {
   color: var(--theme-tertiary-text);
   background: transparent;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-shortcut {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-shortcut {
   color: var(--theme-secondary-text);
   font-family: var(--theme-code-font);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-disabled-reason {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-disabled-reason {
   color: var(--theme-tertiary-text);
   font-size: 11px;
   letter-spacing: 0.2px;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-submenu-arrow,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-separator {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-submenu-arrow,
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-separator {
   color: var(--theme-secondary-text);
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne']) .custom-context-menu .menu-separator {
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .custom-context-menu .menu-separator {
   background: var(--theme-divider);
 }
 

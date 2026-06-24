@@ -153,6 +153,7 @@ export type CommandId =
   | 'themeSlate'
   | 'themeMono'
   | 'themeNocturne'
+  | 'themeCarbon'
   | 'minimize'
   | 'fullscreen'
   | 'alwaysOnTop'

@@ -31,9 +31,11 @@ describe('Markmap theme options', () => {
 
   it('uses the dark diagram palette for dark themes', () => {
     const palette = getMarkmapPalette('nocturne');
+    const carbonPalette = getMarkmapPalette('carbon');
     const options = getMarkmapOptions('nocturne');
 
     expect(palette[0]).toBe('#54C59F');
+    expect(carbonPalette[0]).toBe('#54C59F');
     expect(options.color({ state: { depth: 0 } })).toBe('#54C59F');
   });
 });

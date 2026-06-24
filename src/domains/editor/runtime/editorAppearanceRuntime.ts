@@ -35,7 +35,7 @@ const editorDarkThemeExtension = [
   ),
 ];
 
-const DARK_CONTENT_THEMES = new Set(['nocturne']);
+const DARK_CONTENT_THEMES = new Set(['nocturne', 'carbon']);
 const LIGHT_CONTENT_THEMES = new Set(['miaoyan', 'inkstone', 'slate', 'mono']);
 
 export function shouldUseDarkEditor(contentTheme: string, theme: string) {

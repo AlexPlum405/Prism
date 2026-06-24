@@ -13,7 +13,7 @@ export type ExportDefaultLocation = 'ask' | 'document' | 'downloads' | 'custom';
 export type DocxFontPolicy = 'theme' | 'preview' | 'custom';
 export type FontSourceKind = 'theme' | 'builtin' | 'system' | 'custom';
 
-export const CONTENT_THEMES = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne'] as const;
+export const CONTENT_THEMES = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne', 'carbon'] as const;
 export const CURRENT_SETTINGS_VERSION = 1;
 
 export type BuiltInContentTheme = (typeof CONTENT_THEMES)[number];

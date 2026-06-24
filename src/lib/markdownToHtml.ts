@@ -877,7 +877,7 @@ function remarkCitations() {
 }
 
 export interface MarkdownToHtmlOptions {
-  compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne';
+  compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne' | 'carbon';
   /** 大文档预览中可抽取纯文本简单表格，绕开全量 GFM 表格解析。复杂表格仍走 GFM。 */
   lightweightTables?: boolean;
   /** 是否同步生成 KaTeX HTML。大文档预览可关闭，交给 PreviewPane 异步补齐。 */

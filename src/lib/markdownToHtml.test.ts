@@ -116,7 +116,7 @@ function buildCommonFastPathMarkdown(targetLength = 320 * 1024) {
 
 describe('markdownToHtml compatibility modes', () => {
   const codeBlock = '```ts\nconst answer = 42;\n```';
-  const compatibilityModes = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne'] as const;
+  const compatibilityModes = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne', 'carbon'] as const;
 
   it('keeps code blocks free of legacy Prism preview chrome by default', () => {
     const html = markdownToHtml(codeBlock);

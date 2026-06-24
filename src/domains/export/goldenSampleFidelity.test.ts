@@ -16,7 +16,7 @@ function readSample(): string {
 
 describe('export fidelity golden sample', () => {
   const sample = readSample();
-  const compatibilityModes = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne'] as const;
+  const compatibilityModes = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne', 'carbon'] as const;
 
   it('exists and contains every targeted difficulty block in source', () => {
     expect(sample.length).toBeGreaterThan(1500);
