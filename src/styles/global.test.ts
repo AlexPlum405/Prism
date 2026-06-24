@@ -16,6 +16,17 @@ function readCssWithImports(filename: string, seen = new Set<string>()): string 
   ));
 }
 
+function readRule(css: string, selector: string): string {
+  const ruleStart = css.indexOf(selector);
+  const ruleEnd = css.indexOf('}', ruleStart);
+
+  expect(ruleStart).toBeGreaterThan(-1);
+  expect(ruleEnd).toBeGreaterThan(ruleStart);
+  return css.slice(ruleStart, ruleEnd);
+}
+
+const nonMiaoyanThemes = ['inkstone', 'slate', 'mono', 'nocturne'] as const;
+
 describe('global Windows visual compensation', () => {
   const css = readCssWithImports('global.css');
 
@@ -261,6 +272,69 @@ describe('Miaoyan content surface rules', () => {
     expect(css).not.toContain('.mermaid-placeholder marker path');
     expect(css).not.toContain('.mermaid-placeholder .node .label-container');
     expect(css).not.toContain('.mermaid-placeholder .edgeLabel .labelBkg');
+  });
+});
+
+describe('Non-MiaoYan content theme quality rules', () => {
+  const css = readCssWithImports('global.css');
+
+  it('keeps reading tables full-line and backed by each theme palette', () => {
+    for (const theme of nonMiaoyanThemes) {
+      const tableRule = readRule(css, `html[data-content-theme='${theme}'] .preview-compat--${theme} table {`);
+
+      expect(tableRule).toContain('table-layout: fixed');
+      expect(tableRule).toContain('max-width: 100%');
+      expect(tableRule).toContain('width: 100%');
+      expect(css).toContain(`--${theme}-diagram-bg:`);
+      expect(css).toContain(`--theme-diagram-bg: var(--${theme}-diagram-bg)`);
+      expect(css).toContain(`--theme-mermaid-line: var(--${theme}-mermaid-line)`);
+      expect(css).toContain(`--theme-markmap-node: var(--${theme}-markmap-node)`);
+    }
+  });
+
+  it('keeps formulas transparent and centered across non-MiaoYan themes', () => {
+    expect(css).toContain("html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])");
+    expect(css).toContain('font: normal 1.16em KaTeX_Main');
+    expect(css).toContain('color: var(--theme-text) !important');
+    expect(css).toContain('background: transparent !important');
+    expect(css).toContain('border: 0 !important');
+    expect(css).toContain('box-shadow: none !important');
+    expect(css).toContain(".katex-placeholder[data-katex-display='true']");
+    expect(css).toContain('text-align: center !important');
+    expect(css).toContain('.katex .katex-mathml');
+  });
+
+  it('keeps Mermaid, PlantUML, and Markmap using a complete themed canvas', () => {
+    expect(css).toContain(':is(.mermaid-placeholder, .markmap-placeholder, .plantuml-placeholder)');
+    expect(css).toContain('background: var(--theme-diagram-bg)');
+    expect(css).toContain('border: none');
+    expect(css).toContain('border-radius: 6px');
+    expect(css).toContain('padding: 12px');
+    expect(css).toContain('max-width: min(100%, 920px)');
+    expect(css).toContain('shape-rendering: geometricPrecision');
+    expect(css).toContain('.plantuml-image');
+    expect(css).toContain('height: 450px !important');
+    expect(css).toContain('stroke: var(--theme-mermaid-line) !important');
+    expect(css).toContain('fill: var(--theme-mermaid-node-bg) !important');
+    expect(css).toContain('background-color: var(--theme-mermaid-edge-label-bg) !important');
+    expect(css).toContain('fill: var(--theme-markmap-node) !important');
+    expect(css).toContain('stroke: var(--theme-markmap-line) !important');
+  });
+
+  it('keeps editor link, image, and math token layers explicit in every non-MiaoYan theme', () => {
+    for (const theme of nonMiaoyanThemes) {
+      const syntaxRule = readRule(css, `html[data-content-theme='${theme}'] .cm-md-link-syntax,`);
+
+      expect(css).toContain(`html[data-content-theme='${theme}'] .cm-md-link-text`);
+      expect(css).toContain(`html[data-content-theme='${theme}'] .cm-md-link-url`);
+      expect(css).toContain(`html[data-content-theme='${theme}'] .cm-md-image-url`);
+      expect(css).toContain(`html[data-content-theme='${theme}'] .cm-md-image-mark`);
+      expect(css).toContain(`html[data-content-theme='${theme}'] .cm-md-math-token`);
+      expect(syntaxRule).toContain(`html[data-content-theme='${theme}'] .cm-md-image-syntax`);
+      expect(syntaxRule).toContain(`html[data-content-theme='${theme}'] .cm-editor .cm-url`);
+      expect(syntaxRule).toContain(`color: var(--${theme}-editor-text)`);
+      expect(syntaxRule).toContain('text-decoration: none');
+    }
   });
 });
 

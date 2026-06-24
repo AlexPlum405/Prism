@@ -32,6 +32,14 @@ html[data-content-theme='inkstone'] {
   --inkstone-search-field-border: color-mix(in srgb, var(--inkstone-border) 80%, #000);
   --inkstone-search-shadow: 0 9px 22px rgba(72, 58, 35, 0.16), 0 1px 3px rgba(72, 58, 35, 0.12);
   --inkstone-search-font: var(--inkstone-font);
+  --inkstone-diagram-bg: #f7f3ea;
+  --inkstone-mermaid-node-bg: #fffdf8;
+  --inkstone-mermaid-text: #24231f;
+  --inkstone-mermaid-border: #d7cebd;
+  --inkstone-mermaid-line: #466f57;
+  --inkstone-mermaid-edge-label-bg: #f7f3ea;
+  --inkstone-markmap-node: #286c62;
+  --inkstone-markmap-line: #466f57;
 
   --theme-main-bg: var(--inkstone-main-bg);
   --theme-pane-bg: var(--inkstone-pane-bg);
@@ -57,6 +65,14 @@ html[data-content-theme='inkstone'] {
   --theme-search-field-border: var(--inkstone-search-field-border);
   --theme-search-shadow: var(--inkstone-search-shadow);
   --theme-search-font: var(--inkstone-search-font);
+  --theme-diagram-bg: var(--inkstone-diagram-bg);
+  --theme-mermaid-node-bg: var(--inkstone-mermaid-node-bg);
+  --theme-mermaid-text: var(--inkstone-mermaid-text);
+  --theme-mermaid-border: var(--inkstone-mermaid-border);
+  --theme-mermaid-line: var(--inkstone-mermaid-line);
+  --theme-mermaid-edge-label-bg: var(--inkstone-mermaid-edge-label-bg);
+  --theme-markmap-node: var(--inkstone-markmap-node);
+  --theme-markmap-line: var(--inkstone-markmap-line);
 
   --c-void: #24231f;
   --c-canvas: #fcfbf7;
@@ -348,7 +364,7 @@ html[data-content-theme='inkstone'] .preview-compat--inkstone table {
   word-break: break-word;
   color: #24231f;
   max-width: 100%;
-  width: auto;
+  width: 100%;
   font-family: inherit;
 }
 
@@ -553,6 +569,14 @@ html[data-content-theme='slate'] {
   --slate-search-field-border: color-mix(in srgb, var(--slate-border) 82%, #000);
   --slate-search-shadow: 0 9px 22px rgba(35, 49, 53, 0.15), 0 1px 3px rgba(35, 49, 53, 0.11);
   --slate-search-font: var(--slate-font);
+  --slate-diagram-bg: #eef2f2;
+  --slate-mermaid-node-bg: #fbfcfc;
+  --slate-mermaid-text: #222829;
+  --slate-mermaid-border: #cbd4d5;
+  --slate-mermaid-line: #587a85;
+  --slate-mermaid-edge-label-bg: #eef2f2;
+  --slate-markmap-node: #2a7080;
+  --slate-markmap-line: #587a85;
 
   --theme-main-bg: var(--slate-main-bg);
   --theme-pane-bg: var(--slate-pane-bg);
@@ -578,6 +602,14 @@ html[data-content-theme='slate'] {
   --theme-search-field-border: var(--slate-search-field-border);
   --theme-search-shadow: var(--slate-search-shadow);
   --theme-search-font: var(--slate-search-font);
+  --theme-diagram-bg: var(--slate-diagram-bg);
+  --theme-mermaid-node-bg: var(--slate-mermaid-node-bg);
+  --theme-mermaid-text: var(--slate-mermaid-text);
+  --theme-mermaid-border: var(--slate-mermaid-border);
+  --theme-mermaid-line: var(--slate-mermaid-line);
+  --theme-mermaid-edge-label-bg: var(--slate-mermaid-edge-label-bg);
+  --theme-markmap-node: var(--slate-markmap-node);
+  --theme-markmap-line: var(--slate-markmap-line);
 
   --c-void: #222829;
   --c-canvas: #f7f8f8;
@@ -869,7 +901,7 @@ html[data-content-theme='slate'] .preview-compat--slate table {
   word-break: break-word;
   color: #222829;
   max-width: 100%;
-  width: auto;
+  width: 100%;
   font-family: inherit;
 }
 
@@ -1074,6 +1106,14 @@ html[data-content-theme='mono'] {
   --mono-search-field-border: color-mix(in srgb, var(--mono-border) 82%, #000);
   --mono-search-shadow: 0 9px 22px rgba(24, 26, 24, 0.15), 0 1px 3px rgba(24, 26, 24, 0.1);
   --mono-search-font: var(--mono-font);
+  --mono-diagram-bg: #f2f4f0;
+  --mono-mermaid-node-bg: #fbfbfa;
+  --mono-mermaid-text: #171817;
+  --mono-mermaid-border: #dcdcd8;
+  --mono-mermaid-line: #3b6f48;
+  --mono-mermaid-edge-label-bg: #f2f4f0;
+  --mono-markmap-node: #14756c;
+  --mono-markmap-line: #3b6f48;
 
   --theme-main-bg: var(--mono-main-bg);
   --theme-pane-bg: var(--mono-pane-bg);
@@ -1099,6 +1139,14 @@ html[data-content-theme='mono'] {
   --theme-search-field-border: var(--mono-search-field-border);
   --theme-search-shadow: var(--mono-search-shadow);
   --theme-search-font: var(--mono-search-font);
+  --theme-diagram-bg: var(--mono-diagram-bg);
+  --theme-mermaid-node-bg: var(--mono-mermaid-node-bg);
+  --theme-mermaid-text: var(--mono-mermaid-text);
+  --theme-mermaid-border: var(--mono-mermaid-border);
+  --theme-mermaid-line: var(--mono-mermaid-line);
+  --theme-mermaid-edge-label-bg: var(--mono-mermaid-edge-label-bg);
+  --theme-markmap-node: var(--mono-markmap-node);
+  --theme-markmap-line: var(--mono-markmap-line);
 
   --c-void: #171817;
   --c-canvas: #fbfbfa;
@@ -1390,7 +1438,7 @@ html[data-content-theme='mono'] .preview-compat--mono table {
   word-break: break-word;
   color: #171817;
   max-width: 100%;
-  width: auto;
+  width: 100%;
   font-family: inherit;
 }
 
@@ -1595,6 +1643,14 @@ html[data-content-theme='nocturne'] {
   --nocturne-search-field-border: color-mix(in srgb, var(--nocturne-border) 76%, #fff);
   --nocturne-search-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.38);
   --nocturne-search-font: var(--nocturne-font);
+  --nocturne-diagram-bg: #1c201d;
+  --nocturne-mermaid-node-bg: #20241f;
+  --nocturne-mermaid-text: #e5e1d7;
+  --nocturne-mermaid-border: #33382f;
+  --nocturne-mermaid-line: #86a878;
+  --nocturne-mermaid-edge-label-bg: #1c201d;
+  --nocturne-markmap-node: #8cc7b0;
+  --nocturne-markmap-line: #86a878;
 
   --theme-main-bg: var(--nocturne-main-bg);
   --theme-pane-bg: var(--nocturne-pane-bg);
@@ -1620,6 +1676,14 @@ html[data-content-theme='nocturne'] {
   --theme-search-field-border: var(--nocturne-search-field-border);
   --theme-search-shadow: var(--nocturne-search-shadow);
   --theme-search-font: var(--nocturne-search-font);
+  --theme-diagram-bg: var(--nocturne-diagram-bg);
+  --theme-mermaid-node-bg: var(--nocturne-mermaid-node-bg);
+  --theme-mermaid-text: var(--nocturne-mermaid-text);
+  --theme-mermaid-border: var(--nocturne-mermaid-border);
+  --theme-mermaid-line: var(--nocturne-mermaid-line);
+  --theme-mermaid-edge-label-bg: var(--nocturne-mermaid-edge-label-bg);
+  --theme-markmap-node: var(--nocturne-markmap-node);
+  --theme-markmap-line: var(--nocturne-markmap-line);
 
   --c-void: #e5e1d7;
   --c-canvas: #171a18;
@@ -1909,8 +1973,7 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne blockquote blockqu
 
 html[data-content-theme='nocturne'] .preview-compat--nocturne table {
   box-sizing: border-box;
-  display: block;
-  table-layout: auto;
+  table-layout: fixed;
   margin-block-start: 0.8em;
   margin-block-end: 1.35em;
   margin-inline-start: auto;
@@ -1921,9 +1984,8 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne table {
   border: 1px solid #33382f;
   word-break: break-word;
   color: #e5e1d7;
-  overflow-x: auto;
   max-width: 100%;
-  width: max-content;
+  width: 100%;
   font-family: inherit;
   font-size: 0.94em;
   line-height: 1.52;
@@ -2105,6 +2167,260 @@ html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placehold
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder .edgeLabel,
 html[data-content-theme='nocturne'] .preview-compat--nocturne .mermaid-placeholder .label { line-height: 1.35 !important; }
 html[data-content-theme='nocturne'] .preview-compat--nocturne kbd { background: #252a24; border: 1px solid #33382f; border-radius: 4px; padding: 2px 6px; font-family: var(--nocturne-code-font); font-size: 0.9em; color: #e5e1d7; }
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .katex {
+  color: var(--theme-text) !important;
+  text-rendering: auto !important;
+  font: normal 1.16em KaTeX_Main, "Times New Roman", serif !important;
+  line-height: 1.2 !important;
+  text-indent: 0 !important;
+  letter-spacing: normal !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .katex-placeholder {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--theme-text) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  .katex-placeholder[data-katex-display='true'] {
+  display: block !important;
+  margin: 1em 0 !important;
+  text-align: center !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .katex * {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: currentColor;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .katex .katex-mathml {
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  border: 0 !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  width: 1px !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .katex-display {
+  display: block !important;
+  margin: 1em 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .katex-display > .katex {
+  display: block !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder, .markmap-placeholder, .plantuml-placeholder) {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  margin: 8px 0;
+  padding: 12px;
+  overflow: auto;
+  background: var(--theme-diagram-bg);
+  border: none;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder, .mermaid-placeholder .mermaid, .mermaid-placeholder svg, .markmap-placeholder, .markmap-placeholder svg, .plantuml-placeholder, .plantuml-image) {
+  background-color: var(--theme-diagram-bg) !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .mermaid-placeholder svg {
+  display: block;
+  margin-inline: auto;
+  max-width: min(100%, 920px);
+  height: auto;
+  overflow: visible;
+  border-radius: 6px;
+  shape-rendering: geometricPrecision;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .markmap-placeholder .markmap-svg {
+  display: block;
+  width: 100% !important;
+  height: 450px !important;
+  min-height: 450px;
+  margin-inline: auto;
+  overflow: visible;
+  border-radius: 6px;
+  shape-rendering: geometricPrecision;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .plantuml-image {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  border-radius: 6px;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .mermaid-placeholder svg * {
+  shape-rendering: geometricPrecision;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder, .mermaid-placeholder *, .mermaid-placeholder text, .mermaid-placeholder tspan, .mermaid-placeholder foreignObject div, .mermaid-placeholder .nodeLabel, .mermaid-placeholder .edgeLabel, .mermaid-placeholder .label) {
+  font-family: var(--theme-font), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder .label, .mermaid-placeholder text, .mermaid-placeholder span) {
+  color: var(--theme-mermaid-text) !important;
+  fill: var(--theme-mermaid-text) !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  .mermaid-placeholder .node :is(rect, circle, polygon) {
+  fill: var(--theme-mermaid-node-bg) !important;
+  stroke: var(--theme-mermaid-border) !important;
+  stroke-width: 1px !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .mermaid-placeholder .cluster rect {
+  fill: var(--theme-mermaid-node-bg) !important;
+  stroke: var(--theme-mermaid-border) !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .mermaid-placeholder .cluster text {
+  fill: var(--theme-mermaid-text) !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder .edgePath path, .mermaid-placeholder line, .mermaid-placeholder polyline) {
+  stroke: var(--theme-mermaid-line) !important;
+  stroke-width: 1px !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .mermaid-placeholder .arrowheadPath {
+  fill: var(--theme-mermaid-line) !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder .edgeLabel, .mermaid-placeholder .edgeLabel rect) {
+  background-color: var(--theme-mermaid-edge-label-bg) !important;
+  fill: transparent !important;
+  opacity: 1 !important;
+  stroke: none !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.mermaid-placeholder .edgeLabel foreignObject div, .mermaid-placeholder .edgeLabel foreignObject span) {
+  background-color: var(--theme-mermaid-edge-label-bg) !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .markmap-placeholder {
+  min-height: 450px;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.markmap-placeholder .markmap-node text, .markmap-placeholder foreignObject, .markmap-placeholder foreignObject div) {
+  color: var(--theme-markmap-node) !important;
+  fill: var(--theme-markmap-node) !important;
+  font-family: var(--theme-font), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .markmap-placeholder foreignObject {
+  width: auto !important;
+  min-width: 80px;
+  overflow: visible !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne) .markmap-placeholder foreignObject div {
+  white-space: nowrap;
+  padding: 0 12px 0 4px;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.markmap-placeholder .markmap-node line, .markmap-placeholder .markmap-link) {
+  stroke: var(--theme-markmap-line) !important;
+  stroke-width: 2px !important;
+}
+
+html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'])
+  :is(.preview-compat--inkstone, .preview-compat--slate, .preview-compat--mono, .preview-compat--nocturne)
+  :is(.markmap-placeholder .markmap-node circle, .markmap-placeholder .markmap-node-circle) {
+  fill: var(--theme-diagram-bg) !important;
+  stroke: var(--theme-markmap-line) !important;
+  stroke-width: 2px !important;
+}
 
 .preview-compat .markmap-placeholder .markmap-svg {
   display: block;

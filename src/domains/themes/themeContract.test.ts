@@ -12,6 +12,20 @@ const requiredAreas = [
   'selection',
 ] as const;
 
+const mermaidRuntimeKeys = [
+  'edgeLabelTextColor',
+  'actorBkg',
+  'actorBorder',
+  'actorTextColor',
+  'signalColor',
+  'signalTextColor',
+  'noteBkgColor',
+  'noteBorderColor',
+  'noteTextColor',
+  'arrowheadColor',
+  'relationColor',
+] as const;
+
 describe('theme contract', () => {
   it('defines one complete contract for every content theme', () => {
     expect(Object.keys(themeContracts).sort()).toEqual([...CONTENT_THEMES].sort());
@@ -92,5 +106,21 @@ describe('theme contract', () => {
     expect(getThemeContract('slate').preview.maxWidth).toBe(1000);
     expect(getThemeContract('mono').preview.maxWidth).toBe(1000);
     expect(getThemeContract('nocturne').preview.maxWidth).toBe(920);
+  });
+
+  it('keeps non-MiaoYan Mermaid runtime palettes complete for diagram families', () => {
+    for (const theme of ['inkstone', 'slate', 'mono', 'nocturne'] as const) {
+      const variables = getThemeContract(theme).mermaid.themeVariables;
+
+      for (const key of mermaidRuntimeKeys) {
+        expect(variables[key]).toBeTruthy();
+      }
+
+      expect(variables.arrowheadColor).toBe(variables.lineColor);
+      expect(variables.relationColor).toBe(variables.lineColor);
+      expect(variables.signalColor).toBe(variables.lineColor);
+      expect(variables.actorTextColor).toBe(variables.textColor);
+      expect(variables.noteTextColor).toBe(variables.textColor);
+    }
   });
 });
