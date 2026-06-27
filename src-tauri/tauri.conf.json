@@ -24,6 +24,7 @@
         "transparent": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
+        "visible": false,
         "devtools": true
       }
     ],

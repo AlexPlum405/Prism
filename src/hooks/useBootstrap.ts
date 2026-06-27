@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 import { exists } from '../platform/tauri/fileSystem';
 import { documentDir } from '../platform/tauri/path';
@@ -10,13 +11,30 @@ import { getRuntimePlatform, joinPath } from '../domains/workspace/services';
 import { grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
 import { openDocumentInCurrentWindow, openDocumentInNewWindow } from '../lib/openDocumentFlow';
 
-const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800] as const;
+const MACOS_PENDING_FILE_POLL_DELAYS = [0] as const;
 const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
 const DEFAULT_INITIAL_WORKSPACE_NAME = 'Prism';
 const DEFAULT_INITIAL_GUIDE_PARTS = ['Examples', 'Prism Markdown 语法指南.md'] as const;
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function revealCurrentWindow() {
+  try {
+    await invokeNativeCommand('reveal_current_window');
+    return;
+  } catch {
+    // Fall through to the JS API for browser tests or older development shells.
+  }
+
+  try {
+    const currentWindow = getCurrentWindow();
+    await currentWindow.show();
+    await currentWindow.setFocus();
+  } catch {
+    // Browser tests and non-Tauri previews do not expose a native window.
+  }
 }
 
 function getDefaultPendingFilePollDelays() {
@@ -64,7 +82,6 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     wait,
   } = normalizeUseBootstrapInput(input);
   const currentDocument = useDocumentStore((s) => s.currentDocument);
-  const createNewDocument = useDocumentStore((s) => s.createNewDocument);
   const restoreLastSession = useSettingsStore((s) => s.restoreLastSession);
   const lastSession = useSettingsStore((s) => s.lastSession);
   const { setSidebarVisible, setSidebarTab, setWorkspace } = useWorkspaceStore();
@@ -77,12 +94,12 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     const params = new URLSearchParams(window.location.search);
     const filePath = params.get('file');
     const folderPath = params.get('folder');
-    const shouldCreateNewDocument = params.get('new') === '1';
 
     const openFile = async (
       path: string,
       restoreViewMode?: 'edit' | 'split' | 'preview',
       restoreScrollState?: { editorRatio: number; previewRatio: number },
+      openOptions: { skipFileScopeGrant?: boolean; skipWorkspaceSync?: boolean } = {},
     ) => {
       const result = await openDocumentInCurrentWindow(path, {
         documentStore: useDocumentStore.getState(),
@@ -93,6 +110,8 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
         restoreScrollState,
         restoreViewMode,
         shouldAbort: () => cancelled || Boolean(useDocumentStore.getState().currentDocument),
+        skipFileScopeGrant: openOptions.skipFileScopeGrant,
+        skipWorkspaceSync: openOptions.skipWorkspaceSync,
       });
       return result.status !== 'cancelled-large-file';
     };
@@ -108,11 +127,16 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
 
     const openDefaultInitialWorkspace = async () => {
       const target = await getDefaultInitialTarget();
-      const openedWorkspace = await openFolder(target.root);
-      if (cancelled || useDocumentStore.getState().currentDocument) return true;
-      if (!openedWorkspace) return false;
-      if (!(await exists(target.guide))) return true;
-      return openFile(target.guide);
+      const openedGuide = await openFile(target.guide, undefined, undefined, {
+        skipFileScopeGrant: true,
+        skipWorkspaceSync: true,
+      });
+      if (!openedGuide || cancelled) return openedGuide;
+
+      void openFolder(target.root).catch((err) => {
+        console.error('[useBootstrap] Failed to load default Prism workspace tree:', err);
+      });
+      return true;
     };
 
     const openPendingStartupFile = async () => {
@@ -166,48 +190,53 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     };
 
     (async () => {
-      if (filePath) {
-        try {
-          await openFile(filePath);
-        } catch (err) {
-          console.error('[useBootstrap] Failed to load file:', err);
-        }
-        return;
-      } else if (folderPath) {
-        try {
-          await openFolder(folderPath);
-        } catch (err) {
-          console.error('[useBootstrap] Failed to load folder:', err);
-        }
-        return;
-      }
-
-      if (shouldCreateNewDocument) {
-        createNewDocument();
-        return;
-      }
-
-      if (await openPendingStartupFileBeforeSessionRestore()) return;
-
       try {
-        if (await openDefaultInitialWorkspace()) return;
-      } catch (err) {
-        console.error('[useBootstrap] Failed to load default Prism workspace:', err);
-      }
+        if (filePath) {
+          try {
+            await openFile(filePath);
+          } catch (err) {
+            console.error('[useBootstrap] Failed to load file:', err);
+          }
+          return;
+        } else if (folderPath) {
+          try {
+            await openFolder(folderPath);
+          } catch (err) {
+            console.error('[useBootstrap] Failed to load folder:', err);
+          }
+          return;
+        }
 
-      if (!restoreLastSession || !lastSession) return;
+        if (await openPendingStartupFileBeforeSessionRestore()) return;
 
-      try {
-        if (lastSession.sidebarVisible !== undefined) setSidebarVisible(lastSession.sidebarVisible);
-        if (lastSession.sidebarTab) setSidebarTab(lastSession.sidebarTab);
-        if (lastSession.filePath && await openFile(
-          lastSession.filePath,
-          lastSession.viewMode,
-          lastSession.scrollState,
-        )) return;
-        if (lastSession.folderPath) await openFolder(lastSession.folderPath);
-      } catch (err) {
-        console.error('[useBootstrap] Failed to restore last session:', err);
+        try {
+          if (await openDefaultInitialWorkspace()) return;
+        } catch (err) {
+          console.error('[useBootstrap] Failed to load default Prism workspace:', err);
+        }
+
+        if (!restoreLastSession || !lastSession) return;
+
+        try {
+          if (lastSession.sidebarVisible !== undefined) setSidebarVisible(lastSession.sidebarVisible);
+          if (lastSession.sidebarTab) setSidebarTab(lastSession.sidebarTab);
+          if (lastSession.filePath && await openFile(
+            lastSession.filePath,
+            lastSession.viewMode,
+            lastSession.scrollState,
+          )) return;
+          if (lastSession.folderPath) await openFolder(lastSession.folderPath);
+        } catch (err) {
+          console.error('[useBootstrap] Failed to restore last session:', err);
+        }
+      } finally {
+        const hasVisibleStartupTarget = Boolean(
+          useDocumentStore.getState().currentDocument
+          || useWorkspaceStore.getState().rootPath
+          || filePath
+          || folderPath,
+        );
+        if (!cancelled && hasVisibleStartupTarget) await revealCurrentWindow();
       }
     })();
 
@@ -216,7 +245,6 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     };
   }, [
     enabled,
-    createNewDocument,
     lastSession,
     pendingFilePollDelays,
     restoreLastSession,

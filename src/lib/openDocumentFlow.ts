@@ -78,6 +78,8 @@ interface OpenDocumentOptions {
   restoreScrollState?: { editorRatio: number; previewRatio: number };
   restoreViewMode?: 'edit' | 'split' | 'preview';
   shouldAbort?: () => boolean;
+  skipFileScopeGrant?: boolean;
+  skipWorkspaceSync?: boolean;
 }
 
 function formatError(err: unknown): string {
@@ -277,12 +279,16 @@ export async function openDocumentInCurrentWindow(
   options: OpenDocumentOptions,
 ): Promise<OpenDocumentResult> {
   assertSupportedOpenDocumentPath(path);
-  await grantMarkdownFileScope(path);
+  if (!options.skipFileScopeGrant) {
+    await grantMarkdownFileScope(path);
+  }
   if (options.shouldAbort?.()) return { status: 'aborted' };
 
   const currentDocument = context.documentStore.currentDocument;
   if (currentDocument?.path && isSamePath(currentDocument.path, path)) {
-    await syncWorkspaceForOpenedDocument(path, context);
+    if (!options.skipWorkspaceSync) {
+      await syncWorkspaceForOpenedDocument(path, context);
+    }
     return { status: 'current-document' };
   }
 
@@ -307,7 +313,9 @@ export async function openDocumentInCurrentWindow(
   if (options.restoreViewMode) context.documentStore.setViewMode(options.restoreViewMode);
   if (options.restoreScrollState) context.documentStore.updateScrollState(options.restoreScrollState);
   addRecentFile(session.path, session.name);
-  await syncWorkspaceForOpenedDocument(path, context);
+  if (!options.skipWorkspaceSync) {
+    await syncWorkspaceForOpenedDocument(path, context);
+  }
   return { status: 'opened-current-window' };
 }
 

@@ -86,7 +86,7 @@ describe('FileTree', () => {
     expect(screen.queryByTitle('/notes/ideas/raw.md')).not.toBeInTheDocument();
   });
 
-  it('shows a Prism-branded local writing empty state', () => {
+  it('does not render the removed workspace guide copy while empty', () => {
     useWorkspaceStore.setState({
       rootPath: null,
       fileTree: [],
@@ -95,10 +95,8 @@ describe('FileTree', () => {
 
     render(<FileTree nodes={[]} activePath={null} onFileClick={vi.fn()} />);
 
-    expect(screen.getByText('PRISM')).toBeInTheDocument();
-    expect(screen.getByText('未打开工作区')).toBeInTheDocument();
-    expect(screen.getByText('打开文件或文件夹，开始本地写作')).toBeInTheDocument();
-    expect(screen.getByText('本地写作、完整预览、可信导出。')).toBeInTheDocument();
+    expect(screen.queryByText('PRISM')).not.toBeInTheDocument();
+    expect(screen.queryByText('本地写作、完整预览、可信导出。')).not.toBeInTheDocument();
     expect(screen.queryByText(/AI|云同步|实时协作/)).not.toBeInTheDocument();
   });
 });

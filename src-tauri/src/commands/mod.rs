@@ -10,5 +10,6 @@ pub mod startup_files;
 pub mod system_open;
 pub mod theme_store;
 pub mod trash;
+pub mod window;
 pub mod workspace_index;
 pub mod workspace_tree;

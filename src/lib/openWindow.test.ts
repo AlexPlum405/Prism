@@ -17,25 +17,15 @@ describe('openPrismWindow', () => {
     vi.clearAllMocks();
   });
 
-  it('marks explicit new-document windows so bootstrap skips last-session restore', async () => {
+  it('opens default windows without query parameters so bootstrap loads the guide', async () => {
     const { openPrismWindow } = await import('./openWindow');
 
-    await openPrismWindow({ newDocument: true });
+    await openPrismWindow();
 
     expect(webviewWindowMock).toHaveBeenCalledTimes(1);
     expect(webviewWindowMock.mock.calls[0][1]).toEqual(expect.objectContaining({
-      url: '/?new=1',
-    }));
-  });
-
-  it('marks explicit empty windows so bootstrap does not restore the last session', async () => {
-    const { openPrismWindow } = await import('./openWindow');
-
-    await openPrismWindow({ emptyWindow: true });
-
-    expect(webviewWindowMock).toHaveBeenCalledTimes(1);
-    expect(webviewWindowMock.mock.calls[0][1]).toEqual(expect.objectContaining({
-      url: '/?empty=1',
+      url: '/',
+      visible: false,
     }));
   });
 

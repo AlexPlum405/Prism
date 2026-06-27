@@ -8,15 +8,11 @@ describe('DocumentView', () => {
     useDocumentStore.setState({ currentDocument: null });
   });
 
-  it('shows the Prism brand empty state before a document is open', () => {
-    render(<DocumentView />);
+  it('does not render the removed empty guide page before a document is open', () => {
+    const { container } = render(<DocumentView />);
 
-    expect(screen.getByRole('status', { name: '打开一个本地文档开始写作' })).toBeInTheDocument();
-    expect(screen.getByText('PRISM')).toBeInTheDocument();
-    expect(screen.getByText(/Prism 不接管你的文件/)).toBeInTheDocument();
-    expect(screen.getByText('本地写作')).toBeInTheDocument();
-    expect(screen.getByText('完整预览')).toBeInTheDocument();
-    expect(screen.getByText('可信导出')).toBeInTheDocument();
-    expect(screen.queryByText(/AI|云同步|实时协作/)).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText('PRISM')).not.toBeInTheDocument();
+    expect(screen.queryByText('打开一个本地文档开始写作')).not.toBeInTheDocument();
   });
 });

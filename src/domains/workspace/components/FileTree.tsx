@@ -10,7 +10,6 @@ import {
   sortFileNodes,
 } from '../services';
 import { createFileTreeContextMenuItems } from './fileTreeContextMenu';
-import { useI18n } from '../../i18n';
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 
 interface FileTreeProps {
@@ -83,7 +82,6 @@ function RenameField({ value, onCommit, onCancel }: RenameFieldProps) {
 }
 
 export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
-  const { t } = useI18n();
   const rootPath = useWorkspaceStore((s) => s.rootPath);
   const fileTreeMode = useWorkspaceStore((s) => s.fileTreeMode);
   const fileSortMode = useWorkspaceStore((s) => s.fileSortMode);
@@ -264,16 +262,7 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
       onContextMenu={(event) => handleContextMenu(event)}
     >
       {isEmpty ? (
-        <div className="file-tree-empty">
-          <div className="file-tree-empty-kicker">PRISM</div>
-          <div style={{ marginBottom: '8px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            {rootPath ? t('workspace.fileTree.emptyWithWorkspace.title') : t('workspace.fileTree.emptyNoWorkspace.title')}
-          </div>
-          <div style={{ fontSize: '12px' }}>
-            {rootPath ? t('workspace.fileTree.emptyWithWorkspace.hint') : t('workspace.fileTree.emptyNoWorkspace.hint')}
-          </div>
-          <div className="file-tree-empty-brand">{t('brand.tagline')}</div>
-        </div>
+        <div className="file-tree-empty" aria-hidden="true" />
       ) : fileTreeMode === 'list' ? (
         flatFiles.map(({ node, folderLabel }, index) => renderFileNode(node, 0, index, folderLabel))
       ) : (
@@ -401,25 +390,8 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
           color: var(--text-secondary);
         }
         .file-tree-empty {
-          padding: 48px 16px;
-          font-size: 13px;
-          color: var(--text-tertiary);
-          line-height: 1.7;
-          text-align: center;
-        }
-        .file-tree-empty-kicker {
-          margin-bottom: 8px;
-          color: var(--text-tertiary);
-          font-size: 10.5px;
-          font-weight: 700;
-          letter-spacing: 0;
-        }
-        .file-tree-empty-brand {
-          max-width: 180px;
-          margin: 14px auto 0;
-          color: var(--text-tertiary);
-          font-size: 11.5px;
-          line-height: 1.55;
+          flex: 1;
+          min-height: 120px;
         }
         @media (prefers-reduced-motion: reduce) {
           .file-tree-item {

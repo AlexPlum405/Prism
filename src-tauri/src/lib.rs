@@ -140,6 +140,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::startup_files::get_pending_files,
             commands::startup_files::get_pending_workspace_path,
+            commands::window::reveal_current_window,
             commands::pandoc::detect_pandoc,
             commands::pandoc::render_citations_with_pandoc,
             commands::document_io::get_file_snapshot,

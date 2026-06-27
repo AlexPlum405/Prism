@@ -4,20 +4,12 @@ import { getRuntimePlatform } from '../domains/workspace/services';
 let windowCounter = 0;
 
 export async function openPrismWindow(params: {
-  emptyWindow?: boolean;
   filePath?: string;
   folderPath?: string;
-  newDocument?: boolean;
-}): Promise<void> {
+} = {}): Promise<void> {
   const label = `prism-${Date.now()}-${windowCounter++}`;
   const searchParams = new URLSearchParams();
 
-  if (params.emptyWindow) {
-    searchParams.set('empty', '1');
-  }
-  if (params.newDocument) {
-    searchParams.set('new', '1');
-  }
   if (params.filePath) {
     searchParams.set('file', params.filePath);
   }
@@ -25,7 +17,8 @@ export async function openPrismWindow(params: {
     searchParams.set('folder', params.folderPath);
   }
 
-  const url = `/?${searchParams.toString()}`;
+  const query = searchParams.toString();
+  const url = query ? `/?${query}` : '/';
 
   const isMacOS = getRuntimePlatform() === 'mac';
 
@@ -40,6 +33,7 @@ export async function openPrismWindow(params: {
     transparent: !isMacOS,
     titleBarStyle: isMacOS ? 'overlay' : undefined,
     hiddenTitle: isMacOS,
+    visible: false,
   });
 
   await webview.once('tauri://error', (e) => {
