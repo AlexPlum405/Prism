@@ -876,6 +876,79 @@ function remarkCitations() {
   };
 }
 
+function isFiniteOffset(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function createMiaoyanSubSupNode(tagName: 'sub' | 'sup', value: string, position?: unknown) {
+  return {
+    type: `miaoyan${tagName === 'sub' ? 'Subscript' : 'Superscript'}`,
+    data: {
+      hName: tagName,
+      hChildren: [{ type: 'text', value }],
+    },
+    children: [{ type: 'text', value }],
+    position,
+  };
+}
+
+function isSingleTildeDeleteSource(source: string, node: any) {
+  const start = node.position?.start?.offset;
+  const end = node.position?.end?.offset;
+  if (!isFiniteOffset(start) || !isFiniteOffset(end) || end <= start) return false;
+  const raw = source.slice(start, end);
+  return /^~(?!~)[\s\S]*[^~]~$/.test(raw);
+}
+
+function splitMiaoyanSuperscriptText(value: string) {
+  const children: any[] = [];
+  let lastIndex = 0;
+  const pattern = /(^|[^\^])\^([^\s^\n][^\^\n]*?)\^(?!\^)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value)) !== null) {
+    const prefix = match[1] ?? '';
+    const content = match[2] ?? '';
+    const markerStart = match.index + prefix.length;
+
+    if (markerStart > lastIndex) {
+      children.push({ type: 'text', value: value.slice(lastIndex, markerStart) });
+    }
+    children.push(createMiaoyanSubSupNode('sup', content));
+    lastIndex = markerStart + content.length + 2;
+  }
+
+  if (children.length === 0) return null;
+  if (lastIndex < value.length) {
+    children.push({ type: 'text', value: value.slice(lastIndex) });
+  }
+  return children;
+}
+
+function remarkMiaoyanSubSup(source: string) {
+  return (tree: any) => {
+    visit(tree, 'delete', (node: any, index, parent) => {
+      if (index === undefined || !parent || !isSingleTildeDeleteSource(source, node)) return;
+      const value = Array.isArray(node.children)
+        ? node.children.map((child: any) => child.value ?? '').join('')
+        : '';
+      if (!value) return;
+      parent.children[index] = createMiaoyanSubSupNode('sub', value, node.position);
+    });
+
+    visit(tree, 'text', (node: any, index, parent) => {
+      if (index === undefined || !parent) return;
+      if (parent.type === 'link' || parent.type === 'linkReference') return;
+      const value = String(node.value ?? '');
+      if (!value.includes('^')) return;
+
+      const children = splitMiaoyanSuperscriptText(value);
+      if (!children) return;
+      parent.children.splice(index, 1, ...children);
+    });
+  };
+}
+
 export interface MarkdownToHtmlOptions {
   compatibilityMode?: 'miaoyan' | 'inkstone' | 'slate' | 'mono' | 'nocturne' | 'carbon';
   /** 大文档预览中可抽取纯文本简单表格，绕开全量 GFM 表格解析。复杂表格仍走 GFM。 */
@@ -897,6 +970,7 @@ interface MarkdownPreviewFeatureHints {
   gfm: boolean;
   mark: boolean;
   math: boolean;
+  miaoyanSubSup: boolean;
   mermaid: boolean;
   markmap: boolean;
   plantUml: boolean;
@@ -916,6 +990,7 @@ const GFM_TABLE_SEPARATOR_PATTERN = /(^|\n)\s{0,3}\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{
 const GFM_TASK_LIST_PATTERN = /(^|\n)\s{0,3}(?:[-+*]|\d+[.)])\s+\[[ xX]\]\s/;
 const GFM_FOOTNOTE_PATTERN = /(^|\n)\s{0,3}\[\^[^\]\n]+]:|\[\^[^\]\n]+\]/;
 const GFM_AUTOLINK_LITERAL_PATTERN = /(^|[\s(])(?:https?:\/\/|www\.)[^\s<]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/;
+const MIAOYAN_SUP_PATTERN = /(^|[^\^])\^[^\s^\n][^\^\n]*?\^(?!\^)/;
 const LARGE_PRE_TABLE_ROW_THRESHOLD = 24;
 const LARGE_PRE_TABLE_PLACEHOLDER_BASE = 'PrismLargePreTablePlaceholder';
 const COMMON_MARKDOWN_PREVIEW_FAST_PATH_MIN_LENGTH = 300 * 1024;
@@ -1951,6 +2026,7 @@ function detectMarkdownPreviewFeatures(content: string): MarkdownPreviewFeatureH
       || (hasAutolinkLiteralCandidate && GFM_AUTOLINK_LITERAL_PATTERN.test(content)),
     mark: content.includes('=='),
     math: content.includes('$') || content.includes('\\(') || content.includes('\\[') || MATH_FENCE_PATTERN.test(content),
+    miaoyanSubSup: content.includes('~') || (content.includes('^') && MIAOYAN_SUP_PATTERN.test(content)),
     mermaid: MERMAID_FENCE_PATTERN.test(content),
     markmap: MARKMAP_FENCE_PATTERN.test(content),
     plantUml: PLANTUML_FENCE_PATTERN.test(content),
@@ -2009,6 +2085,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   if (featureHints.mark) processor = processor.use(remarkMark);
   if (featureHints.wikiLinks) processor = processor.use(remarkWikiLinks);
   if (featureHints.citations) processor = processor.use(remarkCitations);
+  if (featureHints.miaoyanSubSup) processor = processor.use(() => remarkMiaoyanSubSup(largePreTablePreview.content));
   processor = processor.use(remarkBlockLines);
   if (featureHints.callouts) processor = processor.use(remarkCallouts);
   if (featureHints.mermaid) processor = processor.use(remarkMermaid);

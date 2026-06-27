@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type MutableRefObject, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, type MutableRefObject, type RefObject } from 'react';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
@@ -18,6 +18,7 @@ import {
 } from '@codemirror/view';
 import type { I18nKey, I18nParams } from '../../i18n/resources';
 import { markdownListKeymap } from '../extensions/markdownLists';
+import { expandSlashSnippetWithTab } from '../extensions/slashSnippets';
 import type { QueryWorkspaceLinkTargets, WorkspaceLinkFile } from '../extensions/linkCompletion';
 import { findMarkdownTableBlock } from '../extensions/tables';
 import {
@@ -136,6 +137,12 @@ export function useEditorRuntimeModel({
   workspaceLinkFiles,
   workspaceRootPath,
 }: UseEditorRuntimeModelInput) {
+  const enableMarkdownCompletionsRef = useRef(enableMarkdownCompletions);
+
+  useEffect(() => {
+    enableMarkdownCompletionsRef.current = enableMarkdownCompletions;
+  }, [enableMarkdownCompletions]);
+
   useEffect(() => {
     const view = viewRef.current;
     if (!view) {
@@ -161,7 +168,10 @@ export function useEditorRuntimeModel({
         Prec.highest(keymap.of([
           {
             key: 'Tab',
-            run: (view) => runMarkdownTableNavigation(view, 'nextCell'),
+            run: (view) => (
+              (enableMarkdownCompletionsRef.current && expandSlashSnippetWithTab(view))
+              || runMarkdownTableNavigation(view, 'nextCell')
+            ),
           },
           {
             key: 'Shift-Tab',

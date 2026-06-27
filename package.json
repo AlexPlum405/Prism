@@ -13,8 +13,11 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:build:app-smoke": "tauri build --config src-tauri/tauri.local-smoke.conf.json --bundles app && node scripts/run-app-smoke.mjs",
-    "icons:generate": "node scripts/generate-brand-icons.mjs",
+    "tauri:build:app-smoke": "tauri build --config src-tauri/tauri.local-smoke.conf.json --bundles app && node scripts/patch-macos-document-icons.mjs && node scripts/run-app-smoke.mjs",
+    "icons:generate": "node scripts/generate-brand-icons.mjs && node scripts/generate-document-icons.mjs",
+    "icons:documents": "node scripts/generate-document-icons.mjs",
+    "macos:patch-document-icons": "node scripts/patch-macos-document-icons.mjs",
+    "macos:register-markdown-default": "node scripts/register-macos-markdown-default.mjs",
     "release:mac-dmg:skip-finder": "bash scripts/package-macos-dmg-skip-finder.sh",
     "release:manifest": "node scripts/generate-updater-manifest.mjs",
     "release:manifest:check": "node scripts/generate-updater-manifest.mjs --check"
@@ -46,6 +49,7 @@
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",
     "vite": "^6.4.2",
+    "vite-plugin-wasm": "^3.6.0",
     "vitest": "^4.1.5"
   },
   "dependencies": {
@@ -55,6 +59,8 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.41.1",
+    "@kookyleo/graphviz-anywhere-web": "^0.2.1",
+    "@kookyleo/plantuml-little-web": "^1.2026.2-3",
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "^2.7.0",
     "@tauri-apps/plugin-fs": "^2.5.0",

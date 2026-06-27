@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-#[cfg(target_os = "macos")]
 use tauri::Manager;
 
 mod commands;
@@ -57,6 +56,56 @@ fn handle_macos_window_lifecycle(app: &tauri::AppHandle, event: &tauri::RunEvent
     }
 }
 
+fn seed_initial_documents(app: &mut tauri::App) {
+    let resource_dir = match app.path().resource_dir() {
+        Ok(path) => path.join("Initial"),
+        Err(error) => {
+            eprintln!("[initial_documents] Failed to resolve resource directory: {error}");
+            return;
+        }
+    };
+    let documents_dir = match app.path().document_dir() {
+        Ok(path) => path,
+        Err(error) => {
+            eprintln!("[initial_documents] Failed to resolve documents directory: {error}");
+            return;
+        }
+    };
+    let app_data_dir = match app.path().app_data_dir() {
+        Ok(path) => path,
+        Err(error) => {
+            eprintln!("[initial_documents] Failed to resolve app data directory: {error}");
+            return;
+        }
+    };
+
+    match domain::initial_documents::seed_initial_documents_at(
+        &resource_dir,
+        &documents_dir,
+        &app_data_dir,
+    ) {
+        Ok(Some(result)) => {
+            if commands::startup_files::has_pending_files(app) {
+                return;
+            }
+
+            if let Some(welcome_document_path) = result.welcome_document_path {
+                commands::startup_files::queue_pending_files(
+                    app,
+                    vec![welcome_document_path.to_string_lossy().to_string()],
+                );
+            }
+        }
+        Ok(None) => {}
+        Err(error) => {
+            eprintln!(
+                "[initial_documents] Failed to seed bundled initial documents: {}",
+                error.message
+            );
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let pending_files = commands::startup_files::PendingFiles::default();
@@ -75,6 +124,7 @@ pub fn run() {
             }
 
             commands::startup_files::register_startup_files(app);
+            seed_initial_documents(app);
 
             Ok(())
         })

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentStore } from '../../document/store';
 import {
@@ -16,6 +16,7 @@ import {
   lineToPreviewScrollTopInMap,
   pageOffsetToLineInMap,
 } from './previewScrollMap';
+import { hasPresentationSlides } from '../extensions/presentation';
 
 const mockState = vi.hoisted(() => ({
   jumpToLine: vi.fn(),
@@ -134,6 +135,15 @@ vi.mock('./PreviewPane', () => ({
           manual-test
         </button>
       </div>
+    </div>
+  ),
+}));
+
+vi.mock('./PresentationOverlay', () => ({
+  PresentationOverlay: ({ content, onClose }: { content: string; onClose: () => void }) => (
+    <div role="dialog" aria-label="Prism 演示">
+      <span>{content}</span>
+      <button type="button" onClick={onClose}>关闭</button>
     </div>
   ),
 }));
@@ -390,6 +400,51 @@ describe('SplitView editor lifecycle', () => {
     fireEvent.click(screen.getByTestId('editor-selection'));
 
     expect(onSelectionTextChange).toHaveBeenCalledWith('选中文本 selected text');
+  });
+
+  it('opens presentation overlay from the global presentation event when slides exist', async () => {
+    const content = '# 第一页\n\n---\n\n# 第二页';
+    expect(hasPresentationSlides(content)).toBe(true);
+    render(
+      <SplitView
+        content={content}
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-presentation-open', { detail: {} }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Prism 演示' })).toBeTruthy();
+    });
+  });
+
+  it('shows a notice instead of opening presentation overlay when there is only one slide', () => {
+    const onNotice = vi.fn();
+    render(
+      <SplitView
+        content="# 只有一页"
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+        onNotice={onNotice}
+      />,
+    );
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-presentation-open', { detail: {} }));
+    });
+
+    expect(screen.queryByRole('dialog', { name: 'Prism 演示' })).toBeNull();
+    expect(onNotice).toHaveBeenCalledWith('演示预览需要使用独立一行 --- 分隔至少两页内容。');
   });
 
   it('copies selected preview text with Cmd+C in preview mode', () => {

@@ -5,6 +5,16 @@ use tauri::{Emitter, Manager, State};
 #[derive(Default)]
 pub struct PendingFiles(Mutex<Vec<String>>);
 
+impl PendingFiles {
+    fn push_paths(&self, paths: Vec<String>) {
+        self.0.lock().unwrap().extend(paths);
+    }
+
+    fn is_empty(&self) -> bool {
+        self.0.lock().unwrap().is_empty()
+    }
+}
+
 #[tauri::command]
 pub fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
     let mut files = state.0.lock().unwrap();
@@ -13,12 +23,25 @@ pub fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
     result
 }
 
+pub fn has_pending_files(app: &tauri::App) -> bool {
+    let state: State<PendingFiles> = app.state();
+    !state.is_empty()
+}
+
+pub fn queue_pending_files(app: &mut tauri::App, paths: Vec<String>) {
+    if paths.is_empty() {
+        return;
+    }
+
+    let state: State<PendingFiles> = app.state();
+    state.push_paths(paths.clone());
+    let _ = app.emit("file-opened", &paths);
+}
+
 pub fn register_startup_files(app: &mut tauri::App) {
     let paths = extract_file_paths_from_args();
     if !paths.is_empty() {
-        let state: State<PendingFiles> = app.state();
-        state.0.lock().unwrap().extend(paths.clone());
-        let _ = app.emit("file-opened", &paths);
+        queue_pending_files(app, paths);
     }
 }
 

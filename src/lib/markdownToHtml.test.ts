@@ -167,6 +167,16 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('hljs-string');
   });
 
+  it('keeps Reveal-style fenced code metadata out of the language class', () => {
+    const html = markdownToHtml('```swift [1|2-4]\nlet name = "Prism"\n```', {
+      autoDetectUnlabeledCode: false,
+      compatibilityMode: 'miaoyan',
+    });
+
+    expect(html).toContain('class="hljs language-swift"');
+    expect(html).not.toContain('language-swift [1|2-4]');
+  });
+
   it('can skip token-level code highlighting for large preview renders', () => {
     const html = markdownToHtml('```ts\nconst answer = "42";\n```', {
       autoDetectUnlabeledCode: false,
@@ -247,6 +257,14 @@ describe('markdownToHtml compatibility modes', () => {
 
     expect(html).toContain('title: Draft');
     expect(html).toContain('<h1 data-source-line="5"');
+  });
+
+  it('renders MiaoYan-style subscript and superscript shorthand without breaking strikethrough', () => {
+    const html = markdownToHtml('水分子为 H~2~O，约 16^世纪^末期。\n\n~~删除线~~');
+
+    expect(html).toContain('H<sub>2</sub>O');
+    expect(html).toContain('16<sup>世纪</sup>末期');
+    expect(html).toContain('<del>删除线</del>');
   });
 
   it('keeps mermaid placeholders mapped to their source line', () => {

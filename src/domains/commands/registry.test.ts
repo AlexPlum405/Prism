@@ -240,6 +240,7 @@ describe('command registry', () => {
     expect(commandRegistry.every((command) => Boolean(getCommandPaletteGroup(command.id)))).toBe(true);
     expect(getCommandPaletteGroup('open')).toBe('file');
     expect(getCommandPaletteGroup('showSearch')).toBe('document');
+    expect(getCommandPaletteGroup('presentationMode')).toBe('document');
     expect(getCommandPaletteGroup('exportPdf')).toBe('export');
     expect(getCommandPaletteGroup('showRelationGraph')).toBe('links');
     expect(getCommandPaletteGroup('preferences')).toBe('settings');
@@ -259,7 +260,11 @@ describe('command registry', () => {
     Object.values(sections).forEach(collect);
 
     expect(actions.length).toBeGreaterThan(0);
-    expect(actions.every((action) => commandRegistryById.has(action as never) || action.startsWith('setTheme:'))).toBe(true);
+    expect(actions.every((action) => (
+      commandRegistryById.has(action as never)
+      || action.startsWith('setTheme:')
+      || action.startsWith('insertSlashSnippet:')
+    ))).toBe(true);
   });
 
   it('builds the theme menu from the runtime theme registry', () => {
@@ -313,6 +318,16 @@ describe('command registry', () => {
     expect(fileActions).toContain('preferences');
     expect(helpActions).toEqual(expect.arrayContaining(['showShortcuts', 'mdReference', 'migrationGuide', 'checkUpdate', 'about']));
     expect(helpActions).not.toContain('commandPalette');
+  });
+
+  it('keeps New Document in File and New Window only in Window', () => {
+    const sections = getMenuSections(createCommandContext());
+    const fileActions = sections['文件'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
+    const windowActions = sections['窗口'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
+
+    expect(fileActions).toContain('new');
+    expect(fileActions).not.toContain('newWindow');
+    expect(windowActions).toContain('newWindow');
   });
 
   it('opens the Prism migration guide from product help', async () => {
@@ -582,6 +597,45 @@ describe('command registry', () => {
     expect(setWordWrap).toHaveBeenCalledWith(false);
   });
 
+  it('opens presentation preview from the View menu when a document has slide separators', async () => {
+    const context = createCommandContext({
+      documentStore: {
+        ...createCommandContext().documentStore,
+        currentDocument: {
+          path: '/tmp/deck.md',
+          name: 'deck.md',
+          content: '# 第一页\n\n---\n\n# 第二页',
+          isDirty: false,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          lastSavedAt: 0,
+          saveError: null,
+          viewMode: 'split',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+          saveStatus: 'saved',
+        },
+      },
+    });
+    const viewActions = getMenuSections(context)['视图']
+      .flatMap((item) => item.type === 'separator' ? [] : [item.action]);
+    const events: string[] = [];
+    const listener = () => events.push('presentation.open');
+    window.addEventListener('prism-presentation-open', listener);
+
+    try {
+      expect(viewActions).toEqual(expect.arrayContaining(['previewMode', 'presentationMode']));
+      expect(commandRegistryById.get('presentationMode')?.shortcuts).toEqual([
+        { code: 'KeyP', mod: true, alt: true },
+      ]);
+
+      await runCommand('presentationMode', context);
+
+      expect(events).toEqual(['presentation.open']);
+    } finally {
+      window.removeEventListener('prism-presentation-open', listener);
+    }
+  });
+
   it('keeps the Insert menu focused on primary table insertion', () => {
     const context = createCommandContext({
       documentStore: {
@@ -696,7 +750,11 @@ describe('command registry', () => {
       'selectionQuote',
       'selectionTaskList',
       'selectionCallout',
+      'autoFormat',
     ]));
+    expect(commandRegistryById.get('autoFormat')?.shortcuts).toEqual([
+      { code: 'KeyL', mod: true, shift: true },
+    ]);
     expect(formatText).not.toEqual(expect.arrayContaining([
       'moveParagraphUp',
       'moveParagraphDown',

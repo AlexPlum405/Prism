@@ -28,6 +28,17 @@ describe('openPrismWindow', () => {
     }));
   });
 
+  it('marks explicit empty windows so bootstrap does not restore the last session', async () => {
+    const { openPrismWindow } = await import('./openWindow');
+
+    await openPrismWindow({ emptyWindow: true });
+
+    expect(webviewWindowMock).toHaveBeenCalledTimes(1);
+    expect(webviewWindowMock.mock.calls[0][1]).toEqual(expect.objectContaining({
+      url: '/?empty=1',
+    }));
+  });
+
   it('keeps explicit file paths in the new window URL', async () => {
     const { openPrismWindow } = await import('./openWindow');
 

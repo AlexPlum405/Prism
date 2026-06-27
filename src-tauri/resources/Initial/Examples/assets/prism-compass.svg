@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" role="img" aria-label="Prism compass illustration">
+  <rect width="720" height="420" rx="28" fill="#f7f5ef"/>
+  <circle cx="360" cy="210" r="132" fill="#ffffff" stroke="#d8d2c4" stroke-width="2"/>
+  <path d="M360 66 L392 210 L360 354 L328 210 Z" fill="#7a3dad" opacity="0.92"/>
+  <path d="M216 210 L360 178 L504 210 L360 242 Z" fill="#0c6ada" opacity="0.82"/>
+  <circle cx="360" cy="210" r="36" fill="#1c5d33"/>
+  <circle cx="360" cy="210" r="12" fill="#f7f5ef"/>
+  <text x="360" y="386" text-anchor="middle" fill="#39352d" font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, PingFang SC, sans-serif" font-size="24" font-weight="600">Prism keeps local writing in view</text>
+</svg>

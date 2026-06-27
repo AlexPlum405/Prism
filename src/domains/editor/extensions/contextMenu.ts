@@ -24,6 +24,7 @@ export function getEditorContextMenuItems(
   hasSelection: boolean,
   shortcutStyle: CommandContext['settingsStore']['shortcutStyle'],
   isInTable = false,
+  canPresent = false,
 ): ContextMenuItem[] {
   return [
     commandItem('cut', shortcutStyle, { disabled: !hasSelection }),
@@ -92,5 +93,7 @@ export function getEditorContextMenuItems(
         commandItem('copyHtml', shortcutStyle, { label: 'HTML', disabled: !hasSelection }),
       ],
     },
+    { type: 'separator' },
+    commandItem('presentationMode', shortcutStyle, { disabled: !canPresent }),
   ];
 }

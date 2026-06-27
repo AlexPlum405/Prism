@@ -73,6 +73,7 @@ export interface AppEventMap {
   'export.failed': ExportFailedPayload;
   'export.result': ExportResultPayload;
   'diagnostics.open': DiagnosticsOpenPayload;
+  'presentation.open': Record<string, never>;
   'settings.open': Record<string, never>;
 }
 

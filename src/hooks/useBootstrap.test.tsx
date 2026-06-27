@@ -308,6 +308,33 @@ describe('useBootstrap', () => {
     expect(readTextFile).not.toHaveBeenCalled();
   });
 
+  it('keeps explicit empty windows empty without restoring last session', async () => {
+    window.history.replaceState({}, '', '/?empty=1');
+    useSettingsStore.setState({
+      restoreLastSession: true,
+      lastSession: {
+        filePath: 'C:/docs/last.md',
+        viewMode: 'preview',
+        updatedAt: 1,
+      },
+      recentFiles: [],
+      saveSettings: vi.fn(),
+    });
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue(['C:/docs/opened.md']);
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('should not load');
+
+    renderHook(() => useBootstrap(true));
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(useDocumentStore.getState().currentDocument).toBeNull();
+    expect(invoke).not.toHaveBeenCalledWith('get_pending_files');
+    expect(readTextFile).not.toHaveBeenCalled();
+  });
+
   it('restores last session view mode and scroll state when no explicit file is requested', async () => {
     window.history.replaceState({}, '', '/');
     useSettingsStore.setState({

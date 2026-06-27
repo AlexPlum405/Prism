@@ -20,6 +20,9 @@ scripts/*
 !scripts/generate-updater-manifest.mjs
 !scripts/generate-updater-manifest.test.ts
 !scripts/generate-brand-icons.mjs
+!scripts/generate-document-icons.mjs
+!scripts/patch-macos-document-icons.mjs
+!scripts/register-macos-markdown-default.mjs
 !scripts/patch-windows-exe-icon.mjs
 !scripts/generate-windows-icon.mjs
 !scripts/package-macos-dmg-skip-finder.sh

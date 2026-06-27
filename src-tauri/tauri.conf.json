@@ -50,13 +50,29 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": {
+      "resources/Initial": "Initial",
+      "icons/document-markdown.icns": "PrismMarkdownNotebookDocument.icns"
+    },
     "fileAssociations": [
       {
         "ext": ["md", "markdown"],
-        "name": "Markdown Document",
+        "contentTypes": [
+          "com.prism.editor.markdown",
+          "net.daringfireball.markdown",
+          "public.markdown",
+          "net.ia.markdown",
+          "com.unknown.md"
+        ],
+        "name": "Prism Markdown Document",
         "description": "Markdown Document",
         "mimeType": "text/markdown",
-        "role": "Editor"
+        "role": "Editor",
+        "rank": "Owner",
+        "exportedType": {
+          "identifier": "com.prism.editor.markdown",
+          "conformsTo": ["public.text"]
+        }
       },
       {
         "ext": [

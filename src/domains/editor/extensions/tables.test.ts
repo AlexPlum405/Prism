@@ -306,6 +306,21 @@ describe('markdown table editing', () => {
     ]));
   });
 
+  it('accepts padded GFM table alignment markers used by MiaoYan documents', () => {
+    const diagnostics = scanMarkdownTableDiagnostics([
+      '### 《聊斋志异》名篇一览',
+      '',
+      '| 篇目     | 类型 |   评分 |   推荐度   |',
+      '| :------- | :--: | -----: | :--------: |',
+      '| 婴宁     | 狐仙 | 9.5 分 | ⭐⭐⭐⭐⭐ |',
+      '| 倩女幽魂 | 鬼魂 | 9.8 分 | ⭐⭐⭐⭐⭐ |',
+      '| 崂山道士 | 神怪 | 8.5 分 |  ⭐⭐⭐⭐  |',
+      '| 画皮     | 妖怪 | 9.0 分 | ⭐⭐⭐⭐⭐ |',
+    ].join('\n'));
+
+    expect(diagnostics).toEqual([]);
+  });
+
   it('does not treat prose with pipes as a markdown table', () => {
     expect(applyTableCommand('A | B<cursor>', 'format')).toBeNull();
   });

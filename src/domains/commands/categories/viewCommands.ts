@@ -1,4 +1,7 @@
 import type { CommandContext, CommandDefinition } from '../types';
+import { emitAppEvent } from '../../../platform/events/appEvents';
+import { hasPresentationSlides } from '../../editor/extensions/presentation';
+import { t } from '../../i18n';
 
 interface ViewCommandDeps {
   hasDocument: (context: CommandContext) => boolean;
@@ -38,6 +41,21 @@ export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
       enabled: canPreview,
       checked: (context) => context.documentStore.currentDocument?.viewMode === 'preview',
       run: (context) => context.documentStore.setViewMode('preview'),
+    },
+    {
+      id: 'presentationMode',
+      category: 'view',
+      keywords: ['presentation', 'ppt', 'slides', '演示'],
+      shortcuts: [{ code: 'KeyP', mod: true, alt: true }],
+      enabled: canPreview,
+      run: (context) => {
+        const content = context.documentStore.currentDocument?.content ?? '';
+        if (!hasPresentationSlides(content)) {
+          context.showToast?.(t('presentation.requiresSlides'));
+          return;
+        }
+        emitAppEvent('presentation.open', {});
+      },
     },
     {
       id: 'toggleSidebar',

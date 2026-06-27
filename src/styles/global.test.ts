@@ -279,26 +279,26 @@ describe('Non-MiaoYan content theme quality rules', () => {
   const css = readCssWithImports('global.css');
 
   it('keeps every non-MiaoYan theme on a visibly distinct accent family', () => {
-    expect(css).toContain('--inkstone-accent: #b75a2a');
-    expect(css).toContain('--inkstone-title: #7a3e1d');
-    expect(css).toContain('--inkstone-link: #2458a6');
+    expect(css).toContain('--inkstone-accent: #9a3412');
+    expect(css).toContain('--inkstone-title: #8f2f18');
+    expect(css).toContain('--inkstone-link: #214e9a');
     expect(css).toContain("--inkstone-font: 'Songti SC', 'STSong'");
 
-    expect(css).toContain('--slate-accent: #d97706');
-    expect(css).toContain('--slate-title: #315f9d');
-    expect(css).toContain('--slate-link: #0b7a99');
+    expect(css).toContain('--slate-accent: #b45309');
+    expect(css).toContain('--slate-title: #246a73');
+    expect(css).toContain('--slate-link: #2356b8');
 
-    expect(css).toContain('--mono-accent: #be123c');
-    expect(css).toContain('--mono-title: #5b21b6');
+    expect(css).toContain('--mono-accent: #b91c1c');
+    expect(css).toContain('--mono-title: #6d28d9');
     expect(css).toContain('--mono-link: #047857');
 
-    expect(css).toContain('--nocturne-accent: #c084fc');
-    expect(css).toContain('--nocturne-title: #f0c674');
-    expect(css).toContain('--nocturne-link: #7dd3fc');
+    expect(css).toContain('--nocturne-accent: #c45a84');
+    expect(css).toContain('--nocturne-title: #d6a84f');
+    expect(css).toContain('--nocturne-link: #6cb6d9');
 
-    expect(css).toContain('--carbon-accent: #bd93f9');
-    expect(css).toContain('--carbon-title: #ffb86c');
-    expect(css).toContain('--carbon-link: #8be9fd');
+    expect(css).toContain('--carbon-accent: #a3e635');
+    expect(css).toContain('--carbon-title: #7dd3fc');
+    expect(css).toContain('--carbon-link: #a78bfa');
     expect(css).toContain('--carbon-main-bg: #000000');
     expect(css).toContain('--preview-bg: #000000');
 

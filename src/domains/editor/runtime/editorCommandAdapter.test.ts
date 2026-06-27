@@ -29,6 +29,34 @@ describe('editorCommandAdapter', () => {
     view.destroy();
   });
 
+  it('auto-formats markdown spacing without rewriting fenced code content', () => {
+    const view = createView([
+      '#   Title',
+      '',
+      '',
+      '-    item',
+      '```js',
+      'const answer = 42;   ',
+      '```',
+      '##   Next',
+    ].join('\n'));
+
+    expect(runBasicEditorCommand('autoFormat', view, { handleTablePasteText: vi.fn() })).toBe(true);
+    expect(view.state.doc.toString()).toBe([
+      '# Title',
+      '',
+      '- item',
+      '',
+      '```js',
+      'const answer = 42;   ',
+      '```',
+      '',
+      '## Next',
+    ].join('\n'));
+
+    view.destroy();
+  });
+
   it('returns false for commands outside the basic adapter', () => {
     const view = createView('hello');
 

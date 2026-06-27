@@ -49,7 +49,7 @@ export const EXPORT_QUALITY_PRESETS: LocalizedExportQualityPreset[] = [
     descriptionKey: 'export.quality.extreme.description',
     label: 'Extreme',
     shortLabel: 'Extreme 4x',
-    description: 'Exports at maximum quality and may take several minutes. Prism fails with diagnostics if the system cannot handle it.',
+    description: 'Exports at maximum quality and may take several minutes. Very long PNG exports are rendered in slices to keep the selected quality.',
   },
 ];
 

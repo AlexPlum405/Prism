@@ -113,4 +113,27 @@ describe('useDocumentDiagnosticsModel', () => {
     });
     expect(scanChineseTypography).not.toHaveBeenCalled();
   });
+
+  it('opens the document diagnostics panel for table-only errors from the status bar action', async () => {
+    const { result } = renderDiagnosticsModel([
+      '| A | B |',
+      '| 1 | 2 |',
+    ].join('\n'));
+
+    await waitFor(() => {
+      expect(result.current.actionableDiagnostics).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'table',
+          message: '表格缺少分隔行',
+        }),
+      ]));
+    });
+
+    act(() => {
+      result.current.handleLinkDiagnosticsClick();
+    });
+
+    expect(result.current.linkDiagnosticsVisible).toBe(true);
+    expect(result.current.displayedDiagnostics).toEqual(result.current.actionableDiagnostics);
+  });
 });

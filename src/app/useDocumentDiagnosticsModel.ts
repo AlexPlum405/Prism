@@ -117,11 +117,29 @@ export function useDocumentDiagnosticsModel({
     };
   }, [currentDocument?.content, supportsMarkdownDiagnostics]);
 
+  const tableDiagnostics = useMemo(
+    () => currentDocument && supportsMarkdownDiagnostics ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
+    [currentDocument?.content, supportsMarkdownDiagnostics],
+  );
+
+  const documentDiagnostics = useMemo(() => [
+    ...linkDiagnosticsToPrismDiagnostics(linkDiagnostics),
+    ...headingDiagnosticsToPrismDiagnostics(headingDiagnostics),
+    ...imageDiagnosticsToPrismDiagnostics(imageDiagnostics),
+    ...renderDiagnostics,
+    ...tableDiagnosticsToPrismDiagnostics(tableDiagnostics),
+  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics]);
+
+  const actionableDiagnostics = useMemo(
+    () => getActionableErrorDiagnostics(documentDiagnostics),
+    [documentDiagnostics],
+  );
+
   const handleLinkDiagnosticsClick = useCallback(() => {
     if (!supportsMarkdownDiagnostics) return;
-    if (linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0) return;
+    if (actionableDiagnostics.length === 0) return;
     setLinkDiagnosticsVisible(true);
-  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, renderDiagnostics.length, supportsMarkdownDiagnostics]);
+  }, [actionableDiagnostics.length, supportsMarkdownDiagnostics]);
 
   const handleSelectDocumentDiagnostic = useCallback((line: number) => {
     setLinkDiagnosticsVisible(false);
@@ -154,24 +172,6 @@ export function useDocumentDiagnosticsModel({
   useEffect(() => {
     setPreflightDiagnostics(null);
   }, [currentDocument?.content, currentDocument?.path]);
-
-  const tableDiagnostics = useMemo(
-    () => currentDocument && supportsMarkdownDiagnostics ? scanMarkdownTableDiagnostics(currentDocument.content) : [],
-    [currentDocument?.content, supportsMarkdownDiagnostics],
-  );
-
-  const documentDiagnostics = useMemo(() => [
-    ...linkDiagnosticsToPrismDiagnostics(linkDiagnostics),
-    ...headingDiagnosticsToPrismDiagnostics(headingDiagnostics),
-    ...imageDiagnosticsToPrismDiagnostics(imageDiagnostics),
-    ...renderDiagnostics,
-    ...tableDiagnosticsToPrismDiagnostics(tableDiagnostics),
-  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics]);
-
-  const actionableDiagnostics = useMemo(
-    () => getActionableErrorDiagnostics(documentDiagnostics),
-    [documentDiagnostics],
-  );
 
   const handleTypographyDiagnosticsClick = useCallback(() => {
     if (!currentDocument || !supportsMarkdownDiagnostics) return;

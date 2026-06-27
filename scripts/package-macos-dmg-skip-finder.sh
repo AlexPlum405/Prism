@@ -30,6 +30,8 @@ if [[ ! -d "$MACOS_DIR/$APP_NAME" ]]; then
   exit 1
 fi
 
+node "$ROOT_DIR/scripts/patch-macos-document-icons.mjs" "$MACOS_DIR/$APP_NAME"
+
 rm -f "$MACOS_DIR/$DMG_NAME" "$MACOS_DIR"/rw.*."$DMG_NAME"
 
 (

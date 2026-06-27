@@ -104,6 +104,23 @@ describe('export preflight diagnostics', () => {
     ]);
   });
 
+  it('does not block export for compact MiaoYan-compatible table alignment markers', async () => {
+    const diagnostics = await buildExportPreflightDiagnostics({
+      content: [
+        '### 《聊斋志异》名篇一览',
+        '',
+        '| 篇目     | 类型 |   评分 |   推荐度   |',
+        '| :------- | :--: | -----: | :--------: |',
+        '| 婴宁     | 狐仙 | 9.5 分 | ⭐⭐⭐⭐⭐ |',
+        '| 倩女幽魂 | 鬼魂 | 9.8 分 | ⭐⭐⭐⭐⭐ |',
+      ].join('\n'),
+      documentPath: '/repo/docs/page.md',
+      format: 'pdf',
+    });
+
+    expect(diagnostics).toEqual([]);
+  });
+
   it('reports KaTeX render errors with source locations when available', () => {
     const diagnostics = scanMarkdownKatexDiagnostics('公式：$\\badcommand$');
 

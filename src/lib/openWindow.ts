@@ -4,6 +4,7 @@ import { getRuntimePlatform } from '../domains/workspace/services';
 let windowCounter = 0;
 
 export async function openPrismWindow(params: {
+  emptyWindow?: boolean;
   filePath?: string;
   folderPath?: string;
   newDocument?: boolean;
@@ -11,6 +12,9 @@ export async function openPrismWindow(params: {
   const label = `prism-${Date.now()}-${windowCounter++}`;
   const searchParams = new URLSearchParams();
 
+  if (params.emptyWindow) {
+    searchParams.set('empty', '1');
+  }
   if (params.newDocument) {
     searchParams.set('new', '1');
   }

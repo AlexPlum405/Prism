@@ -18,10 +18,54 @@ const canvasRenderMock = vi.hoisted(() => {
   };
 });
 const invokeMock = vi.hoisted(() => vi.fn());
+const markmapTransformMock = vi.hoisted(() => vi.fn((source: string) => ({
+  root: {
+    content: source.includes('聊斋') ? '聊斋志异' : 'Mindmap',
+    children: [
+      { content: '人物' },
+      {
+        content: '情节',
+        children: [
+          { content: '相遇' },
+          { content: '成长' },
+        ],
+      },
+    ],
+  },
+})));
+const plantUmlRenderMock = vi.hoisted(() => vi.fn(async (source: string) => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('plantuml-image');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'PlantUML diagram');
+  svg.setAttribute('data-plantuml-renderer', 'plantuml-little');
+  svg.setAttribute('width', '640');
+  svg.setAttribute('height', '360');
+  svg.setAttribute('viewBox', '0 0 640 360');
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.textContent = source
+    .split(/\r?\n/)
+    .filter((line) => !/^@(?:start|end)uml\b/i.test(line.trim()) && !/^\s*class\b/i.test(line.trim()))
+    .join(' ')
+    .replace(/[{}]/g, '')
+    .trim() || 'PlantUML diagram';
+  svg.append(text);
+  return svg;
+}));
 
 vi.mock('mermaid', () => ({ default: mermaidMock }));
 vi.mock('html2canvas', () => ({ default: canvasRenderMock.render }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }));
+vi.mock('../editor/components/plantUml', () => ({
+  createPlantUmlSvgElement: plantUmlRenderMock,
+}));
+vi.mock('markmap-lib', () => ({
+  Transformer: class {
+    transform(source: string) {
+      return markmapTransformMock(source);
+    }
+  },
+}));
 
 import { __exportPipelineTesting, exportDocx, exportHtml, exportPdf, exportPng } from './exportPipeline';
 import { resolveExportOptions } from './templates';
@@ -72,6 +116,50 @@ function createTestRectList(rects: DOMRect[]): DOMRectList {
   return Object.assign(rects, {
     item: (index: number) => rects[index] ?? null,
   }) as unknown as DOMRectList;
+}
+
+function createMockRasterCanvas(width: number, height: number): HTMLCanvasElement {
+  return {
+    width,
+    height,
+    toDataURL: () => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+    getContext: () => ({
+      getImageData: (_x: number, _y: number, imageWidth: number, imageHeight: number) => ({
+        data: new Uint8ClampedArray(imageWidth * imageHeight * 4),
+      }),
+    }),
+  } as unknown as HTMLCanvasElement;
+}
+
+function mockNextCanvasTileRender() {
+  const renderMock = canvasRenderMock.render as unknown as {
+    mockImplementationOnce: (
+      implementation: (
+        element: HTMLElement,
+        options: { width: number; height: number; scale: number },
+      ) => Promise<HTMLCanvasElement>,
+    ) => void;
+  };
+  renderMock.mockImplementationOnce(async (_element, options) => createMockRasterCanvas(
+    Math.ceil(options.width * options.scale),
+    Math.ceil(options.height * options.scale),
+  ));
+}
+
+function readPngUint32(bytes: Uint8Array, offset: number) {
+  return (
+    ((bytes[offset] << 24) >>> 0)
+    + (bytes[offset + 1] << 16)
+    + (bytes[offset + 2] << 8)
+    + bytes[offset + 3]
+  ) >>> 0;
+}
+
+function readPngSize(bytes: Uint8Array) {
+  return {
+    width: readPngUint32(bytes, 16),
+    height: readPngUint32(bytes, 20),
+  };
 }
 
 const COMPLEX_EXPORT_SMOKE_MARKDOWN = `---
@@ -167,6 +255,8 @@ describe('export pipeline html', () => {
     fsMock.writeFile.mockClear();
     mermaidMock.initialize.mockClear();
     mermaidMock.render.mockClear();
+    markmapTransformMock.mockClear();
+    plantUmlRenderMock.mockClear();
     invokeMock.mockReset();
     fsMock.remove.mockClear();
     delete (window as PrismRuntimeWindow).__TAURI_INTERNALS__;
@@ -200,6 +290,7 @@ describe('export pipeline html', () => {
     } else {
       delete (document as any).fonts;
     }
+    vi.unstubAllGlobals();
   });
 
   it('injects a table of contents and heading anchors when toc is enabled', async () => {
@@ -261,6 +352,43 @@ describe('export pipeline html', () => {
     expect(html).toContain('Golden Mermaid');
     expect(html).not.toContain('template: business');
     expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders Markmap and PlantUML placeholders before writing html export output', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+
+    await exportHtml(createInput({
+      content: [
+        '# 图表',
+        '',
+        '```markmap',
+        '# 聊斋志异',
+        '## 人物',
+        '## 情节',
+        '```',
+        '',
+        '```plantuml',
+        '@startuml',
+        'Alice --> Bob',
+        '@enduml',
+        '```',
+      ].join('\n'),
+    }), '/tmp/diagrams.html');
+
+    const html = fsMock.writeTextFile.mock.calls[0][1] as string;
+    expect(html).toContain('data-markmap-renderer="static"');
+    expect(html).toContain('data-plantuml-renderer="plantuml-little"');
+    expect(html).toContain('聊斋志异');
+    expect(html).toContain('Alice');
+    expect(html).toContain('Bob');
+    expect(html).toContain('plantuml-image');
+    expect(html).not.toContain('data-markmap="%23');
+    expect(html).not.toContain('@startuml');
+    expect(markmapTransformMock).toHaveBeenCalledWith(expect.stringContaining('# 聊斋志异'));
+    expect(plantUmlRenderMock).toHaveBeenCalledWith(expect.stringContaining('Alice --> Bob'), 'miaoyan', {
+      documentPath: undefined,
+    });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('reports diagnostic progress stages for html export', async () => {
@@ -606,6 +734,191 @@ describe('export pipeline raster CSS compatibility', () => {
     ).toBe('0 0 0 1px rgb(26, 51, 77)');
   });
 
+  it('expands PlantUML SVG viewBox when drawable content overflows the original viewport', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    svg.setAttribute('width', '640');
+    svg.setAttribute('height', '360');
+    svg.setAttribute('viewBox', '0 0 640 360');
+    svg.getBBox = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      width: 880,
+      height: 360,
+    } as DOMRect));
+
+    __exportPipelineTesting.normalizePlantUmlSvg(svg);
+
+    expect(svg.getAttribute('viewBox')).toBe('-8 -8 896 376');
+    expect(svg.getAttribute('width')).toBe('896');
+    expect(svg.getAttribute('height')).toBe('376');
+    expect(svg.style.width).toBe('896px');
+    expect(svg.getAttribute('overflow')).toBe('visible');
+  });
+
+  it('expands PlantUML SVG viewBox from overflowing child geometry when the root bbox is clipped', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    svg.setAttribute('width', '640');
+    svg.setAttribute('height', '360');
+    svg.setAttribute('viewBox', '0 0 640 360');
+    svg.getBBox = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      width: 640,
+      height: 360,
+    } as DOMRect));
+    const rightNode = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rightNode.setAttribute('x', '560');
+    rightNode.setAttribute('y', '96');
+    rightNode.setAttribute('width', '240');
+    rightNode.setAttribute('height', '128');
+    svg.append(rightNode);
+
+    __exportPipelineTesting.normalizePlantUmlSvg(svg);
+
+    expect(svg.getAttribute('viewBox')).toBe('-8 -8 816 376');
+    expect(svg.getAttribute('width')).toBe('816');
+    expect(svg.getAttribute('height')).toBe('376');
+    expect(svg.style.width).toBe('816px');
+  });
+
+  it('does not let an implausible PlantUML browser bbox override sane SVG child geometry', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    svg.setAttribute('width', '542');
+    svg.setAttribute('height', '507');
+    svg.setAttribute('viewBox', '0 0 542 507');
+    svg.getBBox = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      width: 8258,
+      height: 507,
+    } as DOMRect));
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    background.setAttribute('x', '0');
+    background.setAttribute('y', '0');
+    background.setAttribute('width', '542');
+    background.setAttribute('height', '507');
+    svg.append(background);
+
+    __exportPipelineTesting.normalizePlantUmlSvg(svg);
+
+    expect(svg.getAttribute('viewBox')).toBe('0 0 542 507');
+    expect(svg.getAttribute('width')).toBe('542');
+    expect(svg.getAttribute('height')).toBe('507');
+    expect(svg.style.width).toBe('542px');
+  });
+
+  it('rasterizes PlantUML inline SVGs before html2canvas capture', async () => {
+    const root = document.createElement('div');
+    root.className = 'prism-export-document';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'PlantUML diagram');
+    svg.setAttribute('width', '542');
+    svg.setAttribute('height', '507');
+    svg.setAttribute('viewBox', '0 0 542 507');
+    svg.style.width = '542px';
+    svg.style.height = 'auto';
+    const rightNode = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rightNode.setAttribute('x', '283.22');
+    rightNode.setAttribute('y', '172.74');
+    rightNode.setAttribute('width', '252.3994');
+    rightNode.setAttribute('height', '113.1875');
+    svg.append(rightNode);
+    root.append(svg);
+    document.body.append(root);
+
+    try {
+      svg.getBoundingClientRect = vi.fn(() => createTestRect(0, 0, 542, 507));
+
+      await __exportPipelineTesting.rasterizePlantUmlSvgsForCapture(root);
+
+      const image = root.querySelector('img.plantuml-image') as HTMLImageElement | null;
+      expect(image).toBeInstanceOf(HTMLImageElement);
+      expect(image?.src).toContain('data:image/svg+xml');
+      expect(image?.width).toBe(542);
+      expect(image?.height).toBe(507);
+      expect(image?.style.width).toBe('542px');
+      expect(root.querySelector('svg.plantuml-image')).toBeNull();
+    } finally {
+      root.remove();
+    }
+  });
+
+  it('constrains very wide PlantUML SVGs to the export content width', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    svg.setAttribute('width', '8258');
+    svg.setAttribute('height', '360');
+    svg.setAttribute('viewBox', '0 0 8258 360');
+    svg.getBBox = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      width: 8258,
+      height: 360,
+    } as DOMRect));
+
+    __exportPipelineTesting.normalizePlantUmlSvg(svg);
+
+    expect(svg.getAttribute('viewBox')).toBe('0 0 8258 360');
+    expect(svg.getAttribute('width')).toBe('980');
+    expect(svg.getAttribute('height')).toBe('43');
+    expect(svg.style.width).toBe('100%');
+    expect(svg.style.maxWidth).toBe('100%');
+  });
+
+  it('ignores SVG internal drawing bounds when measuring PNG export width', () => {
+    const root = document.createElement('div');
+    root.className = 'prism-export-document';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    const internalPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    internalPath.classList.add('plantuml-internal-wide-path');
+    svg.append(internalPath);
+    root.append(svg);
+    document.body.append(root);
+    const bodyScrollWidthDescriptor = Object.getOwnPropertyDescriptor(document.body, 'scrollWidth');
+    const documentScrollWidthDescriptor = Object.getOwnPropertyDescriptor(document.documentElement, 'scrollWidth');
+
+    try {
+      Object.defineProperty(root, 'scrollWidth', {
+        configurable: true,
+        value: 8258,
+      });
+      Object.defineProperty(document.body, 'scrollWidth', {
+        configurable: true,
+        value: 8258,
+      });
+      Object.defineProperty(document.documentElement, 'scrollWidth', {
+        configurable: true,
+        value: 8258,
+      });
+      root.getBoundingClientRect = vi.fn(() => createTestRect(0, 0, 980, 1200));
+      svg.getBoundingClientRect = vi.fn(() => createTestRect(0, 240, 980, 43));
+      internalPath.getBoundingClientRect = vi.fn(() => createTestRect(0, 240, 8258, 43));
+
+      const bounds = __exportPipelineTesting.measureRenderedExportBounds(root, document);
+
+      expect(bounds.width).toBe(980);
+      expect(bounds.height).toBe(1200);
+    } finally {
+      if (bodyScrollWidthDescriptor) {
+        Object.defineProperty(document.body, 'scrollWidth', bodyScrollWidthDescriptor);
+      } else {
+        delete (document.body as { scrollWidth?: number }).scrollWidth;
+      }
+      if (documentScrollWidthDescriptor) {
+        Object.defineProperty(document.documentElement, 'scrollWidth', documentScrollWidthDescriptor);
+      } else {
+        delete (document.documentElement as { scrollWidth?: number }).scrollWidth;
+      }
+      root.remove();
+    }
+  });
+
   it('marks styled raw html blocks as atomic export blocks', () => {
     const root = document.createElement('div');
     root.className = 'prism-export-document';
@@ -629,10 +942,12 @@ describe('export pipeline image progress', () => {
   let originalFonts: unknown;
   let iframeScrollMetrics: { width: number; height: number } | null = null;
   let iframeLinkRect: { left: number; top: number; width: number; height: number } | null = null;
+  let iframePlantUmlRect: { left: number; top: number; width: number; height: number } | null = null;
 
   beforeEach(() => {
     iframeScrollMetrics = null;
     iframeLinkRect = null;
+    iframePlantUmlRect = null;
     fsMock.writeFile.mockClear();
     fsMock.writeTextFile.mockClear();
     mermaidMock.initialize.mockClear();
@@ -669,6 +984,7 @@ describe('export pipeline image progress', () => {
                 frameDocument.write(value);
                 frameDocument.close();
                 const frameHTMLElement = frameDocument.defaultView?.HTMLElement;
+                const frameSVGElement = frameDocument.defaultView?.SVGElement;
                 if (frameHTMLElement && iframeScrollMetrics) {
                   Object.defineProperty(frameHTMLElement.prototype, 'scrollHeight', {
                     configurable: true,
@@ -687,27 +1003,42 @@ describe('export pipeline image progress', () => {
                     },
                   });
                 }
-                if (frameHTMLElement && iframeLinkRect) {
+                if (frameHTMLElement && (iframeLinkRect || iframePlantUmlRect || iframeScrollMetrics)) {
                   const linkRect = iframeLinkRect;
+                  const plantUmlRect = iframePlantUmlRect;
+                  const getMockedBoundingClientRect = function getMockedBoundingClientRect(this: Element) {
+                    if ((this as HTMLElement).classList?.contains('prism-export-document')) {
+                      return createTestRect(0, 0, iframeScrollMetrics?.width ?? 980, iframeScrollMetrics?.height ?? 1200);
+                    }
+                    if ((this as Element).classList?.contains('plantuml-image') && plantUmlRect) {
+                      return createTestRect(plantUmlRect.left, plantUmlRect.top, plantUmlRect.width, plantUmlRect.height);
+                    }
+                    if ((this as HTMLElement).tagName === 'A') {
+                      return linkRect
+                        ? createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height)
+                        : createTestRect(0, 0, 0, 0);
+                    }
+                    return createTestRect(0, 0, 0, 0);
+                  };
                   Object.defineProperty(frameHTMLElement.prototype, 'getBoundingClientRect', {
                     configurable: true,
-                    value() {
-                      if ((this as HTMLElement).classList?.contains('prism-export-document')) {
-                        return createTestRect(0, 0, iframeScrollMetrics?.width ?? 980, iframeScrollMetrics?.height ?? 1200);
-                      }
-                      if ((this as HTMLElement).tagName === 'A') {
-                        return createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height);
-                      }
-                      return createTestRect(0, 0, 0, 0);
-                    },
+                    value: getMockedBoundingClientRect,
                   });
+                  if (frameSVGElement) {
+                    Object.defineProperty(frameSVGElement.prototype, 'getBoundingClientRect', {
+                      configurable: true,
+                      value: getMockedBoundingClientRect,
+                    });
+                  }
                   Object.defineProperty(frameHTMLElement.prototype, 'getClientRects', {
                     configurable: true,
                     value() {
                       if ((this as HTMLElement).tagName === 'A') {
-                        return createTestRectList([
-                          createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height),
-                        ]);
+                        return linkRect
+                          ? createTestRectList([
+                              createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height),
+                            ])
+                          : createTestRectList([]);
                       }
                       return createTestRectList([]);
                     },
@@ -830,24 +1161,132 @@ describe('export pipeline image progress', () => {
     expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/no-reload.png', expect.any(Uint8Array));
   });
 
-  it('rejects over-limit png exports instead of lowering the requested scale', async () => {
+  it('renders over-limit long png exports in slices at the requested scale', async () => {
     fsMock.writeFile.mockClear();
     canvasRenderMock.render.mockClear();
     const warnings: string[] = [];
-    iframeScrollMetrics = { width: 980, height: 60_000 };
+    iframeScrollMetrics = { width: 16, height: 4_001 };
+    for (let index = 0; index < 2; index += 1) {
+      mockNextCanvasTileRender();
+    }
 
     try {
-      await expect(exportPng(createInput({
-        pngScale: 2,
+      await exportPng(createInput({
+        pngScale: 4,
         onWarning: (message) => warnings.push(message),
-      }), '/tmp/too-tall.png')).rejects.toThrow('PNG 导出画布超出系统限制');
+      }), '/tmp/too-tall.png');
     } finally {
       iframeScrollMetrics = null;
     }
 
+    const renderCalls = canvasRenderMock.render.mock.calls as unknown as Array<[
+      HTMLElement,
+      { scale: number; width: number; height: number; y: number },
+    ]>;
     expect(warnings).toEqual([]);
-    expect(canvasRenderMock.render).not.toHaveBeenCalled();
-    expect(fsMock.writeFile).not.toHaveBeenCalled();
+    expect(renderCalls).toHaveLength(2);
+    expect(renderCalls.every(([, options]) => options.scale === 4)).toBe(true);
+    expect(renderCalls.map(([, options]) => options.height)).toEqual([4_000, 1]);
+    expect(renderCalls.map(([, options]) => options.y)).toEqual([0, 4_000]);
+    expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/too-tall.png', expect.any(Uint8Array));
+    expect(readPngSize(fsMock.writeFile.mock.calls[0][1] as Uint8Array)).toEqual({
+      width: 3_920,
+      height: 16_004,
+    });
+  });
+
+  it('renders over-limit wide png exports in horizontal slices at the requested scale', async () => {
+    fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
+    iframeScrollMetrics = { width: 4_001, height: 16 };
+    for (let index = 0; index < 2; index += 1) {
+      mockNextCanvasTileRender();
+    }
+
+    try {
+      await exportPng(createInput({ pngScale: 4 }), '/tmp/too-wide.png');
+    } finally {
+      iframeScrollMetrics = null;
+    }
+
+    const renderCalls = canvasRenderMock.render.mock.calls as unknown as Array<[
+      HTMLElement,
+      { scale: number; width: number; height: number; x: number },
+    ]>;
+    expect(renderCalls).toHaveLength(2);
+    expect(renderCalls.every(([, options]) => options.scale === 4)).toBe(true);
+    expect(renderCalls.map(([, options]) => options.width)).toEqual([4_000, 1]);
+    expect(renderCalls.map(([, options]) => options.x)).toEqual([0, 4_000]);
+    expect(readPngSize(fsMock.writeFile.mock.calls[0][1] as Uint8Array)).toEqual({
+      width: 16_004,
+      height: 800,
+    });
+  });
+
+  it('renders png exports that exceed both width and height limits as a tile grid', async () => {
+    fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
+    iframeScrollMetrics = { width: 4_001, height: 1_000 };
+    for (let index = 0; index < 4; index += 1) {
+      mockNextCanvasTileRender();
+    }
+
+    try {
+      await exportPng(createInput({ pngScale: 4 }), '/tmp/too-wide-and-tall.png');
+    } finally {
+      iframeScrollMetrics = null;
+    }
+
+    const renderCalls = canvasRenderMock.render.mock.calls as unknown as Array<[
+      HTMLElement,
+      { scale: number; width: number; height: number; x: number; y: number },
+    ]>;
+    expect(renderCalls).toHaveLength(4);
+    expect(renderCalls.every(([, options]) => options.scale === 4)).toBe(true);
+    expect(renderCalls.map(([, options]) => [options.x, options.y, options.width, options.height])).toEqual([
+      [0, 0, 4_000, 999],
+      [4_000, 0, 1, 999],
+      [0, 999, 4_000, 1],
+      [4_000, 999, 1, 1],
+    ]);
+    expect(readPngSize(fsMock.writeFile.mock.calls[0][1] as Uint8Array)).toEqual({
+      width: 16_004,
+      height: 4_000,
+    });
+  });
+
+  it('expands png capture width to include overflowing PlantUML diagrams', async () => {
+    fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
+    iframeScrollMetrics = { width: 980, height: 1200 };
+    iframePlantUmlRect = { left: 760, top: 240, width: 560, height: 320 };
+
+    try {
+      await exportPng(createInput({
+        content: [
+          '# 图表',
+          '',
+          '```plantuml',
+          '@startuml',
+          'class Alice',
+          'class Bob',
+          'Alice --> Bob',
+          '@enduml',
+          '```',
+        ].join('\n'),
+        pngScale: 1,
+      }), '/tmp/plantuml-overflow.png');
+    } finally {
+      iframeScrollMetrics = null;
+      iframePlantUmlRect = null;
+    }
+
+    expect(canvasRenderMock.render).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      width: 1320,
+      height: 1200,
+      windowWidth: 1320,
+    }));
+    expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/plantuml-overflow.png', expect.any(Uint8Array));
   });
 
   it('renders long pdf documents in multi-page batches without lowering scale', async () => {
@@ -1413,6 +1852,8 @@ describe('export pipeline docx header and footer', () => {
 
   beforeEach(() => {
     fsMock.readFile.mockClear();
+    fsMock.writeFile.mockClear();
+    markmapTransformMock.mockClear();
     globalThis.Image = class {
       onload: ((event: Event) => void) | null = null;
       onerror: ((event: Event) => void) | null = null;
@@ -1441,6 +1882,7 @@ describe('export pipeline docx header and footer', () => {
     getContextSpy = null;
     toDataUrlSpy?.mockRestore();
     toDataUrlSpy = null;
+    vi.unstubAllGlobals();
   });
 
   it('writes configured header and footer tokens to docx parts', async () => {
@@ -1519,6 +1961,24 @@ describe('export pipeline docx header and footer', () => {
     expect(documentXml).toContain('已完成');
     expect(documentXml).toContain('☐');
     expect(documentXml).toContain('待确认');
+  });
+
+  it('strips emoji variation selectors from docx text runs for WPS compatibility', async () => {
+    fsMock.writeFile.mockClear();
+
+    await exportDocx(createInput({
+      content: '愿 Prism 伴您写出更多妙语佳文！✍️',
+    }), '/tmp/emoji.docx');
+
+    const { default: JSZip } = await import('jszip');
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const zip = await JSZip.loadAsync(bytes);
+    const documentXml = await zip.file('word/document.xml')?.async('string') ?? '';
+
+    expect(documentXml).toContain('愿 Prism 伴您写出更多妙语佳文！');
+    expect(documentXml).toContain('✍');
+    expect(documentXml).not.toContain('\uFE0F');
+    expect(documentXml).not.toContain('&#65039;');
   });
 
   it('embeds relative local svg images in docx output with a png fallback', async () => {
@@ -1680,6 +2140,83 @@ describe('export pipeline docx header and footer', () => {
     expect(documentXml).toContain('wp:extent cx="6191250"');
   });
 
+  it('renders Markmap and PlantUML docx diagrams as images without leaking source code', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
+    const characterPlantUml = [
+      '@startuml',
+      'class 王子服 {',
+      '  -姓名: String',
+      '  -身份: 书生',
+      '  -性格: 痴情',
+      '  +游学()',
+      '  +求婚()',
+      '}',
+      '',
+      'class 婴宁 {',
+      '  -真身: 狐仙',
+      '  -特点: 善笑',
+      '  -美貌: 绝世',
+      '  +化身人形()',
+      '  +展现真容()',
+      '}',
+      '',
+      'class 婴宁母亲 {',
+      '  -身份: 老狐仙',
+      '  -性格: 慈祥',
+      '  +保护女儿()',
+      '  +成全恋情()',
+      '}',
+      '',
+      'class 鬼仆 {',
+      '  -职责: 护卫',
+      '  +服侍主人()',
+      '}',
+      '',
+      '王子服 --> 婴宁 : 爱慕',
+      '婴宁 --> 王子服 : 钟情',
+      '婴宁母亲 --> 婴宁 : 母女情深',
+      '鬼仆 --> 婴宁母亲 : 忠心侍奉',
+      '@enduml',
+    ].join('\n');
+
+    await exportDocx(createInput({
+      content: [
+        '# 图表',
+        '',
+        '```markmap',
+        '# 聊斋志异',
+        '## 人物',
+        '- 婴宁',
+        '- 王子服',
+        '```',
+        '',
+        '```plantuml',
+        characterPlantUml,
+        '```',
+      ].join('\n'),
+    }), '/tmp/diagrams.docx');
+
+    const { default: JSZip } = await import('jszip');
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const zip = await JSZip.loadAsync(bytes);
+    const documentXml = await zip.file('word/document.xml')?.async('string') ?? '';
+    const mediaFiles = Object.keys(zip.files).filter((filePath) => filePath.startsWith('word/media/'));
+
+    expect(documentXml).toContain('图表');
+    expect(documentXml).toContain('<w:drawing>');
+    expect((documentXml.match(/<w:drawing>/g) ?? [])).toHaveLength(2);
+    expect(documentXml).not.toContain('@startuml');
+    expect(documentXml).not.toContain('# 聊斋志异');
+    expect(documentXml).not.toContain('class 王子服');
+    expect(documentXml).not.toContain('母女情深');
+    expect(mediaFiles.some((filePath) => /\.png$/.test(filePath))).toBe(true);
+    expect(markmapTransformMock).toHaveBeenCalledWith(expect.stringContaining('# 聊斋志异'));
+    expect(fetch).not.toHaveBeenCalled();
+    expect(canvasRenderMock.render).toHaveBeenCalledTimes(1);
+  });
+
   it('rasterizes rendered math and sanitized html blocks for docx visual fallback', async () => {
     fsMock.writeFile.mockClear();
 
@@ -1742,6 +2279,13 @@ describe('export pipeline docx header and footer', () => {
     expect(cNvPrIds).toHaveLength(3);
     expect(docPrIds).toEqual(['1', '2', '3']);
     expect(cNvPrIds).toEqual(['1', '2', '3']);
+  });
+
+  it('keeps very tall docx images within a WPS-friendly page height', () => {
+    expect(__exportPipelineTesting.constrainDocxImageSize(
+      { width: 2816, height: 9388 },
+      { maxWidth: 650, maxHeight: 900 },
+    )).toEqual({ width: 270, height: 900 });
   });
 
   it('reports diagnostic progress stages for docx export', async () => {

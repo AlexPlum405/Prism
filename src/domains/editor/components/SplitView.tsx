@@ -13,6 +13,8 @@ import { getCommandMenuItems, type CommandContext } from '../../commands';
 import { t } from '../../i18n';
 import { previewHtmlToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
+import { hasPresentationSlides } from '../extensions/presentation';
+import { PresentationOverlay } from './PresentationOverlay';
 import { PREVIEW_SOURCE_FLASH_MS } from '../../../lib/feedbackTiming';
 import {
   createPreviewScrollMapCache,
@@ -422,6 +424,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       hasSelection: boolean;
       line: number | null;
     } | null>(null);
+    const [presentationVisible, setPresentationVisible] = useState(false);
     const searchParamsRef = useRef(searchParams);
     const searchCurrentMatchRef = useRef(searchCurrentMatch);
     const contentRef = useRef(content);
@@ -684,6 +687,10 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         ['exportWithPrevious', 'exportOverwritePrevious', 'exportPdf', 'exportDocx', 'exportHtml', 'exportPng'],
         createReadonlyCommandContext(),
       ) as ContextMenuItem[];
+      const presentationItems = getCommandMenuItems(
+        ['presentationMode'],
+        createReadonlyCommandContext(),
+      ) as ContextMenuItem[];
 
       return [
         { label: t('command.copy'), action: 'copy', shortcut: '⌘C', disabled: !hasSelection },
@@ -698,6 +705,8 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           ],
         },
         { label: t('editor.context.locateSource'), action: 'locateSource', disabled: line === null },
+        { type: 'separator' },
+        ...presentationItems,
         { type: 'separator' },
         {
           label: t('common.export'),
@@ -831,6 +840,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         case 'exportPng':
         case 'exportWithPrevious':
         case 'exportOverwritePrevious':
+        case 'presentationMode':
           dispatchCommand(action);
           break;
       }
@@ -918,6 +928,16 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         unsubscribeSearch();
       };
     }, [activateSearch, getPreviewRawSelectedText]);
+
+    useEffect(() => {
+      return onAppEvent('presentation.open', () => {
+        if (!hasPresentationSlides(contentRef.current)) {
+          onNotice?.(t('presentation.requiresSlides'));
+          return;
+        }
+        setPresentationVisible(true);
+      });
+    }, [onNotice]);
 
     const handleSearch = (action: SearchAction, params: SearchParams) => {
       const localMatchState = countMatches(content, params.query, params.matchCase, params.regexp, params.wholeWord);
@@ -1145,6 +1165,16 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
             items={getPreviewContextMenuItems(previewContextMenu.hasSelection, previewContextMenu.line)}
             onAction={handlePreviewContextMenuAction}
             onClose={() => setPreviewContextMenu(null)}
+          />
+        )}
+
+        {presentationVisible && (
+          <PresentationOverlay
+            content={content}
+            documentPath={documentPath}
+            onClose={() => setPresentationVisible(false)}
+            onNotice={onNotice}
+            onOpenDocumentLink={onOpenDocumentLink}
           />
         )}
       </div>

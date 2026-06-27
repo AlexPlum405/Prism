@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import wasm from 'vite-plugin-wasm';
 import { readFileSync } from 'node:fs';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
@@ -11,12 +12,13 @@ const OPTIONAL_ENTRY_PRELOAD_PATTERNS = [
 ];
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [wasm(), react()],
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   build: {
+    target: 'esnext',
     modulePreload: {
       resolveDependencies(_filename, deps, context) {
         if (context.hostType !== 'html' || !context.hostId.endsWith('index.html')) {

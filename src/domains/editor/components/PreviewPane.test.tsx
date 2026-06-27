@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { markdownToHtml } from '../../../lib/markdownToHtml';
 import { useSettingsStore } from '../../settings/store';
 import { DEFAULT_SETTINGS } from '../../settings/types';
-import { PLANT_UML_SVG_ENDPOINT } from './plantUml';
 import { __previewPaneTesting, PreviewPane } from './PreviewPane';
 
 const mermaidMock = vi.hoisted(() => ({
@@ -32,6 +31,20 @@ const fsMock = vi.hoisted(() => ({
 }));
 const renderServiceMock = vi.hoisted(() => ({
   render: vi.fn(),
+}));
+const plantUmlMock = vi.hoisted(() => ({
+  createPlantUmlSvgElement: vi.fn(async (source: string) => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('plantuml-image');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'PlantUML diagram');
+    svg.setAttribute('data-plantuml-renderer', 'plantuml-little');
+    svg.setAttribute('viewBox', '0 0 120 60');
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.textContent = source;
+    svg.append(text);
+    return svg;
+  }),
 }));
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
@@ -71,6 +84,10 @@ vi.mock('../../../lib/markdownToHtml', () => ({
 
 vi.mock('../../../lib/markdownRenderService', () => ({
   markdownRenderService: renderServiceMock,
+}));
+
+vi.mock('./plantUml', () => ({
+  createPlantUmlSvgElement: plantUmlMock.createPlantUmlSvgElement,
 }));
 
 function deferred<T>() {
@@ -131,6 +148,7 @@ describe('PreviewPane theme switching', () => {
     });
     markmapMock.transform.mockReset();
     markmapMock.transform.mockReturnValue({ root: { content: 'Root', children: [] } });
+    plantUmlMock.createPlantUmlSvgElement.mockClear();
     katexMock.renderToString.mockClear();
     openerMock.openUrl.mockReset();
     fsMock.readFile.mockReset();
@@ -439,36 +457,25 @@ describe('PreviewPane theme switching', () => {
     expect(screen.getByText('Syntax error in text')).toBeInTheDocument();
   });
 
-  it('renders PlantUML placeholders as remote SVG images', async () => {
+  it('renders PlantUML placeholders as local inline SVG diagrams', async () => {
     vi.mocked(markdownToHtml).mockReturnValueOnce(
       `<div class="plantuml-placeholder" data-plantuml="${encodeURIComponent('@startuml\nAlice -> Bob\n@enduml')}" data-source-line="4"></div>`,
     );
 
     render(<PreviewPane content="```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```" renderStrategy="immediate" />);
 
-    const image = await screen.findByAltText('PlantUML diagram');
-    const imageSrc = image.getAttribute('src') ?? '';
+    const image = await screen.findByLabelText('PlantUML diagram');
+    expect(image.tagName.toLowerCase()).toBe('svg');
     expect(image).toHaveClass('plantuml-image');
-    expect(imageSrc.startsWith(PLANT_UML_SVG_ENDPOINT)).toBe(true);
-    expect(imageSrc).not.toContain('@startuml');
-  });
-
-  it('renders PlantUML load failures as source-locatable diagnostics', async () => {
-    vi.mocked(markdownToHtml).mockReturnValueOnce(
-      `<div class="plantuml-placeholder" data-plantuml="${encodeURIComponent('@startuml\nAlice -> Bob\n@enduml')}" data-source-line="8"></div>`,
+    expect(image).toHaveAttribute('data-plantuml-renderer', 'plantuml-little');
+    expect(image).not.toHaveAttribute('src');
+    expect(image.textContent).toContain('Alice');
+    expect(image.textContent).toContain('Bob');
+    expect(plantUmlMock.createPlantUmlSvgElement).toHaveBeenCalledWith(
+      '@startuml\nAlice -> Bob\n@enduml',
+      'inkstone',
+      { documentPath: undefined },
     );
-
-    render(<PreviewPane content="```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```" renderStrategy="immediate" />);
-
-    const image = await screen.findByAltText('PlantUML diagram');
-    fireEvent.error(image);
-
-    await waitFor(() => {
-      expect(screen.getByText('PlantUML 渲染失败')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Failed to load PlantUML SVG')).toBeInTheDocument();
-    expect(screen.getByText('源码行 8')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '跳到源码' })).toHaveAttribute('data-preview-source-line', '8');
   });
 
   it('renders Markmap placeholders as interactive SVG diagrams', async () => {

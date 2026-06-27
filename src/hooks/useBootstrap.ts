@@ -64,6 +64,7 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     const params = new URLSearchParams(window.location.search);
     const filePath = params.get('file');
     const folderPath = params.get('folder');
+    const shouldOpenEmptyWindow = params.get('empty') === '1';
     const shouldCreateNewDocument = params.get('new') === '1';
 
     const openFile = async (
@@ -156,6 +157,8 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
         createNewDocument();
         return;
       }
+
+      if (shouldOpenEmptyWindow) return;
 
       if (await openPendingStartupFileBeforeSessionRestore()) return;
 

@@ -223,7 +223,11 @@ export function splitTableCells(line: string, lineOffset = 0): ParsedCell[] {
 }
 
 function isSeparatorCell(cell: string): boolean {
-  return /^:?-{3,}:?$/.test(cell.trim());
+  const trimmed = cell.trim();
+  if (/^:?-{3,}:?$/.test(trimmed)) return true;
+  return /^:-{2,}:$/.test(trimmed)
+    || /^:-{2,}$/.test(trimmed)
+    || /^-{2,}:$/.test(trimmed);
 }
 
 function looksLikeSeparatorCell(cell: string): boolean {

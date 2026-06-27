@@ -2,6 +2,7 @@ pub mod document_io;
 pub mod error;
 pub mod export_job;
 pub mod export_resources;
+pub mod initial_documents;
 pub mod path;
 pub mod settings_store;
 pub mod theme_store;

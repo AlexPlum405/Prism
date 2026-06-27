@@ -257,9 +257,9 @@ export function createFileCommands(): CommandDefinition[] {
     },
     {
       id: 'newWindow',
-      category: 'file',
+      category: 'window',
       shortcuts: [{ code: 'KeyN', mod: true, shift: true }],
-      run: () => openPrismWindow({ newDocument: true }),
+      run: () => openPrismWindow({ emptyWindow: true }),
     },
     {
       id: 'open',

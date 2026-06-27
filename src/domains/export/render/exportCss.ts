@@ -80,6 +80,38 @@ export async function collectExportCss(
       min-height: auto !important;
       padding-top: 44px !important;
       padding-bottom: 56px !important;
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-wrap: break-word;
+    }
+    .prism-export-document :is(.mermaid-placeholder, .markmap-placeholder, .plantuml-placeholder) {
+      box-sizing: border-box !important;
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .prism-export-document :is(.mermaid-placeholder svg, .markmap-placeholder svg, .plantuml-image) {
+      display: block !important;
+      max-width: 100% !important;
+      height: auto !important;
+      margin-inline: auto !important;
+      overflow: visible !important;
+    }
+    .prism-export-document :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, dd, dt) {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .prism-export-document .prism-export-scaled-atomic {
+      contain: layout paint;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+    .prism-export-document .prism-export-scaled-atomic-content {
+      max-width: 100% !important;
     }
     .prism-export-toc {
       margin: 0 0 36px;

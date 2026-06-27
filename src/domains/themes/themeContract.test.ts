@@ -132,30 +132,30 @@ describe('theme contract', () => {
       isDark: true,
       editor: {
         background: '#000000',
-        text: '#f2f2f2',
+        text: '#ededed',
       },
       preview: {
         background: '#000000',
-        text: '#f2f2f2',
+        text: '#ededed',
       },
     });
     expect(getThemeContract('carbon').code).toMatchObject({
-      keyword: '#ffb86c',
-      string: '#8be9fd',
-      meta: '#bd93f9',
-      attribute: '#ff79c6',
-      symbol: '#50fa7b',
+      keyword: '#6cb6d9',
+      string: '#a78bfa',
+      meta: '#a78bfa',
+      attribute: '#d16a93',
+      symbol: '#a3e635',
     });
   });
 
   it('keeps built-in themes separated by distinct focus, title, link, and code colors', () => {
     const expected = {
       miaoyan: { focus: '#1c5d33', codeKeyword: '#d73a49', codeString: '#032f62' },
-      inkstone: { focus: '#b75a2a', codeKeyword: '#b75a2a', codeString: '#2458a6' },
-      slate: { focus: '#d97706', codeKeyword: '#315f9d', codeString: '#0b7a99' },
-      mono: { focus: '#be123c', codeKeyword: '#5b21b6', codeString: '#047857' },
-      nocturne: { focus: '#c084fc', codeKeyword: '#f0c674', codeString: '#7dd3fc' },
-      carbon: { focus: '#bd93f9', codeKeyword: '#ffb86c', codeString: '#8be9fd' },
+      inkstone: { focus: '#9a3412', codeKeyword: '#9a3412', codeString: '#214e9a' },
+      slate: { focus: '#b45309', codeKeyword: '#246a73', codeString: '#2356b8' },
+      mono: { focus: '#b91c1c', codeKeyword: '#6d28d9', codeString: '#047857' },
+      nocturne: { focus: '#c45a84', codeKeyword: '#d6a84f', codeString: '#6cb6d9' },
+      carbon: { focus: '#a3e635', codeKeyword: '#6cb6d9', codeString: '#a78bfa' },
     } as const;
 
     for (const theme of CONTENT_THEMES) {

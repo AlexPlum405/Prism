@@ -12,7 +12,7 @@ import {
   type PreviewDomPostProcessTargets,
 } from './previewDomTargets';
 import { getMarkmapOptions, getMarkmapPalette } from './markmap';
-import { getPlantUmlSvgUrl } from './plantUml';
+import { createPlantUmlSvgElement } from './plantUml';
 
 interface PreviewPaneProps {
   content: string;
@@ -761,37 +761,29 @@ async function renderMarkmapDiagram(
   }
 }
 
-function renderPlantUmlImage(
+async function renderPlantUmlImageForCompletion(
   container: HTMLElement,
   source: string,
   contentTheme: ContentTheme,
+  documentPath: string | undefined,
   isCancelled: () => boolean,
 ) {
-  container.classList.remove('plantuml-placeholder--failed');
-  container.setAttribute('aria-busy', 'true');
-  container.style.display = 'flex';
-  container.style.justifyContent = 'center';
-  container.style.removeProperty('margin');
+  try {
+    container.classList.remove('plantuml-placeholder--failed');
+    container.setAttribute('aria-busy', 'true');
+    container.style.display = 'flex';
+    container.style.justifyContent = 'center';
+    container.style.removeProperty('margin');
 
-  const image = document.createElement('img');
-  image.className = 'plantuml-image';
-  image.loading = 'lazy';
-  image.decoding = 'async';
-  image.alt = 'PlantUML diagram';
-  image.src = getPlantUmlSvgUrl(source, contentTheme);
-
-  image.onload = () => {
+    const svg = await createPlantUmlSvgElement(source, contentTheme, { documentPath });
     if (isCancelled()) return;
+    container.replaceChildren(svg);
     container.removeAttribute('aria-busy');
-  };
-
-  image.onerror = () => {
+  } catch (error) {
     if (isCancelled()) return;
-    renderPlantUmlError(container, new Error('Failed to load PlantUML SVG'));
+    renderPlantUmlError(container, error);
     container.removeAttribute('aria-busy');
-  };
-
-  container.replaceChildren(image);
+  }
 }
 
 function withPreviewKatexDisplaySourceLine(html: string, sourceLine: string) {
@@ -1429,34 +1421,37 @@ export function PreviewPane({
       const placeholderList = targets.plantUmlPlaceholders;
       if (placeholderList.length === 0) return;
 
-      const plantUmlStartedAt = nowMs();
-      let renderedCount = 0;
+      void (async () => {
+        const plantUmlStartedAt = nowMs();
+        let renderedCount = 0;
 
-      for (const placeholder of placeholderList) {
+        await Promise.all(placeholderList.map(async (placeholder) => {
+          if (cancelled) return;
+          if (!placeholder.isConnected) return;
+
+          const encoded = placeholder.getAttribute('data-plantuml');
+          if (!encoded) return;
+
+          const code = decodeURIComponent(encoded);
+          await renderPlantUmlImageForCompletion(placeholder, code, contentTheme, documentPath, () => cancelled);
+          renderedCount += 1;
+        }));
+
         if (cancelled) return;
-        if (!placeholder.isConnected) continue;
-
-        const encoded = placeholder.getAttribute('data-plantuml');
-        if (!encoded) continue;
-
-        const code = decodeURIComponent(encoded);
-        renderPlantUmlImage(placeholder, code, contentTheme, () => cancelled);
-        renderedCount += 1;
-      }
-
-      logPreviewPerformance('plantuml', {
-        contentTheme,
-        diagramCount: placeholderList.length,
-        renderedCount,
-        elapsedMs: nowMs() - plantUmlStartedAt,
-      });
+        logPreviewPerformance('plantuml', {
+          contentTheme,
+          diagramCount: placeholderList.length,
+          renderedCount,
+          elapsedMs: nowMs() - plantUmlStartedAt,
+        });
+      })();
     }, { immediate: renderStrategy === 'immediate', timeout: 300 });
 
     return () => {
       cancelled = true;
       cancelScheduledRender();
     };
-  }, [html, contentTheme, renderStrategy]);
+  }, [html, contentTheme, documentPath, renderStrategy]);
 
   const showRenderPendingStatus = (renderPending || htmlRenderPending) && shouldShowPreviewUpdatingStatus(content.length);
 

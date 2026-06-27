@@ -15,15 +15,17 @@ const MIAOYAN_MARKMAP_COLORS = [
   '#32CD32',
 ];
 
-const MARKMAP_LIGHT_COLORS = MIAOYAN_MARKMAP_COLORS;
-const MARKMAP_DARK_COLORS = ['#54C59F', '#E7E9EA', '#F7CC8F', '#8FFCCD', '#ED716C', '#C084FC', '#60A5FA'];
-
-function isDarkMarkmapTheme(contentTheme: ContentTheme) {
-  return contentTheme === 'nocturne' || contentTheme === 'carbon' || contentTheme === 'slate';
-}
+const MARKMAP_PALETTES: Record<string, string[]> = {
+  miaoyan: MIAOYAN_MARKMAP_COLORS,
+  inkstone: ['#9A3412', '#214E9A', '#2F6F4E', '#8A5A16', '#7047A8', '#6F5E46'],
+  slate: ['#246A73', '#2356B8', '#B45309', '#7A4E0B', '#4C5F68', '#667680'],
+  mono: ['#6D28D9', '#047857', '#B91C1C', '#0F766E', '#9A3412', '#525A52'],
+  nocturne: ['#D6A84F', '#6CB6D9', '#C45A84', '#8FBF73', '#C8B28D', '#A89D8A'],
+  carbon: ['#7DD3FC', '#A78BFA', '#A3E635', '#F472B6', '#EDEDED', '#777777'],
+};
 
 export function getMarkmapPalette(contentTheme: ContentTheme) {
-  return isDarkMarkmapTheme(contentTheme) ? MARKMAP_DARK_COLORS : MARKMAP_LIGHT_COLORS;
+  return MARKMAP_PALETTES[contentTheme] ?? MIAOYAN_MARKMAP_COLORS;
 }
 
 export function getMarkmapOptions(contentTheme: ContentTheme) {

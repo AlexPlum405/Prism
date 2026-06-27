@@ -8,6 +8,10 @@ import {
 import type { ShortcutDisplayStyle } from './platform';
 import { getAvailableThemeEntries } from '../themes';
 import { getLocalizedCommandLabel, t } from '../i18n';
+import {
+  getSlashSnippetLabel,
+  SLASH_SNIPPET_COMMAND_ORDER,
+} from '../editor/extensions/slashSnippets';
 
 type MenuModelItem =
   | { type: 'separator' }
@@ -40,6 +44,7 @@ const menuLabelKeys = {
   headingLevel: 'menu.headingLevel',
   blockOperations: 'menu.blockOperations',
   selectionTransform: 'menu.selectionTransform',
+  tabSnippets: 'menu.tabSnippets',
   toQuote: 'menu.toQuote',
   toTaskList: 'menu.toTaskList',
   toCallout: 'menu.toCallout',
@@ -75,7 +80,6 @@ function getCommandDisabledReason(command: CommandId, context: CommandContext): 
 const menuModel: MenuModel = {
   file: [
     { command: 'new' },
-    { command: 'newWindow' },
     { type: 'separator' },
     { command: 'open' },
     { command: 'openFolder' },
@@ -188,8 +192,25 @@ const menuModel: MenuModel = {
     { command: 'selectionQuote', label: 'toQuote' },
     { command: 'selectionTaskList', label: 'toTaskList' },
     { command: 'selectionCallout', label: 'toCallout' },
+    {
+      label: 'tabSnippets',
+      children: [
+        {
+          dynamic: (context) => {
+            const disabled = !context.documentStore.currentDocument
+              || context.documentStore.currentDocument.profile?.kind === 'text';
+            return SLASH_SNIPPET_COMMAND_ORDER.map((command) => ({
+              label: `/${command} · ${getSlashSnippetLabel(command)}`,
+              action: `insertSlashSnippet:${command}`,
+              disabled,
+            }));
+          },
+        },
+      ],
+    },
     { type: 'separator' },
     { command: 'clearFormat' },
+    { command: 'autoFormat' },
   ],
   navigation: [
     { command: 'quickOpen' },
@@ -205,6 +226,7 @@ const menuModel: MenuModel = {
     { command: 'sourceMode' },
     { command: 'splitMode' },
     { command: 'previewMode' },
+    { command: 'presentationMode' },
     { type: 'separator' },
     { command: 'toggleSidebar' },
     { command: 'showFiles' },

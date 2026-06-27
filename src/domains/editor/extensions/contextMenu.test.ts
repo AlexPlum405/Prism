@@ -52,4 +52,16 @@ describe('editor context menu', () => {
       ]),
     });
   });
+
+  it('surfaces presentation preview from the document right-click menu only when slides are available', () => {
+    const plainItems = getEditorContextMenuItems(false, 'mac', false, false);
+    const slideItems = getEditorContextMenuItems(false, 'mac', false, true);
+
+    expect(plainItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'presentationMode', disabled: true }),
+    ]));
+    expect(slideItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'presentationMode', disabled: false }),
+    ]));
+  });
 });

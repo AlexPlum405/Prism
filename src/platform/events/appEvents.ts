@@ -14,6 +14,7 @@ export const APP_EVENT_NAMES = {
   'export.failed': 'prism-export-failure',
   'export.result': 'prism-export-result',
   'diagnostics.open': 'prism-document-diagnostics-open',
+  'presentation.open': 'prism-presentation-open',
   'settings.open': 'prism-open-settings',
 } as const satisfies Record<AppEventKey, string>;
 

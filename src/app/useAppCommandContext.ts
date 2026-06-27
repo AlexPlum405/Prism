@@ -13,7 +13,11 @@ import type { WorkspaceIndex } from '../domains/workspace/services';
 import { t } from '../domains/i18n';
 import type { ToastInput } from '../lib/toast';
 import type { FileActionInput } from '../lib/fileActions';
-import { onAppEvent } from '../platform/events/appEvents';
+import { emitAppEvent, onAppEvent } from '../platform/events/appEvents';
+import {
+  getSlashSnippet,
+  isSlashSnippetCommand,
+} from '../domains/editor/extensions/slashSnippets';
 
 type RequestExportPath = NonNullable<CommandContext['requestExportPath']>;
 type RequestSavePath = NonNullable<CommandContext['requestSavePath']>;
@@ -173,6 +177,22 @@ export function useAppCommandContext({
       await handleFileAction({
         action: 'openFile',
         path: decodeURIComponent(action.slice('openWorkspaceFile:'.length)),
+      });
+      return;
+    }
+
+    if (action.startsWith('insertSlashSnippet:')) {
+      const command = decodeURIComponent(action.slice('insertSlashSnippet:'.length));
+      if (!isSlashSnippetCommand(command)) {
+        showToast(t('app.unknownCommand', { action }));
+        return;
+      }
+      const snippet = getSlashSnippet(command);
+      emitAppEvent('editor.command', {
+        command: 'insertSnippet',
+        insert: snippet.insert,
+        selectionStart: snippet.selectionStart,
+        selectionEnd: snippet.selectionEnd,
       });
       return;
     }

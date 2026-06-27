@@ -70,6 +70,116 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   color: var(--theme-secondary-text);
 }
 
+.prism-presentation {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: #111;
+  color: #f7f7f4;
+}
+
+.prism-presentation__topbar,
+.prism-presentation__controls {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 42px;
+  padding: 8px 18px;
+  font: 13px/1.4 var(--font-ui);
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(17, 17, 17, 0.82);
+  backdrop-filter: blur(12px);
+}
+
+.prism-presentation__topbar {
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prism-presentation__progress {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.prism-presentation__progress span {
+  display: block;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.72);
+  transition: width 180ms ease;
+}
+
+.prism-presentation__controls {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prism-presentation button {
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+}
+
+.prism-presentation button:disabled {
+  opacity: 0.38;
+}
+
+.prism-presentation__slide {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-preview);
+}
+
+.prism-presentation__slide > .preview-compat {
+  min-height: 100%;
+}
+
+.prism-presentation__slide #write {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 980px;
+  padding-top: 56px;
+  padding-bottom: 56px;
+}
+
+.prism-presentation__iframe {
+  position: absolute;
+  inset: 42px 0;
+  z-index: 0;
+  width: 100%;
+  height: calc(100% - 84px);
+  border: 0;
+  background: #fff;
+}
+
+.prism-presentation .fragment {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.prism-presentation .fragment.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .preview-search-match {
   background-color: var(--preview-search-match-bg) !important;
   border-radius: 2px;

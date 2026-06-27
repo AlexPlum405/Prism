@@ -20,6 +20,7 @@ import type { SearchAction, SearchParams } from './SearchPanel';
 import { ContextMenu } from '../../../components/shell/ContextMenu';
 import { getEditorContextMenuItems } from '../extensions/contextMenu';
 import { getEditorFormatResult } from '../extensions/formatting';
+import { hasPresentationSlides } from '../extensions/presentation';
 import {
   execEditorSearch,
   restoreEditorSearch,
@@ -571,6 +572,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
               editorContextMenu.hasSelection,
               shortcutStyle,
               editorContextMenu.isInTable,
+              hasPresentationSlides(content),
             )}
             onAction={handleEditorContextMenuAction}
             onClose={() => setEditorContextMenu(null)}

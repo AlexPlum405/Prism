@@ -2,6 +2,7 @@ import { redo, undo } from '@codemirror/commands';
 import { foldable } from '@codemirror/language';
 import type { EditorView } from '@codemirror/view';
 import { markdownSelectionToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
+import { formatMarkdownDocument } from './markdownAutoFormat';
 
 interface BasicEditorCommandDeps {
   handleTablePasteText: (view: EditorView, text: string) => boolean;
@@ -69,6 +70,14 @@ export function runBasicEditorCommand(
       const raw = view.state.doc.sliceString(selection.from, selection.to);
       const cleaned = raw.replace(/[*_~`<>[\]()#]/g, '');
       view.dispatch({ changes: { from: selection.from, to: selection.to, insert: cleaned } });
+      return true;
+    }
+    case 'autoFormat': {
+      const raw = view.state.doc.toString();
+      const formatted = formatMarkdownDocument(raw);
+      if (formatted !== raw) {
+        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: formatted } });
+      }
       return true;
     }
     case 'comment': {

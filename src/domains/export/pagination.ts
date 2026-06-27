@@ -4,8 +4,21 @@ export const EXPORT_PAGE_SPLIT_EPSILON = 2;
 export const EXPORT_ATOMIC_SPACER_CLASS = 'prism-export-page-spacer';
 export const EXPORT_ATOMIC_BLOCK_CLASS = 'prism-export-atomic';
 export const EXPORT_ATOMIC_GROUP_CLASS = 'prism-export-atomic-group';
+export const EXPORT_ATOMIC_SCALE_WRAPPER_CLASS = 'prism-export-scaled-atomic';
+export const EXPORT_ATOMIC_SCALE_CONTENT_CLASS = 'prism-export-scaled-atomic-content';
 export const EXPORT_MIN_ATOMIC_SCALE = 0.05;
 export const EXPORT_ATOMIC_BLOCK_SELECTOR = [
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'p',
+  'li',
+  'blockquote',
+  'dd',
+  'dt',
   'img',
   'svg',
   'canvas',
@@ -89,25 +102,54 @@ function groupExportHeadingAtomicBlocks(root: HTMLElement) {
 
 function scaleOversizedAtomicBlock(element: HTMLElement, pageCssHeight: number) {
   if (!isScalableAtomicBlock(element)) return false;
+  if (element.closest(`.${EXPORT_ATOMIC_SCALE_WRAPPER_CLASS}`)) return false;
   const rect = element.getBoundingClientRect();
   if (rect.height <= pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) return false;
   const scale = Math.max(EXPORT_MIN_ATOMIC_SCALE, Math.min(1, (pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON) / rect.height));
-  element.style.transformOrigin = 'top center';
-  element.style.transform = `scale(${Number(scale.toFixed(4))})`;
-  element.style.width = `${Number((100 / scale).toFixed(4))}%`;
-  element.style.maxHeight = `${Math.max(1, Math.floor(pageCssHeight - EXPORT_PAGE_SPLIT_EPSILON))}px`;
-  element.style.marginLeft = 'auto';
-  element.style.marginRight = 'auto';
-  element.style.breakInside = 'avoid';
-  element.style.pageBreakInside = 'avoid';
+  const wrapper = element.ownerDocument.createElement('div');
+  wrapper.className = `${EXPORT_ATOMIC_BLOCK_CLASS} ${EXPORT_ATOMIC_SCALE_WRAPPER_CLASS}`;
+  wrapper.dataset.prismExportAtomic = 'true';
+  wrapper.dataset.prismExportAtomicScale = Number(scale.toFixed(4)).toString();
+  Object.assign(wrapper.style, {
+    display: 'block',
+    width: '100%',
+    maxWidth: '100%',
+    height: `${Math.max(1, Math.ceil(rect.height * scale))}px`,
+    margin: '0 auto',
+    padding: '0',
+    border: '0',
+    overflow: 'visible',
+    breakInside: 'avoid',
+    pageBreakInside: 'avoid',
+  });
+
+  element.parentNode?.insertBefore(wrapper, element);
+  wrapper.appendChild(element);
+  element.classList.add(EXPORT_ATOMIC_SCALE_CONTENT_CLASS);
+  Object.assign(element.style, {
+    transformOrigin: 'top center',
+    transform: `scale(${Number(scale.toFixed(4))})`,
+    width: '100%',
+    maxWidth: '100%',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    breakInside: 'avoid',
+    pageBreakInside: 'avoid',
+  });
   return true;
 }
 
 export async function prepareExportAtomicPagination(root: HTMLElement, pageCssHeight: number) {
   if (!Number.isFinite(pageCssHeight) || pageCssHeight <= 0) return;
   markExportAtomicBlocks(root);
-  groupExportHeadingAtomicBlocks(root);
   root.querySelectorAll(`.${EXPORT_ATOMIC_SPACER_CLASS}`).forEach((element) => element.remove());
+  await nextExportFrame();
+  Array.from(root.querySelectorAll<HTMLElement>(`.${EXPORT_ATOMIC_BLOCK_CLASS}`))
+    .filter(isTopLevelAtomicBlock)
+    .forEach((element) => {
+      scaleOversizedAtomicBlock(element, pageCssHeight);
+    });
+  groupExportHeadingAtomicBlocks(root);
 
   for (let pass = 0; pass < 3; pass += 1) {
     let changed = false;

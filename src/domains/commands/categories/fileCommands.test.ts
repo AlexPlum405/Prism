@@ -98,10 +98,10 @@ describe('file commands', () => {
     expect(openPrismWindowMock).toHaveBeenCalledWith({ newDocument: true });
   });
 
-  it('creates new windows in explicit blank-document mode', async () => {
+  it('creates empty shell windows without forcing a new document', async () => {
     await getFileCommand('newWindow').run(createContext());
 
-    expect(openPrismWindowMock).toHaveBeenCalledWith({ newDocument: true });
+    expect(openPrismWindowMock).toHaveBeenCalledWith({ emptyWindow: true });
   });
 
   it('opens dialog selections through the shared document flow', async () => {

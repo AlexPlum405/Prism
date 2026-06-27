@@ -26,3 +26,11 @@ export function isExportCanvasWithinLimits(width: number, height: number, scale:
     && scaledHeight <= MAX_EXPORT_CANVAS_DIMENSION
     && area <= MAX_EXPORT_CANVAS_AREA;
 }
+
+export function getSafeExportCanvasScale(width: number, height: number, requestedScale: number) {
+  const normalizedScale = Math.max(1, Math.floor(requestedScale));
+  for (let scale = normalizedScale; scale >= 1; scale -= 1) {
+    if (isExportCanvasWithinLimits(width, height, scale)) return scale;
+  }
+  return null;
+}

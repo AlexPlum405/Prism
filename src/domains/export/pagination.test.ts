@@ -3,6 +3,8 @@ import {
   EXPORT_ATOMIC_BLOCK_CLASS,
   EXPORT_ATOMIC_GROUP_CLASS,
   EXPORT_MIN_ATOMIC_SCALE,
+  EXPORT_ATOMIC_SCALE_CONTENT_CLASS,
+  EXPORT_ATOMIC_SCALE_WRAPPER_CLASS,
   EXPORT_ATOMIC_SPACER_CLASS,
   markExportAtomicBlocks,
   prepareExportAtomicPagination,
@@ -80,6 +82,49 @@ describe('export pagination', () => {
     expect(spacer).toBeTruthy();
     expect(spacer?.style.height).toBe('20px');
     expect(spacer?.nextSibling).toBe(block);
+  });
+
+  it('treats ordinary paragraphs as atomic blocks so text is not split by page cuts', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = '一段普通正文不应该被分页线切成上下两半。';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    root.getBoundingClientRect = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 980,
+      bottom: 300,
+      width: 980,
+      height: 300,
+      toJSON: () => ({}),
+    } as DOMRect));
+    paragraph.getBoundingClientRect = vi.fn(() => {
+      const hasSpacer = Boolean(root.querySelector(`.${EXPORT_ATOMIC_SPACER_CLASS}`));
+      const top = hasSpacer ? 100 : 92;
+      return {
+        x: 0,
+        y: top,
+        top,
+        left: 0,
+        right: 480,
+        bottom: top + 24,
+        width: 480,
+        height: 24,
+        toJSON: () => ({}),
+      } as DOMRect;
+    });
+
+    await prepareExportAtomicPagination(root, 100);
+
+    const spacer = root.querySelector<HTMLElement>(`.${EXPORT_ATOMIC_SPACER_CLASS}`);
+    expect(paragraph.classList.contains(EXPORT_ATOMIC_BLOCK_CLASS)).toBe(true);
+    expect(spacer).toBeTruthy();
+    expect(spacer?.style.height).toBe('8px');
+    expect(spacer?.nextSibling).toBe(paragraph);
   });
 
   it('keeps headings attached to following visual blocks during pagination', async () => {
@@ -209,9 +254,16 @@ describe('export pagination', () => {
 
     await prepareExportAtomicPagination(root, 100);
 
+    const wrapper = root.querySelector<HTMLElement>(`.${EXPORT_ATOMIC_SCALE_WRAPPER_CLASS}`);
+    expect(wrapper).toBeTruthy();
+    expect(wrapper?.style.width).toBe('100%');
+    expect(wrapper?.style.maxWidth).toBe('100%');
+    expect(wrapper?.style.height).toBe('98px');
+    expect(wrapper?.dataset.prismExportAtomicScale).toBe('0.0817');
+    expect(image.classList.contains(EXPORT_ATOMIC_SCALE_CONTENT_CLASS)).toBe(true);
     expect(image.style.transform).toBe('scale(0.0817)');
-    expect(image.style.width).toBe('1224.4898%');
-    expect(image.style.maxHeight).toBe('98px');
+    expect(image.style.width).toBe('100%');
+    expect(image.style.maxWidth).toBe('100%');
     expect(Number(image.style.transform.match(/scale\(([^)]+)\)/)?.[1])).toBeGreaterThanOrEqual(EXPORT_MIN_ATOMIC_SCALE);
     expect(root.querySelector(`.${EXPORT_ATOMIC_SPACER_CLASS}`)).toBeNull();
   });

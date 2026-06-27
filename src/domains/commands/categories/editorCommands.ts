@@ -485,6 +485,14 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       run: () => emitEditorCommand('clearFormat'),
     },
     {
+      id: 'autoFormat',
+      category: 'format',
+      keywords: ['format', 'tidy', 'markdown', '排版'],
+      shortcuts: [{ code: 'KeyL', mod: true, shift: true }],
+      enabled: hasDocument,
+      run: () => emitEditorCommand('autoFormat'),
+    },
+    {
       id: 'moveParagraphUp',
       category: 'format',
       keywords: ['block', 'paragraph', 'move', 'up'],

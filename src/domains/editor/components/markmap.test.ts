@@ -29,13 +29,13 @@ describe('Markmap theme options', () => {
     expect(options.maxWidth).toBe(220);
   });
 
-  it('uses the dark diagram palette for dark themes', () => {
+  it('uses per-theme diagram palettes for non-MiaoYan themes', () => {
     const palette = getMarkmapPalette('nocturne');
     const carbonPalette = getMarkmapPalette('carbon');
     const options = getMarkmapOptions('nocturne');
 
-    expect(palette[0]).toBe('#54C59F');
-    expect(carbonPalette[0]).toBe('#54C59F');
-    expect(options.color({ state: { depth: 0 } })).toBe('#54C59F');
+    expect(palette[0]).toBe('#D6A84F');
+    expect(carbonPalette[0]).toBe('#7DD3FC');
+    expect(options.color({ state: { depth: 0 } })).toBe('#D6A84F');
   });
 });
