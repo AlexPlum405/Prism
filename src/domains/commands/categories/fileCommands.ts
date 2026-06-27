@@ -4,6 +4,7 @@ import {
   revealPathInFileManager,
 } from '../../../platform/tauri/opener';
 import { openPrismWindow } from '../../../lib/openWindow';
+import { executeFileAction } from '../../../lib/fileActions';
 import { openSelectedDocument } from '../../../lib/openDocumentFlow';
 import {
   createDocumentFileSession,
@@ -17,7 +18,12 @@ import {
   resolveMarkdownTemplateContent,
   type MarkdownTemplateId,
 } from '../../editor/extensions/templates';
-import { DOCUMENT_FILE_FILTERS, addRecentFile, basename } from '../../workspace/services';
+import {
+  DOCUMENT_FILE_FILTERS,
+  addRecentFile,
+  basename,
+  dirname,
+} from '../../workspace/services';
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
@@ -55,12 +61,31 @@ function emitEditorCommand(command: string, detail: Record<string, unknown> = {}
 }
 
 async function handleNew(context: CommandContext): Promise<void> {
-  if (!context.documentStore.currentDocument) {
-    context.documentStore.createNewDocument();
+  const doc = context.documentStore.currentDocument;
+  if (doc?.isDirty && !doc.path && !context.requestSavePath) {
+    context.showToast?.(t('command.savePanelUnavailable'));
     return;
   }
 
-  await openPrismWindow({ newDocument: true });
+  if (doc?.isDirty) {
+    await handleSave(context);
+  }
+
+  const currentDocumentDir = doc?.path ? dirname(doc.path) : null;
+  const targetDir = currentDocumentDir || context.workspaceStore.rootPath;
+  if (!targetDir) {
+    context.showToast?.(t('file.noWorkspace'));
+    return;
+  }
+
+  await executeFileAction({
+    action: 'newFile',
+    path: targetDir,
+  }, {
+    documentStore: context.documentStore,
+    showToast: context.showToast,
+    workspaceStore: context.workspaceStore,
+  });
 }
 
 function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: CommandContext): void {
@@ -259,7 +284,7 @@ export function createFileCommands(): CommandDefinition[] {
       id: 'newWindow',
       category: 'window',
       shortcuts: [{ code: 'KeyN', mod: true, shift: true }],
-      run: () => openPrismWindow({ emptyWindow: true }),
+      run: () => openPrismWindow({}),
     },
     {
       id: 'open',

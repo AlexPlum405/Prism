@@ -3,24 +3,40 @@ use std::{path::Path, sync::Mutex};
 use tauri::{Emitter, Manager, State};
 
 #[derive(Default)]
-pub struct PendingFiles(Mutex<Vec<String>>);
+pub struct PendingFiles {
+    files: Mutex<Vec<String>>,
+    workspace_path: Mutex<Option<String>>,
+}
 
 impl PendingFiles {
     fn push_paths(&self, paths: Vec<String>) {
-        self.0.lock().unwrap().extend(paths);
+        self.files.lock().unwrap().extend(paths);
     }
 
     fn is_empty(&self) -> bool {
-        self.0.lock().unwrap().is_empty()
+        self.files.lock().unwrap().is_empty()
+    }
+
+    fn set_workspace_path(&self, path: String) {
+        *self.workspace_path.lock().unwrap() = Some(path);
+    }
+
+    fn take_workspace_path(&self) -> Option<String> {
+        self.workspace_path.lock().unwrap().take()
     }
 }
 
 #[tauri::command]
 pub fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
-    let mut files = state.0.lock().unwrap();
+    let mut files = state.files.lock().unwrap();
     let result = files.clone();
     files.clear();
     result
+}
+
+#[tauri::command]
+pub fn get_pending_workspace_path(state: State<PendingFiles>) -> Option<String> {
+    state.take_workspace_path()
 }
 
 pub fn has_pending_files(app: &tauri::App) -> bool {
@@ -36,6 +52,15 @@ pub fn queue_pending_files(app: &mut tauri::App, paths: Vec<String>) {
     let state: State<PendingFiles> = app.state();
     state.push_paths(paths.clone());
     let _ = app.emit("file-opened", &paths);
+}
+
+pub fn queue_pending_workspace_path(app: &mut tauri::App, path: String) {
+    if path.is_empty() {
+        return;
+    }
+
+    let state: State<PendingFiles> = app.state();
+    state.set_workspace_path(path);
 }
 
 pub fn register_startup_files(app: &mut tauri::App) {
@@ -58,7 +83,7 @@ pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
         );
         if !paths.is_empty() {
             let state: State<PendingFiles> = app.state();
-            state.0.lock().unwrap().extend(paths.clone());
+            state.files.lock().unwrap().extend(paths.clone());
             let _ = app.emit("file-opened", &paths);
         }
     }

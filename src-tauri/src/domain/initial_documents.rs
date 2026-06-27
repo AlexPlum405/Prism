@@ -7,10 +7,10 @@ use serde::Serialize;
 
 use crate::domain::error::{PrismCommandError, PrismResult};
 
-pub const INITIAL_DOCUMENTS_MARKER_FILENAME: &str = "initial-documents-v1.json";
+pub const INITIAL_DOCUMENTS_MARKER_FILENAME: &str = "initial-documents-v2.json";
 pub const INITIAL_DOCUMENTS_TARGET_DIRNAME: &str = "Prism";
 
-const WELCOME_DOCUMENT_PARTS: &[&str] = &["Notes", "欢迎使用.md"];
+const WELCOME_DOCUMENT_PARTS: &[&str] = &["Examples", "Prism Markdown 语法指南.md"];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InitialDocumentsSeedResult {
@@ -220,14 +220,22 @@ mod tests {
         let resource_dir = root.join("resource");
         let documents_dir = root.join("documents");
         let app_data_dir = root.join("app-data");
-        let notes_dir = resource_dir.join("Notes");
-        fs::create_dir_all(&notes_dir).unwrap();
-        fs::write(notes_dir.join("欢迎使用.md"), "# Welcome from bundle\n").unwrap();
+        let examples_dir = resource_dir.join("Examples");
+        fs::create_dir_all(&examples_dir).unwrap();
+        fs::write(
+            examples_dir.join("Prism Markdown 语法指南.md"),
+            "# Guide from bundle\n",
+        )
+        .unwrap();
         fs::write(resource_dir.join("介绍 Prism.md"), "# Intro\n").unwrap();
 
-        let target_notes_dir = documents_dir.join("Prism").join("Notes");
-        fs::create_dir_all(&target_notes_dir).unwrap();
-        fs::write(target_notes_dir.join("欢迎使用.md"), "# User edited\n").unwrap();
+        let target_examples_dir = documents_dir.join("Prism").join("Examples");
+        fs::create_dir_all(&target_examples_dir).unwrap();
+        fs::write(
+            target_examples_dir.join("Prism Markdown 语法指南.md"),
+            "# User edited\n",
+        )
+        .unwrap();
 
         let result = seed_initial_documents_at(&resource_dir, &documents_dir, &app_data_dir)
             .unwrap()
@@ -236,7 +244,7 @@ mod tests {
         assert_eq!(result.copied_files, 1);
         assert_eq!(result.skipped_files, 1);
         assert_eq!(
-            fs::read_to_string(target_notes_dir.join("欢迎使用.md")).unwrap(),
+            fs::read_to_string(target_examples_dir.join("Prism Markdown 语法指南.md")).unwrap(),
             "# User edited\n",
         );
         assert_eq!(
@@ -246,7 +254,7 @@ mod tests {
         assert!(marker_path(&app_data_dir).exists());
         assert_eq!(
             result.welcome_document_path,
-            Some(target_notes_dir.join("欢迎使用.md")),
+            Some(target_examples_dir.join("Prism Markdown 语法指南.md")),
         );
 
         fs::remove_dir_all(root).unwrap();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { ViewModeSwitch } from '../../domains/document/components/ViewModeSwitch';
 import { getRuntimePlatform } from '../../domains/workspace/services';
@@ -9,6 +9,7 @@ import styles from './TitleBar.module.css';
 interface TitleBarProps {
   docName: string;
   isDirty?: boolean;
+  onRenameDocument?: (name: string) => void | Promise<void>;
   saveError?: string | null;
   saveStatus?: DocumentSaveStatus;
 }
@@ -86,14 +87,50 @@ function getSaveFeedback(
 export function TitleBar({
   docName,
   isDirty = false,
+  onRenameDocument,
   saveError = null,
   saveStatus,
 }: TitleBarProps) {
   const { t } = useI18n();
   const [window] = useState(() => getSafeWindowControls());
   const displayDocName = docName.replace(/\.md$/i, '');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(displayDocName);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const effectiveSaveStatus = saveStatus ?? (isDirty ? 'dirty' : 'saved');
   const saveFeedback = getSaveFeedback(effectiveSaveStatus, saveError, t);
+
+  useEffect(() => {
+    if (!isRenaming) setRenameDraft(displayDocName);
+  }, [displayDocName, isRenaming]);
+
+  useEffect(() => {
+    if (!isRenaming) return;
+    renameInputRef.current?.focus();
+    renameInputRef.current?.select();
+  }, [isRenaming]);
+
+  const startRename = () => {
+    if (!onRenameDocument) return;
+    setRenameDraft(displayDocName);
+    setIsRenaming(true);
+  };
+
+  const cancelRename = () => {
+    setRenameDraft(displayDocName);
+    setIsRenaming(false);
+  };
+
+  const commitRename = () => {
+    const nextName = renameDraft.trim();
+    setIsRenaming(false);
+    if (!nextName || nextName === displayDocName) {
+      setRenameDraft(displayDocName);
+      return;
+    }
+
+    void onRenameDocument?.(nextName);
+  };
 
   const handleMinimize = async () => {
     if (!window) return;
@@ -118,7 +155,41 @@ export function TitleBar({
           <div className={styles.brand}>
             <div className={styles.titleGroup}>
               <div className={styles.title}>
-                <span className={styles.docName}>{displayDocName}</span>
+                {isRenaming ? (
+                  <input
+                    ref={renameInputRef}
+                    className={styles.renameInput}
+                    value={renameDraft}
+                    aria-label={t('titlebar.renameDocument')}
+                    onBlur={commitRename}
+                    onChange={(event) => setRenameDraft(event.target.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        commitRename();
+                      }
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelRename();
+                      }
+                    }}
+                  />
+                ) : onRenameDocument ? (
+                  <button
+                    type="button"
+                    className={styles.docNameButton}
+                    title={t('titlebar.renameDocument')}
+                    aria-label={t('titlebar.renameDocument')}
+                    onClick={startRename}
+                    onMouseDown={(event) => event.stopPropagation()}
+                  >
+                    {displayDocName}
+                  </button>
+                ) : (
+                  <span className={styles.docName}>{displayDocName}</span>
+                )}
                 {saveFeedback && (
                   <span
                     className={`${styles.saveBadge} ${styles[saveFeedback.tone]}`}
@@ -129,8 +200,6 @@ export function TitleBar({
                     <span className={styles.saveBadgeLabel}>{saveFeedback.label}</span>
                   </span>
                 )}
-                <span className={styles.sep}>—</span>
-                <span className={styles.app}>Prism</span>
               </div>
             </div>
           </div>
@@ -142,7 +211,41 @@ export function TitleBar({
             <ViewModeSwitch flushStart />
             <div className={`${styles.titleGroup} ${styles.windowsTitleGroup}`}>
               <div className={`${styles.title} ${styles.windowsTitle}`}>
-                <span className={styles.docName}>{displayDocName}</span>
+                {isRenaming ? (
+                  <input
+                    ref={renameInputRef}
+                    className={styles.renameInput}
+                    value={renameDraft}
+                    aria-label={t('titlebar.renameDocument')}
+                    onBlur={commitRename}
+                    onChange={(event) => setRenameDraft(event.target.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        commitRename();
+                      }
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelRename();
+                      }
+                    }}
+                  />
+                ) : onRenameDocument ? (
+                  <button
+                    type="button"
+                    className={styles.docNameButton}
+                    title={t('titlebar.renameDocument')}
+                    aria-label={t('titlebar.renameDocument')}
+                    onClick={startRename}
+                    onMouseDown={(event) => event.stopPropagation()}
+                  >
+                    {displayDocName}
+                  </button>
+                ) : (
+                  <span className={styles.docName}>{displayDocName}</span>
+                )}
                 {saveFeedback && (
                   <span
                     className={`${styles.saveBadge} ${styles[saveFeedback.tone]}`}

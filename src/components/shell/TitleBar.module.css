@@ -108,6 +108,47 @@
   text-overflow: ellipsis;
 }
 
+.docNameButton {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  color: var(--c-void);
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.docNameButton:hover {
+  color: var(--c-accent);
+}
+
+.renameInput {
+  width: min(260px, 42vw);
+  min-width: 72px;
+  height: 22px;
+  margin: 0;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 34%, var(--c-fog));
+  border-radius: 5px;
+  outline: none;
+  color: var(--c-void);
+  background: var(--c-canvas);
+  font: inherit;
+  letter-spacing: inherit;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 .sep {
   color: var(--c-ash);
   margin: 0 8px;
@@ -222,6 +263,24 @@
   color: var(--miaoyan-text);
   font-weight: 400;
   min-width: 0;
+}
+
+:global(html[data-content-theme='miaoyan']) .docNameButton {
+  color: var(--miaoyan-text);
+  font-family: var(--miaoyan-font);
+  font-weight: 400;
+}
+
+:global(html[data-content-theme='miaoyan']) .docNameButton:hover {
+  color: var(--miaoyan-link);
+}
+
+:global(html[data-content-theme='miaoyan']) .renameInput {
+  height: 20px;
+  border-color: color-mix(in srgb, var(--miaoyan-link) 30%, var(--miaoyan-divider));
+  background: var(--miaoyan-panel);
+  color: var(--miaoyan-text);
+  font-family: var(--miaoyan-font);
 }
 
 :global(html[data-content-theme='miaoyan']) .saveBadge {

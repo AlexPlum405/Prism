@@ -1,16 +1,19 @@
 import { useEffect } from 'react';
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 import { exists } from '../platform/tauri/fileSystem';
+import { documentDir } from '../platform/tauri/path';
 import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
-import { getRuntimePlatform } from '../domains/workspace/services';
+import { getRuntimePlatform, joinPath } from '../domains/workspace/services';
 import { grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
 import { openDocumentInCurrentWindow, openDocumentInNewWindow } from '../lib/openDocumentFlow';
 
 const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800] as const;
 const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
+const DEFAULT_INITIAL_WORKSPACE_NAME = 'Prism';
+const DEFAULT_INITIAL_GUIDE_PARTS = ['Examples', 'Prism Markdown 语法指南.md'] as const;
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -20,6 +23,16 @@ function getDefaultPendingFilePollDelays() {
   return getRuntimePlatform() === 'mac'
     ? MACOS_PENDING_FILE_POLL_DELAYS
     : DEFAULT_PENDING_FILE_POLL_DELAYS;
+}
+
+async function getDefaultInitialTarget() {
+  const root = joinPath(await documentDir(), DEFAULT_INITIAL_WORKSPACE_NAME);
+  const guide = DEFAULT_INITIAL_GUIDE_PARTS.reduce(
+    (path, part) => joinPath(path, part),
+    root,
+  );
+
+  return { guide, root };
 }
 
 export interface UseBootstrapOptions {
@@ -64,7 +77,6 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     const params = new URLSearchParams(window.location.search);
     const filePath = params.get('file');
     const folderPath = params.get('folder');
-    const shouldOpenEmptyWindow = params.get('empty') === '1';
     const shouldCreateNewDocument = params.get('new') === '1';
 
     const openFile = async (
@@ -94,10 +106,27 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
       return true;
     };
 
-    const openPendingStartupFile = async () => {
-      const pendingFiles = await invokeNativeCommand<string[]>('get_pending_files');
+    const openDefaultInitialWorkspace = async () => {
+      const target = await getDefaultInitialTarget();
+      const openedWorkspace = await openFolder(target.root);
       if (cancelled || useDocumentStore.getState().currentDocument) return true;
-      if (pendingFiles.length === 0) return false;
+      if (!openedWorkspace) return false;
+      if (!(await exists(target.guide))) return true;
+      return openFile(target.guide);
+    };
+
+    const openPendingStartupFile = async () => {
+      const [pendingFiles, pendingWorkspacePath] = await Promise.all([
+        invokeNativeCommand<string[]>('get_pending_files'),
+        invokeNativeCommand<string | null>('get_pending_workspace_path').catch(() => null),
+      ]);
+      if (cancelled || useDocumentStore.getState().currentDocument) return true;
+      const workspacePath = typeof pendingWorkspacePath === 'string' && pendingWorkspacePath.trim()
+        ? pendingWorkspacePath
+        : null;
+      const openedWorkspace = workspacePath ? await openFolder(workspacePath) : false;
+      if (cancelled || useDocumentStore.getState().currentDocument) return true;
+      if (pendingFiles.length === 0) return openedWorkspace;
 
       const [firstFile, ...additionalFiles] = pendingFiles;
       const opened = await openFile(firstFile);
@@ -158,9 +187,13 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
         return;
       }
 
-      if (shouldOpenEmptyWindow) return;
-
       if (await openPendingStartupFileBeforeSessionRestore()) return;
+
+      try {
+        if (await openDefaultInitialWorkspace()) return;
+      } catch (err) {
+        console.error('[useBootstrap] Failed to load default Prism workspace:', err);
+      }
 
       if (!restoreLastSession || !lastSession) return;
 

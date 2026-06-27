@@ -5,10 +5,15 @@ import { DEFAULT_SETTINGS } from '../../settings/types';
 
 const openPrismWindowMock = vi.hoisted(() => vi.fn(async () => undefined));
 const openSelectedDocumentMock = vi.hoisted(() => vi.fn(async () => undefined));
+const executeFileActionMock = vi.hoisted(() => vi.fn(async () => undefined));
 const openDialogMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../lib/openWindow', () => ({
   openPrismWindow: openPrismWindowMock,
+}));
+
+vi.mock('../../../lib/fileActions', () => ({
+  executeFileAction: executeFileActionMock,
 }));
 
 vi.mock('../../../lib/openDocumentFlow', () => ({
@@ -70,7 +75,7 @@ describe('file commands', () => {
     vi.clearAllMocks();
   });
 
-  it('opens an explicit blank document window when creating a new document from an occupied window', async () => {
+  it('creates a new file beside the current document instead of opening a new window', async () => {
     const createNewDocument = vi.fn();
     const context = createContext({
       documentStore: {
@@ -95,13 +100,39 @@ describe('file commands', () => {
     await getFileCommand('new').run(context);
 
     expect(createNewDocument).not.toHaveBeenCalled();
-    expect(openPrismWindowMock).toHaveBeenCalledWith({ newDocument: true });
+    expect(openPrismWindowMock).not.toHaveBeenCalled();
+    expect(executeFileActionMock).toHaveBeenCalledWith(
+      { action: 'newFile', path: '/tmp' },
+      expect.objectContaining({
+        documentStore: context.documentStore,
+        workspaceStore: context.workspaceStore,
+      }),
+    );
   });
 
-  it('creates empty shell windows without forcing a new document', async () => {
+  it('creates a new file at the workspace root when no document is open', async () => {
+    const context = createContext({
+      workspaceStore: {
+        fileTree: [],
+        rootPath: '/repo',
+      } as unknown as CommandContext['workspaceStore'],
+    });
+
+    await getFileCommand('new').run(context);
+
+    expect(executeFileActionMock).toHaveBeenCalledWith(
+      { action: 'newFile', path: '/repo' },
+      expect.objectContaining({
+        documentStore: context.documentStore,
+        workspaceStore: context.workspaceStore,
+      }),
+    );
+  });
+
+  it('creates default workspace windows without forcing an empty shell', async () => {
     await getFileCommand('newWindow').run(createContext());
 
-    expect(openPrismWindowMock).toHaveBeenCalledWith({ emptyWindow: true });
+    expect(openPrismWindowMock).toHaveBeenCalledWith({});
   });
 
   it('opens dialog selections through the shared document flow', async () => {

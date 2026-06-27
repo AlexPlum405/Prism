@@ -27,6 +27,25 @@ export { shouldShowRecoveryPrompt };
 const SettingsModal = lazy(() => import('./components/shell/SettingsModal')
   .then((module) => ({ default: module.SettingsModal })));
 
+function getFilenameExtension(name: string): string {
+  const index = name.lastIndexOf('.');
+  if (index <= 0 || index === name.length - 1) return '';
+  return name.slice(index);
+}
+
+function resolveTitlebarRenameName(currentName: string, nextVisibleName: string): string | null {
+  const trimmedName = nextVisibleName.trim();
+  if (!trimmedName) return null;
+
+  const currentExtension = getFilenameExtension(currentName);
+  const nextExtension = getFilenameExtension(trimmedName);
+  if (currentExtension && !nextExtension) {
+    return `${trimmedName}${currentExtension}`;
+  }
+
+  return trimmedName;
+}
+
 function App() {
   const {
     currentDocument,
@@ -120,6 +139,18 @@ function App() {
     requestMarkdownSavePath,
     showToast,
   });
+
+  const handleTitlebarRename = useCallback(async (name: string) => {
+    if (!currentDocument?.path) return;
+    const nextName = resolveTitlebarRenameName(currentDocument.name, name);
+    if (!nextName) return;
+
+    await handleFileAction({
+      action: 'commitRename',
+      name: nextName,
+      path: currentDocument.path,
+    });
+  }, [currentDocument?.name, currentDocument?.path, handleFileAction]);
 
   const documentInsight = useAppDocumentInsightModel({
     currentDocument,
@@ -221,6 +252,7 @@ function App() {
       <TitleBar
         docName={titleDocName}
         isDirty={titleDirty}
+        onRenameDocument={currentDocument?.path ? handleTitlebarRename : undefined}
         saveError={currentDocument?.saveError ?? null}
         saveStatus={currentDocument?.saveStatus}
       />

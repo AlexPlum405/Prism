@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@tauri-apps/api/window', () => ({
@@ -11,6 +11,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 type RenderTitleBarProps = {
   isDirty?: boolean;
+  onRenameDocument?: (name: string) => void | Promise<void>;
   saveError?: string | null;
   saveStatus?: 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict';
 };
@@ -35,6 +36,14 @@ afterEach(() => {
 });
 
 describe('TitleBar platform layout', () => {
+  it('keeps macOS titles focused on the document name without the app suffix', async () => {
+    await renderTitleBarOn('MacIntel');
+
+    expect(screen.getByText('proposal')).toBeInTheDocument();
+    expect(screen.queryByText('proposal.md')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prism')).not.toBeInTheDocument();
+  });
+
   it('keeps Windows view controls on the left with the extensionless document title beside them', async () => {
     const { container } = await renderTitleBarOn('Win32');
 
@@ -48,6 +57,20 @@ describe('TitleBar platform layout', () => {
     expect(screen.queryByText('proposal.md')).not.toBeInTheDocument();
     expect(screen.queryByText('P')).not.toBeInTheDocument();
     expect(screen.queryByText('Prism')).not.toBeInTheDocument();
+  });
+
+  it('allows renaming the current document from the filename area', async () => {
+    const onRenameDocument = vi.fn();
+    await renderTitleBarOn('MacIntel', { onRenameDocument });
+
+    fireEvent.click(screen.getByRole('button', { name: '重命名当前文稿' }));
+    const input = screen.getByRole('textbox', { name: '重命名当前文稿' });
+    expect(input).toHaveValue('proposal');
+
+    fireEvent.change(input, { target: { value: 'renamed' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onRenameDocument).toHaveBeenCalledWith('renamed');
   });
 
   it('shows save feedback beside the document title instead of in the status bar', async () => {

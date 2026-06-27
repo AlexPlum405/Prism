@@ -89,6 +89,11 @@ fn seed_initial_documents(app: &mut tauri::App) {
                 return;
             }
 
+            commands::startup_files::queue_pending_workspace_path(
+                app,
+                result.target_dir.to_string_lossy().to_string(),
+            );
+
             if let Some(welcome_document_path) = result.welcome_document_path {
                 commands::startup_files::queue_pending_files(
                     app,
@@ -134,6 +139,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::startup_files::get_pending_files,
+            commands::startup_files::get_pending_workspace_path,
             commands::pandoc::detect_pandoc,
             commands::pandoc::render_citations_with_pandoc,
             commands::document_io::get_file_snapshot,
