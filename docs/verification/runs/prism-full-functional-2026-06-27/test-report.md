@@ -11,7 +11,7 @@ Bundle ID：com.prism.editor.v1
 
 测试继续推进，并在 2026-06-29 恢复了真实 `/Applications/Prism.app` + Computer Use 验证。旧结论“Computer Use 不可用、真实 App 完全不可测”不再成立：本轮真实窗口中已验证编辑/预览/分栏、快速打开、全文搜索、替换、设置六个分区、完整主菜单、文件树菜单、帮助弹窗、知识面板、图表预览、任务列表与脚注等功能。
 
-截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 229 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续 `17` 到 `27` 的安装版专项截图目录。
+截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 231 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续 `17` 到 `28` 的安装版专项截图目录。
 
 2026-06-29 继续补测文件类型与导出：Markdown fixture 可正常打开；但真实 App 通过系统路径打开 JSON/SQL/TXT 会进入空白白屏窗口，`PRISM-FF-008` 已从 browser mock Pass 改为真实 App Fail。错误文档 preflight 已真实阻断 HTML 导出；干净 Markdown fixture 的 HTML/PDF/PNG/DOCX 四种真实导出已完成基础验收，PNG 保持 `极致 4x` 输出为 `4160x4800`，DOCX 通过 zip 结构和 `textutil` 正文提取校验。
 
@@ -77,6 +77,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 追加 `P0-STARTUP-003` 启动/新窗口默认指南安装版复测：冷启动 `/Applications/Prism.app` 后只有 1 个窗口，AX 文本包含 `Examples` 和 `# 📖 Prism Markdown 语法指南`；点击系统菜单 `File > 新建窗口` 后窗口数变为 2，两个窗口的 AX 文本均包含默认指南内容，未出现“未命名”空文稿。证据见 `PRISM-CU-271/272`、`screenshots/27-installed-startup-guide-smoke/` 和 `logs/computer-use-real-app/startup-new-window-guide-installed-retest-20260630.md`。
 
+2026-06-30 追加 `P0-KNOWLEDGE-001/002` 反链与关系图谱安装版复测：打开 `fixtures/computer-use-real-app/real-wiki-target.md` 后，`导航 > 反向链接` 可列出 `Link Click Fixture` 来源、片段 `Open [[real-wiki-target]] from preview.` 和行列号 `7:6`；状态栏 `查看关系图谱 (⌥⌘G)` 按钮可打开图谱弹窗，当前文档范围显示 `Real Wiki Target`、`real-links-click`、`real-links-click (副本)` 3 个节点，`Real Wiki Target` 为 `0 出 / 2 入`。证据见 `PRISM-CU-273/274` 和 `screenshots/28-installed-backlinks-graph-smoke/`；旧 `PRISM-FF-055/056/057` 与 `PRISM-CU-044/072` 失败截图保留为历史 pre-fix 证据。
+
 ## 执行统计
 
 - 总用例：168
@@ -92,10 +94,10 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1 执行：Pass 29 / Fail 14 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：411
-- Manifest 真实 Computer Use 截图引用：229
+- 当前截图文件总数：413
+- Manifest 真实 Computer Use 截图引用：231
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：229（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`）
+- 真实 Computer Use/安装版 UI 截图：231（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`）
 - 单元/集成测试批次：6
 - 单元/集成测试文件通过：56
 - 单元/集成测试断言通过：510
@@ -174,8 +176,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 已重新打包替换安装版，`PRISM-CU-239` 真实 UI 复测确认默认指南无 `ERROR`。
 2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。2026-06-30 安装版 smoke 和正式截图复测已覆盖 JSON/SQL/TXT 不白屏，证据见 `PRISM-CU-268/269/270`。
-3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。
-4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。
+3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。2026-06-30 安装版真实复测 `PRISM-CU-273` 已确认反链来源、片段和行列号可见。
+4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。2026-06-30 安装版真实复测 `PRISM-CU-274` 已确认状态栏图谱入口可点击并打开 3 节点图谱；`PRISM-CU-214` 到 `PRISM-CU-217` 覆盖图谱交互。
 5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版真实复测 `PRISM-CU-271/272` 已覆盖冷启动和 `File > 新建窗口` 直接打开默认指南。
 6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。2026-06-30 已重新打包替换安装版，`PRISM-CU-249` 真实 UI 复测确认冲突弹窗和处理入口可见。
 7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。2026-06-30 安装版真实复测 `PRISM-CU-250/251` 确认入口可见且面板可打开。

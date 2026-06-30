@@ -4644,6 +4644,46 @@
       ],
       "expected": "新建窗口应直接打开默认 Prism 指南，不应先显示空指引页或未命名空文稿。",
       "notes": "AX dumps: logs/computer-use-real-app/new-window-guide-ax-dump-window-1-20260630.txt and new-window-guide-ax-dump-window-2-20260630.txt。"
+    },
+    {
+      "id": "PRISM-CU-273",
+      "date": "2026-06-30",
+      "area": "链接、反链与图谱",
+      "feature": "反链面板安装版复测",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-wiki-target.md",
+      "steps": [
+        "打开 real-wiki-target.md，工作区为 fixtures/computer-use-real-app",
+        "点击自定义菜单 导航 > 反向链接",
+        "保存真实 Prism 窗口级截图"
+      ],
+      "expected": "反链面板列出指向当前文档的来源文件、片段和行列号。",
+      "actual": "反链面板显示 Link Click Fixture 来源，片段为 Open [[real-wiki-target]] from preview.，行列号 7:6 可见。",
+      "status": "Pass",
+      "screenshot": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-273-backlinks-real-wiki-target-pass.png",
+      "issueRef": "P0-KNOWLEDGE-001",
+      "notes": "真实 /Applications/Prism.app + Computer Use 复测；旧 PRISM-FF-055/PRISM-CU-072 失败截图保留为 pre-fix/历史证据。",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels"
+    },
+    {
+      "id": "PRISM-CU-274",
+      "date": "2026-06-30",
+      "area": "链接、反链与图谱",
+      "feature": "关系图谱入口安装版复测",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-wiki-target.md",
+      "steps": [
+        "打开 real-wiki-target.md，确认状态栏关系图谱按钮可见",
+        "点击状态栏 查看关系图谱 (⌥⌘G)",
+        "保存真实 Prism 窗口级截图"
+      ],
+      "expected": "关系图谱入口可用，面板展示当前文档和入链节点。",
+      "actual": "状态栏关系图谱按钮可点击；关系图谱弹窗打开，当前文档范围显示 Real Wiki Target、real-links-click、real-links-click (副本) 3 个节点，Real Wiki Target 显示 0 出 / 2 入。",
+      "status": "Pass",
+      "screenshot": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png",
+      "issueRef": "P0-KNOWLEDGE-002",
+      "notes": "同批次补充安装版证据；PRISM-CU-214 到 PRISM-CU-217 仍作为图谱搜索、聚焦和拖拽交互通过证据。",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels"
     }
   ],
   "testCases": [
@@ -8199,10 +8239,10 @@
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 411,
-    "manifestScreenshots": 980,
-    "uniqueManifestScreenshots": 434,
-    "computerUseRealAppEvidence": 229
+    "screenshotFiles": 413,
+    "manifestScreenshots": 984,
+    "uniqueManifestScreenshots": 436,
+    "computerUseRealAppEvidence": 231
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9519,6 +9559,14 @@
     {
       "file": "screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png",
       "testCaseId": "PRISM-CU-260"
+    },
+    {
+      "file": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-273-backlinks-real-wiki-target-pass.png",
+      "testCaseId": "PRISM-CU-273"
+    },
+    {
+      "file": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png",
+      "testCaseId": "PRISM-CU-274"
     }
   ],
   "unitTestRuns": [
@@ -9854,6 +9902,22 @@
         "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/commands/categories/fileCommands.test.ts passed"
       ],
       "notes": "Historical PRISM-CU-218 failure remains as pre-fix evidence. PRISM-CU-271/272 are post-fix installed-app pass evidence."
+    },
+    {
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-KNOWLEDGE-001",
+        "P0-KNOWLEDGE-002"
+      ],
+      "evidence": [
+        "PRISM-CU-273",
+        "PRISM-CU-274",
+        "PRISM-CU-214",
+        "PRISM-CU-215",
+        "PRISM-CU-216",
+        "PRISM-CU-217"
+      ],
+      "notes": "No new source edits were required in this batch; current installed-app evidence confirms backlinks and relation graph are usable for the real-wiki-target/link-click fixture workspace. Historical PRISM-FF-055/056/057 and PRISM-CU-044/072 failures remain as pre-fix evidence."
     }
   ],
   "appSmokeRuns": [

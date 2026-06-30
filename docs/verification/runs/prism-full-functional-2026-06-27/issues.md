@@ -601,6 +601,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-072-knowledge-backlinks-empty-window.png`
   - `/tmp/prism-full-functional-test-workspace/notes/backlink-source.md`
 - 备注：2026-06-29 真实 `/Users/Alex/Documents/Prism` 工作区中也能打开反链面板，但当前指南文档显示空状态；该真实截图只能证明空状态 UI 可见，不能证明测试工作区反链索引问题已解决。
+- 修复进展：2026-06-30 使用真实 `/Applications/Prism.app` 复测 `fixtures/computer-use-real-app/real-wiki-target.md`，工作区内 `real-links-click.md` 和 `real-links-click (副本).md` 均通过 `[[real-wiki-target]]` 指向当前文档。点击 `导航 > 反向链接` 后，反链面板显示 `Link Click Fixture` 来源，片段为 `Open [[real-wiki-target]] from preview.`，行列号 `7:6` 可见。安装版证据见 `screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-273-backlinks-real-wiki-target-pass.png`，旧失败截图保留为 pre-fix 证据。
 
 ### P0-KNOWLEDGE-002 关系图谱入口未能打开图谱面板
 
@@ -621,6 +622,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-044-menu-navigation-graph-disabled-window.png`
   - `logs/click-skip.log`
 - 备注：不能把现有 `PRISM-FF-057` 截图当作图谱通过证据，它只是失败后的底层预览页。
+- 修复进展：2026-06-30 安装版真实复测确认当前文档状态栏显示 `查看关系图谱 (⌥⌘G)` 按钮，点击后关系图谱弹窗可打开；当前文档范围显示 `Real Wiki Target`、`real-links-click`、`real-links-click (副本)` 3 个节点，`Real Wiki Target` 显示 `0 出 / 2 入`。证据见 `screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png`；此前 `PRISM-CU-214` 到 `PRISM-CU-217` 已覆盖图谱搜索空态、节点聚焦和拖拽稳定性。
 
 ## 命令、搜索与快捷键
 
