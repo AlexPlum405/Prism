@@ -1,0 +1,251 @@
+items=208
+AXGroup | missing value | missing value
+AXGroup | missing value | missing value
+AXScrollArea | missing value |
+AXWebArea | missing value |
+AXButton | 重命名当前文稿 | missing value
+AXButton | 编辑 | missing value
+AXButton | 分栏 | missing value
+AXButton | 预览 | missing value
+AXGroup | missing value |
+AXStaticText | 文件 | 文件
+AXGroup | missing value |
+AXStaticText | 编辑 | 编辑
+AXGroup | missing value |
+AXStaticText | 插入 | 插入
+AXGroup | missing value |
+AXStaticText | 格式 | 格式
+AXGroup | missing value |
+AXStaticText | 导航 | 导航
+AXGroup | missing value |
+AXStaticText | 视图 | 视图
+AXGroup | missing value |
+AXStaticText | 导出 | 导出
+AXGroup | missing value |
+AXStaticText | 窗口 | 窗口
+AXGroup | missing value |
+AXStaticText | 帮助 | 帮助
+AXGroup | missing value |
+AXButton | 文件 | missing value
+AXButton | 大纲 | missing value
+AXGroup | missing value |
+AXStaticText | › | ›
+AXStaticText | Examples | Examples
+AXGroup | missing value |
+AXStaticText | › | ›
+AXStaticText | Guide | Guide
+AXGroup | missing value |
+AXStaticText | › | ›
+AXStaticText | Ideas | Ideas
+AXGroup | missing value |
+AXStaticText | › | ›
+AXStaticText | Notes | Notes
+AXGroup | missing value |
+AXGroup | missing value |
+AXTextArea | missing value | # 📖 Prism Markdown 语法指南
+
+_以《山海经·精卫填海》的执着，展现 Markdown 的结构之美_
+
+---
+
+## 目录
+
+- [标题格式](#标题格式)
+- [文本格式](#文本格式)
+- [列表](#列表)
+- [链接与图片](#链接与图片)
+- [表格](#表格)
+- [代码](#代码)
+- [数学公式](#数学公式)
+- [图表 (Mermaid、PlantUML、Markmap)](#图表)
+- [引用](#引用)
+- [任务列表](#任务列表)
+- [脚注](#脚注)
+- [分隔线](#分隔线)
+
+---
+
+## 标题格式
+
+# 第一章：少女化鸟，衔石入海
+
+## 炎帝之女游于东海
+
+### 风浪忽起，归途无踪
+
+#### 精卫化形，日日衔木石
+
+##### 沧海虽阔，志不可夺
+
+###### 山河有声，万物记其名
+
+---
+
+## 文本格式
+
+**女娃**游于东海，未能归还，遂化为*精卫鸟*，名留**_山海经_**。
+
+AXGroup | missing value |
+AXStaticText | # 📖 Prism Markdown 语法指南 | # 📖 Prism Markdown 语法指南
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | _以《山海经·精卫填海》的执着，展现 Markdown 的结构之美_ | _以《山海经·精卫填海》的执着，展现 Markdown 的结构之美_
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | --- | ---
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ## 目录 | ## 目录
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 标题格式 | 标题格式
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #标题格式 | #标题格式
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 文本格式 | 文本格式
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #文本格式 | #文本格式
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 列表 | 列表
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #列表 | #列表
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 链接与图片 | 链接与图片
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #链接与图片 | #链接与图片
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 表格 | 表格
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #表格 | #表格
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 代码 | 代码
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #代码 | #代码
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 数学公式 | 数学公式
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #数学公式 | #数学公式
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 图表 (Mermaid、PlantUML、Markmap) | 图表 (Mermaid、PlantUML、Markmap)
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #图表 | #图表
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 引用 | 引用
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #引用 | #引用
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 任务列表 | 任务列表
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #任务列表 | #任务列表
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 脚注 | 脚注
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #脚注 | #脚注
+AXStaticText | ) | )
+AXGroup | missing value |
+AXStaticText | - | -
+AXStaticText | [ | [
+AXStaticText | 分隔线 | 分隔线
+AXStaticText | ] | ]
+AXStaticText | ( | (
+AXStaticText | #分隔线 | #分隔线
+AXStaticText | ) | )
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | --- | ---
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ## 标题格式 | ## 标题格式
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | # 第一章：少女化鸟，衔石入海 | # 第一章：少女化鸟，衔石入海
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ## 炎帝之女游于东海 | ## 炎帝之女游于东海
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ### 风浪忽起，归途无踪 | ### 风浪忽起，归途无踪
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | #### 精卫化形，日日衔木石 | #### 精卫化形，日日衔木石
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ##### 沧海虽阔，志不可夺 | ##### 沧海虽阔，志不可夺
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ###### 山河有声，万物记其名 | ###### 山河有声，万物记其名
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | --- | ---
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | ## 文本格式 | ## 文本格式
+AXGroup | missing value |
+AXGroup | missing value |
+AXStaticText | **女娃** | **女娃**
+AXStaticText | 游于东海，未能归还，遂化为 | 游于东海，未能归还，遂化为
+AXStaticText | *精卫鸟* | *精卫鸟*
+AXStaticText | ，名留** | ，名留**
+AXStaticText | _山海经_ | _山海经_
+AXStaticText | **。 | **。
+AXGroup | missing value |
+AXGroup | missing value |
+AXGroup | missing value |
+AXButton | missing value | missing value
+AXButton | Prism | missing value
+AXButton | missing value | missing value
+AXButton | missing value | missing value
+AXGroup | missing value |
+AXStaticText | 997 字 · 1:1 | 997 字 · 1:1
+AXStaticText | Markdown 文稿 | Markdown 文稿
+AXButton | 排版 | missing value
+AXButton | missing value | missing value
+AXButton | missing value | missing value
+AXButton | missing value | missing value
+AXButton | missing value | missing value
+AXGroup | missing value | missing value
+AXGroup | missing value | missing value
+AXButton | missing value | missing value

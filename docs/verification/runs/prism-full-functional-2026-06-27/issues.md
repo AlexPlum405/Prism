@@ -126,7 +126,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png`
 - 建议修复方向：收敛启动 bootstrap 与新窗口逻辑，避免先创建空文稿；在默认 Prism 目录存在时优先打开指南文档并同步文件树选中态。
 - 验收标准：冷启动、新建窗口、恢复窗口三条路径均直接展示指南文档；标题栏显示指南文件名，正文不出现空指引页或“未命名”空文稿。
-- 修复进展：2026-06-30 源码已修复默认窗口路径：`openNewWindow` 不再把当前 workspace folder 固定传给新窗口，默认新窗口交给 bootstrap 打开 Prism 初始目录和指南；bootstrap 在已有 currentDocument 时仍 reveal native window。`useBootstrap`、`fileActions`、`openWindow` 相关测试通过。安装版 smoke 已通过默认启动路径，证据见 `screenshots/16-installed-app-smoke/00-launch-markdown-chinese-space.png`、`screenshots/16-installed-app-smoke/01-launch-source.png`、`logs/app-smoke-installed-20260630/report.json`；补充安装版真实 UI 复测见 `screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png`，窗口直接打开默认指南且状态栏无 `ERROR`。新建窗口仍需按原用例单独复测。
+- 修复进展：2026-06-30 源码已修复默认窗口路径：`openNewWindow` 不再把当前 workspace folder 固定传给新窗口，默认新窗口交给 bootstrap 打开 Prism 初始目录和指南；bootstrap 在已有 currentDocument 时仍 reveal native window。`useBootstrap`、`fileActions`、`openWindow` 相关测试通过。安装版 smoke 已通过默认启动路径，证据见 `screenshots/16-installed-app-smoke/00-launch-markdown-chinese-space.png`、`screenshots/16-installed-app-smoke/01-launch-source.png`、`logs/app-smoke-installed-20260630/report.json`；补充安装版真实 UI 复测见 `screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png`，窗口直接打开默认指南且状态栏无 `ERROR`。2026-06-30 已追加原用例单独复测：`PRISM-CU-271` 确认冷启动直接打开 `/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md`；`PRISM-CU-272` 确认系统菜单 `File > 新建窗口` 后第二个窗口也直接打开同一默认指南，两个窗口 AX 文本均包含 `Examples` 和 `# 📖 Prism Markdown 语法指南`，未出现“未命名”空文稿。证据见 `screenshots/27-installed-startup-guide-smoke/` 和 `logs/computer-use-real-app/startup-new-window-guide-installed-retest-20260630.md`。
 
 ## 文件与工作区
 

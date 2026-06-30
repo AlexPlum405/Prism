@@ -11,13 +11,13 @@ Bundle ID：com.prism.editor.v1
 
 测试继续推进，并在 2026-06-29 恢复了真实 `/Applications/Prism.app` + Computer Use 验证。旧结论“Computer Use 不可用、真实 App 完全不可测”不再成立：本轮真实窗口中已验证编辑/预览/分栏、快速打开、全文搜索、替换、设置六个分区、完整主菜单、文件树菜单、帮助弹窗、知识面板、图表预览、任务列表与脚注等功能。
 
-截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 227 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续 `17` 到 `26` 的安装版专项截图目录。
+截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 229 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续 `17` 到 `27` 的安装版专项截图目录。
 
 2026-06-29 继续补测文件类型与导出：Markdown fixture 可正常打开；但真实 App 通过系统路径打开 JSON/SQL/TXT 会进入空白白屏窗口，`PRISM-FF-008` 已从 browser mock Pass 改为真实 App Fail。错误文档 preflight 已真实阻断 HTML 导出；干净 Markdown fixture 的 HTML/PDF/PNG/DOCX 四种真实导出已完成基础验收，PNG 保持 `极致 4x` 输出为 `4160x4800`，DOCX 通过 zip 结构和 `textutil` 正文提取校验。
 
 2026-06-29 追加复杂图表导出补测：`real-complex-diagrams-export.md` 覆盖 Mermaid、PlantUML、Markmap、本地 SVG、表格和数学公式；HTML/PDF/PNG/DOCX 均通过真实 Prism 导出并生成产物。PNG 为 `4108x11072`，保持 4x 宽度；PDF 为 2 页 A4；DOCX 为有效 Office Open XML 且包内含图表与公式媒体。该补测发现 PlantUML 顶部 `Prism` 节点文字在预览与导出中缺失，以及 PDF 孤立标题分页问题。真实 App 中 `Shift+F12` 可打开 Web Inspector，DevTools 用例从 browser mock 未覆盖修正为真实 App Pass；打印用例真实复测失败，`Cmd+P` 和文件菜单均未暴露打印；帮助菜单的 Markdown 参考外链已打开 Chrome 参考页面，剩余帮助外链尚待继续复测。
 
-`P0-STARTUP-002` 的历史“进程存在但窗口数为 0”问题已通过 2026-06-30 窗口生命周期专项重新验证：红色关闭按钮后窗口数变为 0，`open -a /Applications/Prism.app` 可恢复为 1 个窗口。启动/新窗口默认指南仍按 `P0-STARTUP-003` 单独跟踪。
+`P0-STARTUP-002` 的历史“进程存在但窗口数为 0”问题已通过 2026-06-30 窗口生命周期专项重新验证：红色关闭按钮后窗口数变为 0，`open -a /Applications/Prism.app` 可恢复为 1 个窗口。启动/新窗口默认指南按 `P0-STARTUP-003` 单独跟踪，并已在 2026-06-30 追加冷启动与 `File > 新建窗口` 安装版复测。
 
 Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可用于视觉参考和宣传素材初筛，但不能替代真实 Tauri WebView / macOS App 验证。报告中凡标注 browser mock 的 Pass，都需要与真实 App 证据区分。
 
@@ -75,6 +75,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 追加 `P0-FILE-002` 系统打开文本类文件安装版截图复测：安装版 smoke 已通过 JSON/SQL/TXT 启动不白屏，并归档正式截图 `PRISM-CU-268/269/270`。截图分别覆盖 `data.json`、`query.sql`、`plain.txt`，report 中 lastSession filePath 与目标文件一致。
 
+2026-06-30 追加 `P0-STARTUP-003` 启动/新窗口默认指南安装版复测：冷启动 `/Applications/Prism.app` 后只有 1 个窗口，AX 文本包含 `Examples` 和 `# 📖 Prism Markdown 语法指南`；点击系统菜单 `File > 新建窗口` 后窗口数变为 2，两个窗口的 AX 文本均包含默认指南内容，未出现“未命名”空文稿。证据见 `PRISM-CU-271/272`、`screenshots/27-installed-startup-guide-smoke/` 和 `logs/computer-use-real-app/startup-new-window-guide-installed-retest-20260630.md`。
+
 ## 执行统计
 
 - 总用例：168
@@ -90,10 +92,10 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1 执行：Pass 29 / Fail 14 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：409
-- Manifest 真实 Computer Use 截图引用：227
+- 当前截图文件总数：411
+- Manifest 真实 Computer Use 截图引用：229
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：227（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`）
+- 真实 Computer Use/安装版 UI 截图：229（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`）
 - 单元/集成测试批次：6
 - 单元/集成测试文件通过：56
 - 单元/集成测试断言通过：510
@@ -174,7 +176,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。2026-06-30 安装版 smoke 和正式截图复测已覆盖 JSON/SQL/TXT 不白屏，证据见 `PRISM-CU-268/269/270`。
 3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。
 4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。
-5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版 smoke 与 `PRISM-CU-239` 已覆盖启动默认文档；新建窗口仍待原用例单独复测。
+5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版真实复测 `PRISM-CU-271/272` 已覆盖冷启动和 `File > 新建窗口` 直接打开默认指南。
 6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。2026-06-30 已重新打包替换安装版，`PRISM-CU-249` 真实 UI 复测确认冲突弹窗和处理入口可见。
 7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。2026-06-30 安装版真实复测 `PRISM-CU-250/251` 确认入口可见且面板可打开。
 8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。2026-06-30 已重新打包替换安装版，`PRISM-CU-252/253/254` 确认复制、粘贴、剪切均与系统剪贴板和磁盘保存一致。
@@ -220,6 +222,6 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期已完成源码修复、换包和真实安装版复测，后续只需补更细的全屏/多显示器专项。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 manifest 中登记了 227 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 manifest 中登记了 229 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。

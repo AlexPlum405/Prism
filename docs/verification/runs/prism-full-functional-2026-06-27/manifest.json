@@ -4601,6 +4601,49 @@
       ],
       "expected": "TXT 文件应以普通文本模式打开，窗口不应白屏。",
       "notes": "证据来自本轮已通过的安装版 app-smoke；report 归档在 logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-271",
+      "issueRef": "P0-STARTUP-003",
+      "area": "启动与默认工作区",
+      "feature": "安装版冷启动直接打开默认 Prism 指南",
+      "status": "Pass",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-271-startup-default-guide-open.png",
+      "actual": "冷启动 /Applications/Prism.app 后前台进程为 com.prism.editor.v1，窗口数为 1；AX 内容包含 Examples、# 📖 Prism Markdown 语法指南，未出现“未命名”空文稿或空指引页。",
+      "steps": [
+        "退出 Prism",
+        "open -a /Applications/Prism.app",
+        "等待 bootstrap 完成",
+        "读取窗口数和 AX 文本",
+        "截图记录默认指南窗口"
+      ],
+      "expected": "冷启动应直接打开 /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md，并加载 /Users/Alex/Documents/Prism 文件树。",
+      "notes": "AX dump: logs/computer-use-real-app/startup-guide-ax-dump-20260630.txt。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-272",
+      "issueRef": "P0-STARTUP-003",
+      "area": "启动与默认工作区",
+      "feature": "安装版 File > 新建窗口直接打开默认 Prism 指南",
+      "status": "Pass",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png",
+      "actual": "点击系统菜单 File > 新建窗口 后窗口数变为 2；两个 Prism 窗口的 AX 内容均包含 Examples、# 📖 Prism Markdown 语法指南，未出现“未命名”空文稿或空指引页。",
+      "steps": [
+        "在已打开的默认指南窗口中点击系统菜单 File > 新建窗口",
+        "等待新窗口 bootstrap 完成",
+        "分别读取两个窗口 AX 文本",
+        "截图记录新窗口状态"
+      ],
+      "expected": "新建窗口应直接打开默认 Prism 指南，不应先显示空指引页或未命名空文稿。",
+      "notes": "AX dumps: logs/computer-use-real-app/new-window-guide-ax-dump-window-1-20260630.txt and new-window-guide-ax-dump-window-2-20260630.txt。"
     }
   ],
   "testCases": [
@@ -8149,17 +8192,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T23:42:00+08:00",
+  "generatedAt": "2026-06-30T23:47:00+08:00",
   "counts": {
     "total": 168,
     "Pass": 94,
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 409,
-    "manifestScreenshots": 978,
-    "uniqueManifestScreenshots": 432,
-    "computerUseRealAppEvidence": 227
+    "screenshotFiles": 411,
+    "manifestScreenshots": 980,
+    "uniqueManifestScreenshots": 434,
+    "computerUseRealAppEvidence": 229
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9564,6 +9607,17 @@
         "npm run build"
       ],
       "notes": "tauri build --bundles app produced Prism.app but returned non-zero because TAURI_SIGNING_PRIVATE_KEY is not configured; local bundle was still installed for smoke/retest."
+    },
+    {
+      "id": "startup-default-guide-new-window-retest-20260630",
+      "status": "Pass",
+      "testFiles": 3,
+      "testsPassed": 21,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/commands/categories/fileCommands.test.ts"
+      ],
+      "notes": "Covers default Prism workspace/guide bootstrap, default guide reveal timing, openPrismWindow empty URL, and File > New Window command path."
     }
   ],
   "sourceFixBatches": [
@@ -9785,6 +9839,21 @@
         "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed and archived report includes matching lastSession filePath for data.json, query.sql, and plain.txt"
       ],
       "notes": "Historical PRISM-FF-008 and related blank-window screenshots remain as pre-fix evidence. PRISM-CU-268 through PRISM-CU-270 are post-fix installed-app pass evidence."
+    },
+    {
+      "id": "installed-retest-startup-default-guide-new-window-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-STARTUP-003"
+      ],
+      "verification": [
+        "PRISM-CU-271 confirms cold launch opens /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md with the Prism workspace tree visible",
+        "PRISM-CU-272 confirms native File > 新建窗口 opens a second window that also shows the default Prism guide",
+        "AX dumps for the startup and both new-window windows include Examples and # 📖 Prism Markdown 语法指南 and do not include 未命名 empty document state",
+        "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/commands/categories/fileCommands.test.ts passed"
+      ],
+      "notes": "Historical PRISM-CU-218 failure remains as pre-fix evidence. PRISM-CU-271/272 are post-fix installed-app pass evidence."
     }
   ],
   "appSmokeRuns": [
