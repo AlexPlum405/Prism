@@ -126,7 +126,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png`
 - 建议修复方向：收敛启动 bootstrap 与新窗口逻辑，避免先创建空文稿；在默认 Prism 目录存在时优先打开指南文档并同步文件树选中态。
 - 验收标准：冷启动、新建窗口、恢复窗口三条路径均直接展示指南文档；标题栏显示指南文件名，正文不出现空指引页或“未命名”空文稿。
-- 修复进展：2026-06-30 源码已修复默认窗口路径：`openNewWindow` 不再把当前 workspace folder 固定传给新窗口，默认新窗口交给 bootstrap 打开 Prism 初始目录和指南；bootstrap 在已有 currentDocument 时仍 reveal native window。`useBootstrap`、`fileActions`、`openWindow` 相关测试通过。安装版 smoke 已通过默认启动路径，证据见 `screenshots/16-installed-app-smoke/00-launch-markdown-chinese-space.png`、`screenshots/16-installed-app-smoke/01-launch-source.png` 和 `logs/app-smoke-installed-20260630/report.json`；新建窗口仍需按原用例单独复测。
+- 修复进展：2026-06-30 源码已修复默认窗口路径：`openNewWindow` 不再把当前 workspace folder 固定传给新窗口，默认新窗口交给 bootstrap 打开 Prism 初始目录和指南；bootstrap 在已有 currentDocument 时仍 reveal native window。`useBootstrap`、`fileActions`、`openWindow` 相关测试通过。安装版 smoke 已通过默认启动路径，证据见 `screenshots/16-installed-app-smoke/00-launch-markdown-chinese-space.png`、`screenshots/16-installed-app-smoke/01-launch-source.png`、`logs/app-smoke-installed-20260630/report.json`；补充安装版真实 UI 复测见 `screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png`，窗口直接打开默认指南且状态栏无 `ERROR`。新建窗口仍需按原用例单独复测。
 
 ## 文件与工作区
 
@@ -143,7 +143,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/06-diagnostics/PRISM-FF-051-heading-table-render-heading-table-render.png`
   - `logs/elements-startup.json`
 - 备注：这与用户此前反馈“正常预览的指南文档不应显示错误”一致。
-- 修复进展：2026-06-30 源码回归已覆盖打包资源 `src-tauri/resources/Initial/Examples/Prism Markdown 语法指南.md`：新增测试确认目录中的同文档链接不会产生 `missing-heading` 诊断，尤其是 `#文本格式`。当前仓库资源和用户目录 `/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md` 均包含对应 `## 文本格式` 标题；待换包后用真实状态栏逐项复测是否仍显示 `ERROR 1`。
+- 修复进展：2026-06-30 源码回归已覆盖打包资源 `src-tauri/resources/Initial/Examples/Prism Markdown 语法指南.md`：新增测试确认目录中的同文档链接不会产生 `missing-heading` 诊断，尤其是 `#文本格式`。重新打包并替换 `/Applications/Prism.app` 后，真实 UI 复测确认用户目录 `/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md` 打开时状态栏无 `ERROR`，证据见 `screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png`；替换后安装版 smoke 报告见 `logs/app-smoke-installed-search-event-fix-20260630/report.json`。
 
 ### P0-FILE-002 真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口
 
@@ -265,7 +265,7 @@ Bundle ID：com.prism.editor.v1
 - 复现稳定性：本轮真实 App 多次复现。
 - 截图/证据：Computer Use 实时截图显示 `Markdown` 命中 `1/5` 与关闭后残留高亮。
 - 备注：中文关键词 `精卫` 在 Computer Use 输入路径下没有进入搜索框，本轮暂按自动化输入法限制处理，不单独归为产品缺陷。
-- 修复进展：2026-06-30 源码已新增统一 `closeSearch` 路径：关闭文档搜索时取消预览搜索任务、清除预览 `.preview-search-match` 高亮、重置搜索 query/count/current，并向编辑器发送空搜索 query 清理编辑区搜索状态。`SplitView.test.tsx` 已覆盖预览搜索关闭后高亮清空。选区浮动工具条残留不在本次搜索修复范围内，仍需真实 UI 复测确认。
+- 修复进展：2026-06-30 源码已新增统一 `closeSearch` 路径：关闭文档搜索时取消预览搜索任务、清除预览 `.preview-search-match` 高亮、重置搜索 query/count/current，并向编辑器发送空搜索 query 清理编辑区搜索状态。`SplitView.test.tsx` 已覆盖预览搜索关闭后高亮清空。重新打包替换后，安装版真实 UI 复测显示预览搜索关闭后搜索条消失且无可见命中高亮残留，证据见 `screenshots/17-installed-anchor-search-smoke/04-preview-search-open.png` 和 `screenshots/17-installed-anchor-search-smoke/05-preview-search-closed-no-highlight.png`。选区浮动工具条残留不在本次搜索修复范围内，仍需单独跟踪。
 
 ### P1-EDITOR-002 文档搜索与全文搜索可同时叠加显示
 
@@ -282,7 +282,7 @@ Bundle ID：com.prism.editor.v1
 - 复现稳定性：本轮真实 App 复现一次。
 - 截图/证据：Computer Use 实时截图可见全文搜索浮层与右上角文档搜索条同时存在。
 - 备注：`Cmd+Shift+F` 在 Computer Use 路径下先触发了文档搜索，随后通过菜单可打开全文搜索；需用人工键盘复核快捷键本身是否也存在路由问题。
-- 修复进展：2026-06-30 源码已让 `SplitView` 在收到 `search.open` 的 workspace/rootPath 事件时主动关闭文档内搜索并清理预览高亮，避免全文搜索与文档搜索 UI 叠加。`SplitView.test.tsx` 已覆盖 workspace search 打开时收起文档搜索；待换包后用真实菜单/快捷键复测。
+- 修复进展：2026-06-30 源码已让 `SplitView` 在收到 `search.open` 的 workspace/rootPath 事件时主动关闭文档内搜索并清理预览高亮，避免全文搜索与文档搜索 UI 叠加。安装版首次复测发现 `Cmd+Shift+F` 命令路径仍直接调用 `openWorkspaceSearch`，没有发 workspace 事件，真实失败证据见 `screenshots/17-installed-anchor-search-smoke/06-workspace-search-still-overlaps-document-search.png`。随后已补 `workspaceSearch` 命令事件广播，重新打包替换 `/Applications/Prism.app`，`screenshots/17-installed-anchor-search-smoke/07-workspace-search-closes-document-search-after-fix.png` 确认全文搜索浮层出现时右上角文档搜索条已收起。
 
 ### P0-EDITOR-003 预览态任务列表复选框真实可点击并写回文件
 
@@ -408,7 +408,7 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-033-anchor-click-hash-no-scroll-window.png`
 - 备注：后续通过手动滚动可到达图表区域；Mermaid、PlantUML、Markmap 在真实 App 中均可见渲染。
-- 修复进展：2026-06-30 源码已为预览标题生成稳定 heading `id`，并在预览点击同文档 `#anchor` 链接时滚动到当前预览容器内的目标标题，不再只依赖 WebView URL hash。已补 `markdownToHtml` heading id 测试和 `PreviewPane` 中文 hash 滚动测试；待换包后用真实指南目录点击复测。
+- 修复进展：2026-06-30 源码已为预览标题生成稳定 id，并让 `PreviewPane` 在同文档 hash 链接点击时滚动预览容器。重新打包替换 `/Applications/Prism.app` 后，真实 UI 复测见 `screenshots/17-installed-anchor-search-smoke/02-preview-toc-before-anchor.png` 和 `screenshots/17-installed-anchor-search-smoke/03-preview-anchor-after-click.png`：点击“图表 (Mermaid、PlantUML、Markmap)”后已滚动到“图表”标题和 Mermaid 流程图区域。
 
 ### P0-PREVIEW-001 图表渲染在浏览器补充验证中出现 WASM/Mermaid/Markmap 布局错误
 
@@ -673,7 +673,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png`
 - 建议修复方向：明确 Quick Open 与 Workspace Search 的命令、快捷键和菜单入口；如果暂时不支持全文搜索，应在测试口径和 UI 中降级说明。
 - 验收标准：一个公开入口可打开工作区全文搜索；输入 fixture 中存在的词后显示跨文件命中列表，回车或点击可打开对应文件位置。
-- 修复进展：2026-06-30 源码已修复 `Cmd+Shift+F` 被文档内搜索抢占的问题，并让文件树 `searchInFolder` 发 `workspace` 搜索事件，由 `useAppAuxiliaryModalsModel` 打开全局搜索模式；`SplitView` 会忽略带 `rootPath` 的 workspace 搜索事件。相关 `SplitView` 和 auxiliary modal 单测通过；待真实 App 复测快捷键、文件树入口和结果打开。
+- 修复进展：2026-06-30 源码已修复 `Cmd+Shift+F` 被文档内搜索抢占的问题，并让文件树 `searchInFolder` 发 `workspace` 搜索事件，由 `useAppAuxiliaryModalsModel` 打开全局搜索模式；`SplitView` 会忽略带 `rootPath` 的 workspace 搜索事件。安装版复测又补出直接 `workspaceSearch` 命令路径漏发事件的问题，已修为先广播 `search.open { action: 'workspace' }` 再打开全局搜索。`npm test -- --run src/domains/commands/registry.test.ts src/domains/editor/components/SplitView.test.tsx`、`npm run build`、`npm run tauri:build:app-smoke` 和替换后的安装版 smoke 均通过；真实 UI 证据见 `screenshots/17-installed-anchor-search-smoke/07-workspace-search-closes-document-search-after-fix.png`。
 
 ## 导出
 

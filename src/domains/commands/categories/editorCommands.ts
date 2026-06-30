@@ -92,7 +92,13 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       keywords: ['search', 'workspace', 'full text', '全文', '工作区'],
       shortcuts: [{ code: 'KeyF', mod: true, shift: true }],
       enabled: (context) => Boolean(context.workspaceStore.rootPath && context.workspaceStore.fileTree.length > 0),
-      run: (context) => context.openWorkspaceSearch?.(),
+      run: (context) => {
+        emitAppEvent('search.open', {
+          action: 'workspace',
+          rootPath: context.workspaceStore.rootPath ?? undefined,
+        });
+        context.openWorkspaceSearch?.();
+      },
     },
     {
       id: 'showReplace',

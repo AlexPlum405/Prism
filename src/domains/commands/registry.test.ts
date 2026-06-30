@@ -76,6 +76,8 @@ vi.mock('../export/preflight', () => ({
   buildExportPreflightDiagnostics: vi.fn(async () => []),
 }));
 
+import { APP_EVENT_NAMES } from '../../platform/events/appEvents';
+import type { SearchOpenPayload } from '../../platform/events/eventTypes';
 import {
   COMMAND_PALETTE_GROUP_ORDER,
   commandRegistry,
@@ -497,6 +499,10 @@ describe('command registry', () => {
 
   it('opens workspace full-text search with Cmd+Shift+F when a workspace is available', async () => {
     const openWorkspaceSearch = vi.fn();
+    const searchEvents: SearchOpenPayload[] = [];
+    const handleSearchOpen = (event: Event) => {
+      searchEvents.push((event as CustomEvent<SearchOpenPayload>).detail);
+    };
     const context = createCommandContext({
       openWorkspaceSearch,
       workspaceStore: {
@@ -512,9 +518,12 @@ describe('command registry', () => {
 
     expect(editActions).toEqual(expect.arrayContaining(['showSearch', 'showReplace', 'workspaceSearch']));
 
+    window.addEventListener(APP_EVENT_NAMES['search.open'], handleSearchOpen);
     await runCommand('workspaceSearch', context);
+    window.removeEventListener(APP_EVENT_NAMES['search.open'], handleSearchOpen);
 
     expect(openWorkspaceSearch).toHaveBeenCalledTimes(1);
+    expect(searchEvents).toEqual([{ action: 'workspace', rootPath: '/notes' }]);
     expect(commandRegistryById.get('workspaceSearch')?.shortcuts).toEqual([{ code: 'KeyF', mod: true, shift: true }]);
   });
 

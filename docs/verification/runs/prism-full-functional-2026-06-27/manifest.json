@@ -3950,6 +3950,146 @@
       "issueRef": "P1-EXPORT-007",
       "notes": "日志：logs/computer-use-real-app/pdf-link-annotations-20260630.log",
       "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-239",
+      "area": "文件与工作区",
+      "feature": "安装版默认指南无 ERROR",
+      "status": "Pass",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png",
+      "issueRef": "P0-FILE-001",
+      "actual": "替换后的 /Applications/Prism.app 直接打开 /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md；状态栏显示“排版”，没有 ERROR 计数。",
+      "steps": [
+        "启动 /Applications/Prism.app",
+        "允许 macOS 文稿目录访问",
+        "观察默认指南标题、正文和状态栏"
+      ],
+      "expected": "默认指南应直接打开，且正常目录链接不应产生 ERROR。",
+      "notes": "安装版真实 UI 复测；Bundle ID com.prism.editor.v1，版本 1.4.1。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-240",
+      "area": "预览渲染",
+      "feature": "安装版预览目录锚点点击前状态",
+      "status": "Pass",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/02-preview-toc-before-anchor.png",
+      "issueRef": "P1-PREVIEW-003",
+      "actual": "预览模式显示默认指南目录，包含“图表 (Mermaid、PlantUML、Markmap)”链接。",
+      "steps": [
+        "切换到预览模式",
+        "观察目录区域"
+      ],
+      "expected": "目录链接可见并可点击。",
+      "notes": "与 PRISM-CU-241 配套作为锚点点击前基线。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-241",
+      "area": "预览渲染",
+      "feature": "安装版目录锚点滚动到图表段落",
+      "status": "Pass",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/03-preview-anchor-after-click.png",
+      "issueRef": "P1-PREVIEW-003",
+      "actual": "点击目录中的“图表 (Mermaid、PlantUML、Markmap)”后，预览滚动到“图表”标题和 Mermaid 流程图区域。",
+      "steps": [
+        "在预览目录点击“图表 (Mermaid、PlantUML、Markmap)”",
+        "观察滚动位置"
+      ],
+      "expected": "点击目录锚点后应滚动到对应 heading，而不是只更新 URL hash。",
+      "notes": "安装版真实 UI 复测通过。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-242",
+      "area": "编辑器与搜索",
+      "feature": "安装版预览文档搜索打开态",
+      "status": "Pass",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/04-preview-search-open.png",
+      "issueRef": "P1-EDITOR-001",
+      "actual": "预览模式 Cmd+F 后搜索条显示关键词 Markdown 和 1/5 计数。",
+      "steps": [
+        "在预览模式按 Cmd+F",
+        "输入 Markdown",
+        "观察搜索条计数"
+      ],
+      "expected": "文档搜索条应打开并显示命中计数。",
+      "notes": "测试过程中 Cmd+A 误选中了预览内容，不作为产品缺陷计入。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-243",
+      "area": "编辑器与搜索",
+      "feature": "安装版关闭预览文档搜索后无高亮残留",
+      "status": "Pass",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/05-preview-search-closed-no-highlight.png",
+      "issueRef": "P1-EDITOR-001",
+      "actual": "搜索输入框重新聚焦后按 Escape，右上角搜索条消失，预览内容中没有搜索命中高亮残留。",
+      "steps": [
+        "聚焦搜索输入框",
+        "按 Escape 关闭搜索",
+        "观察预览区域"
+      ],
+      "expected": "关闭文档搜索后应清空搜索条和命中高亮。",
+      "notes": "底部仍显示预览选区字数，是本次测试误触 Cmd+A 的选区状态，不是搜索高亮残留。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-244",
+      "area": "编辑器与搜索",
+      "feature": "安装版全文搜索仍叠加文档搜索的修复前证据",
+      "status": "Fail",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/06-workspace-search-still-overlaps-document-search.png",
+      "issueRef": "P1-EDITOR-002",
+      "actual": "第一次安装版复测时，Cmd+Shift+F 打开全文搜索浮层后，右上角文档搜索条仍留在后方；原因是 workspaceSearch 命令直接打开全局面板，未广播 search.open workspace 事件给 SplitView。",
+      "steps": [
+        "打开文档搜索",
+        "按 Cmd+Shift+F 打开全文搜索",
+        "观察右上角文档搜索条"
+      ],
+      "expected": "全文搜索打开时应收起文档搜索。",
+      "notes": "该截图用于记录真实安装版复测发现的残留问题；随后已补命令路径事件广播并重新打包。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "windowSize": "1100x760 logical / 2200x1520 captured pixels",
+      "id": "PRISM-CU-245",
+      "area": "编辑器与搜索",
+      "feature": "安装版全文搜索打开时收起文档搜索",
+      "status": "Pass",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/07-workspace-search-closes-document-search-after-fix.png",
+      "issueRef": "P1-EDITOR-002",
+      "actual": "补丁后重新打包替换 /Applications/Prism.app；文档搜索打开时按 Cmd+Shift+F，全文搜索浮层出现，右上角文档搜索条已消失。",
+      "steps": [
+        "重新打包并替换 /Applications/Prism.app",
+        "切换预览模式",
+        "Cmd+F 打开文档搜索",
+        "Cmd+Shift+F 打开全文搜索",
+        "观察是否仍叠加"
+      ],
+      "expected": "全文搜索打开时应收起文档搜索，不出现两个搜索 UI 叠加。",
+      "notes": "安装版真实 UI 复测通过；修复覆盖 workspaceSearch 命令直接打开全局面板的路径。"
     }
   ],
   "testCases": [
@@ -7505,10 +7645,10 @@
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 326,
-    "manifestScreenshots": 857,
-    "uniqueManifestScreenshots": 313,
-    "computerUseRealAppEvidence": 195
+    "screenshotFiles": 357,
+    "manifestScreenshots": 864,
+    "uniqueManifestScreenshots": 315,
+    "computerUseRealAppEvidence": 202
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -8749,6 +8889,34 @@
     {
       "file": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png",
       "testCaseId": "PRISM-CU-238"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png",
+      "testCaseId": "PRISM-CU-239"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/02-preview-toc-before-anchor.png",
+      "testCaseId": "PRISM-CU-240"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/03-preview-anchor-after-click.png",
+      "testCaseId": "PRISM-CU-241"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/04-preview-search-open.png",
+      "testCaseId": "PRISM-CU-242"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/05-preview-search-closed-no-highlight.png",
+      "testCaseId": "PRISM-CU-243"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/06-workspace-search-still-overlaps-document-search.png",
+      "testCaseId": "PRISM-CU-244"
+    },
+    {
+      "file": "screenshots/17-installed-anchor-search-smoke/07-workspace-search-closes-document-search-after-fix.png",
+      "testCaseId": "PRISM-CU-245"
     }
   ],
   "unitTestRuns": [
@@ -8857,7 +9025,7 @@
     },
     {
       "id": "source-fix-anchor-guide-diagnostics-20260630",
-      "status": "SourceRegressionPassedPendingInstallRetest",
+      "status": "InstalledAppRetestPassed",
       "date": "2026-06-30",
       "issueRefs": [
         "P0-FILE-001",
@@ -8868,13 +9036,17 @@
         "Preview headings render stable ids for same-document hash links",
         "PreviewPane scrolls decoded Chinese #anchor links inside the preview container",
         "npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/PreviewPane.test.tsx passed",
-        "npm run build passed"
+        "npm run build passed",
+        "Replaced /Applications/Prism.app with rebuilt bundle containing anchor/guide diagnostics fixes",
+        "PRISM-CU-239 confirms default guide opens without ERROR in installed app",
+        "PRISM-CU-241 confirms TOC anchor scrolls to 图表 section in installed app",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement"
       ],
-      "notes": "Source regression passed. This batch is not yet packaged into /Applications/Prism.app, so historical real-app screenshots remain Fail until install retest."
+      "notes": "Source regression and installed-app UI retest passed for default guide diagnostics and preview anchor scrolling. Historical Fail screenshots are retained as pre-fix evidence; new PRISM-CU-239/241 entries provide post-fix evidence."
     },
     {
       "id": "source-fix-document-search-state-20260630",
-      "status": "SourceRegressionPassedPendingInstallRetest",
+      "status": "InstalledAppRetestPassedWithCommandPathFollowup",
       "date": "2026-06-30",
       "issueRefs": [
         "P1-EDITOR-001",
@@ -8884,9 +9056,17 @@
         "Closing document search clears preview search marks and resets search state",
         "Workspace search events close document search before the global search UI opens",
         "npm test -- --run src/domains/editor/components/SplitView.test.tsx passed",
-        "npm run build passed"
+        "npm run build passed",
+        "PRISM-CU-243 confirms closing preview document search removes the search bar and visible highlights in installed app",
+        "PRISM-CU-244 captured a remaining command-path bug: Cmd+Shift+F opened workspace search without closing document search",
+        "workspaceSearch command now emits search.open workspace before opening the global search palette",
+        "npm test -- --run src/domains/commands/registry.test.ts src/domains/editor/components/SplitView.test.tsx passed",
+        "npm run build passed in clean install worktree",
+        "npm run tauri:build:app-smoke passed in clean install worktree",
+        "PRISM-CU-245 confirms Cmd+Shift+F opens workspace search and closes document search in the rebuilt installed app",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement"
       ],
-      "notes": "Search highlight and search-panel overlap are covered by source regression. Selection floating toolbar cleanup remains a separate residual risk until real UI retest."
+      "notes": "Installed-app retest first exposed a missing workspaceSearch command event path; the follow-up fix was rebuilt, installed, smoke-tested, and verified by PRISM-CU-245. Selection floating toolbar cleanup remains separate residual risk."
     }
   ],
   "appSmokeRuns": [
@@ -8898,6 +9078,28 @@
       "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
       "report": "logs/app-smoke-installed-20260630/report.json",
       "screenshots": "screenshots/16-installed-app-smoke/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
+    },
+    {
+      "id": "installed-app-smoke-search-event-fix-20260630",
+      "status": "Pass",
+      "date": "2026-06-30",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-search-event-fix-20260630/report.json",
+      "screenshots": "screenshots/17-installed-anchor-search-smoke/",
       "coverage": [
         ".markdown launch with Chinese and space path",
         "JSON launch without blank screen",

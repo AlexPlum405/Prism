@@ -108,6 +108,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 浏览器 mock 日志：logs/playwright-console.log、logs/playwright-body-start.txt、logs/elements-startup.json
 - 2026-06-30 安装版 smoke 报告：logs/app-smoke-installed-20260630/report.json
 - 2026-06-30 安装版 smoke 截图：screenshots/16-installed-app-smoke/
+- 2026-06-30 搜索事件修复后安装版 smoke 报告：logs/app-smoke-installed-search-event-fix-20260630/report.json
+- 2026-06-30 安装版锚点与搜索复测截图：screenshots/17-installed-anchor-search-smoke/
 
 ## 2026-06-30 修复批次状态
 
@@ -122,23 +124,24 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 已修预览目录锚点：Markdown 预览标题生成稳定 `id`，点击同文档 `#anchor` 会滚动到预览内目标标题。
 - 已通过 `npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/PreviewPane.test.tsx`。
 - 已通过 `npm run build`。
-- 本批次尚未替换安装版 app，真实 `/Applications/Prism.app` 状态栏和目录点击仍需换包后复测。
+- 已重新打包并替换 `/Applications/Prism.app` 后完成真实 UI 复测：`PRISM-CU-239` 确认默认指南状态栏无 `ERROR`，`PRISM-CU-241` 确认点击目录“图表”后滚动到图表段落。
 
 ## 2026-06-30 文档搜索状态修复
 
 - 已修文档搜索关闭后预览高亮残留：关闭搜索会取消预览搜索任务、清理 `.preview-search-match`、重置 query/count/current，并向编辑器发送空搜索 query。
 - 已修全文搜索与文档搜索叠加：workspace/rootPath 搜索事件会先收起文档内搜索。
-- 已通过 `npm test -- --run src/domains/editor/components/SplitView.test.tsx`。
-- 已通过 `npm run build`。
-- 选区浮动工具条残留不在本批搜索修复范围内；真实 `/Applications/Prism.app` 仍需换包后复测菜单和快捷键路径。
+- 安装版复测时额外发现真实 `Cmd+Shift+F` 命令路径仍直接打开全局搜索、未广播 workspace 搜索事件，导致 `PRISM-CU-244` 中两个搜索 UI 仍叠加。
+- 已补 `workspaceSearch` 命令事件广播，重新打包替换 `/Applications/Prism.app`；`PRISM-CU-245` 确认全文搜索打开时文档搜索条自动消失。
+- 已通过 `npm test -- --run src/domains/commands/registry.test.ts src/domains/editor/components/SplitView.test.tsx`、`npm run build`、`npm run tauri:build:app-smoke` 和替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
+- 选区浮动工具条残留不在本批搜索修复范围内，仍作为单独残余风险跟踪。
 
 ## 最高优先级问题
 
-1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 源码回归已确认打包资源目录链接不误报，待换包后真实状态栏复测。
+1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 已重新打包替换安装版，`PRISM-CU-239` 真实 UI 复测确认默认指南无 `ERROR`。
 2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。2026-06-30 安装版 smoke 已覆盖 JSON/SQL/TXT 不白屏，待原用例截图复测后更新状态。
 3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。
 4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。
-5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版 smoke 已覆盖启动默认文档，待原用例截图复测后更新状态。
+5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版 smoke 与 `PRISM-CU-239` 已覆盖启动默认文档；新建窗口仍待原用例单独复测。
 6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。
 7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。
 8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。
@@ -170,6 +173,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 追加预览链接、渲染错误 action、源码定位与图片诊断异步截图：链接 fixture 基线、wiki link 双击后目标、相对 Markdown link 双击后目标、预览错误块、跳到源码后的分栏定位、预览源码 flash 未稳定捕捉证据、缺失图片错误、补齐文件但诊断未刷新、修正路径后错误清除。
 - 2026-06-30 追加启动/菜单/导出/文件树截图：默认 Prism 指南未打开、Selection callout 丢选区、工作区搜索快捷键回到文档查找、图谱 fallback 状态不可观测、导出取消/成功/后台任务、外部文件打开同步工作区、原生 File 菜单缺少打开入口、文件树创建副本、工作区菜单新建文件夹。
 - 2026-06-30 追加收尾截图：窗口最小化/缩放/关闭恢复异常、增量索引新增文件、Finder Markdown 文件图标、链接 fixture PDF 导出完成。
+- 2026-06-30 追加安装版锚点与搜索修复截图：默认指南无 ERROR、目录锚点跳到图表段落、预览搜索关闭无高亮残留、全文搜索叠加修复前失败和修复后通过。
 - 2026-06-29 补充单元/集成测试：文件打开/自动保存/冲突/恢复、编辑命令、富复制、块操作、图片、表格、诊断、文件树、导出 preflight、导出设置、命令注册、主题、更新、工作区索引、反链、图谱、i18n、toast、reduced motion。
 - 菜单与帮助：File/Edit/Insert/Format/Navigate/View/Export/Window/Help、快捷键、关于、检查更新。
 - 布局：1024x768 窄窗口、低高度窗口。
@@ -179,6 +183,6 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期仍只有源码修复与构建通过证据，待换包后按原窗口生命周期用例单独复测。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 `screenshots/15-computer-use-real-app/` 下的 195 张截图是真实 Prism/导出产物/Finder 截图；其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 manifest 中登记了 202 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/` 和 `screenshots/17-installed-anchor-search-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。
