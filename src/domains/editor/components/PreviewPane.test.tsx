@@ -905,6 +905,31 @@ describe('PreviewPane theme switching', () => {
     expect(onNotice).toHaveBeenCalledWith('预览中的本地链接已拦截，请通过文件树打开');
   });
 
+  it('scrolls same-document hash links inside the preview', async () => {
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      '<nav><a href="#%E6%96%87%E6%9C%AC%E6%A0%BC%E5%BC%8F">文本格式</a></nav><h2 id="文本格式">文本格式标题</h2>',
+    );
+
+    try {
+      render(<PreviewPane content="[文本格式](#文本格式)" renderStrategy="immediate" />);
+      await flushPreviewRender();
+
+      fireEvent.click(await screen.findByText('文本格式'));
+
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'start',
+        inline: 'nearest',
+      });
+      expect(openerMock.openUrl).not.toHaveBeenCalled();
+    } finally {
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
   it('opens local markdown links through the document link handler', async () => {
     const onOpenDocumentLink = vi.fn();
     vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="docs/local.md">本地链接</a>');

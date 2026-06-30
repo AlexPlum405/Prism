@@ -52,6 +52,35 @@ let markmapTransformerPromise: Promise<typeof import('markmap-lib')['Transformer
 let markmapViewPromise: Promise<typeof import('markmap-view')['Markmap']> | null = null;
 let markdownRenderServicePromise: Promise<typeof import('../../../lib/markdownRenderService')['markdownRenderService']> | null = null;
 
+function decodeHashAnchor(rawHref: string) {
+  const rawHash = rawHref.trim().replace(/^#/, '');
+  if (!rawHash) return '';
+  try {
+    return decodeURIComponent(rawHash);
+  } catch {
+    return rawHash;
+  }
+}
+
+function findHashAnchorTarget(container: HTMLElement, rawHref: string) {
+  const decodedHash = decodeHashAnchor(rawHref);
+  if (!decodedHash) return null;
+  const rawHash = rawHref.trim().replace(/^#/, '');
+  return Array.from(container.querySelectorAll<HTMLElement>('[id], a[name]')).find((element) => (
+    element.id === decodedHash
+    || element.id === rawHash
+    || element.getAttribute('name') === decodedHash
+    || element.getAttribute('name') === rawHash
+  )) ?? null;
+}
+
+function scrollToHashAnchor(container: HTMLElement, rawHref: string) {
+  const target = findHashAnchorTarget(container, rawHref);
+  if (!target) return false;
+  target.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  return true;
+}
+
 function getPreviewRenderDebounceMs(contentLength: number) {
   if (contentLength > PREVIEW_RENDER_LARGE_DOC_LIMIT) return PREVIEW_RENDER_LARGE_DEBOUNCE_MS;
   if (contentLength > PREVIEW_RENDER_SMALL_DOC_LIMIT) return PREVIEW_RENDER_MEDIUM_DEBOUNCE_MS;
@@ -1126,7 +1155,13 @@ export function PreviewPane({
         }
 
         const rawHref = anchor.getAttribute('href')?.trim() ?? '';
-        if (!rawHref || rawHref.startsWith('#')) return;
+        if (!rawHref) return;
+        if (rawHref.startsWith('#')) {
+          if (scrollToHashAnchor(container, rawHref)) {
+            e.preventDefault();
+          }
+          return;
+        }
 
         const externalUrl = getExternalHttpUrl(rawHref, anchor.href);
         if (externalUrl) {

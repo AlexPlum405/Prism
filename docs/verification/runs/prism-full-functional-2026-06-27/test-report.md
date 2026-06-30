@@ -116,9 +116,17 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs` 已通过，覆盖真实安装版 `.markdown` 中文/空格路径、JSON、SQL、TXT、Markdown 启动不白屏、ERROR 状态栏诊断、Quick Open、基础编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
 - 原始全功能截图中的 Fail 不直接改写为 Pass；本节只证明安装版 smoke 覆盖的路径已经回归通过。剩余 P0/P1 项仍需按原 manifest 用例逐项真实 UI 复测后再改状态。
 
+## 2026-06-30 锚点与默认指南诊断修复
+
+- 已补默认指南资源回归：`src-tauri/resources/Initial/Examples/Prism Markdown 语法指南.md` 的目录链接不再产生 `missing-heading` 诊断，覆盖此前 `#文本格式` 误报。
+- 已修预览目录锚点：Markdown 预览标题生成稳定 `id`，点击同文档 `#anchor` 会滚动到预览内目标标题。
+- 已通过 `npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/PreviewPane.test.tsx`。
+- 已通过 `npm run build`。
+- 本批次尚未替换安装版 app，真实 `/Applications/Prism.app` 状态栏和目录点击仍需换包后复测。
+
 ## 最高优先级问题
 
-1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。
+1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 源码回归已确认打包资源目录链接不误报，待换包后真实状态栏复测。
 2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。2026-06-30 安装版 smoke 已覆盖 JSON/SQL/TXT 不白屏，待原用例截图复测后更新状态。
 3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。
 4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。

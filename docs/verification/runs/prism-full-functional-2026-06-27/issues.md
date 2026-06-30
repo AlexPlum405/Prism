@@ -143,6 +143,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/06-diagnostics/PRISM-FF-051-heading-table-render-heading-table-render.png`
   - `logs/elements-startup.json`
 - 备注：这与用户此前反馈“正常预览的指南文档不应显示错误”一致。
+- 修复进展：2026-06-30 源码回归已覆盖打包资源 `src-tauri/resources/Initial/Examples/Prism Markdown 语法指南.md`：新增测试确认目录中的同文档链接不会产生 `missing-heading` 诊断，尤其是 `#文本格式`。当前仓库资源和用户目录 `/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md` 均包含对应 `## 文本格式` 标题；待换包后用真实状态栏逐项复测是否仍显示 `ERROR 1`。
 
 ### P0-FILE-002 真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口
 
@@ -405,6 +406,7 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-033-anchor-click-hash-no-scroll-window.png`
 - 备注：后续通过手动滚动可到达图表区域；Mermaid、PlantUML、Markmap 在真实 App 中均可见渲染。
+- 修复进展：2026-06-30 源码已为预览标题生成稳定 heading `id`，并在预览点击同文档 `#anchor` 链接时滚动到当前预览容器内的目标标题，不再只依赖 WebView URL hash。已补 `markdownToHtml` heading id 测试和 `PreviewPane` 中文 hash 滚动测试；待换包后用真实指南目录点击复测。
 
 ### P0-PREVIEW-001 图表渲染在浏览器补充验证中出现 WASM/Mermaid/Markmap 布局错误
 

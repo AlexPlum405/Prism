@@ -199,6 +199,14 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html.match(/data-source-line="1"/g)).toHaveLength(1);
   });
 
+  it('adds stable heading ids for same-document table of contents links', () => {
+    const html = markdownToHtml('# API 设计\n\n## 文本格式\n\n## 文本格式');
+
+    expect(html).toContain('id="api-设计"');
+    expect(html).toContain('id="文本格式"');
+    expect(html).toContain('id="文本格式-2"');
+  });
+
   it('can hide YAML front matter from preview while preserving source line offsets', () => {
     const html = markdownToHtml([
       '---',
@@ -452,7 +460,7 @@ describe('markdownToHtml compatibility modes', () => {
     expect(markdown.length).toBeGreaterThan(300 * 1024);
     expect(html).toContain('<!--prism-preview-source-map:flat:');
     expect(html).toContain('class="prism-frontmatter-preview"');
-    expect(html).toContain('<h1>Common Fast Path</h1>');
+    expect(html).toContain('<h1 id="common-fast-path">Common Fast Path</h1>');
     expect(html).toContain('<strong>加粗</strong>');
     expect(html).toContain('<mark>高亮</mark>');
     expect(html).toContain('class="prism-wiki-link"');

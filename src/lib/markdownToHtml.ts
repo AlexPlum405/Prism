@@ -17,6 +17,7 @@ import {
   parseDocumentFrontMatter,
   type DocumentFrontMatterProperties,
 } from '../domains/editor/extensions/frontMatterProperties';
+import { getMarkdownHeadingSlug } from '../domains/markdown';
 import { t } from '../domains/i18n/runtime';
 
 const MERMAID_ALIAS_DIRECTIVES: Record<string, string> = {
@@ -748,6 +749,34 @@ function remarkBlockLines() {
       }
     });
   };
+}
+
+function remarkHeadingIds() {
+  const usedSlugs = new Map<string, number>();
+  return (tree: any) => {
+    visit(tree, 'heading', (node: any) => {
+      const text = extractPlainTextFromMdast(node).trim();
+      const slug = getMarkdownHeadingSlug(text);
+      if (!slug) return;
+
+      const count = usedSlugs.get(slug) ?? 0;
+      usedSlugs.set(slug, count + 1);
+      const id = count === 0 ? slug : `${slug}-${count + 1}`;
+
+      node.data = node.data || {};
+      node.data.hProperties = node.data.hProperties || {};
+      if (node.data.hProperties.id === undefined) {
+        node.data.hProperties.id = id;
+      }
+    });
+  };
+}
+
+function extractPlainTextFromMdast(node: any): string {
+  if (!node) return '';
+  if (typeof node.value === 'string') return node.value;
+  if (!Array.isArray(node.children)) return '';
+  return node.children.map(extractPlainTextFromMdast).join('');
 }
 
 function remarkCallouts() {
@@ -1553,6 +1582,7 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
   const lines = content.split(/\r?\n/);
   const html: string[] = [];
   const frontMatter = findFrontMatterForCommonFastPath(content);
+  const usedHeadingSlugs = new Map<string, number>();
   let index = 0;
 
   if (frontMatter) {
@@ -1570,7 +1600,16 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     const headingMatch = /^\s{0,3}(#{1,6})(?:\s+(.+?)\s*#*\s*)?$/.exec(line);
     if (headingMatch) {
       const level = headingMatch[1].length;
-      html.push(`<h${level} data-line="${index + 1}">${renderCommonMarkdownInline(headingMatch[2] ?? '')}</h${level}>`);
+      const title = headingMatch[2] ?? '';
+      const slug = getMarkdownHeadingSlug(title);
+      let id = '';
+      if (slug) {
+        const count = usedHeadingSlugs.get(slug) ?? 0;
+        usedHeadingSlugs.set(slug, count + 1);
+        id = count === 0 ? slug : `${slug}-${count + 1}`;
+      }
+      const idAttribute = id ? ` id="${escapeGeneratedHtml(id)}"` : '';
+      html.push(`<h${level}${idAttribute} data-line="${index + 1}">${renderCommonMarkdownInline(title)}</h${level}>`);
       index += 1;
       continue;
     }
@@ -2087,6 +2126,7 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
   if (featureHints.citations) processor = processor.use(remarkCitations);
   if (featureHints.miaoyanSubSup) processor = processor.use(() => remarkMiaoyanSubSup(largePreTablePreview.content));
   processor = processor.use(remarkBlockLines);
+  processor = processor.use(remarkHeadingIds);
   if (featureHints.callouts) processor = processor.use(remarkCallouts);
   if (featureHints.mermaid) processor = processor.use(remarkMermaid);
   if (featureHints.markmap) processor = processor.use(remarkMarkmap);

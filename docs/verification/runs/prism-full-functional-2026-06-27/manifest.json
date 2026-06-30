@@ -8803,6 +8803,16 @@
       "commands": [
         "npm test -- --run src/hooks/useBootstrap.test.tsx src/app/useAppFileActionsModel.test.tsx src/lib/fileActions.test.ts src/lib/openWindow.test.ts src/domains/commands/categories/fileCommands.test.ts src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts src/app/useAppCommandContext.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/components/SplitView.test.tsx src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/runtime/editorClipboardController.test.ts src/domains/editor/runtime/editorClipboardRuntime.test.ts src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/workspace/components/StatusBar.test.tsx"
       ]
+    },
+    {
+      "id": "source-fix-anchor-guide-diagnostics-20260630",
+      "status": "Pass",
+      "testFiles": 3,
+      "testsPassed": 103,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/PreviewPane.test.tsx"
+      ]
     }
   ],
   "sourceFixBatches": [
@@ -8834,6 +8844,23 @@
         "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed"
       ],
       "notes": "Source fixes are packaged into /Applications/Prism.app and passed installed-app smoke. Historical full-feature Fail evidence remains unchanged until the affected cases are individually retested with real UI screenshots."
+    },
+    {
+      "id": "source-fix-anchor-guide-diagnostics-20260630",
+      "status": "SourceRegressionPassedPendingInstallRetest",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-FILE-001",
+        "P1-PREVIEW-003"
+      ],
+      "verification": [
+        "src-tauri/resources/Initial/Examples/Prism Markdown 语法指南.md same-document TOC links produce no missing-heading diagnostics",
+        "Preview headings render stable ids for same-document hash links",
+        "PreviewPane scrolls decoded Chinese #anchor links inside the preview container",
+        "npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/PreviewPane.test.tsx passed",
+        "npm run build passed"
+      ],
+      "notes": "Source regression passed. This batch is not yet packaged into /Applications/Prism.app, so historical real-app screenshots remain Fail until install retest."
     }
   ],
   "appSmokeRuns": [

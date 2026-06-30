@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { getMarkdownHeadingSlug, scanMarkdownLinks } from './linkDiagnostics';
 
 describe('markdown link diagnostics', () => {
@@ -26,6 +28,17 @@ describe('markdown link diagnostics', () => {
         target: '#不存在',
       },
     ]);
+  });
+
+  it('does not report missing heading anchors in the bundled Prism Markdown guide', () => {
+    const guide = readFileSync(
+      join(process.cwd(), 'src-tauri/resources/Initial/Examples/Prism Markdown 语法指南.md'),
+      'utf8',
+    );
+
+    const diagnostics = scanMarkdownLinks(guide).filter((diagnostic) => diagnostic.kind === 'missing-heading');
+
+    expect(diagnostics).toEqual([]);
   });
 
   it('reports missing relative files when workspace files are available', () => {
