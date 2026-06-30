@@ -4706,6 +4706,77 @@
       "issueRef": "P0-EXPORT-006",
       "notes": "真实 /Applications/Prism.app + Computer Use 复测；检查日志：logs/computer-use-real-app/frontmatter-export-html-check-20260701.log。",
       "windowSize": "full-screen capture 2992x1934 pixels"
+    },
+    {
+      "id": "PRISM-CU-276",
+      "date": "2026-07-01",
+      "area": "预览链接点击",
+      "feature": "修复后预览链接基线",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "打开 real-links-click.md",
+        "确认真实安装版 Prism 前台窗口",
+        "切到预览态",
+        "截图记录 wiki link、相对 Markdown link 和外链基线"
+      ],
+      "expected": "预览态三类链接均可见，且内部文档链接可被单击打开。",
+      "actual": "预览态显示 real-wiki-target、relative target 和 Prism repository 三个链接；后续 PRISM-CU-277/278 证明内部文档链接单击即打开。",
+      "status": "Pass",
+      "screenshot": "screenshots/30-installed-preview-link-click-single/03-postfix-preview-links-baseline.png",
+      "issueRef": "",
+      "notes": "pointerup 修复后真实 /Applications/Prism.app 基线截图。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log"
+      ]
+    },
+    {
+      "id": "PRISM-CU-277",
+      "date": "2026-07-01",
+      "area": "Markdown 普通链接点击",
+      "feature": "相对 Markdown link 单击打开目标",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "在预览态单击 relative target 链接一次",
+        "观察当前标题和 URL 是否切到 real-relative-target.md",
+        "截图记录打开的目标文档"
+      ],
+      "expected": "预览态相对 Markdown link 应单击即打开目标文档。",
+      "actual": "单击 relative target 一次后立即打开 real-relative-target.md；不再需要双击。",
+      "status": "Pass",
+      "screenshot": "screenshots/30-installed-preview-link-click-single/04-postfix-relative-single-click-opened.png",
+      "issueRef": "P1-PREVIEW-005",
+      "notes": "真实安装版 post-fix 复测。旧 PRISM-CU-196 作为修复前失败证据保留。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log"
+      ]
+    },
+    {
+      "id": "PRISM-CU-278",
+      "date": "2026-07-01",
+      "area": "Wiki 链接点击",
+      "feature": "wiki link 单击打开目标",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "通过文件树回到 real-links-click.md",
+        "确认预览态已激活",
+        "单击 real-wiki-target wiki link 一次",
+        "截图记录打开的目标文档"
+      ],
+      "expected": "预览态 wiki link 应单击即打开目标文档。",
+      "actual": "单击 real-wiki-target 一次后立即打开 real-wiki-target.md；不再需要双击。",
+      "status": "Pass",
+      "screenshot": "screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png",
+      "issueRef": "P1-PREVIEW-005",
+      "notes": "真实安装版 post-fix 复测。旧 PRISM-CU-195 作为修复前失败证据保留。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log"
+      ]
     }
   ],
   "testCases": [
@@ -7137,23 +7208,24 @@
       "steps": "点击 wiki link",
       "expected": "内部文档打开；找不到时 toast 提示",
       "automationHint": "单元 + 手工",
-      "status": "Fail",
-      "actual": "真实 UI 复测失败：预览态 wiki link 可见，但单击 `real-wiki-target` 只产生 hover/下划线并停留在当前文件；双击后才打开 `real-wiki-target.md`。",
-      "issueRef": "P1-PREVIEW-005",
-      "notes": "证据：PRISM-CU-194/195，日志：logs/computer-use-real-app/preview-link-click-check.log。",
+      "status": "Pass",
+      "actual": "修复后真实安装版复测通过：预览态 wiki link 可见，单击 real-wiki-target 一次即打开 real-wiki-target.md；不再需要双击。",
+      "issueRef": "",
+      "notes": "修复点：PreviewPane 对内部 wiki/local Markdown 文档链接增加 pointerup 首击兜底，并抑制随后同 anchor click 的重复导航。旧 PRISM-CU-194/195 失败证据保留；修复后证据为 PRISM-CU-276/278。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-114-wiki-wiki.png",
       "unitTestEvidence": [
-        "logs/unit-tests/diagnostics-workspace-editor.log"
+        "logs/unit-tests/preview-link-pointerup-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-195-wiki-link-opened-target-window.png",
+      "automationResult": "Unit + Installed App Pass",
+      "automationActual": "PreviewPane/SplitView 2 个测试文件 / 61 条测试通过；真实 /Applications/Prism.app 单击 wiki link 打开目标。",
+      "screenshot": "screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-194-preview-links-baseline-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-195-wiki-link-opened-target-window.png"
+        "screenshots/30-installed-preview-link-click-single/03-postfix-preview-links-baseline.png",
+        "screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png"
       ],
       "logEvidence": [
-        "logs/computer-use-real-app/preview-link-click-check.log"
+        "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log",
+        "logs/unit-tests/preview-link-pointerup-20260701.log"
       ]
     },
     {
@@ -7166,23 +7238,24 @@
       "steps": "点击",
       "expected": "内部文档走 Prism 打开；外链走系统浏览器；不支持协议被拦截",
       "automationHint": "单元 + 手工",
-      "status": "Fail",
-      "actual": "真实 UI 复测失败：预览态相对 Markdown link 可见，但单击 `relative target` 只产生 hover/下划线并停留在当前文件；双击后才打开 `real-relative-target.md`。外链本轮只确认可见，未继续打开浏览器。",
-      "issueRef": "P1-PREVIEW-005",
-      "notes": "证据：PRISM-CU-194/196，日志：logs/computer-use-real-app/preview-link-click-check.log。",
+      "status": "Pass",
+      "actual": "修复后真实安装版复测通过：预览态相对 Markdown link 可见，单击 relative target 一次即打开 real-relative-target.md；不再需要双击。外链点击策略未在本次打开浏览器验证。",
+      "issueRef": "",
+      "notes": "修复点：PreviewPane 对内部 wiki/local Markdown 文档链接增加 pointerup 首击兜底，并抑制随后同 anchor click 的重复导航。旧 PRISM-CU-194/196 失败证据保留；修复后证据为 PRISM-CU-276/277。",
       "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-115-markdown-markdown.png",
       "unitTestEvidence": [
-        "logs/unit-tests/diagnostics-workspace-editor.log"
+        "logs/unit-tests/preview-link-pointerup-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-196-relative-link-opened-target-window.png",
+      "automationResult": "Unit + Installed App Pass",
+      "automationActual": "PreviewPane/SplitView 2 个测试文件 / 61 条测试通过；真实 /Applications/Prism.app 单击相对 Markdown link 打开目标。",
+      "screenshot": "screenshots/30-installed-preview-link-click-single/04-postfix-relative-single-click-opened.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-194-preview-links-baseline-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-196-relative-link-opened-target-window.png"
+        "screenshots/30-installed-preview-link-click-single/03-postfix-preview-links-baseline.png",
+        "screenshots/30-installed-preview-link-click-single/04-postfix-relative-single-click-opened.png"
       ],
       "logEvidence": [
-        "logs/computer-use-real-app/preview-link-click-check.log"
+        "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log",
+        "logs/unit-tests/preview-link-pointerup-20260701.log"
       ]
     },
     {
@@ -8273,17 +8346,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T23:47:00+08:00",
+  "generatedAt": "2026-07-01T02:20:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 98,
-    "Fail": 40,
+    "Pass": 100,
+    "Fail": 38,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 414,
-    "manifestScreenshots": 987,
-    "uniqueManifestScreenshots": 437,
-    "computerUseRealAppEvidence": 232
+    "screenshotFiles": 419,
+    "manifestScreenshots": 990,
+    "uniqueManifestScreenshots": 440,
+    "computerUseRealAppEvidence": 235
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9612,6 +9685,18 @@
     {
       "file": "screenshots/29-installed-frontmatter-export-toc-smoke/01-frontmatter-html-export-success.png",
       "testCaseId": "PRISM-CU-275"
+    },
+    {
+      "file": "screenshots/30-installed-preview-link-click-single/03-postfix-preview-links-baseline.png",
+      "testCaseId": "PRISM-CU-276"
+    },
+    {
+      "file": "screenshots/30-installed-preview-link-click-single/04-postfix-relative-single-click-opened.png",
+      "testCaseId": "PRISM-CU-277"
+    },
+    {
+      "file": "screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png",
+      "testCaseId": "PRISM-CU-278"
     }
   ],
   "unitTestRuns": [
@@ -9755,6 +9840,22 @@
         "logs/unit-tests/command-new-registry-20260701.log"
       ],
       "notes": "Covers current New Document command semantics: create file beside current document or at workspace root, do not create Untitled in-memory document, do not open a new window, and show no-workspace toast when no target folder exists."
+    },
+    {
+      "id": "preview-link-pointerup-20260701",
+      "status": "Pass",
+      "testFiles": 2,
+      "testsPassed": 61,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx",
+        "npm run build",
+        "npm run tauri:build -- --bundles app"
+      ],
+      "logs": [
+        "logs/unit-tests/preview-link-pointerup-20260701.log"
+      ],
+      "notes": "Covers preview wiki/local Markdown document links opening on pointerup and suppressing duplicate click navigation. npm run build passed. tauri build produced Prism.app and then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured; the produced app bundle was installed for real UI retest."
     }
   ],
   "sourceFixBatches": [
@@ -10059,6 +10160,27 @@
         "npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/categories/fileCommands.test.ts passed"
       ],
       "notes": "No new source edit was required in this batch; current code and tests already reflect the corrected File > New Document semantics. Manifest old Fail records were updated to the verified current behavior."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P1-PREVIEW-005"
+      ],
+      "evidence": [
+        "PRISM-FF-114",
+        "PRISM-FF-115",
+        "PRISM-CU-276",
+        "PRISM-CU-277",
+        "PRISM-CU-278",
+        "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log",
+        "logs/unit-tests/preview-link-pointerup-20260701.log"
+      ],
+      "tests": [
+        "npm test -- --run src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx passed",
+        "npm run build passed",
+        "npm run tauri:build -- --bundles app produced Prism.app; updater signing failed because TAURI_SIGNING_PRIVATE_KEY is not configured"
+      ],
+      "notes": "PreviewPane now handles internal wiki/local Markdown document links on pointerup so the first user click can open the target even when WebView focus behavior delays click delivery. The click handler remains and same-anchor duplicate click is suppressed. Installed-app retest confirms wiki and relative Markdown links open with one click."
     }
   ],
   "appSmokeRuns": [

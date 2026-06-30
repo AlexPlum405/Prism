@@ -491,7 +491,7 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/export-artifact-validation.log`
 - 备注：当前 fixture 使用 `rectangle Prism`。若 Prism 的 PlantUML 渲染器对该语法生成空标签，应在渲染层兼容，或在诊断中提示用户使用显式别名语法。
 
-### P1-PREVIEW-005 预览链接需要双击才会打开
+### P1-PREVIEW-005 预览链接需要双击才会打开（已修复）
 
 - 严重度：P1
 - 用例 ID：PRISM-FF-114、PRISM-FF-115
@@ -509,12 +509,18 @@ Bundle ID：com.prism.editor.v1
   - 双击相对 Markdown link 后才打开 `real-relative-target.md`。
 - 预期表现：预览态链接应符合常规阅读器行为，普通单击即可打开对应 wiki/Markdown/外部链接；不应要求用户双击。
 - 复现稳定性：2026-06-30 真实 `/Applications/Prism.app` + Computer Use 复测一次。
+- 修复进展：2026-07-01 已在 `PreviewPane` 为内部 wiki/local Markdown 文档链接增加 `pointerup` 首击兜底，并抑制同一 anchor 随后的 click 重复导航；保留原 click 处理。`npm test -- --run src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx` 通过 2 个测试文件 / 61 条测试，`npm run build` 通过；`npm run tauri:build -- --bundles app` 产出 `.app` 后仅因缺少 `TAURI_SIGNING_PRIVATE_KEY` 在 updater 签名阶段失败，已使用产出的 `.app` 替换 `/Applications/Prism.app`。真实安装版复测中，相对 Markdown link 和 wiki link 均单击一次即打开目标文档。
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-194-preview-links-baseline-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-195-wiki-link-opened-target-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-196-relative-link-opened-target-window.png`
   - `logs/computer-use-real-app/preview-link-click-check.log`
-- 备注：外链在本轮只确认可见，未继续打开浏览器；因为 wiki/相对链接的单击行为已经稳定不符合预期，足以记录该交互缺陷。
+  - `screenshots/30-installed-preview-link-click-single/03-postfix-preview-links-baseline.png`
+  - `screenshots/30-installed-preview-link-click-single/04-postfix-relative-single-click-opened.png`
+  - `screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png`
+  - `logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log`
+  - `logs/unit-tests/preview-link-pointerup-20260701.log`
+- 备注：旧截图和日志保留为 pre-fix 失败证据；修复后通过证据见 `PRISM-CU-276/277/278`。外链本轮仍未继续打开浏览器，避免混入浏览器状态。
 
 ## 诊断
 

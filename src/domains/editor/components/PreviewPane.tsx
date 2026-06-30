@@ -257,6 +257,19 @@ function hasUnsupportedLinkProtocol(value: string) {
   return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value);
 }
 
+function getPreviewDocumentLinkTarget(anchor: HTMLAnchorElement) {
+  const wikiTarget = anchor.getAttribute('data-prism-wiki-target')?.trim();
+  if (wikiTarget) {
+    return { kind: 'wiki' as const, target: wikiTarget };
+  }
+
+  const rawHref = anchor.getAttribute('href')?.trim() ?? '';
+  if (!rawHref || rawHref.startsWith('#')) return null;
+  if (getExternalHttpUrl(rawHref, anchor.href)) return null;
+  if (hasUnsupportedLinkProtocol(rawHref)) return null;
+  return { kind: 'markdown' as const, target: rawHref };
+}
+
 function resolvePreviewMediaPath(rawSrc: string, documentPath?: string) {
   const src = rawSrc.trim();
   if (!src || !documentPath || src.startsWith('#') || src.startsWith('?')) return null;
@@ -1004,6 +1017,7 @@ export function PreviewPane({
 }: PreviewPaneProps) {
   const { locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
+  const pointerHandledDocumentLinkRef = useRef<{ anchor: HTMLAnchorElement; timestamp: number } | null>(null);
   const [contentTheme, setContentTheme] = useState<ContentTheme>(getCurrentContentTheme);
   const [renderContent, setRenderContent] = useState(content);
   const [renderPending, setRenderPending] = useState(false);
@@ -1139,18 +1153,51 @@ export function PreviewPane({
     const container = containerRef.current;
     if (!container) return;
 
+    const openDocumentLink = async (
+      e: MouseEvent | PointerEvent,
+      documentLink: { kind: 'markdown' | 'wiki'; target: string },
+    ) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onOpenDocumentLink) {
+        await onOpenDocumentLink(documentLink.target, { kind: documentLink.kind, sourcePath: documentPath });
+        return;
+      }
+
+      onNotice?.(documentLink.kind === 'wiki'
+        ? t('editor.preview.linkDocumentUnavailable')
+        : t('editor.preview.localLinkIntercepted'));
+    };
+
+    const handleDocumentLinkPointerUp = async (e: PointerEvent) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+      if (!anchor || !anchor.href) return;
+      const documentLink = getPreviewDocumentLinkTarget(anchor);
+      if (!documentLink) return;
+
+      pointerHandledDocumentLinkRef.current = { anchor, timestamp: performance.now() };
+      await openDocumentLink(e, documentLink);
+    };
+
     const handleLinkClick = async (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest('a');
       if (anchor && anchor.href) {
+        const pointerHandled = pointerHandledDocumentLinkRef.current;
+        if (
+          pointerHandled?.anchor === anchor
+          && performance.now() - pointerHandled.timestamp < 1000
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
         const wikiTarget = anchor.getAttribute('data-prism-wiki-target')?.trim();
         if (wikiTarget) {
-          e.preventDefault();
-          if (onOpenDocumentLink) {
-            await onOpenDocumentLink(wikiTarget, { kind: 'wiki', sourcePath: documentPath });
-          } else {
-            onNotice?.(t('editor.preview.linkDocumentUnavailable'));
-          }
+          await openDocumentLink(e, { kind: 'wiki', target: wikiTarget });
           return;
         }
 
@@ -1180,17 +1227,16 @@ export function PreviewPane({
           return;
         }
 
-        e.preventDefault();
-        if (onOpenDocumentLink) {
-          await onOpenDocumentLink(rawHref, { kind: 'markdown', sourcePath: documentPath });
-        } else {
-          onNotice?.(t('editor.preview.localLinkIntercepted'));
-        }
+        await openDocumentLink(e, { kind: 'markdown', target: rawHref });
       }
     };
 
+    container.addEventListener('pointerup', handleDocumentLinkPointerUp);
     container.addEventListener('click', handleLinkClick);
-    return () => container.removeEventListener('click', handleLinkClick);
+    return () => {
+      container.removeEventListener('pointerup', handleDocumentLinkPointerUp);
+      container.removeEventListener('click', handleLinkClick);
+    };
   }, [documentPath, html, locale, onNotice, onOpenDocumentLink]);
 
   useEffect(() => {

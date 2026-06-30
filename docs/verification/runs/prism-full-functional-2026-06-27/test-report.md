@@ -11,7 +11,7 @@ Bundle ID：com.prism.editor.v1
 
 测试继续推进，并在 2026-06-29 恢复了真实 `/Applications/Prism.app` + Computer Use 验证。旧结论“Computer Use 不可用、真实 App 完全不可测”不再成立：本轮真实窗口中已验证编辑/预览/分栏、快速打开、全文搜索、替换、设置六个分区、完整主菜单、文件树菜单、帮助弹窗、知识面板、图表预览、任务列表与脚注等功能。
 
-截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 231 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续 `17` 到 `28` 的安装版专项截图目录。
+截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 235 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续安装版专项截图目录。
 
 2026-06-29 继续补测文件类型与导出：Markdown fixture 可正常打开；但真实 App 通过系统路径打开 JSON/SQL/TXT 会进入空白白屏窗口，`PRISM-FF-008` 已从 browser mock Pass 改为真实 App Fail。错误文档 preflight 已真实阻断 HTML 导出；干净 Markdown fixture 的 HTML/PDF/PNG/DOCX 四种真实导出已完成基础验收，PNG 保持 `极致 4x` 输出为 `4160x4800`，DOCX 通过 zip 结构和 `textutil` 正文提取校验。
 
@@ -36,6 +36,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 2026-06-30 继续补测编辑器横向滚动：新增长行 fixture，关闭自动换行后长行保持单行溢出，按 End 可把视口移动到行尾，状态栏列号到 `5:485`；测试后已恢复自动换行。
 
 2026-06-30 补测预览链接点击：wiki link、相对 Markdown link、外链均可见；但 wiki link 和相对 Markdown link 单击只产生 hover/下划线，不触发打开，双击才会打开目标文档。新增 `P1-PREVIEW-005`，`PRISM-FF-114/115` 标记为 Fail。
+
+2026-07-01 修复并复测 `P1-PREVIEW-005`：`PreviewPane` 对内部 wiki/local Markdown 文档链接增加 `pointerup` 首击兜底，并抑制同一 anchor 随后的 click 重复导航。`PreviewPane/SplitView` 相关测试通过 2 个测试文件 / 61 条；`npm run build` 通过；macOS `.app` 已重新打包并替换 `/Applications/Prism.app`。真实安装版复测确认 `relative target` 和 `real-wiki-target` 均单击一次打开目标文档，`PRISM-FF-114/115` 改为 Pass。证据见 `screenshots/30-installed-preview-link-click-single/`、`logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log` 和 `logs/unit-tests/preview-link-pointerup-20260701.log`。
 
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
@@ -92,21 +94,21 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：98
-- Fail：40
+- Pass：100
+- Fail：38
 - Blocked：30
 - Not Run：0
 - P0 执行：Pass 61 / Fail 26 / Blocked 1 / Not Run 0
-- P1 执行：Pass 30 / Fail 13 / Blocked 13 / Not Run 0
+- P1 执行：Pass 32 / Fail 11 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：414
-- Manifest 真实 Computer Use 截图引用：232
+- 当前截图文件总数：419
+- Manifest 真实 Computer Use 截图引用：235
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：232（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`）
-- 单元/集成测试批次：9
-- 单元/集成测试文件通过：63
-- 单元/集成测试断言通过：699
+- 真实 Computer Use/安装版 UI 截图：235（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`）
+- 单元/集成测试批次：10
+- 单元/集成测试文件通过：65
+- 单元/集成测试断言通过：760
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已重新打包后安装版真实复测通过，历史失败证据保留为 pre-fix 记录
@@ -143,6 +145,9 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 图片剪贴板安装版复测截图：screenshots/22-installed-image-paste-smoke/
 - 2026-06-30 选区菜单与 callout 安装版复测截图：screenshots/23-installed-selection-context-smoke/
 - 2026-06-30 工作区全文搜索与原生 File 菜单安装版复测截图：screenshots/24-installed-workspace-search-menu-smoke/
+- 2026-07-01 预览链接单击修复后安装版复测截图：screenshots/30-installed-preview-link-click-single/
+- 2026-07-01 预览链接单击修复后安装版复测日志：logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log
+- 2026-07-01 预览链接 pointerup 单测日志：logs/unit-tests/preview-link-pointerup-20260701.log
 
 ## 2026-06-30 修复批次状态
 

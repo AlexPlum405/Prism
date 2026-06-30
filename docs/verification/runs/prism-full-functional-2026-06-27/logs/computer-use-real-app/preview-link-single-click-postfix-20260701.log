@@ -1,0 +1,45 @@
+PRISM preview link single-click post-fix verification, 2026-07-01
+
+App:
+- /Applications/Prism.app
+- Bundle ID: com.prism.editor.v1
+- Version: 1.4.1
+
+Fixture:
+- docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md
+- Workspace folder: docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app
+
+Source change:
+- PreviewPane now handles internal wiki/local Markdown document links on pointerup as a first-click fallback.
+- The following click event from the same anchor is suppressed for 1000 ms to avoid duplicate navigation.
+- Existing click handling remains in place for normal browser click behavior and external links.
+
+Automated/unit verification:
+- npm test -- --run src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx
+- Result: Pass, 2 files / 61 tests.
+- Log: logs/unit-tests/preview-link-pointerup-20260701.log
+
+Build/package verification:
+- npm run build passed.
+- npm run tauri:build -- --bundles app produced src-tauri/target/release/bundle/macos/Prism.app.
+- tauri build exited non-zero only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured.
+- Produced Prism.app was installed to /Applications/Prism.app.
+- Previous installed app was moved to .codex-app-backups/Prism-20260701-020857.app.
+
+Installed-app verification:
+1. Opened real-links-click.md in /Applications/Prism.app.
+2. Switched to preview mode.
+3. Captured post-fix baseline screenshot:
+   screenshots/30-installed-preview-link-click-single/03-postfix-preview-links-baseline.png
+4. Single-clicked relative target once.
+   Result: opened real-relative-target.md immediately.
+   Screenshot: screenshots/30-installed-preview-link-click-single/04-postfix-relative-single-click-opened.png
+5. Returned to real-links-click.md through the file tree to avoid open -a focus ambiguity.
+6. Confirmed preview mode was active.
+7. Single-clicked real-wiki-target once.
+   Result: opened real-wiki-target.md immediately.
+   Screenshot: screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png
+
+Notes:
+- Earlier screenshots 01/02 in the same folder were captured before reinstalling the pointerup build and are retained as exploratory evidence only.
+- During retest, open -a and inactive windows can consume the first UI click for focus. Final pass evidence was captured after the Prism window and preview state were confirmed through Computer Use.

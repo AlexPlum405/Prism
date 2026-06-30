@@ -951,6 +951,31 @@ describe('PreviewPane theme switching', () => {
     });
   });
 
+  it('opens local markdown links on pointerup and suppresses the following click', async () => {
+    const onOpenDocumentLink = vi.fn();
+    vi.mocked(markdownToHtml).mockReturnValueOnce('<a href="docs/local.md">本地链接</a>');
+
+    render(
+      <PreviewPane
+        content="[本地链接](docs/local.md)"
+        documentPath="/repo/current.md"
+        onOpenDocumentLink={onOpenDocumentLink}
+      />,
+    );
+    const link = await screen.findByText('本地链接');
+
+    fireEvent.pointerUp(link, { button: 0 });
+    fireEvent.click(link);
+
+    await waitFor(() => {
+      expect(onOpenDocumentLink).toHaveBeenCalledTimes(1);
+      expect(onOpenDocumentLink).toHaveBeenCalledWith('docs/local.md', {
+        kind: 'markdown',
+        sourcePath: '/repo/current.md',
+      });
+    });
+  });
+
   it('opens wiki document links through the document link handler', async () => {
     const onOpenDocumentLink = vi.fn();
     vi.mocked(markdownToHtml).mockReturnValueOnce(
@@ -965,6 +990,30 @@ describe('PreviewPane theme switching', () => {
       />,
     );
     fireEvent.click(await screen.findByText('manual-test'));
+
+    await waitFor(() => {
+      expect(onOpenDocumentLink).toHaveBeenCalledWith('manual-test', {
+        kind: 'wiki',
+        sourcePath: '/repo/current.md',
+      });
+    });
+  });
+
+  it('opens wiki document links on pointerup', async () => {
+    const onOpenDocumentLink = vi.fn();
+    vi.mocked(markdownToHtml).mockReturnValueOnce(
+      '<a href="#" class="prism-wiki-link" data-prism-wiki-target="manual-test">manual-test</a>',
+    );
+
+    render(
+      <PreviewPane
+        content="[[manual-test]]"
+        documentPath="/repo/current.md"
+        onOpenDocumentLink={onOpenDocumentLink}
+      />,
+    );
+
+    fireEvent.pointerUp(await screen.findByText('manual-test'), { button: 0 });
 
     await waitFor(() => {
       expect(onOpenDocumentLink).toHaveBeenCalledWith('manual-test', {

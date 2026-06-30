@@ -1,0 +1,12 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SplitView.test.tsx
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  2 passed (2)
+      Tests  61 passed (61)
+   Start at  02:17:00
+   Duration  1.49s (transform 644ms, setup 130ms, import 850ms, tests 667ms, environment 1.11s)
