@@ -39,6 +39,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 修复并复测 `P1-PREVIEW-005`：`PreviewPane` 对内部 wiki/local Markdown 文档链接增加 `pointerup` 首击兜底，并抑制同一 anchor 随后的 click 重复导航。`PreviewPane/SplitView` 相关测试通过 2 个测试文件 / 61 条；`npm run build` 通过；macOS `.app` 已重新打包并替换 `/Applications/Prism.app`。真实安装版复测确认 `relative target` 和 `real-wiki-target` 均单击一次打开目标文档，`PRISM-FF-114/115` 改为 Pass。证据见 `screenshots/30-installed-preview-link-click-single/`、`logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log` 和 `logs/unit-tests/preview-link-pointerup-20260701.log`。
 
+2026-07-01 批量闭环历史 P0 Fail：依据既有安装版 post-fix 证据，把默认指南启动/新窗口、系统打开文本文件、外部修改冲突、基础剪贴板、图片粘贴、默认指南诊断、Typography 诊断、反链/图谱和设置六分区相关用例从历史 Fail 改为 Pass。此次不新增源码改动，只同步 manifest/report 状态；显式 URL 打开文件/文件夹和图表渲染保真仍保持 Fail，等待专项验证。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -94,11 +96,11 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：100
-- Fail：38
+- Pass：121
+- Fail：17
 - Blocked：30
 - Not Run：0
-- P0 执行：Pass 61 / Fail 26 / Blocked 1 / Not Run 0
+- P0 执行：Pass 82 / Fail 5 / Blocked 1 / Not Run 0
 - P1 执行：Pass 32 / Fail 11 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0

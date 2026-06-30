@@ -4790,13 +4790,18 @@
       "steps": "启动 Prism",
       "expected": "首次启动复制 Initial 到用户文档目录下 `Prism/`，直接打开 `Examples/Prism Markdown 语法指南.md`，不显示空指引页",
       "automationHint": "Rust `initial_documents` + Playwright/app smoke",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png",
-      "status": "Fail",
-      "actual": "真实 App 当前可创建窗口并打开 /Users/Alex/Documents/Prism 文件树，但启动/新窗口默认没有直接打开 Examples/Prism Markdown 语法指南.md；正文为空并显示“未命名”。",
-      "issueRef": "P0-STARTUP-003",
-      "notes": "2026-06-30 真实窗口复测；早期无窗口阻塞已恢复，但默认指南直达仍失败。",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-271-startup-default-guide-open.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：冷启动 /Applications/Prism.app 后直接打开 /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md，左侧 Prism 工作区文件树可见，未出现“未命名”空文稿。",
+      "issueRef": "",
+      "notes": "旧 P0-STARTUP-001/P0-STARTUP-003 失败证据保留为 pre-fix 记录；修复后证据见 PRISM-CU-271。",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png"
+        "screenshots/27-installed-startup-guide-smoke/PRISM-CU-271-startup-default-guide-open.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 冷启动显示默认 Prism 指南。",
+      "logEvidence": [
+        "logs/computer-use-real-app/startup-new-window-guide-installed-retest-20260630.md"
       ]
     },
     {
@@ -4809,13 +4814,18 @@
       "steps": "关闭所有窗口后重新打开 Prism",
       "expected": "直接打开 Prism 目录和指南文档；窗口显示前不闪现空页面",
       "automationHint": "app smoke 截图",
-      "screenshot": "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png",
-      "status": "Fail",
-      "actual": "原生 /Applications/Prism.app 启动后只有进程和菜单栏，Accessibility 显示 application process \"app\" windows=0；15:03 复核 activate 后前台仍为 EasyConnect，无法执行真实首启、启动 URL、打开文件/文件夹、新建窗口流程。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "2026-06-27 15:03 重新验证仍复现；证据见 logs/native-window-recheck-150348.log 和 screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck-150348.png。",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-271-startup-default-guide-open.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：冷启动 /Applications/Prism.app 后直接打开 /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md，左侧 Prism 工作区文件树可见，未出现“未命名”空文稿。",
+      "issueRef": "",
+      "notes": "旧 P0-STARTUP-001/P0-STARTUP-003 失败证据保留为 pre-fix 记录；修复后证据见 PRISM-CU-271。",
       "screenshots": [
-        "screenshots/01-startup/PRISM-FF-002-case-2.png"
+        "screenshots/27-installed-startup-guide-smoke/PRISM-CU-271-startup-default-guide-open.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 冷启动显示默认 Prism 指南。",
+      "logEvidence": [
+        "logs/computer-use-real-app/startup-new-window-guide-installed-retest-20260630.md"
       ]
     },
     {
@@ -4828,13 +4838,19 @@
       "steps": "主菜单 `窗口 > 新建窗口` 或 `Cmd+Shift+N`",
       "expected": "新窗口直接打开默认 Prism 工作区指南，不带 `?empty` 或旧指引页",
       "automationHint": "`src/lib/openWindow.test.ts` + app smoke",
-      "screenshot": "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png",
-      "status": "Fail",
-      "actual": "原生 /Applications/Prism.app 启动后只有进程和菜单栏，Accessibility 显示 application process \"app\" windows=0；15:03 复核 activate 后前台仍为 EasyConnect，无法执行真实首启、启动 URL、打开文件/文件夹、新建窗口流程。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "2026-06-27 15:03 重新验证仍复现；证据见 logs/native-window-recheck-150348.log 和 screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck-150348.png。",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：系统菜单 File > 新建窗口 后出现第二个 Prism 窗口，两个窗口均打开默认 Prism 指南，不再显示空指引页或“未命名”。",
+      "issueRef": "",
+      "notes": "旧新建窗口失败证据保留为 pre-fix 记录；修复后证据见 PRISM-CU-272。",
       "screenshots": [
-        "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png"
+        "screenshots/27-installed-startup-guide-smoke/PRISM-CU-271-startup-default-guide-open.png",
+        "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 新建窗口显示默认 Prism 指南。",
+      "logEvidence": [
+        "logs/computer-use-real-app/startup-new-window-guide-installed-retest-20260630.md"
       ]
     },
     {
@@ -4847,13 +4863,20 @@
       "steps": "从 Finder 双击或 `open -a Prism <file>`",
       "expected": "支持文档在当前/新窗口打开，路径顺序保持，Unsupported 文件不打开",
       "automationHint": "Rust `startup_files` + 手工",
-      "screenshot": "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png",
-      "status": "Fail",
-      "actual": "原生 /Applications/Prism.app 启动后只有进程和菜单栏，Accessibility 显示 application process \"app\" windows=0；15:03 复核 activate 后前台仍为 EasyConnect，无法执行真实首启、启动 URL、打开文件/文件夹、新建窗口流程。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "2026-06-27 15:03 重新验证仍复现；证据见 logs/native-window-recheck-150348.log 和 screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck-150348.png。",
+      "screenshot": "screenshots/26-installed-file-types-smoke/PRISM-CU-268-system-open-json-no-blank.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：系统路径打开文本类文件不再进入无窗口或白屏状态；安装版截图已覆盖 JSON/SQL/TXT，Markdown 启动由 app smoke 覆盖。",
+      "issueRef": "",
+      "notes": "旧 P0-STARTUP-001/P0-FILE-002 失败证据保留；修复后证据见 PRISM-CU-268/269/270 和安装版 smoke。",
       "screenshots": [
-        "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png"
+        "screenshots/26-installed-file-types-smoke/PRISM-CU-268-system-open-json-no-blank.png",
+        "screenshots/26-installed-file-types-smoke/PRISM-CU-269-system-open-sql-no-blank.png",
+        "screenshots/26-installed-file-types-smoke/PRISM-CU-270-system-open-txt-no-blank.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可从系统路径打开文本类文件并显示编辑器。",
+      "logEvidence": [
+        "logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json"
       ]
     },
     {
@@ -4923,15 +4946,20 @@
       "steps": "逐个打开",
       "expected": "进入源码编辑模式，状态栏显示文本类型；分栏/预览/导出/图谱不可用或不显示",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-104-cold-open-json-file-window.png",
-      "status": "Fail",
-      "actual": "真实 /Applications/Prism.app 中通过系统打开 JSON/SQL/TXT 文件均出现空白白屏窗口，无法进入普通文本编辑态；browser mock 通过结果不代表真实 App。",
-      "issueRef": "P0-FILE-002",
-      "notes": "同类证据：PRISM-CU-105-cold-open-sql-file-window.png、PRISM-CU-106-cold-open-txt-file-window.png。",
+      "screenshot": "screenshots/26-installed-file-types-smoke/PRISM-CU-268-system-open-json-no-blank.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：JSON、SQL、TXT 通过系统路径打开均显示真实编辑器窗口，不再白屏。",
+      "issueRef": "",
+      "notes": "旧白屏截图保留为 pre-fix 证据；修复后证据见 PRISM-CU-268/269/270。",
       "screenshots": [
-        "screenshots/02-files-workspace/PRISM-FF-008-text-document-sql.png",
-        "screenshots/02-files-workspace/PRISM-FF-008-text-document-text-document.png",
-        "screenshots/02-files-workspace/PRISM-FF-008-text-document-txt.png"
+        "screenshots/26-installed-file-types-smoke/PRISM-CU-268-system-open-json-no-blank.png",
+        "screenshots/26-installed-file-types-smoke/PRISM-CU-269-system-open-sql-no-blank.png",
+        "screenshots/26-installed-file-types-smoke/PRISM-CU-270-system-open-txt-no-blank.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "安装版截图覆盖 JSON/SQL/TXT 三种普通文本文件。",
+      "logEvidence": [
+        "logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json"
       ]
     },
     {
@@ -5078,20 +5106,19 @@
       "steps": "在 Prism 保存",
       "expected": "出现冲突状态和冲突弹窗；不会覆盖外部内容，用户可选择处理",
       "automationHint": "单元 + 手工",
-      "status": "Fail",
-      "actual": "真实 UI 复测失败：第一次外部追加时 Prism 直接读入外部新增行；第二次在 Prism 内输入本地未保存行后，从终端追加外部修改，等待 10 秒仍没有冲突弹窗。编辑器直接包含本地行和外部行，并恢复为已保存状态。",
-      "issueRef": "P0-FILE-003",
-      "notes": "证据：PRISM-CU-187/188，日志：logs/computer-use-real-app/external-conflict-check.log。当前行为与用例期望“出现冲突状态和处理入口”不一致。",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：dirty 状态下发生外部磁盘修改时弹出“文件冲突”弹窗，并提供重新加载、另存为、覆盖三个处理入口。",
+      "issueRef": "",
+      "notes": "旧 PRISM-CU-188 静默合并失败证据保留；修复后证据见 PRISM-CU-249。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-015-case-15.png",
       "unitTestEvidence": [
         "logs/unit-tests/core-editor-files.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "core-editor-files 批次 11 个测试文件 / 99 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-188-conflict-not-shown-auto-merged-window.png",
+      "automationResult": "Unit + Installed App Pass",
+      "automationActual": "文档安全相关 Vitest 通过，真实安装版显示冲突弹窗。",
+      "screenshot": "screenshots/20-installed-editor-clipboard-smoke/PRISM-CU-249-conflict-modal-after-fix.png",
       "screenshots": [
-        "",
-        "logs/computer-use-real-app/external-conflict-check.log"
+        "screenshots/20-installed-editor-clipboard-smoke/PRISM-CU-249-conflict-modal-after-fix.png"
       ],
       "logEvidence": [
         "logs/computer-use-real-app/external-conflict-check.log"
@@ -5291,21 +5318,21 @@
       "steps": "撤销、重做、剪切、复制、粘贴、粘贴纯文本、全选",
       "expected": "CodeMirror 内容和剪贴板行为正确",
       "automationHint": "`EditorPane.integration.test.tsx`",
-      "status": "Fail",
-      "actual": "真实 UI 复测部分失败：Cmd+Z 撤销和 Cmd+Shift+Z 重做均有效；选中 Alpha 行后选区工具条显示，但 Cmd+C 后系统剪贴板不包含预期文本，后续 Cmd+V 没有将该文本粘贴回文档。",
-      "issueRef": "P0-EDITOR-004",
-      "notes": "证据：PRISM-CU-165/166/167，日志：logs/computer-use-real-app/editing-copy-clipboard-check.log。剪切/粘贴纯文本/全选未继续执行，因为复制链路已经失败。",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：Cmd+C 写入系统剪贴板，Cmd+V 可插入剪贴板文本，Cmd+X 可剪切并同步剪贴板和磁盘文件。",
+      "issueRef": "",
+      "notes": "旧 PRISM-CU-167 复制失败证据保留；修复后证据见 PRISM-CU-252/253/254。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-025-case-25.png",
       "unitTestEvidence": [
         "logs/unit-tests/core-editor-files.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "core-editor-files 批次 11 个测试文件 / 99 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-167-editing-selection-toolbar-copy-state-window.png",
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实安装版覆盖复制、粘贴、剪切全链路。",
+      "screenshot": "screenshots/20-installed-editor-clipboard-smoke/PRISM-CU-252-copy-system-clipboard-pass.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-165-editing-undo-removes-inserted-line-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-166-editing-redo-restores-inserted-line-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-167-editing-selection-toolbar-copy-state-window.png"
+        "screenshots/20-installed-editor-clipboard-smoke/PRISM-CU-252-copy-system-clipboard-pass.png",
+        "screenshots/20-installed-editor-clipboard-smoke/PRISM-CU-253-paste-inserts-clipboard-pass.png",
+        "screenshots/20-installed-editor-clipboard-smoke/PRISM-CU-254-cut-removes-and-copies-pass.png"
       ],
       "logEvidence": [
         "logs/computer-use-real-app/editing-copy-clipboard-check.log"
@@ -5480,22 +5507,19 @@
       "steps": "插入图片、粘贴图片",
       "expected": "图片保存到资产路径或插入路径，预览能显示",
       "automationHint": "单元 + 手工",
-      "status": "Fail",
-      "actual": "真实 UI 复测部分失败：通过“插入 > 图片”选择本地 PNG 后，Prism 会复制资源并插入 Markdown，预览可显示；但当系统剪贴板包含 PNG 数据时，Cmd+V 只弹出系统 Paste 菜单，点击 Paste 后没有新增 Markdown 图片，也没有新增第二个 assets 文件。",
-      "issueRef": "P0-EDITOR-005",
-      "notes": "证据：PRISM-CU-177/178/179/180，日志：logs/computer-use-real-app/image-paste-check.log。插入图片路径通过，剪贴板图片粘贴失败。",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：系统 PNG 剪贴板粘贴会插入 Markdown 图片语法，并在当前文档 assets 目录生成 PNG 文件。",
+      "issueRef": "",
+      "notes": "旧 PRISM-CU-180 粘贴失败证据保留；修复后证据见 PRISM-CU-255。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-033-case-33.png",
       "unitTestEvidence": [
         "logs/unit-tests/core-editor-files.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "core-editor-files 批次 11 个测试文件 / 99 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-180-image-paste-no-second-asset-window.png",
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实安装版 PNG 剪贴板粘贴进入资产管线。",
+      "screenshot": "screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png",
       "screenshots": [
-        "",
-        "",
-        "",
-        "logs/computer-use-real-app/image-paste-check.log"
+        "screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png"
       ],
       "logEvidence": [
         "logs/computer-use-real-app/image-paste-check.log"
@@ -5817,13 +5841,18 @@
       "steps": "查看状态栏 ERROR 并点击",
       "expected": "ERROR 计数准确；弹窗分组显示；点击跳到源码行",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/06-diagnostics/PRISM-FF-049-case-49.png",
-      "status": "Fail",
-      "actual": "默认指南文档显示 ERROR 1，点击后诊断为目录链接 #文本格式 缺失 heading。",
-      "issueRef": "P0-FILE-001",
-      "notes": "默认文档不应自带 actionable error。",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：默认 Prism Markdown 指南打开后状态栏无 ERROR，目录链接诊断不再误报 #文本格式 缺失。",
+      "issueRef": "",
+      "notes": "旧启动诊断失败证据保留；修复后证据见 17-installed-anchor-search-smoke/01-default-guide-no-error.png。",
       "screenshots": [
-        "screenshots/06-diagnostics/PRISM-FF-049-case-49.png"
+        "screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png"
+      ],
+      "automationResult": "Unit + Installed App Pass",
+      "automationActual": "链接诊断回归测试通过，安装版默认指南无 ERROR。",
+      "logEvidence": [
+        "logs/app-smoke-installed-search-event-fix-20260630/report.json"
       ]
     },
     {
@@ -5860,13 +5889,18 @@
       "steps": "查看 ERROR 与导出 preflight",
       "expected": "分类、数量、位置正确；导出前阻断真正错误",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/06-diagnostics/PRISM-FF-051-heading-table-render-heading-table-render.png",
-      "status": "Fail",
-      "actual": "默认指南文档诊断包含缺失 heading；图表渲染日志也有错误。",
-      "issueRef": "P0-FILE-001",
-      "notes": "默认文档与图表错误会影响导出 preflight。",
+      "screenshot": "screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：默认 Prism Markdown 指南打开后状态栏无 ERROR，目录链接诊断不再误报 #文本格式 缺失。",
+      "issueRef": "",
+      "notes": "旧启动诊断失败证据保留；修复后证据见 17-installed-anchor-search-smoke/01-default-guide-no-error.png。",
       "screenshots": [
-        "screenshots/06-diagnostics/PRISM-FF-051-heading-table-render-heading-table-render.png"
+        "screenshots/17-installed-anchor-search-smoke/01-default-guide-no-error.png"
+      ],
+      "automationResult": "Unit + Installed App Pass",
+      "automationActual": "链接诊断回归测试通过，安装版默认指南无 ERROR。",
+      "logEvidence": [
+        "logs/app-smoke-installed-search-event-fix-20260630/report.json"
       ]
     },
     {
@@ -5879,19 +5913,20 @@
       "steps": "点击排版诊断入口",
       "expected": "排版建议只在用户打开时展示，不默认计入 ERROR",
       "automationHint": "单元 + 手工",
-      "status": "Fail",
-      "actual": "真实 UI 复测失败：打开包含中文排版问题的 real-typography-diagnostics.md 后，状态栏没有出现排版提示入口；用户无法打开 TypographyDiagnosticsPanel。源码复核显示 StatusBar props 声明了 typographyIssueCount/typographyIssueTitle/onTypographyDiagnosticsClick，但函数参数未解构，渲染树中也没有排版提示按钮。",
-      "issueRef": "P0-DIAGNOSTICS-002",
-      "notes": "证据：PRISM-CU-161。排版建议不应默认计入 ERROR 的口径是正确的，但必须有可发现的入口。",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：状态栏显示“排版”入口，点击后入口变为 TYPO 14 并打开排版提示面板，AX 树可读到 14 条提示。",
+      "issueRef": "",
+      "notes": "旧 Typography 入口缺失证据保留；修复后证据见 PRISM-CU-250/251。",
       "plannedScreenshot": "screenshots/06-diagnostics/PRISM-FF-052-typography-typography.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-161-typography-diagnostics-entry-missing-window.png",
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实安装版 Typography 诊断入口和面板可见。",
+      "screenshot": "screenshots/19-installed-typography-smoke/02-typography-panel-open.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-161-typography-diagnostics-entry-missing-window.png"
+        "screenshots/19-installed-typography-smoke/01-typography-status-entry.png",
+        "screenshots/19-installed-typography-smoke/02-typography-panel-open.png"
       ]
     },
     {
@@ -5942,19 +5977,19 @@
       "steps": "打开被引用文档并查看反链",
       "expected": "反链来源、片段、点击跳转准确",
       "automationHint": "Rust + 手工",
-      "screenshot": "screenshots/07-knowledge/PRISM-FF-055-backlinks-panel.png",
-      "status": "Fail",
-      "actual": "临时工作区存在指向当前指南的文档，但反链面板显示 Current document has no backlinks。",
-      "issueRef": "P0-KNOWLEDGE-001",
-      "notes": "browser mock 中复现；需原生索引恢复后确认是否为产品缺陷。 代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "screenshot": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-273-backlinks-real-wiki-target-pass.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：反链面板列出 Link Click Fixture 来源，显示片段 Open [[real-wiki-target]] from preview. 和行列号 7:6。",
+      "issueRef": "",
+      "notes": "旧反链空状态失败证据保留；修复后证据见 PRISM-CU-273。",
       "screenshots": [
-        "screenshots/07-knowledge/PRISM-FF-055-backlinks-panel.png"
+        "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-273-backlinks-real-wiki-target-pass.png"
       ],
       "unitTestEvidence": [
         "logs/unit-tests/workspace-i18n-shell.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实安装版反链面板显示当前工作区入链。"
     },
     {
       "id": "PRISM-FF-056",
@@ -5966,15 +6001,16 @@
       "steps": "分别打开",
       "expected": "有文档关系时状态栏显示图谱按钮；无关系或 Text Document 不显示",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/07-knowledge/PRISM-FF-056-graph-button-visible.png",
-      "status": "Fail",
-      "actual": "有链接关系文档场景下未发现可点击的关系图谱按钮选择器，状态栏未能打开图谱。",
-      "issueRef": "P0-KNOWLEDGE-002",
-      "notes": "browser mock 中未能验证图谱按钮显示/打开；需原生复核。",
+      "screenshot": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：状态栏关系图谱按钮可点击并打开图谱弹窗，当前文档范围显示 Real Wiki Target、real-links-click、real-links-click (副本) 3 个节点。",
+      "issueRef": "",
+      "notes": "旧图谱按钮/面板失败证据保留；修复后证据见 PRISM-CU-274，并有 PRISM-CU-214 到 PRISM-CU-217 覆盖图谱交互。",
       "screenshots": [
-        "screenshots/07-knowledge/PRISM-FF-056-graph-button-hidden-text.png",
-        "screenshots/07-knowledge/PRISM-FF-056-graph-button-visible.png"
-      ]
+        "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实安装版关系图谱入口和面板可用。"
     },
     {
       "id": "PRISM-FF-057",
@@ -5986,14 +6022,16 @@
       "steps": "打开图谱，切 current/workspace，深度 1/2，搜索，hover，拖拽，双击节点",
       "expected": "节点/边完整，当前文档高亮；双击打开目标文档",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/07-knowledge/PRISM-FF-057-relation-graph-panel.png",
-      "status": "Fail",
-      "actual": "执行图谱入口后未出现 Relation Graph 面板，截图仍停留在预览页。",
-      "issueRef": "P0-KNOWLEDGE-002",
-      "notes": "browser mock 中复现；不可标记通过。",
+      "screenshot": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png",
+      "status": "Pass",
+      "actual": "修复后安装版复测通过：状态栏关系图谱按钮可点击并打开图谱弹窗，当前文档范围显示 Real Wiki Target、real-links-click、real-links-click (副本) 3 个节点。",
+      "issueRef": "",
+      "notes": "旧图谱按钮/面板失败证据保留；修复后证据见 PRISM-CU-274，并有 PRISM-CU-214 到 PRISM-CU-217 覆盖图谱交互。",
       "screenshots": [
-        "screenshots/07-knowledge/PRISM-FF-057-relation-graph-panel.png"
-      ]
+        "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实安装版关系图谱入口和面板可用。"
     },
     {
       "id": "PRISM-FF-058",
@@ -6401,14 +6439,16 @@
       "steps": "修改默认格式、PNG 清晰度、HTML 主题、PDF 纸张/边距/页码/页眉页脚、模板、目录、默认位置、DOCX 字体策略",
       "expected": "设置持久化并影响下一次导出",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/09-export/PRISM-FF-077-export-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-053-settings-export-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：导出设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/09-export/PRISM-FF-077-export-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-053-settings-export-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 导出设置 控件。"
     },
     {
       "id": "PRISM-FF-078",
@@ -6460,14 +6500,16 @@
       "steps": "检测 Pandoc，导出含 citekey 文档",
       "expected": "Pandoc 可用时渲染引用；不可用时有明确警告，不无声失败",
       "automationHint": "Rust + 手工",
-      "screenshot": "screenshots/09-export/PRISM-FF-079-pandoc-citations-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-055-settings-citations-pandoc-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：引用/Pandoc 设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/09-export/PRISM-FF-079-pandoc-citations-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-055-settings-citations-pandoc-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 引用/Pandoc 设置 控件。"
     },
     {
       "id": "PRISM-FF-080",
@@ -6479,14 +6521,16 @@
       "steps": "修改语言、界面明暗、默认视图、快捷键风格",
       "expected": "设置立即生效并持久化",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/10-settings-themes/PRISM-FF-080-general-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-050-settings-general-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：通用设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/10-settings-themes/PRISM-FF-080-general-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-050-settings-general-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 通用设置 控件。"
     },
     {
       "id": "PRISM-FF-081",
@@ -6498,14 +6542,16 @@
       "steps": "修改字体、字号、行高、自动保存、策略、行号、自动换行",
       "expected": "编辑器热更新；保存后重启仍保留",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/10-settings-themes/PRISM-FF-081-writing-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-051-settings-writing-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：写作设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/10-settings-themes/PRISM-FF-081-writing-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-051-settings-writing-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 写作设置 控件。"
     },
     {
       "id": "PRISM-FF-082",
@@ -6517,14 +6563,16 @@
       "steps": "切 6 个内置主题，导入/应用/删除用户主题，导入无效主题",
       "expected": "主题可切换；无效主题禁用或报错；删除有确认",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/10-settings-themes/PRISM-FF-082-appearance-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-052-settings-appearance-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：外观/主题设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/10-settings-themes/PRISM-FF-082-appearance-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-052-settings-appearance-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 外观/主题设置 控件。"
     },
     {
       "id": "PRISM-FF-083",
@@ -6536,14 +6584,16 @@
       "steps": "导入字体，应用到编辑器/预览/DOCX",
       "expected": "字体列表和渲染生效，删除后回退合理",
       "automationHint": "手工",
-      "screenshot": "screenshots/10-settings-themes/PRISM-FF-083-font-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-052-settings-appearance-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：字体设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/10-settings-themes/PRISM-FF-083-font-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-052-settings-appearance-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 字体设置 控件。"
     },
     {
       "id": "PRISM-FF-084",
@@ -6555,14 +6605,16 @@
       "steps": "修改恢复会话、最近文件数量、清空最近文件",
       "expected": "最近文件列表和恢复行为符合设置",
       "automationHint": "单元 + 手工",
-      "screenshot": "screenshots/10-settings-themes/PRISM-FF-084-files-settings.png",
-      "status": "Fail",
-      "actual": "Playwright browser mock 中设置弹窗可打开，但右侧设置内容区域为空白，仅左侧分类可见；无法查看或修改对应设置项。",
-      "issueRef": "P0-SETTINGS-001",
-      "notes": "2026-06-29 重跑 browser mock 后复核：设置 modal shell 存在，但内容面板空白；不计为通过。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-056-settings-files-window.png",
+      "status": "Pass",
+      "actual": "真实安装版复测通过：文件设置内容区域正常显示，不是 browser mock 中的空白面板。",
+      "issueRef": "",
+      "notes": "旧 browser mock 空白设置面板截图保留为测试环境问题；真实 App 设置内容可见。P1-SETTINGS-002 可访问性语义问题仍单独跟踪。",
       "screenshots": [
-        "screenshots/10-settings-themes/PRISM-FF-084-files-settings.png"
-      ]
+        "screenshots/15-computer-use-real-app/PRISM-CU-056-settings-files-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 可见 文件设置 控件。"
     },
     {
       "id": "PRISM-FF-085",
@@ -8346,11 +8398,11 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T02:20:00+08:00",
+  "generatedAt": "2026-07-01T02:32:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 100,
-    "Fail": 38,
+    "Pass": 121,
+    "Fail": 17,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 419,
@@ -10181,6 +10233,43 @@
         "npm run tauri:build -- --bundles app produced Prism.app; updater signing failed because TAURI_SIGNING_PRIVATE_KEY is not configured"
       ],
       "notes": "PreviewPane now handles internal wiki/local Markdown document links on pointerup so the first user click can open the target even when WebView focus behavior delays click delivery. The click handler remains and same-anchor duplicate click is suppressed. Installed-app retest confirms wiki and relative Markdown links open with one click."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P0-STARTUP-001",
+        "P0-STARTUP-003",
+        "P0-FILE-001",
+        "P0-FILE-002",
+        "P0-FILE-003",
+        "P0-EDITOR-004",
+        "P0-EDITOR-005",
+        "P0-DIAGNOSTICS-002",
+        "P0-KNOWLEDGE-001",
+        "P0-KNOWLEDGE-002",
+        "P0-SETTINGS-001"
+      ],
+      "evidence": [
+        "PRISM-CU-249",
+        "PRISM-CU-250",
+        "PRISM-CU-251",
+        "PRISM-CU-252",
+        "PRISM-CU-253",
+        "PRISM-CU-254",
+        "PRISM-CU-255",
+        "PRISM-CU-268",
+        "PRISM-CU-269",
+        "PRISM-CU-270",
+        "PRISM-CU-271",
+        "PRISM-CU-272",
+        "PRISM-CU-273",
+        "PRISM-CU-274"
+      ],
+      "tests": [
+        "No new source changes in this batch; reconciled manifest statuses against existing installed-app retest evidence.",
+        "git diff --check passed before the previous source-fix commit; this batch requires manifest/report consistency checks only."
+      ],
+      "notes": "Closed stale historical P0 Fail records whose corresponding issues already had installed-app post-fix evidence. Explicit URL file/folder open and graph rendering fidelity remain open because this batch did not add direct evidence for those paths."
     }
   ],
   "appSmokeRuns": [
