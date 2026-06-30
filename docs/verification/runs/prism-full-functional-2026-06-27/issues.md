@@ -104,6 +104,22 @@ Bundle ID：com.prism.editor.v1
 - 问题表现：`/Applications/Prism.app/Contents/MacOS/app` 进程存在，System Events 显示 `frontmost=false windows=0`；Computer Use 对 `/Applications/Prism.app` 返回 `cgWindowNotFound`。
 - 结论：该复核当时阻塞成立；但本轮 16:49 以后真实 Prism 窗口已恢复，当前测试不再被该问题阻塞。窗口生命周期仍需作为独立 P0 风险复测。
 
+### P0-STARTUP-003 启动/新窗口没有直接打开默认 Prism 指南
+
+- 严重度：P0
+- 用例 ID：PRISM-FF-001
+- 用户影响：用户每次启动或新建窗口后看到空正文和“未命名”，无法直接进入内置示例文档；这也不符合首启文档体验设计。
+- 触发动作：
+  1. 启动或激活真实 `/Applications/Prism.app`。
+  2. 观察窗口左侧文件树、标题栏和正文区域。
+- 问题表现：左侧已显示 `/Users/Alex/Documents/Prism` 文件树，但正文区域为空，标题为“未命名”，没有直接打开 `Examples/Prism Markdown 语法指南.md`。
+- 预期表现：启动和新建窗口应直接打开用户目录下的 Prism 文件夹，并默认展示 `Examples/Prism Markdown 语法指南.md`；如 macOS 授权需要等待，也应授权通过后再显示文档窗口。
+- 复现稳定性：2026-06-30 真实 App + Computer Use 复测一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png`
+- 建议修复方向：收敛启动 bootstrap 与新窗口逻辑，避免先创建空文稿；在默认 Prism 目录存在时优先打开指南文档并同步文件树选中态。
+- 验收标准：冷启动、新建窗口、恢复窗口三条路径均直接展示指南文档；标题栏显示指南文件名，正文不出现空指引页或“未命名”空文稿。
+
 ## 文件与工作区
 
 ### P0-FILE-001 默认指南文档自带链接诊断 ERROR
@@ -318,6 +334,45 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-180-image-paste-no-second-asset-window.png`
   - `logs/computer-use-real-app/image-paste-check.log`
 - 备注：图片插入位置落在文档开头，可能与自动化光标落点有关，本轮不单独作为产品缺陷记录。
+
+### P1-EDITOR-006 Selection callout 丢失当前选区
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-110
+- 用户影响：用户想把已有段落转换为 callout 时，原选区没有被包装，反而在文末生成空 callout，容易破坏文档结构并造成内容操作不可信。
+- 触发动作：
+  1. 打开 `fixtures/computer-use-real-app/real-selection-callout.md`。
+  2. 选中两行正文。
+  3. 右键打开编辑区上下文菜单。
+  4. 选择 `块级源码操作 > 选区转警告提示块`。
+- 问题表现：Prism 没有把选中内容包装为 warning callout，而是在文末追加：
+  ```md
+  > [!WARNING]
+  >
+  ```
+- 预期表现：应保留选区原文，并把选区整体转换为 warning callout，不应移动到文末或生成空块。
+- 复现稳定性：2026-06-30 真实 App + Computer Use 复测一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png`
+- 建议修复方向：检查块级源码操作拿到的选区范围与 CodeMirror transaction；命令执行前应优先读取当前 selection，并用 replacement 包装选区。
+- 验收标准：多行选区、单行选区、空选区三种路径分别有明确行为；非空选区转换后原文完整保留且只改动选区区域。
+
+### P1-EDITOR-007 选区右键菜单剪切/复制/链接仍 disabled
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-009、PRISM-FF-010、PRISM-FF-110
+- 用户影响：用户选中文字后右键菜单无法直接执行常见编辑动作，和系统文本编辑器习惯不一致，也会影响链接插入和格式化效率。
+- 触发动作：
+  1. 在真实编辑器中选中正文。
+  2. 右键打开编辑区上下文菜单。
+  3. 观察剪切、复制、链接等菜单项状态。
+- 问题表现：选区工具条按钮可见，但右键菜单中的剪切/复制/链接仍处于 disabled 状态。
+- 预期表现：存在非空选区时，剪切、复制、创建链接等选区相关动作应启用；无选区时才禁用需要选区的动作。
+- 复现稳定性：2026-06-30 Selection callout 复测同轮观察到一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png`
+- 建议修复方向：统一 selection toolbar 与 context menu 的选区状态来源，避免右键打开菜单时 selection 被清空或菜单状态读取滞后。
+- 验收标准：选中文字后右键菜单显示可用的剪切/复制/链接动作；动作执行结果与快捷键一致。
 
 ## 预览渲染
 
@@ -578,6 +633,27 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-081-file-tree-folder-context-menu-window.png`
 - 备注：这影响键盘用户和自动化测试稳定性。
 
+### P1-SEARCH-001 工作区全文搜索入口不可达
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-119
+- 用户影响：用户无法从常见快捷键或菜单进入全工作区搜索，只能看到文档内查找或快速打开文件，长文档库中查找内容效率明显下降。
+- 触发动作：
+  1. 打开真实 Prism 测试工作区文档。
+  2. 按 `Cmd+Shift+F`。
+  3. 按 `Cmd+P` 查看快速打开。
+  4. 检查原生 macOS `Edit` 菜单是否有工作区全文搜索入口。
+- 问题表现：
+  - `Cmd+Shift+F` 打开文档内查找浮层，不是工作区全文搜索。
+  - `Cmd+P` 只显示快速打开文件搜索和“原生索引”状态，没有全文搜索模式。
+  - 原生菜单中也没有可见的工作区全文搜索入口。
+- 预期表现：应提供稳定的工作区全文搜索入口，结果包含文件名、命中片段和打开动作；快捷键口径不应和文档内查找混淆。
+- 复现稳定性：2026-06-30 真实 App + Computer Use 复测一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png`
+- 建议修复方向：明确 Quick Open 与 Workspace Search 的命令、快捷键和菜单入口；如果暂时不支持全文搜索，应在测试口径和 UI 中降级说明。
+- 验收标准：一个公开入口可打开工作区全文搜索；输入 fixture 中存在的词后显示跨文件命中列表，回车或点击可打开对应文件位置。
+
 ## 导出
 
 ### P0-EXPORT-001 基础导出、preflight 与复杂产物导出已覆盖，仍有图表/分页保真缺陷
@@ -825,6 +901,24 @@ Bundle ID：com.prism.editor.v1
 - 备注：该问题也导致中文文本定位的自动化步骤失败，例如“显示行号”“查看源码”“简体中文”等选择器找不到。
 
 ## 主菜单、帮助与更新
+
+### P1-MENU-002 原生 File 菜单缺少 Prism 核心文件入口
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-091
+- 用户影响：macOS 用户无法从系统菜单栏执行打开文件、打开文件夹、新建文稿、保存等核心文件操作，也无法验证“打开已有文档时新窗口策略”。
+- 触发动作：
+  1. 在真实 `/Applications/Prism.app` 中打开一个 Markdown fixture。
+  2. 点击 macOS 系统菜单栏 `File`。
+  3. 检查可见菜单项。
+- 问题表现：原生 `File` 菜单只显示 `Close Window` 和 `Close All`，没有 Prism 自定义的新建、打开、保存、另存为、打开最近等文件操作入口。
+- 预期表现：原生 `File` 菜单应暴露核心文件工作流；若 Prism 选择自绘菜单，也要保证系统菜单与自绘菜单语义不冲突，并至少保留 macOS 标准菜单能力。
+- 复现稳定性：2026-06-30 真实 App + Computer Use 复测一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png`
+  - `screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png`
+- 建议修复方向：检查 Tauri/macOS menu 构建逻辑，确保窗口创建后注册完整应用菜单；同时消除“文件 > 新建文稿”和“窗口 > 新建窗口”的语义重复。
+- 验收标准：系统菜单栏 `File` 可见新建文稿、打开文件、打开文件夹、最近打开、保存、另存为、关闭文稿等入口；各入口行为与窗口内菜单一致。
 
 ### P1-PRINT-001 打印入口未暴露，快捷键无反应
 

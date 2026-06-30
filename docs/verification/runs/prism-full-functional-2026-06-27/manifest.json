@@ -3537,6 +3537,261 @@
       "issueRef": "",
       "notes": "真实 Computer Use 窗口级截图。",
       "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-218",
+      "area": "启动与窗口",
+      "feature": "启动默认指南未直接打开",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png",
+      "actual": "当前启动/新窗口状态显示 /Users/Alex/Documents/Prism 文件树，但正文区域为空并显示“未命名”，没有直接打开 Examples/Prism Markdown 语法指南.md。",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "steps": [
+        "启动或激活 /Applications/Prism.app",
+        "观察默认窗口文件树、标题和编辑区域"
+      ],
+      "expected": "启动/新窗口应直接打开 Prism 目录并展示 Examples/Prism Markdown 语法指南.md，不经过空指引页或未命名空文稿。",
+      "issueRef": "P0-STARTUP-003",
+      "notes": "真实 Computer Use 窗口级截图；该结论取代早期“无窗口”阻塞状态下的首启判断。",
+      "windowSize": "approx 1060x750 logical / 2336x1656 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-219",
+      "area": "编辑器与表格",
+      "feature": "选区转警告提示块丢失选区",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png",
+      "actual": "选中两行后执行右键菜单“块级源码操作 > 选区转警告提示块”，实际没有包装选区，而是在文末追加空的 warning callout。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-selection-callout.md",
+      "steps": [
+        "打开 real-selection-callout.md",
+        "选中两行正文",
+        "右键打开块级源码操作",
+        "点击选区转警告提示块"
+      ],
+      "expected": "应把当前选区包装成 warning callout，保留选区原文，不应在文末追加空块。",
+      "issueRef": "P1-EDITOR-006",
+      "notes": "同轮观察到选中文字后右键菜单里的剪切/复制/链接仍 disabled。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-220",
+      "area": "命令、搜索与快捷键",
+      "feature": "工作区全文搜索快捷键入口不可达",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png",
+      "actual": "按 Cmd+Shift+F 打开的是文档内查找浮层，不是工作区全文搜索；Cmd+P 只进入快速打开文件搜索，未看到全文搜索模式。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "打开测试工作区文档",
+        "按 Cmd+Shift+F",
+        "观察打开的搜索 UI",
+        "再检查 Cmd+P 快速打开模式"
+      ],
+      "expected": "应有可从快捷键或菜单进入的工作区全文搜索，结果包含文件名、命中片段和打开动作。",
+      "issueRef": "P1-SEARCH-001",
+      "notes": "真实 App 复测；原生 macOS Edit 菜单也未发现 Prism 工作区全文搜索入口。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-221",
+      "area": "链接、反链与图谱",
+      "feature": "图谱 native/fallback 状态不可验证",
+      "status": "Blocked",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-221-relation-graph-no-fallback-indicator-window.png",
+      "actual": "关系图谱可以打开且节点正常，但 UI 没有 native/fallback 状态标识；本轮不注入故障，无法证明 fallback 路径。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-wiki-target.md",
+      "steps": [
+        "打开关系图谱",
+        "观察图谱节点和状态区域"
+      ],
+      "expected": "如果用例要求验证 native/fallback，应提供可见状态或测试钩子；正常图谱打开不能证明 fallback。",
+      "issueRef": "",
+      "notes": "真实功能正常，但 fallback 口径缺少可观测性，标记 Blocked。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-222",
+      "area": "导出",
+      "feature": "HTML 导出弹窗可取消",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-222-export-cancel-dialog-window.png",
+      "actual": "HTML 导出弹窗打开后显示取消按钮。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "打开导出菜单",
+        "选择 HTML 导出",
+        "观察导出弹窗"
+      ],
+      "expected": "导出确认弹窗应允许取消。",
+      "issueRef": "",
+      "notes": "与 PRISM-CU-223 配套验证取消后状态恢复。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-223",
+      "area": "导出",
+      "feature": "导出取消后状态恢复",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-223-export-cancel-status-restored-window.png",
+      "actual": "点击取消后弹窗关闭，状态栏显示“已取消”，没有失败误报或卡住的前台任务。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "在 HTML 导出弹窗点击取消",
+        "观察状态栏"
+      ],
+      "expected": "取消后应恢复可编辑状态并显示明确取消反馈。",
+      "issueRef": "",
+      "notes": "真实 App 复测。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-224",
+      "area": "导出",
+      "feature": "导出成功 toast 和后台任务状态",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png",
+      "actual": "HTML 导出期间状态栏显示“正在导出 · 前台任务 正在渲染图表”并有“后台”按钮；成功后 toast 显示“打开”和“显示位置”动作，状态栏回到“已导出”。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "执行 HTML 导出",
+        "观察导出期间状态栏",
+        "等待成功 toast"
+      ],
+      "expected": "导出应显示进行中状态，完成后提供打开产物和显示位置动作。",
+      "issueRef": "",
+      "notes": "点击“打开”时 toast 消失过快，外部应用打开未作为本截图证明。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-225",
+      "area": "文件与工作区",
+      "feature": "打开外部文件同步工作区",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-225-open-external-file-syncs-workspace-window.png",
+      "actual": "使用 open -a /Applications/Prism.app 打开 fixture 绝对路径后，左侧工作区切到 fixture 所在目录，当前文件高亮。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "通过系统 open -a 打开外部 Markdown fixture",
+        "观察文件树根目录和当前文件高亮"
+      ],
+      "expected": "从系统路径打开外部文件后，工作区应同步到文件所在目录，文件树高亮当前文件。",
+      "issueRef": "",
+      "notes": "真实 macOS open 路径验证。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-226",
+      "area": "主菜单、帮助与更新",
+      "feature": "原生 File 菜单缺少打开入口首屏",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png",
+      "actual": "原生 macOS File 菜单未暴露“打开文件/打开文件夹/新建文稿”等 Prism 文件操作入口。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "点击系统菜单栏 File",
+        "观察菜单项"
+      ],
+      "expected": "原生 File 菜单应暴露主要文件操作，或窗口内菜单应可操作并覆盖同等能力。",
+      "issueRef": "P1-MENU-002",
+      "notes": "与 PRISM-CU-227 是同一菜单问题的连续证据。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-227",
+      "area": "主菜单、帮助与更新",
+      "feature": "原生 File 菜单只有关闭项",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png",
+      "actual": "File 菜单实际只看到 Close Window / Close All，无法通过主菜单执行打开已有文档的新窗口策略。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "展开原生 File 菜单",
+        "检查全部可见项目"
+      ],
+      "expected": "主菜单应支持打开已有文档、新建文稿、新建窗口、保存/另存为等核心文件工作流。",
+      "issueRef": "P1-MENU-002",
+      "notes": "导致 PRISM-FF-091 无法按菜单路径继续验证。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-228",
+      "area": "文件与工作区",
+      "feature": "文件树创建副本菜单",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-228-file-tree-duplicate-menu-window.png",
+      "actual": "文件右键菜单显示“创建副本”入口。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "在文件树右键 real-links-click.md",
+        "观察上下文菜单"
+      ],
+      "expected": "文件树文件菜单应提供创建副本入口。",
+      "issueRef": "",
+      "notes": "与 PRISM-CU-229 配套验证副本落盘。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-229",
+      "area": "文件与工作区",
+      "feature": "文件树创建副本落盘",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-229-file-tree-duplicate-created-window.png",
+      "actual": "执行创建副本后生成 real-links-click (副本).md，toast 显示“已创建副本”，源文件与副本 cmp -s 一致。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click (副本).md",
+      "steps": [
+        "点击创建副本",
+        "观察文件树和 toast",
+        "用 cmp 校验源文件与副本内容一致"
+      ],
+      "expected": "创建副本应生成同内容副本并给出成功反馈。",
+      "issueRef": "",
+      "notes": "真实 UI + 文件系统校验。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-230",
+      "area": "文件与工作区",
+      "feature": "工作区菜单新建文件夹",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-230-workspace-menu-new-folder-entry-window.png",
+      "actual": "工作区操作菜单提供“新建文件夹”，执行后文件系统出现“新建文件夹”，toast 显示“已创建新文件夹”。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/新建文件夹",
+      "steps": [
+        "点击工作区操作菜单",
+        "选择新建文件夹",
+        "观察文件树和文件系统"
+      ],
+      "expected": "应在当前工作区创建文件夹并显示成功反馈。",
+      "issueRef": "",
+      "notes": "未看到内联重命名态，非法名提示未在本轮覆盖。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
     }
   ],
   "testCases": [
@@ -3550,13 +3805,13 @@
       "steps": "启动 Prism",
       "expected": "首次启动复制 Initial 到用户文档目录下 `Prism/`，直接打开 `Examples/Prism Markdown 语法指南.md`，不显示空指引页",
       "automationHint": "Rust `initial_documents` + Playwright/app smoke",
-      "screenshot": "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png",
       "status": "Fail",
-      "actual": "原生 /Applications/Prism.app 启动后只有进程和菜单栏，Accessibility 显示 application process \"app\" windows=0；15:03 复核 activate 后前台仍为 EasyConnect，无法执行真实首启、启动 URL、打开文件/文件夹、新建窗口流程。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "2026-06-27 15:03 重新验证仍复现；证据见 logs/native-window-recheck-150348.log 和 screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck-150348.png。",
+      "actual": "真实 App 当前可创建窗口并打开 /Users/Alex/Documents/Prism 文件树，但启动/新窗口默认没有直接打开 Examples/Prism Markdown 语法指南.md；正文为空并显示“未命名”。",
+      "issueRef": "P0-STARTUP-003",
+      "notes": "2026-06-30 真实窗口复测；早期无窗口阻塞已恢复，但默认指南直达仍失败。",
       "screenshots": [
-        "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png"
       ]
     },
     {
@@ -5463,11 +5718,16 @@
       "steps": "`文件 > 打开` 选择另一个文件",
       "expected": "因 entry prefers new window，新文件进新窗口，当前窗口不丢内容",
       "automationHint": "单元 + 手工",
-      "status": "Not Run",
-      "actual": "",
-      "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/11-menu-help/PRISM-FF-091-case-91.png"
+      "status": "Fail",
+      "actual": "原生 macOS File 菜单只有 Close Window / Close All，未暴露打开文件、打开文件夹或新建文稿入口；无法通过主菜单验证“打开已有文档时新窗口策略”。",
+      "issueRef": "P1-MENU-002",
+      "notes": "窗口内自绘“文件”文字不是原生可操作菜单；该用例按真实菜单路径判定失败。",
+      "plannedScreenshot": "screenshots/11-menu-help/PRISM-FF-091-case-91.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png"
     },
     {
       "id": "PRISM-FF-092",
@@ -5502,16 +5762,20 @@
       "steps": "Finder 打开外部文件",
       "expected": "左侧工作区切到文件所在目录或刷新当前树",
       "automationHint": "单元",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Pass",
+      "actual": "使用系统 open -a 打开外部 Markdown fixture 后，Prism 左侧工作区切到 fixture 所在目录，当前文件在文件树中高亮。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/diagnostics-workspace-editor.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "真实 macOS open 路径验证，补足此前仅代码层自动化的口径。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-093-case-93.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。"
+      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-225-open-external-file-syncs-workspace-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-225-open-external-file-syncs-workspace-window.png"
     },
     {
       "id": "PRISM-FF-094",
@@ -5602,16 +5866,21 @@
       "steps": "复制文件",
       "expected": "新文件名唯一，内容一致，工作区刷新",
       "automationHint": "单元",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Pass",
+      "actual": "文件树右键菜单提供“创建副本”；执行后生成 real-links-click (副本).md，toast 显示“已创建副本”，源文件与副本内容一致。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/diagnostics-workspace-editor.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "真实 UI + cmp 文件系统校验。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-098-case-98.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。"
+      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-228-file-tree-duplicate-menu-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-229-file-tree-duplicate-created-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-228-file-tree-duplicate-menu-window.png"
     },
     {
       "id": "PRISM-FF-099",
@@ -5623,16 +5892,20 @@
       "steps": "新建文件夹并内联改名",
       "expected": "文件夹创建、树模式展开、非法名提示",
       "automationHint": "单元 + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Pass",
+      "actual": "工作区操作菜单提供“新建文件夹”；执行后文件系统出现“新建文件夹”，toast 显示“已创建新文件夹”。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/diagnostics-workspace-editor.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "本轮未看到内联重命名态，也未覆盖非法名提示，后续可拆专项用例。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-099-case-99.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。"
+      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-230-workspace-menu-new-folder-entry-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-230-workspace-menu-new-folder-entry-window.png"
     },
     {
       "id": "PRISM-FF-100",
@@ -5844,16 +6117,20 @@
       "steps": "转为 note/warning/tip/important",
       "expected": "选区行全部被正确包装",
       "automationHint": "单元",
-      "status": "Not Run",
-      "actual": "",
-      "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/diagnostics-workspace-editor.log。不替代真实 UI/原生产物截图验收。",
+      "status": "Fail",
+      "actual": "选中两行后执行“块级源码操作 > 选区转警告提示块”，没有包装选区，而是在文末追加空 warning callout。",
+      "issueRef": "P1-EDITOR-006",
+      "notes": "真实 App 复测；同轮发现选区右键剪切/复制/链接 disabled，另记 P1-EDITOR-007。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-110-selection-callout-selection-callout.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。"
+      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png"
     },
     {
       "id": "PRISM-FF-111",
@@ -6047,11 +6324,15 @@
       "steps": "搜索文件/正文",
       "expected": "回退 TypeScript 查询，UI 标明状态，不崩溃",
       "automationHint": "单元",
-      "status": "Not Run",
-      "actual": "",
-      "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/04-editor/PRISM-FF-119-native-native.png"
+      "status": "Fail",
+      "actual": "Cmd+Shift+F 打开文档内查找，不是工作区全文搜索；Cmd+P 只显示快速打开文件和原生索引状态，未看到全文搜索模式或结果列表。",
+      "issueRef": "P1-SEARCH-001",
+      "notes": "真实 App 复测，原生 Edit 菜单也没有工作区全文搜索入口。",
+      "plannedScreenshot": "screenshots/04-editor/PRISM-FF-119-native-native.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png"
     },
     {
       "id": "PRISM-FF-120",
@@ -6063,16 +6344,20 @@
       "steps": "打开图谱",
       "expected": "使用 TS fallback，节点一致",
       "automationHint": "单元",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "关系图谱可打开且节点正常，但 UI 未显示 native/fallback 状态；本轮不注入故障，无法证明 fallback 路径。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "需要可观测状态或专用测试钩子后再验收 native fallback。",
       "plannedScreenshot": "screenshots/07-knowledge/PRISM-FF-120-native-native.png",
       "unitTestEvidence": [
         "logs/unit-tests/workspace-i18n-shell.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-221-relation-graph-no-fallback-indicator-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-221-relation-graph-no-fallback-indicator-window.png"
     },
     {
       "id": "PRISM-FF-121",
@@ -6310,16 +6595,21 @@
       "steps": "取消导出",
       "expected": "状态栏显示取消后恢复，无失败误报",
       "automationHint": "单元 + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Pass",
+      "actual": "HTML 导出弹窗可取消；取消后状态栏显示“已取消”，没有失败误报或卡住的前台任务。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/export-settings-theme-commands.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "真实 App 复测。",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-131-case-131.png",
       "unitTestEvidence": [
         "logs/unit-tests/export-settings-theme-commands.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。"
+      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-222-export-cancel-dialog-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-223-export-cancel-status-restored-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-222-export-cancel-dialog-window.png"
     },
     {
       "id": "PRISM-FF-132",
@@ -6331,16 +6621,20 @@
       "steps": "点击打开/显示位置",
       "expected": "优先系统 native 打开，失败回退 opener，失败有 toast",
       "automationHint": "单元",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "导出成功 toast 显示“打开”和“显示位置”动作，但点击“打开”时 toast 消失过快，本轮未能证明外部应用成功打开产物。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/export-settings-theme-commands.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "动作入口可见；外部打开结果需用更稳定的 toast 保持或窗口列表监控专项复测。",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-132-case-132.png",
       "unitTestEvidence": [
         "logs/unit-tests/export-settings-theme-commands.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。"
+      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png"
     },
     {
       "id": "PRISM-FF-133",
@@ -6352,16 +6646,20 @@
       "steps": "观察状态栏",
       "expected": "仅有任务时显示导出中；成功短暂展示；失败保留可点详情",
       "automationHint": "单元 + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Pass",
+      "actual": "导出期间状态栏显示“正在导出 · 前台任务 正在渲染图表”并提供“后台”按钮；完成后状态栏显示“已导出”。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/export-settings-theme-commands.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "真实 App 复测。",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-133-case-133.png",
       "unitTestEvidence": [
         "logs/unit-tests/export-settings-theme-commands.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。"
+      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png"
     },
     {
       "id": "PRISM-FF-134",
@@ -6993,17 +7291,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T06:28:04.718Z",
+  "generatedAt": "2026-06-30T15:25:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 86,
-    "Fail": 37,
-    "Blocked": 12,
-    "Not Run": 33,
-    "screenshotFiles": 305,
-    "manifestScreenshots": 773,
-    "uniqueManifestScreenshots": 292,
-    "computerUseRealAppEvidence": 174
+    "Pass": 91,
+    "Fail": 40,
+    "Blocked": 14,
+    "Not Run": 23,
+    "screenshotFiles": 318,
+    "manifestScreenshots": 822,
+    "uniqueManifestScreenshots": 305,
+    "computerUseRealAppEvidence": 187
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -8160,6 +8458,58 @@
     {
       "file": "screenshots/15-computer-use-real-app/PRISM-CU-217-relation-graph-drag-stability-window.png",
       "testCaseId": "PRISM-CU-217"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png",
+      "testCaseId": "PRISM-CU-218"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png",
+      "testCaseId": "PRISM-CU-219"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png",
+      "testCaseId": "PRISM-CU-220"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-221-relation-graph-no-fallback-indicator-window.png",
+      "testCaseId": "PRISM-CU-221"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-222-export-cancel-dialog-window.png",
+      "testCaseId": "PRISM-CU-222"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-223-export-cancel-status-restored-window.png",
+      "testCaseId": "PRISM-CU-223"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png",
+      "testCaseId": "PRISM-CU-224"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-225-open-external-file-syncs-workspace-window.png",
+      "testCaseId": "PRISM-CU-225"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png",
+      "testCaseId": "PRISM-CU-226"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png",
+      "testCaseId": "PRISM-CU-227"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-228-file-tree-duplicate-menu-window.png",
+      "testCaseId": "PRISM-CU-228"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-229-file-tree-duplicate-created-window.png",
+      "testCaseId": "PRISM-CU-229"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-230-workspace-menu-new-folder-entry-window.png",
+      "testCaseId": "PRISM-CU-230"
     }
   ],
   "unitTestRuns": [
