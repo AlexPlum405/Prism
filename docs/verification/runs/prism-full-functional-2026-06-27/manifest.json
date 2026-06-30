@@ -4278,6 +4278,29 @@
       ],
       "expected": "剪切命令必须把选区写入系统剪贴板，并从编辑器正文删除选区。",
       "notes": "安装版真实 UI 复测通过；未出现文件冲突误报。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/image-paste-retest/real-image-paste-retest-20260630224136.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-EDITOR-005",
+      "id": "PRISM-CU-255",
+      "area": "编辑器与剪贴板",
+      "feature": "安装版图片剪贴板粘贴进入资产管线",
+      "status": "Pass",
+      "screenshot": "screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png",
+      "actual": "系统剪贴板确认包含 PNGf 数据；在安装版 Prism 编辑区执行 Cmd+V 并点击 macOS Paste 后，编辑器插入 Markdown 图片语法，磁盘生成 assets/real-image-paste-retest-20260630224136/image-20260630-224213.png，文件类型为 PNG。",
+      "steps": [
+        "打开新的图片剪贴板回归 Markdown 文件",
+        "将测试 PNG 写入系统剪贴板并确认 clipboard info 包含 PNGf",
+        "聚焦 Prism 编辑区空行",
+        "按 Cmd+V 并点击 macOS Paste 菜单",
+        "截图记录编辑器插入的 Markdown 图片语法",
+        "读取磁盘 Markdown 内容并确认 assets 图片文件存在"
+      ],
+      "expected": "从系统剪贴板粘贴图片应进入资产管线，复制到当前文档资源目录并在光标位置插入 Markdown 图片语法。",
+      "notes": "安装版真实 UI 复测通过；资产文件为 PNG image data, 220 x 120, 4295 bytes。"
     }
   ],
   "testCases": [
@@ -7826,17 +7849,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T16:02:00+08:00",
+  "generatedAt": "2026-06-30T22:45:00+08:00",
   "counts": {
     "total": 168,
     "Pass": 94,
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 392,
-    "manifestScreenshots": 962,
-    "uniqueManifestScreenshots": 416,
-    "computerUseRealAppEvidence": 211
+    "screenshotFiles": 394,
+    "manifestScreenshots": 963,
+    "uniqueManifestScreenshots": 417,
+    "computerUseRealAppEvidence": 212
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9129,6 +9152,10 @@
     {
       "file": "screenshots/19-installed-typography-smoke/02-typography-panel-open.png",
       "testCaseId": "PRISM-CU-251"
+    },
+    {
+      "file": "screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png",
+      "testCaseId": "PRISM-CU-255"
     }
   ],
   "unitTestRuns": [
@@ -9335,6 +9362,26 @@
         "PRISM-CU-254 confirms Cmd+X writes the selected Beta line to system clipboard and removes it from the document"
       ],
       "notes": "This batch closes the installed-app retest loop for P0-EDITOR-004 and fixes a self-save/external-monitor race discovered during the clipboard retest. Historical fail evidence remains as pre-fix evidence."
+    },
+    {
+      "id": "source-fix-image-clipboard-command-path-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-EDITOR-005"
+      ],
+      "verification": [
+        "Paste command now tries handleImagePaste before plain text paste so keyboard/menu paste can use the image asset pipeline",
+        "editorClipboardRuntime can read image blobs from navigator.clipboard.read() and convert them to File objects",
+        "EditorPane reuses the existing saveClipboardImage asset pipeline for system clipboard images",
+        "npm test -- --run src/domains/editor/runtime/editorClipboardRuntime.test.ts src/domains/editor/runtime/editorClipboardController.test.ts src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/components/EditorPane.integration.test.tsx src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/store.test.ts passed",
+        "npm run build passed",
+        "npm run tauri:build:app-smoke passed in clean install worktree",
+        "Replaced /Applications/Prism.app with rebuilt bundle",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement",
+        "PRISM-CU-255 confirms installed app PNG clipboard paste inserts Markdown image syntax and creates the assets PNG file"
+      ],
+      "notes": "Historical P0-EDITOR-005 failure evidence remains as pre-fix evidence. PRISM-CU-255 is the post-fix installed-app pass evidence."
     }
   ],
   "appSmokeRuns": [
@@ -9412,6 +9459,28 @@
       "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
       "report": "logs/app-smoke-installed-saving-race-fix-20260630/report.json",
       "screenshots": "screenshots/21-installed-app-smoke-saving-race-fix/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
+    },
+    {
+      "id": "installed-app-smoke-image-paste-fix-20260630",
+      "status": "Pass",
+      "date": "2026-06-30",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-image-paste-fix-20260630/report.json",
+      "screenshots": "screenshots/22-installed-image-paste-smoke/",
       "coverage": [
         ".markdown launch with Chinese and space path",
         "JSON launch without blank screen",

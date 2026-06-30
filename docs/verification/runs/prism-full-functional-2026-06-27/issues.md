@@ -354,7 +354,8 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-180-image-paste-no-second-asset-window.png`
   - `logs/computer-use-real-app/image-paste-check.log`
 - 备注：图片插入位置落在文档开头，可能与自动化光标落点有关，本轮不单独作为产品缺陷记录。
-- 修复进展：2026-06-30 源码已让图片剪贴板检测同时支持 `clipboardData.items` 和 `clipboardData.files`，粘贴运行时也从两条路径提取图片 File。`editorClipboardController` / `editorClipboardRuntime` 回归测试通过；待换包后用系统 PNG 剪贴板真实复测资产管线。
+- 修复进展：2026-06-30 源码已让图片剪贴板检测同时支持 `clipboardData.items` 和 `clipboardData.files`，粘贴运行时也从两条路径提取图片 File；随后追加系统剪贴板命令路径，`paste` 命令优先读取 `navigator.clipboard.read()` 中的图片 blob，并复用现有资产保存管线。`editorClipboardController` / `editorClipboardRuntime` / `editorCommandAdapter` 回归测试通过。
+- 安装版复测：2026-06-30 已重新打包并替换 `/Applications/Prism.app`。真实 UI 复测通过：系统剪贴板确认包含 `PNGf` 数据后，在安装版 Prism 编辑区执行 `Cmd+V` 并点击 macOS `Paste` 菜单，编辑器插入 `![image-20260630-224213.png](assets/real-image-paste-retest-20260630224136/image-20260630-224213.png)`，磁盘生成 `assets/real-image-paste-retest-20260630224136/image-20260630-224213.png`，文件类型为 PNG，大小 4295 bytes。证据见 `screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png`；替换后安装版 smoke 报告见 `logs/app-smoke-installed-image-paste-fix-20260630/report.json`。
 
 ### P1-EDITOR-006 Selection callout 丢失当前选区
 

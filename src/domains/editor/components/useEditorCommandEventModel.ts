@@ -32,6 +32,7 @@ interface UseEditorCommandEventModelInput {
   handleTableConvert: (target: 'html' | 'markdown') => boolean;
   handleTableCopy: (format: 'markdown' | 'html' | 'csv' | 'tsv') => Promise<boolean>;
   handleTablePasteText: (view: EditorView, text: string) => boolean;
+  handleImagePaste?: (view: EditorView) => Promise<boolean>;
   handleTemplateInsert: (templateId: unknown) => boolean;
   handleCustomEditorCommand?: (
     command: string,
@@ -55,6 +56,7 @@ export function useEditorCommandEventModel({
   handleTableConvert,
   handleTableCopy,
   handleTablePasteText,
+  handleImagePaste,
   handleTemplateInsert,
   handleCustomEditorCommand,
   setTableInsertVisible,
@@ -82,7 +84,7 @@ export function useEditorCommandEventModel({
       return;
     }
 
-    if (runBasicEditorCommand(action, view, { handleTablePasteText })) {
+    if (runBasicEditorCommand(action, view, { handleImagePaste, handleTablePasteText })) {
       view.focus();
       return;
     }
@@ -121,6 +123,7 @@ export function useEditorCommandEventModel({
     handleSourceBlockOperation,
     handleTableCommand,
     handleTableCopy,
+    handleImagePaste,
     handleTablePasteText,
     viewRef,
   ]);
@@ -159,7 +162,7 @@ export function useEditorCommandEventModel({
         return;
       }
 
-      if (runBasicEditorCommand(command, view, { handleTablePasteText })) return;
+      if (runBasicEditorCommand(command, view, { handleImagePaste, handleTablePasteText })) return;
 
       const commandDetail = toCommandRecord(detail);
       if (handleCustomEditorCommand?.(command, commandDetail, view)) return;
@@ -223,6 +226,7 @@ export function useEditorCommandEventModel({
     handleTableConvert,
     handleTableCopy,
     handleTablePasteText,
+    handleImagePaste,
     handleTemplateInsert,
     setTableInsertVisible,
     viewRef,

@@ -5,7 +5,9 @@ import type { EditorImageClipboardDeps } from './editorClipboardRuntime';
 import {
   handleEditorClipboardImagePaste,
   handleEditorImageDrop,
+  handleEditorSystemImagePaste,
   insertTextAtSelection,
+  readSystemClipboardImageFile,
 } from './editorClipboardRuntime';
 
 function createView(doc = '') {
@@ -117,6 +119,71 @@ describe('editorClipboardRuntime', () => {
 
     try {
       const handled = await handleEditorClipboardImagePaste(createClipboardFilesEvent(file), view, deps);
+      expect(handled).toBe(true);
+      expect(deps.saveImage).toHaveBeenCalledWith(expect.objectContaining({ file }));
+      expect(view.state.doc.toString()).toBe('![image](assets/image.png)');
+    } finally {
+      destroy();
+    }
+  });
+
+  it('reads image files from the async system clipboard fallback', async () => {
+    const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        read: vi.fn(async () => [{
+          types: ['text/plain', 'image/png'],
+          getType: vi.fn(async (type: string) => {
+            expect(type).toBe('image/png');
+            return blob;
+          }),
+        }]),
+      },
+    });
+
+    const file = await readSystemClipboardImageFile();
+
+    expect(file).toBeInstanceOf(File);
+    expect(file?.name).toBe('clipboard-image.png');
+    expect(file?.type).toBe('image/png');
+  });
+
+  it('uses the async system clipboard fallback when paste events omit image files', async () => {
+    const { view, destroy } = createView('');
+    const file = new File(['png'], 'system.png', { type: 'image/png' });
+    const deps = createDeps({
+      readClipboardImage: vi.fn(async () => file),
+    });
+    const event = {
+      clipboardData: {
+        files: [],
+        items: [],
+      },
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+    } as unknown as ClipboardEvent;
+
+    try {
+      const handled = await handleEditorClipboardImagePaste(event, view, deps);
+      expect(handled).toBe(true);
+      expect(deps.saveImage).toHaveBeenCalledWith(expect.objectContaining({ file }));
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+      expect(view.state.doc.toString()).toBe('![image](assets/image.png)');
+    } finally {
+      destroy();
+    }
+  });
+
+  it('pastes a system clipboard image through the document asset pipeline', async () => {
+    const { view, destroy } = createView('');
+    const file = new File(['png'], 'system.png', { type: 'image/png' });
+    const deps = createDeps({
+      readClipboardImage: vi.fn(async () => file),
+    });
+
+    try {
+      const handled = await handleEditorSystemImagePaste(view, deps);
       expect(handled).toBe(true);
       expect(deps.saveImage).toHaveBeenCalledWith(expect.objectContaining({ file }));
       expect(view.state.doc.toString()).toBe('![image](assets/image.png)');

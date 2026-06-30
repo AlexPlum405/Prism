@@ -142,6 +142,27 @@ describe('useExternalFileChangeMonitor', () => {
     });
   });
 
+  it('keeps dirty documents editable when a complete snapshot has not changed', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 3, mtime: new Date(1000) });
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(1000, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+      await Promise.resolve();
+    });
+
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# B',
+      isDirty: true,
+      saveStatus: 'dirty',
+      saveError: null,
+    });
+  });
+
   it('does not treat the app own save write as an external conflict when saving starts mid-check', async () => {
     let resolveStat!: (value: { size: number; mtime: Date }) => void;
     (stat as ReturnType<typeof vi.fn>).mockReturnValue(new Promise((resolve) => {
@@ -169,6 +190,32 @@ describe('useExternalFileChangeMonitor', () => {
       isDirty: true,
       saveStatus: 'saving',
       saveError: null,
+    });
+  });
+
+  it('treats a changed snapshot with matching disk content as the app own completed save', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 3, mtime: new Date(2000) });
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# B');
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(1000, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(readTextFile).toHaveBeenCalledWith('/tmp/a.md');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# B',
+      isDirty: false,
+      saveStatus: 'saved',
+      saveError: null,
+      lastSavedContent: '# B',
+      lastKnownMtime: 2000,
+      lastKnownSize: 3,
     });
   });
 

@@ -30,7 +30,10 @@ import {
   scrollEditorToLine,
   setEditorScrollRatio,
 } from '../runtime/editorScrollRuntime';
-import { insertTextAtSelection } from '../runtime/editorClipboardRuntime';
+import {
+  handleEditorSystemImagePaste,
+  insertTextAtSelection,
+} from '../runtime/editorClipboardRuntime';
 import { createEditorClipboardController } from '../runtime/editorClipboardController';
 import {
   getEditorTypographyStyle,
@@ -434,15 +437,21 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       dropFailed: (message: string) => t('editor.image.dropFailed', { message }),
     }), [t]);
 
+    const imageClipboardDeps = useMemo(() => ({
+      getCurrentDocument: () => useDocumentStore.getState().currentDocument,
+      messages: imageClipboardMessages,
+      notice: (message: string) => onNoticeRef.current?.(message),
+      formatError: formatEditorError,
+    }), [imageClipboardMessages]);
+
+    const handleImagePaste = useCallback((view: EditorView) => (
+      handleEditorSystemImagePaste(view, imageClipboardDeps)
+    ), [imageClipboardDeps]);
+
     const clipboardController = useMemo(() => createEditorClipboardController({
       handleTablePasteText,
-      imageDeps: {
-        getCurrentDocument: () => useDocumentStore.getState().currentDocument,
-        messages: imageClipboardMessages,
-        notice: (message) => onNoticeRef.current?.(message),
-        formatError: formatEditorError,
-      },
-    }), [handleTablePasteText, imageClipboardMessages]);
+      imageDeps: imageClipboardDeps,
+    }), [handleTablePasteText, imageClipboardDeps]);
 
     const handleCustomEditorCommand = useCallback((
       command: string,
@@ -501,6 +510,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       handleTableCommand,
       handleTableConvert,
       handleTableCopy,
+      handleImagePaste,
       handleTablePasteText,
       handleTemplateInsert,
       setTableInsertVisible,

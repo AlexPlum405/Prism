@@ -15,6 +15,7 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
   const saveStatus = useDocumentStore((s) => s.currentDocument?.saveStatus ?? 'saved');
   const lastKnownMtime = useDocumentStore((s) => s.currentDocument?.lastKnownMtime ?? null);
   const lastKnownSize = useDocumentStore((s) => s.currentDocument?.lastKnownSize ?? null);
+  const markSaved = useDocumentStore((s) => s.markSaved);
   const markSaveConflict = useDocumentStore((s) => s.markSaveConflict);
 
   const checkForExternalChange = useCallback(async () => {
@@ -43,20 +44,38 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
       if (activeDocument.saveStatus === 'saving' || activeDocument.saveStatus === 'conflict') return;
 
       if (activeDocument.isDirty) {
-        if (
-          !result.changed
-          && activeDocument.lastSavedContent != null
-          && (knownSnapshot.mtimeMs === null || knownSnapshot.size === null)
-        ) {
+        const snapshotIsIncomplete = knownSnapshot.mtimeMs === null || knownSnapshot.size === null;
+
+        if (result.changed) {
           const diskSession = await readDocumentFileSession(documentPath);
           const latestDirtyDocument = useDocumentStore.getState().currentDocument;
           if (!latestDirtyDocument?.path || latestDirtyDocument.path !== documentPath) return;
+          if (latestDirtyDocument.saveStatus === 'saving' || latestDirtyDocument.saveStatus === 'conflict') return;
+          if (latestDirtyDocument.isDirty && diskSession.content === latestDirtyDocument.content) {
+            markSaved(documentPath, diskSession.knownSnapshot, diskSession.content);
+            return;
+          }
+          if (latestDirtyDocument.isDirty) {
+            markSaveConflict(fileConflictDetector.message, documentPath);
+          }
+          return;
+        }
+
+        if (activeDocument.lastSavedContent != null && snapshotIsIncomplete) {
+          const diskSession = await readDocumentFileSession(documentPath);
+          const latestDirtyDocument = useDocumentStore.getState().currentDocument;
+          if (!latestDirtyDocument?.path || latestDirtyDocument.path !== documentPath) return;
+          if (latestDirtyDocument.saveStatus === 'saving' || latestDirtyDocument.saveStatus === 'conflict') return;
+          if (latestDirtyDocument.isDirty && diskSession.content === latestDirtyDocument.content) {
+            markSaved(documentPath, diskSession.knownSnapshot, diskSession.content);
+            return;
+          }
           if (latestDirtyDocument.isDirty && diskSession.content !== activeDocument.lastSavedContent) {
             markSaveConflict(fileConflictDetector.message, documentPath);
           }
           return;
         }
-        markSaveConflict(fileConflictDetector.message, documentPath);
+
         return;
       }
 
@@ -82,6 +101,7 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
     isDirty,
     lastKnownMtime,
     lastKnownSize,
+    markSaved,
     markSaveConflict,
     saveStatus,
   ]);

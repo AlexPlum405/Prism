@@ -25,6 +25,7 @@ export interface EditorImageClipboardDeps {
   messages: EditorImageClipboardMessages;
   notice: (message: string) => void;
   formatError: (error: unknown) => string;
+  readClipboardImage?: typeof readSystemClipboardImageFile;
   saveImage?: typeof saveClipboardImage;
 }
 
@@ -56,23 +57,37 @@ function clipboardHasImagePayload(event: ClipboardEvent): boolean {
   );
 }
 
-export async function handleEditorClipboardImagePaste(
-  event: ClipboardEvent,
+type ClipboardWithRead = Clipboard & {
+  read?: () => Promise<Array<{
+    types: readonly string[];
+    getType: (type: string) => Promise<Blob>;
+  }>>;
+};
+
+export async function readSystemClipboardImageFile(): Promise<File | null> {
+  const clipboard = navigator.clipboard as ClipboardWithRead | undefined;
+  if (!clipboard?.read) return null;
+
+  const items = await clipboard.read();
+  for (const item of items) {
+    const type = item.types.find((candidate) => candidate.startsWith('image/'));
+    if (!type) continue;
+
+    const blob = await item.getType(type);
+    const extension = type.split('/')[1] || 'png';
+    return new File([blob], `clipboard-image.${extension}`, {
+      type: blob.type || type,
+    });
+  }
+
+  return null;
+}
+
+async function saveImageIntoDocument(
+  imageFile: File,
   view: EditorView,
   deps: EditorImageClipboardDeps,
 ) {
-  const imageFile = getClipboardImageFile(event);
-  if (!imageFile) {
-    if (!clipboardHasImagePayload(event)) return false;
-    event.preventDefault();
-    event.stopPropagation();
-    deps.notice(deps.messages.clipboardUnreadable);
-    return true;
-  }
-
-  event.preventDefault();
-  event.stopPropagation();
-
   const document = deps.getCurrentDocument();
   if (!document?.path) {
     deps.notice(deps.messages.saveBeforePaste);
@@ -90,6 +105,39 @@ export async function handleEditorClipboardImagePaste(
     deps.notice(deps.messages.pasteFailed(deps.formatError(error)));
   }
   return true;
+}
+
+export async function handleEditorClipboardImagePaste(
+  event: ClipboardEvent,
+  view: EditorView,
+  deps: EditorImageClipboardDeps,
+) {
+  let imageFile = getClipboardImageFile(event);
+  if (!imageFile) {
+    if (!clipboardHasImagePayload(event)) {
+      imageFile = await (deps.readClipboardImage ?? readSystemClipboardImageFile)().catch(() => null);
+      if (!imageFile) return false;
+    } else {
+      event.preventDefault();
+      event.stopPropagation();
+      deps.notice(deps.messages.clipboardUnreadable);
+      return true;
+    }
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  return saveImageIntoDocument(imageFile, view, deps);
+}
+
+export async function handleEditorSystemImagePaste(
+  view: EditorView,
+  deps: EditorImageClipboardDeps,
+) {
+  const imageFile = await (deps.readClipboardImage ?? readSystemClipboardImageFile)().catch(() => null);
+  if (!imageFile) return false;
+
+  return saveImageIntoDocument(imageFile, view, deps);
 }
 
 export async function handleEditorImageDrop(

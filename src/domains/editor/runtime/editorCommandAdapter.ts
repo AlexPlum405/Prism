@@ -5,6 +5,7 @@ import { markdownSelectionToRichClipboardInput, writeRichClipboard } from '../ex
 import { formatMarkdownDocument } from './markdownAutoFormat';
 
 interface BasicEditorCommandDeps {
+  handleImagePaste?: (view: EditorView) => Promise<boolean>;
   handleTablePasteText: (view: EditorView, text: string) => boolean;
 }
 
@@ -100,7 +101,9 @@ export function runBasicEditorCommand(
       return true;
     case 'paste':
     case 'pastePlain':
-      void readPlainTextClipboard().then((text) => {
+      void (async () => {
+        if (command === 'paste' && deps.handleImagePaste && await deps.handleImagePaste(view)) return;
+        const text = await readPlainTextClipboard();
         if (!text) return;
         if (deps.handleTablePasteText(view, text)) return;
         view.dispatch({
@@ -109,7 +112,7 @@ export function runBasicEditorCommand(
           scrollIntoView: true,
         });
         view.focus();
-      });
+      })();
       return true;
     case 'clearFormat': {
       const selection = view.state.selection.main;
