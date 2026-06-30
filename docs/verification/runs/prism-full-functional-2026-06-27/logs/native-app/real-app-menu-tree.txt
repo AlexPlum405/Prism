@@ -1,0 +1,69 @@
+MENU Apple
+  ITEM 关于本机 enabled=true
+  ITEM 系统信息 enabled=true
+  ITEM missing value enabled=false
+  ITEM 系统设置…, 1项更新 enabled=true
+  ITEM App Store enabled=true
+  ITEM missing value enabled=false
+  ITEM 最近使用的项目 enabled=true
+  ITEM missing value enabled=false
+  ITEM 强制退出… enabled=true
+  ITEM 强制退出“Prism” enabled=true
+  ITEM missing value enabled=false
+  ITEM 睡眠 enabled=true
+  ITEM 重新启动… enabled=true
+  ITEM 重新启动 enabled=true
+  ITEM 关机… enabled=true
+  ITEM 关机 enabled=true
+  ITEM missing value enabled=false
+  ITEM 锁定屏幕 enabled=true
+  ITEM 退出登录“Alex”… enabled=true
+  ITEM 退出登录“Alex” enabled=true
+  ITEM missing value enabled=false
+MENU Prism
+  ITEM About Prism enabled=true
+  ITEM missing value enabled=false
+  ITEM Services enabled=true
+  ITEM missing value enabled=false
+  ITEM Hide Prism enabled=true
+  ITEM Hide Others enabled=true
+  ITEM missing value enabled=false
+  ITEM Quit Prism enabled=true
+  ITEM Quit and Keep Windows enabled=true
+MENU File
+  ITEM Close Window enabled=true
+  ITEM Close All enabled=true
+MENU Edit
+  ITEM Undo enabled=true
+  ITEM Redo enabled=true
+  ITEM missing value enabled=false
+  ITEM Cut enabled=true
+  ITEM Copy enabled=true
+  ITEM Paste enabled=true
+  ITEM Select All enabled=true
+  ITEM missing value enabled=false
+  ITEM AutoFill enabled=true
+  ITEM Start Dictation… enabled=true
+  ITEM Emoji & Symbols enabled=true
+MENU View
+  ITEM Toggle Full Screen enabled=true
+MENU Window
+  ITEM Minimize enabled=true
+  ITEM Minimize All enabled=true
+  ITEM Zoom enabled=true
+  ITEM Zoom All enabled=true
+  ITEM Fill enabled=true
+  ITEM Center enabled=true
+  ITEM missing value enabled=false
+  ITEM Move & Resize enabled=true
+  ITEM Full Screen Tile enabled=true
+  ITEM missing value enabled=false
+  ITEM Remove Window from Set enabled=true
+  ITEM missing value enabled=false
+  ITEM Move to Built-in Retina Display enabled=true
+  ITEM missing value enabled=false
+  ITEM Close Window enabled=true
+  ITEM missing value enabled=false
+  ITEM Prism enabled=true
+MENU Help
+

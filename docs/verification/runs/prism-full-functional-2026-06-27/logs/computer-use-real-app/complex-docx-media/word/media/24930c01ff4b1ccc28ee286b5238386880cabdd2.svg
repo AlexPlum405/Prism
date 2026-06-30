@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="Prism local export resource">
+  <rect width="640" height="220" rx="18" fill="#f7f7f7"/>
+  <rect x="28" y="28" width="584" height="164" rx="14" fill="#ffffff" stroke="#d0d0d0"/>
+  <circle cx="92" cy="110" r="42" fill="#ffffff" stroke="#262626" stroke-width="3"/>
+  <path d="M78 112h29M92 96v32" stroke="#1C5D33" stroke-width="5" stroke-linecap="round"/>
+  <text x="160" y="98" font-family="-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif" font-size="28" fill="#7A3DAD" font-weight="700">Prism Local Resource</text>
+  <text x="160" y="137" font-family="-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif" font-size="19" fill="#262626">This SVG should appear in preview and exported files.</text>
+</svg>

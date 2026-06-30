@@ -1,0 +1,11 @@
+{
+  "name": "Prism real app JSON smoke",
+  "kind": "text-document",
+  "expected": "source editing only",
+  "items": [
+    "open",
+    "edit",
+    "search"
+  ]
+}
+

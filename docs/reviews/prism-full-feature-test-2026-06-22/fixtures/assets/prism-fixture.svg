@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320">
-  <rect width="640" height="320" fill="#f5f1e8"/>
-  <rect x="48" y="48" width="544" height="224" rx="18" fill="#ffffff" stroke="#d8cfc0" stroke-width="2"/>
-  <text x="80" y="140" fill="#26231f" font-family="Georgia, serif" font-size="42">Prism Fixture</text>
-  <text x="80" y="190" fill="#6f6658" font-family="Arial, sans-serif" font-size="22">image rendering test asset</text>
-</svg>

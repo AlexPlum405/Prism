@@ -1,0 +1,130 @@
+[
+  {
+    "tag": "BUTTON",
+    "text": "Prism Markdown 语法指南",
+    "aria": "重命名当前文稿",
+    "title": "重命名当前文稿",
+    "role": null,
+    "cls": "_docNameButton_lupgo_111"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": "编辑",
+    "title": "编辑",
+    "role": null,
+    "cls": "_btn_vwl8c_17 _active_vwl8c_36"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": "分栏",
+    "title": "分栏",
+    "role": null,
+    "cls": "_btn_vwl8c_17 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": "预览",
+    "title": "预览",
+    "role": null,
+    "cls": "_btn_vwl8c_17 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "文件",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "sidebar-tab-button"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "大纲",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "sidebar-tab-button"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "新建文件",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "Examples",
+    "aria": null,
+    "title": "工作区操作",
+    "role": null,
+    "cls": "_folder_vo480_196"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "切换到文档列表",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190 _treeBtn_vo480_228 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "收起侧边栏",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "专注模式 (F8)",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "导出",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190"
+  },
+  {
+    "tag": "DIV",
+    "text": "0 个问题导出、图片、链接和渲染问题会在这里聚合。×当前没有需要处理的问题。",
+    "aria": "文档诊断",
+    "title": null,
+    "role": "dialog",
+    "cls": "modal prism-link-diagnostics-modal prism-diagnostics-popover "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "×",
+    "aria": "关闭",
+    "title": null,
+    "role": null,
+    "cls": "modal-close"
+  },
+  {
+    "tag": "DIV",
+    "text": "0 个排版提示类型、位置、原因和处理动作×当前文档没有排版提示",
+    "aria": "排版提示",
+    "title": null,
+    "role": "dialog",
+    "cls": "modal prism-link-diagnostics-modal prism-diagnostics-popover "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "×",
+    "aria": "关闭",
+    "title": null,
+    "role": null,
+    "cls": "modal-close"
+  }
+]

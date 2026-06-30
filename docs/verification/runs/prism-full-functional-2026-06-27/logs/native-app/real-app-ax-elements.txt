@@ -1,0 +1,204 @@
+window title=Prism
+1 role=AXGroup name=missing value desc=group
+2 role=AXGroup name=missing value desc=group
+3 role=AXScrollArea name=missing value desc=
+4 role=AXWebArea name=missing value desc=Prism
+5 role=AXButton name=重命名当前文稿 desc=重命名当前文稿
+6 role=AXButton name=编辑 desc=编辑
+7 role=AXButton name=分栏 desc=分栏
+8 role=AXButton name=预览 desc=预览
+9 role=AXGroup name=missing value desc=
+10 role=AXStaticText name=文件 desc=
+11 role=AXGroup name=missing value desc=
+12 role=AXStaticText name=编辑 desc=
+13 role=AXGroup name=missing value desc=
+14 role=AXStaticText name=插入 desc=
+15 role=AXGroup name=missing value desc=
+16 role=AXStaticText name=格式 desc=
+17 role=AXGroup name=missing value desc=
+18 role=AXStaticText name=导航 desc=
+19 role=AXGroup name=missing value desc=
+20 role=AXStaticText name=视图 desc=
+21 role=AXGroup name=missing value desc=
+22 role=AXStaticText name=导出 desc=
+23 role=AXGroup name=missing value desc=
+24 role=AXStaticText name=窗口 desc=
+25 role=AXGroup name=missing value desc=
+26 role=AXStaticText name=帮助 desc=
+27 role=AXGroup name=missing value desc=
+28 role=AXButton name=文件 desc=
+29 role=AXButton name=大纲 desc=
+30 role=AXGroup name=missing value desc=
+31 role=AXGroup name=missing value desc=
+32 role=AXStaticText name=Prism 演示预览 desc=
+33 role=AXStaticText name=.md desc=
+34 role=AXGroup name=missing value desc=
+35 role=AXGroup name=missing value desc=
+36 role=AXStaticText name=Prism Markdown 语法指南 desc=
+37 role=AXStaticText name=.md desc=
+38 role=AXGroup name=missing value desc=
+39 role=AXGroup name=missing value desc=
+40 role=AXTextArea name=missing value desc=
+41 role=AXGroup name=missing value desc=
+42 role=AXStaticText name=# 📖 Prism Markdown 语法指南 desc=
+43 role=AXGroup name=missing value desc=
+44 role=AXGroup name=missing value desc=
+45 role=AXStaticText name=_以《山海经·精卫填海》的执着，展现 Markdown 的结构之美_ desc=
+46 role=AXGroup name=missing value desc=
+47 role=AXGroup name=missing value desc=
+48 role=AXStaticText name=--- desc=
+49 role=AXGroup name=missing value desc=
+50 role=AXGroup name=missing value desc=
+51 role=AXStaticText name=## 目录 desc=
+52 role=AXGroup name=missing value desc=
+53 role=AXGroup name=missing value desc=
+54 role=AXStaticText name=- desc=
+55 role=AXStaticText name=[ desc=
+56 role=AXStaticText name=标题格式 desc=
+57 role=AXStaticText name=] desc=
+58 role=AXStaticText name=( desc=
+59 role=AXStaticText name=#标题格式 desc=
+60 role=AXStaticText name=) desc=
+61 role=AXGroup name=missing value desc=
+62 role=AXStaticText name=- desc=
+63 role=AXStaticText name=[ desc=
+64 role=AXStaticText name=文本格式 desc=
+65 role=AXStaticText name=] desc=
+66 role=AXStaticText name=( desc=
+67 role=AXStaticText name=#文本格式 desc=
+68 role=AXStaticText name=) desc=
+69 role=AXGroup name=missing value desc=
+70 role=AXStaticText name=- desc=
+71 role=AXStaticText name=[ desc=
+72 role=AXStaticText name=列表 desc=
+73 role=AXStaticText name=] desc=
+74 role=AXStaticText name=( desc=
+75 role=AXStaticText name=#列表 desc=
+76 role=AXStaticText name=) desc=
+77 role=AXGroup name=missing value desc=
+78 role=AXStaticText name=- desc=
+79 role=AXStaticText name=[ desc=
+80 role=AXStaticText name=链接与图片 desc=
+81 role=AXStaticText name=] desc=
+82 role=AXStaticText name=( desc=
+83 role=AXStaticText name=#链接与图片 desc=
+84 role=AXStaticText name=) desc=
+85 role=AXGroup name=missing value desc=
+86 role=AXStaticText name=- desc=
+87 role=AXStaticText name=[ desc=
+88 role=AXStaticText name=表格 desc=
+89 role=AXStaticText name=] desc=
+90 role=AXStaticText name=( desc=
+91 role=AXStaticText name=#表格 desc=
+92 role=AXStaticText name=) desc=
+93 role=AXGroup name=missing value desc=
+94 role=AXStaticText name=- desc=
+95 role=AXStaticText name=[ desc=
+96 role=AXStaticText name=代码 desc=
+97 role=AXStaticText name=] desc=
+98 role=AXStaticText name=( desc=
+99 role=AXStaticText name=#代码 desc=
+100 role=AXStaticText name=) desc=
+101 role=AXGroup name=missing value desc=
+102 role=AXStaticText name=- desc=
+103 role=AXStaticText name=[ desc=
+104 role=AXStaticText name=数学公式 desc=
+105 role=AXStaticText name=] desc=
+106 role=AXStaticText name=( desc=
+107 role=AXStaticText name=#数学公式 desc=
+108 role=AXStaticText name=) desc=
+109 role=AXGroup name=missing value desc=
+110 role=AXStaticText name=- desc=
+111 role=AXStaticText name=[ desc=
+112 role=AXStaticText name=图表 (Mermaid、PlantUML、Markmap) desc=
+113 role=AXStaticText name=] desc=
+114 role=AXStaticText name=( desc=
+115 role=AXStaticText name=#图表 desc=
+116 role=AXStaticText name=) desc=
+117 role=AXGroup name=missing value desc=
+118 role=AXStaticText name=- desc=
+119 role=AXStaticText name=[ desc=
+120 role=AXStaticText name=引用 desc=
+121 role=AXStaticText name=] desc=
+122 role=AXStaticText name=( desc=
+123 role=AXStaticText name=#引用 desc=
+124 role=AXStaticText name=) desc=
+125 role=AXGroup name=missing value desc=
+126 role=AXStaticText name=- desc=
+127 role=AXStaticText name=[ desc=
+128 role=AXStaticText name=任务列表 desc=
+129 role=AXStaticText name=] desc=
+130 role=AXStaticText name=( desc=
+131 role=AXStaticText name=#任务列表 desc=
+132 role=AXStaticText name=) desc=
+133 role=AXGroup name=missing value desc=
+134 role=AXStaticText name=- desc=
+135 role=AXStaticText name=[ desc=
+136 role=AXStaticText name=脚注 desc=
+137 role=AXStaticText name=] desc=
+138 role=AXStaticText name=( desc=
+139 role=AXStaticText name=#脚注 desc=
+140 role=AXStaticText name=) desc=
+141 role=AXGroup name=missing value desc=
+142 role=AXStaticText name=- desc=
+143 role=AXStaticText name=[ desc=
+144 role=AXStaticText name=分隔线 desc=
+145 role=AXStaticText name=] desc=
+146 role=AXStaticText name=( desc=
+147 role=AXStaticText name=#分隔线 desc=
+148 role=AXStaticText name=) desc=
+149 role=AXGroup name=missing value desc=
+150 role=AXGroup name=missing value desc=
+151 role=AXStaticText name=--- desc=
+152 role=AXGroup name=missing value desc=
+153 role=AXGroup name=missing value desc=
+154 role=AXStaticText name=## 标题格式 desc=
+155 role=AXGroup name=missing value desc=
+156 role=AXGroup name=missing value desc=
+157 role=AXStaticText name=# 第一章：少女化鸟，衔石入海 desc=
+158 role=AXGroup name=missing value desc=
+159 role=AXGroup name=missing value desc=
+160 role=AXStaticText name=## 炎帝之女游于东海 desc=
+161 role=AXGroup name=missing value desc=
+162 role=AXGroup name=missing value desc=
+163 role=AXStaticText name=### 风浪忽起，归途无踪 desc=
+164 role=AXGroup name=missing value desc=
+165 role=AXGroup name=missing value desc=
+166 role=AXStaticText name=#### 精卫化形，日日衔木石 desc=
+167 role=AXGroup name=missing value desc=
+168 role=AXGroup name=missing value desc=
+169 role=AXStaticText name=##### 沧海虽阔，志不可夺 desc=
+170 role=AXGroup name=missing value desc=
+171 role=AXGroup name=missing value desc=
+172 role=AXStaticText name=###### 山河有声，万物记其名 desc=
+173 role=AXGroup name=missing value desc=
+174 role=AXGroup name=missing value desc=
+175 role=AXStaticText name=--- desc=
+176 role=AXGroup name=missing value desc=
+177 role=AXGroup name=missing value desc=
+178 role=AXStaticText name=## 文本格式 desc=
+179 role=AXGroup name=missing value desc=
+180 role=AXGroup name=missing value desc=
+181 role=AXStaticText name=**女娃** desc=
+182 role=AXStaticText name=游于东海，未能归还，遂化为 desc=
+183 role=AXStaticText name=*精卫鸟* desc=
+184 role=AXStaticText name=，名留** desc=
+185 role=AXStaticText name=_山海经_ desc=
+186 role=AXStaticText name=**。 desc=
+187 role=AXGroup name=missing value desc=
+188 role=AXGroup name=missing value desc=
+189 role=AXGroup name=missing value desc=
+190 role=AXButton name=missing value desc=新建文件
+191 role=AXButton name=Examples desc=
+192 role=AXButton name=missing value desc=切换到文档列表
+193 role=AXButton name=missing value desc=收起侧边栏
+194 role=AXGroup name=missing value desc=
+195 role=AXStaticText name=997 字 · 1:1 desc=
+196 role=AXStaticText name=Markdown 文稿 desc=
+197 role=AXButton name=missing value desc=专注模式 (F8)
+198 role=AXButton name=missing value desc=导出
+199 role=AXButton name=missing value desc=close button
+200 role=AXButton name=missing value desc=full screen button
+201 role=AXGroup name=missing value desc=group
+202 role=AXButton name=missing value desc=minimize button
+

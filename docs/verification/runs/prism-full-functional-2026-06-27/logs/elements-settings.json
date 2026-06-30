@@ -1,0 +1,202 @@
+[
+  {
+    "tag": "BUTTON",
+    "text": "Prism Markdown 语法指南",
+    "aria": "Rename current document",
+    "title": "Rename current document",
+    "role": null,
+    "cls": "_docNameButton_lupgo_111"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": "Edit",
+    "title": "Edit",
+    "role": null,
+    "cls": "_btn_vwl8c_17 _active_vwl8c_36"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": "Split",
+    "title": "Split",
+    "role": null,
+    "cls": "_btn_vwl8c_17 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": "Preview",
+    "title": "Preview",
+    "role": null,
+    "cls": "_btn_vwl8c_17 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "Files",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "sidebar-tab-button"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "Outline",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "sidebar-tab-button"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "New File",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "Examples",
+    "aria": null,
+    "title": "Workspace Actions",
+    "role": null,
+    "cls": "_folder_vo480_196"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "Switch to Document List",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190 _treeBtn_vo480_228 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "Collapse Sidebar",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "Focus Mode (F8)",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190 "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "",
+    "aria": null,
+    "title": "Export",
+    "role": null,
+    "cls": "_btn_vo480_156 _iconBtn_vo480_190"
+  },
+  {
+    "tag": "DIV",
+    "text": "0 issuesExport, image, link, and render issues are grouped here.×No actionable i",
+    "aria": "Document diagnostics",
+    "title": null,
+    "role": "dialog",
+    "cls": "modal prism-link-diagnostics-modal prism-diagnostics-popover "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "×",
+    "aria": "Close",
+    "title": null,
+    "role": null,
+    "cls": "modal-close"
+  },
+  {
+    "tag": "DIV",
+    "text": "0 typography suggestionsType, location, reason, and action×Current document has ",
+    "aria": "Typography Suggestions",
+    "title": null,
+    "role": "dialog",
+    "cls": "modal prism-link-diagnostics-modal prism-diagnostics-popover "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "×",
+    "aria": "Close",
+    "title": null,
+    "role": null,
+    "cls": "modal-close"
+  },
+  {
+    "tag": "DIV",
+    "text": "Settings×GeneralView, language, shortcutsWritingEditor and autosaveAppearanceThe",
+    "aria": "Settings",
+    "title": null,
+    "role": "dialog",
+    "cls": "modal settings-modal"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "×",
+    "aria": "Close",
+    "title": null,
+    "role": null,
+    "cls": "modal-close"
+  },
+  {
+    "tag": "NAV",
+    "text": "GeneralView, language, shortcutsWritingEditor and autosaveAppearanceThemes and f",
+    "aria": "Settings sections",
+    "title": null,
+    "role": null,
+    "cls": "settings-nav"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "GeneralView, language, shortcuts",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "settings-nav-item "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "WritingEditor and autosave",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "settings-nav-item "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "AppearanceThemes and fonts",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "settings-nav-item "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "ExportFormat and default location",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "settings-nav-item "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "CitationsPandoc and references",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "settings-nav-item "
+  },
+  {
+    "tag": "BUTTON",
+    "text": "FilesRecovery and recent documents",
+    "aria": null,
+    "title": null,
+    "role": null,
+    "cls": "settings-nav-item "
+  }
+]

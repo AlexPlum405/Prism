@@ -1,0 +1,5 @@
+Prism real app plain text smoke.
+
+This TXT file should open as a normal editable text document.
+Markdown-only preview, export, link diagnostics, backlinks and graph features should not be presented as if this were a Markdown document.
+

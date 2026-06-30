@@ -1,0 +1,5 @@
+caffeinate-ui-test status
+Mon Jun 29 21:01:26 CST 2026
+Existing process: 75072 caffeinate;
+Attempted to start /usr/bin/caffeinate -dims while screen was locked, but the spawned process did not remain running.
+Action needed after manual unlock: run 'caffeinate -dims' or keep display awake before resuming Computer Use UI testing.

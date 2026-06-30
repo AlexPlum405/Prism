@@ -1,475 +1,316 @@
-# Prism 全功能测试用例集
+# Prism 全功能测试用例（代码梳理版）
 
-> 版本：2026-06-27  
-> 适用对象：Prism Tauri 桌面应用、前端 Vitest 单元/集成测试、真实 App 人工回归。  
-> 产品口径：Prism 是本地优先、Markdown-first、单活动文档窗口的跨平台写作器。Markdown Document 与 Text Document 能力边界按 ADR-0007 执行。
+日期：2026-06-27
 
-本文档是标准测试用例集，不是一次执行报告。执行结果、截图、失败项和产物路径应写入单独的回归报告或 manifest。
+本测试用例从当前源码重新梳理，不复用旧的全功能测试目录、截图清单或模板。旧目录 `docs/reviews/prism-full-feature-test-2026-06-22/` 已按要求删除。
 
-## 测试分层
+## 目标
 
-| 类型 | 说明 | 推荐执行方式 |
-|---|---|---|
-| UT | 纯函数、store、命令注册、渲染/导出转换、索引计算 | `npm test -- --run` 或单文件 Vitest |
-| INT | React 组件、hook、命令流、文件/导出服务 mock 集成 | Vitest + React Testing Library |
-| APP | 真实 Tauri App、系统文件权限、窗口、菜单、文件关联 | `npm run tauri:build:app-smoke` 后人工/脚本验证 |
-| VIS | 视觉/截图验收 | 真实 App 截图，记录主题、窗口尺寸、平台 |
-| PERF | 性能与稳定性 | 真实 WebView 长文档、导出、滚动、输入基准 |
+验证 Prism 当前代码中已经暴露的全部用户可见功能：启动与首启文档、文件与工作区、编辑器、预览渲染、Markdown 专属知识能力、导出、设置、主题、系统菜单、跨平台集成和故障恢复。
 
-## 执行前置
+这份文档是“全功能验收用例集”，不是单元测试替代品。每条用例都必须产出可复核证据：截图、录屏、导出产物、文件系统结果、测试日志或自动化报告。
 
-1. 记录 `git rev-parse --short HEAD`、`git status --short`、Prism 版本、平台、CPU 架构。
-2. 执行基础自动化：`npm test -- --run`、`npm run build`。
-3. 真实 App 验证优先使用本次构建产物：`npm run tauri:build:app-smoke`。
-4. APP/VIS 用例必须记录截图或产物路径；环境缺失写“阻塞”，不要用推测结果替代。
-5. Windows/Linux 文件关联、安装器、标题栏必须在真实平台验证，macOS 结果不能替代。
+## 代码依据
 
-## 标准测试数据包
+核心功能面来自以下源码入口：
 
-执行全功能测试前，在临时目录准备一个固定 workspace，避免每轮手工临时造数据导致结果不可比。
+| 功能域 | 主要代码依据 |
+|---|---|
+| 启动、首启、打开文件 | `src/hooks/useBootstrap.ts`、`src/app/useStartupFileOpen.ts`、`src-tauri/src/domain/initial_documents.rs`、`src-tauri/src/commands/startup_files.rs` |
+| 文件类型与文档能力边界 | `src/domains/workspace/services/fileAssociation.ts`、`src-tauri/src/domain/document_io.rs`、`src-tauri/src/domain/workspace_tree.rs`、`src-tauri/src/domain/workspace_index.rs` |
+| 主菜单与命令 | `src/domains/commands/types.ts`、`src/domains/commands/menuModel.ts`、`src/domains/commands/categories/*.ts` |
+| 标题栏、状态栏、窗口壳 | `src/components/shell/TitleBar.tsx`、`src/domains/workspace/components/StatusBar.tsx`、`src/components/shell/WindowShell.tsx` |
+| 工作区与导航 | `src/domains/workspace/components/FileTree.tsx`、`src/domains/workspace/components/Sidebar.tsx`、`src/domains/workspace/components/OutlinePanel.tsx`、`src/domains/workspace/components/RelationGraphPanel.tsx` |
+| 编辑器 | `src/domains/editor/components/EditorPane.tsx`、`src/domains/editor/components/SplitView.tsx`、`src/domains/editor/extensions/*.ts`、`src/domains/editor/runtime/*.ts` |
+| 预览渲染 | `src/lib/markdownToHtml.ts`、`src/lib/markdownRenderService.ts`、`src/domains/editor/components/PreviewPane.tsx` |
+| 诊断 | `src/app/useDocumentDiagnosticsModel.ts`、`src/domains/editor/extensions/linkDiagnostics.ts`、`imageDiagnostics.ts`、`headingDiagnostics.ts`、`tables.ts`、`typographyDiagnostics.ts` |
+| 导出 | `src/domains/export/exportPipeline.ts`、`src/domains/export/templates.ts`、`src/domains/export/preflight.ts`、`src/domains/export/jobs/*`、`src-tauri/src/domain/export_*` |
+| 设置、主题、字体 | `src/domains/settings/types.ts`、`src/components/shell/SettingsModal.tsx`、`src/domains/themes/*`、`src-tauri/src/domain/theme_store.rs` |
+| 系统集成 | `src-tauri/tauri.conf.json`、`src-tauri/src/lib.rs`、`src-tauri/src/commands/*.rs`、`scripts/run-app-smoke.mjs` |
 
-```text
-prism-full-test-workspace/
-  01-basic.md
-  02-long-document.md
-  03-rendering.md
-  04-links/
-    index.md
-    target.md
-    nested/deep-target.md
-  05-frontmatter-invalid.md
-  06-tables.md
-  07-export.md
-  08-presentation.md
-  text/
-    sample.txt
-    data.json
-    query.sql
-    config.yaml
-    env.env
-  unsupported/
-    app.ts
-    style.css
-  assets/
-    local-image.png
-    vector.svg
+## 测试数据
+
+在独立临时目录创建工作区，避免污染真实文档。建议目录：`/tmp/prism-full-functional-test-workspace`。
+
+| 文件 | 内容要求 |
+|---|---|
+| `Examples/Prism Markdown 语法指南.md` | Prism 首启指南同名文件，覆盖标题、斜体、副标题、目录、图片、表格、代码块、KaTeX、Mermaid、PlantUML、Markmap、任务列表、脚注、引用、callout、details、wiki link、普通链接 |
+| `notes/linked-note.md` | 被 `[[linked-note]]` 和 Markdown 链接引用的文档 |
+| `notes/backlink-source.md` | 指向指南文档，用于反链和关系图谱 |
+| `notes/broken-links.md` | 缺失文件、缺失 heading、空链接、缺失图片、错误 Mermaid、错误 KaTeX、重复 heading |
+| `notes/table-heavy.md` | 多列表格、对齐、HTML 表格、可排序数据 |
+| `notes/long.md` | 超长 Markdown，至少 300KB，含多段代码、表格、图片和标题 |
+| `data.json` | JSON 文本，不能出现 Markdown 预览/导出/图谱入口 |
+| `query.sql` | SQL 文本，能编辑保存搜索，不能出现 Markdown 专属能力 |
+| `plain.txt` | 普通文本，能编辑保存搜索，不能出现 Markdown 专属能力 |
+| `config.yaml`、`.env`、`sample.csv` | Text Document 白名单补充 |
+| `assets/cover.png`、`assets/vector.svg` | 本地图片资源，预览与导出都能读取 |
+| `unsupported.ts` | 不支持的源码文件，用于验证拒绝策略 |
+
+## 执行规则
+
+- macOS 当前真机必须执行 P0 和 P1；P2 跨平台项只记录真实 Windows/Linux 结果，不允许推测。
+- 每条手工用例必须保存证据：截图或导出文件加备注。
+- 涉及导出时必须保留导出产物，并记录格式、主题、清晰度、导出设置。
+- 涉及外部链接、更新检查、Pandoc 时，记录网络/本地依赖状态。
+- Prism 不应为了 PlantUML、Mermaid、Markmap 渲染联网；测试时可断网验证图表仍可渲染。
+- Text Document 只验证打开、编辑、保存、搜索、工作区导航和状态栏类型；不要求 Markdown 预览、导出、链接诊断、反链和图谱。
+
+## 通过标准
+
+P0 全部通过才能认为当前版本可日常使用。P1 失败需要形成缺陷单。P2 失败需要标明平台和复现环境。P3 可作为质量优化 backlog。
+
+建议记录格式：
+
+```json
+{
+  "id": "PRISM-FF-001",
+  "priority": "P0",
+  "area": "Startup",
+  "source": "src/hooks/useBootstrap.ts",
+  "preconditions": [],
+  "steps": [],
+  "expected": "",
+  "actual": "",
+  "status": "Pass | Fail | Blocked",
+  "evidence": "",
+  "notes": ""
+}
 ```
 
-必备内容要求：
+## P0 核心工作流
 
-| 文件 | 必须包含 | 用途 |
-|---|---|---|
-| `01-basic.md` | 中文/英文段落、标题 H1-H4、列表、任务列表、引用、链接、脚注 | 基础编辑、预览、大纲、复制 |
-| `02-long-document.md` | 至少 120 个二级标题、约 1MB 内容、多个 Mermaid/KaTeX 块 | 长文输入、滚动同步、搜索、性能 |
-| `03-rendering.md` | 代码块、表格、Callout、Toggle、Mermaid、KaTeX、图片、缺失图片、非法 Mermaid/KaTeX | 渲染、诊断、导出保真 |
-| `04-links/index.md` | 相对链接、标题锚点链接、断链、wiki link、外链、mailto | 出链、反链、图谱、诊断 |
-| `05-frontmatter-invalid.md` | 一份合法 YAML front matter、一段故意非法 YAML | 属性面板、诊断、导出字段 |
-| `06-tables.md` | 含中文、英文、空单元格、逗号、制表符、数字列的 Markdown 表格 | 表格编辑、排序、CSV/TSV 复制 |
-| `07-export.md` | front matter、TOC、Callout、Toggle、Mermaid、KaTeX、本地图片、长表格 | HTML/PDF/PNG/DOCX 导出 |
-| `08-presentation.md` | 至少 3 页 slide 分隔内容 | 演示模式 |
-| `text/*` | 支持的 Text Document 扩展 | Text Document 能力边界 |
-| `unsupported/*` | 不在白名单中的源码文件 | 文件关联和索引排除 |
-
-每轮验收报告至少记录：workspace 路径、是否复用旧数据、是否重建数据、是否清空 appData、是否安装 Pandoc、是否具备 Windows/Linux 测试机。
-
-## 覆盖矩阵
-
-| 功能域 | P0 | P1 | P2 |
-|---|---:|---:|---:|
-| 启动、窗口、文件打开 | 12 | 8 | 3 |
-| 文档编辑、保存、安全 | 12 | 6 | 2 |
-| 视图、预览、渲染 | 12 | 7 | 3 |
-| 工作区、搜索、导航 | 7 | 6 | 2 |
-| Markdown 增强能力 | 18 | 10 | 2 |
-| 导出、诊断、设置 | 14 | 5 | 3 |
-| Shell、命令、平台发布 | 5 | 2 | 3 |
-
-## P0 发布阻断用例
-
-| ID | 类型 | 覆盖点 | 步骤 | 预期 |
-|---|---|---|---|---|
-| P0-001 | APP | 首次启动空状态 | 启动 Prism，不传 `file/folder/new/empty` 参数 | 窗口正常显示；无旧文档残留；空状态入口可见；无控制台致命错误 |
-| P0-002 | APP | 新建 Markdown 文档 | 使用菜单/快捷键新建，在正文输入标题和段落 | 当前窗口无文档时直接创建；已有文档时新窗口创建；标题区显示未保存状态 |
-| P0-003 | APP | 打开 Markdown 文件 | 通过打开对话框选择 `.md` | 文件内容进入编辑器；文件名、路径、最近文件和工作区上下文正确 |
-| P0-004 | APP | 打开 Text Document | 分别打开 `.txt`、`.json`、`.sql` | 可编辑、保存、搜索；预览/导出/关系图谱入口不承诺 Markdown 能力 |
-| P0-005 | APP | 系统启动打开文件 | 从 Finder/命令行以 `?file=` 或系统文件打开方式启动 | 指定文件优先于 last session；中文和空格路径正确解码 |
-| P0-006 | APP | 多个系统打开文件 | 启动时传入多个 pending files | 第一个文件在当前窗口打开；其余文件进入新 Prism 窗口；失败有日志但不阻塞首文件 |
-| P0-007 | APP | 打开文件夹工作区 | 打开包含 Markdown/Text/assets 的目录 | 文件树加载；目录权限已授权；根目录名和状态栏工作区信息正确 |
-| P0-008 | INT | 单活动文档保护 | 当前文档 dirty 后从文件树打开其他文件 | 出现 dirty switch 确认；保存/丢弃/取消结果正确；不会静默丢稿 |
-| P0-009 | APP | 最近文件 | 打开多个文件后重启或打开最近列表 | 最近文件去重、按最近打开排序；点击可打开；不存在文件有可理解失败反馈 |
-| P0-010 | APP | 在文件管理器中显示 | 有当前文件和仅有工作区两种状态分别触发“在访达/文件管理器中显示” | 有文件时 reveal 文件；无文件但有工作区时打开目录；都没有时 toast 说明 |
-| P0-011 | INT | 文档 profile 边界 | 以 `.md`、`.markdown`、`.json`、`.env`、`.ts` 构造 profile | Markdown/Text/unsupported 分类符合 ADR-0007；不把源码语言默认纳入产品承诺 |
-| P0-012 | APP | 窗口新建/空窗口 | 触发新窗口、新建文档、空窗口参数 | 每个窗口只有一个活动文档；无标签页；窗口间状态不串扰 |
-| P0-013 | APP | 基础编辑输入 | 在 Markdown 中输入中文、英文、标点、emoji、代码片段 | 内容稳定输入；光标不跳；状态栏字数和行列跟随 |
-| P0-014 | APP | 撤销/重做/剪切复制粘贴 | 用快捷键和菜单执行 undo/redo/cut/copy/paste | 命令只在有文档时启用；内容结果正确；无文档时不报错 |
-| P0-015 | APP | 查找与替换 | 打开查找、替换，执行下一项、上一项、单次替换、全部替换 | 匹配高亮准确；替换只在可编辑模式生效；预览模式限制有说明 |
-| P0-016 | INT | 自动保存 | 编辑已保存文档，等待自动保存周期 | 写入目标文件；保存中/已保存/失败状态正确；不会重复写入已关闭文档 |
-| P0-017 | INT | 手动保存未命名文档 | 新建文档后触发保存并选择路径 | 写入新路径；文档路径和名称更新；最近文件记录新增 |
-| P0-018 | INT | 另存为 | 已保存文档另存到新路径 | 新路径写入成功；当前文档切换到新路径；旧路径恢复快照清理策略正确 |
-| P0-019 | INT | 外部文件冲突 | 打开文档后模拟磁盘内容被外部修改，再保存 | 阻止覆盖或弹出冲突提示；用户能选择保留本地/磁盘版本；不丢内容 |
-| P0-020 | INT | 保存失败恢复快照 | 模拟写文件失败 | 标记保存失败；生成或保留恢复快照；错误信息可读 |
-| P0-021 | INT | 异常恢复队列 | 构造 recovery snapshots 后启动 | 恢复弹窗列出快照；恢复/删除/忽略动作有效 |
-| P0-022 | APP | 外部文件变化监控 | 打开文档后在外部编辑器修改文件 | Prism 检测变化；若当前 dirty，进入冲突策略；若未 dirty，可刷新或提示 |
-| P0-023 | APP | 关闭 dirty 文档 | dirty 文档触发关闭 | 保存后关闭、取消关闭、保存失败保持文档三种路径都正确 |
-| P0-024 | PERF | 30 秒连续输入 | 长文档分栏模式下连续输入 30 秒 | 输入不中断；预览可延迟但不长时间空白；自动保存最终完成 |
-| P0-025 | APP | 三视图模式 | 对 Markdown 切换 edit/split/preview | 模式互斥；标题栏和菜单 checked 状态一致；内容不丢失 |
-| P0-026 | APP | Text Document 视图限制 | 打开 `.json` 后尝试 split/preview/export | 不出现不可用预览；相关命令禁用或有明确说明 |
-| P0-027 | VIS | 基础 Markdown 预览 | 文档含标题、段落、列表、引用、代码、表格、链接 | 预览排版完整；代码高亮、表格、引用样式符合当前主题 |
-| P0-028 | VIS | Mermaid 渲染 | 文档含合法 Mermaid 和非法 Mermaid | 合法图可见；非法图显示错误块并计入诊断 |
-| P0-029 | VIS | KaTeX 渲染 | 文档含行内公式、块级公式和非法公式 | 合法公式可读；非法公式有错误状态，不破坏整页预览 |
-| P0-030 | VIS | 图片渲染 | 文档含相对图片、绝对图片、缺失图片 | 可访问图片显示；缺失图片显示诊断；导出前可发现风险 |
-| P0-031 | APP | 预览滚动同步 | 长文档分栏，从源码和预览双向滚动 | 双向大致对齐；无抢滚、反向抖动或空白 |
-| P0-032 | APP | 预览点击定位源码 | 点击预览标题、段落、代码块 | 源码定位到对应行附近；Text Document 不触发 Markdown 定位语义 |
-| P0-033 | APP | 专注模式 | `F8` 开关专注模式并 hover shell 区域 | 侧栏/标题栏/菜单栏弱化；hover 恢复；不等同全屏 |
-| P0-034 | APP | 打字机模式 | `F9` 开启后在长文中段和底部连续输入 | 当前输入行保持在舒适可视区域；与专注模式可同时开启 |
-| P0-035 | APP | 自动换行 | 切换 word wrap | 编辑器换行状态立即改变；设置持久化；长行不撑破布局 |
-| P0-036 | APP | 状态栏核心信息 | 有/无文档、编辑/预览、Markdown/Text 分别观察状态栏 | 显示字数、行列、诊断、导出状态；不显示非承诺入口 |
-| P0-037 | APP | 文件树浏览 | 展开/折叠目录、切换文件、空目录 | 排序和层级正确；选中态跟当前文档同步 |
-| P0-038 | APP | 文件树上下文菜单 | 对文件/目录/工作区分别右键 | 打开、在新窗口打开、重命名、显示位置等动作可用且 Esc 可关闭 |
-| P0-039 | APP | 快速打开 | `Cmd/Ctrl+P` 搜索文件名、路径、预览文本 | 最近文件优先；Markdown/Text 都可进入；回车打开当前窗口 |
-| P0-040 | APP | 工作区全文搜索 | `Cmd/Ctrl+Shift+F` 搜索正文、标题、路径 | 结果含 snippet；点击打开并定位；无工作区时命令禁用 |
-| P0-041 | APP | 大纲 | Markdown 标题层级变化后查看大纲 | 标题层级、顺序、点击跳转正确；Text Document 不显示 Markdown 大纲 |
-| P0-042 | INT | 工作区索引 | 包含 Markdown/Text/二进制/unsupported 文件的工作区 | 只索引承诺文件；生成标题、链接、recentRank、搜索缓存正确 |
-| P0-043 | INT | 路径归一化 | macOS/Windows 路径、大小写、尾斜杠 | `isSamePath`、反链、最近文件去重行为稳定 |
-| P0-044 | APP | 浮动选区工具栏 | 选中文本后使用加粗、斜体、删除线、代码、链接、引用 | 工具栏位置正确；格式作用到选区；取消选择后关闭 |
-| P0-045 | APP | 编辑器右键菜单 | 无选区、有选区、表格内、链接附近分别右键 | 菜单状态匹配上下文；复制/链接/表格动作不误禁用 |
-| P0-046 | APP | 行内格式命令 | 快捷键/菜单触发 bold/italic/underline/strike/inlineCode/link | Markdown 语法正确包裹；已有选区和空光标都可处理 |
-| P0-047 | APP | 块格式命令 | 引用、代码块、数学块、有序/无序/任务列表、分割线 | 插入标准 Markdown；undo 一步可回退 |
-| P0-048 | APP | 斜杠菜单 | 输入 `/`、`/mer`、键盘上下、Enter、Esc | 仅源码编辑区触发；过滤和插入正确；Esc 关闭 |
-| P0-049 | APP | Callout | 插入 NOTE/TIP/WARNING/IMPORTANT 并预览 | 源码为可读 blockquote；预览为轻量提示块；导出不丢内容 |
-| P0-050 | APP | Toggle | 插入 details/summary，预览折叠展开 | 源码保持 HTML；预览可交互；导出 HTML/PDF/DOCX 尽量保留 |
-| P0-051 | APP | 表格插入与编辑 | 插入表格、增加/删除行列、对齐列、格式化 | Markdown 表格合法；工具栏/右键/命令路径一致 |
-| P0-052 | APP | 表格复制格式 | 表格复制 Markdown、HTML、CSV、TSV | 粘贴结果格式正确；含逗号、制表、空单元格时转义正确 |
-| P0-053 | APP | 任务列表 checkbox | 预览或编辑中切换任务项 | Markdown `- [ ]` / `- [x]` 正确更新；保存后持久 |
-| P0-054 | APP | 图片插入/粘贴 | 通过命令或粘贴插入图片 | 文件复制/路径写入符合权限；预览可见；失败有 toast |
-| P0-055 | APP | 页面链接补全 | 输入 `[[` 搜索文件和标题 | 插入标准 Markdown 链接；搜索只对 Markdown 文档产生关系语义 |
-| P0-056 | APP | 反向链接 | 当前文档被其他 Markdown 链接后打开反链面板 | 列出来源、片段和路径；点击跳转；Text Document 不显示关系语义 |
-| P0-057 | APP | 当前文档链接 | 打开出链面板 | 显示可解析、断链、外链分类；点击可跳转或给出错误 |
-| P0-058 | APP | 关系图谱入口 | 有关系/无关系/Text Document 三种场景 | 只有 Markdown 且有文档关系时入口可用；图谱节点点击可打开 |
-| P0-059 | APP | 文档属性面板 | 打开含 YAML Front Matter 的文档并编辑字段 | 字段解析、保存回写、非法 YAML 错误态正确 |
-| P0-060 | INT | 诊断聚合 | 构造断链、缺图、渲染失败、标题锚点冲突、导出风险 | `ERROR n` 只统计需处理问题；分类、严重度、定位信息正确 |
-| P0-061 | APP | 诊断面板 | 点击 `ERROR n` | 面板从状态栏上方弹出；问题分组、跳转、关闭行为正确 |
-| P0-062 | APP | HTML 导出 | Markdown 文档导出 HTML | 输出文件存在；主题/代码/公式/图/图片尽量保真；成功反馈可见 |
-| P0-063 | APP | PDF 导出 | Markdown 文档导出 PDF | 输出文件存在；分页不明显切断核心块；失败可诊断 |
-| P0-064 | APP | PNG 导出 | 选择不同清晰度导出 PNG | 图片清晰度档位生效；大文档超限有提示 |
-| P0-065 | APP | DOCX 导出 | 含标题、表格、图片、Callout、公式的文档导出 DOCX | 文件可打开；复杂块尽量图片化保真；字体策略生效 |
-| P0-066 | APP | Text Document 导出禁用 | 打开 `.json/.sql` 查看导出菜单和按钮 | 导出入口禁用或解释不可导出；不会生成错误空文件 |
-| P0-067 | APP | 导出预检失败 | 文档含缺失图片、断链、渲染错误后导出 | 先展示风险；用户可修复或选择继续；失败详情包含阶段和路径 |
-| P0-068 | APP | 后台导出状态 | 启动导出并观察状态栏/toast | 导出中、已导出、导出失败状态稳定；可打开结果或失败详情 |
-| P0-069 | INT | 导出历史 | 成功导出后使用“使用上次设置导出/覆盖上次导出” | 上次格式、路径、设置恢复；文件不存在或格式不支持有提示 |
-| P0-070 | APP | 导出设置 | 设置默认格式、PDF 页面、页眉页脚、TOC、主题、DOCX 字体 | 设置即时保存；下一次导出读取当前设置 |
-| P0-071 | APP | 通用设置 | 语言、默认视图、快捷键风格 | 控件可切换并持久化；重启后仍生效 |
-| P0-072 | APP | 写作设置 | 行号/自动保存策略/字体/字号/行高/自动换行 | 设置影响编辑器；非法值被限制；长文本不溢出 |
-| P0-073 | APP | 外观主题 | 切换 Miaoyan/Inkstone/Slate/Mono/Nocturne/Carbon | 编辑器、预览、搜索、导出相关色彩一致；无一色块崩坏 |
-| P0-074 | INT | 设置持久化迁移 | 模拟新旧 config、legacy recentFiles、损坏 JSON | 可恢复默认；能迁移 legacy；不因配置坏掉启动失败 |
-| P0-075 | APP | 命令菜单 | 文件/编辑/插入/格式/视图/窗口/帮助菜单逐项打开 | 分组、禁用态、checked 态、快捷键显示正确；Esc/点击外部可关闭 |
-| P0-076 | APP | 快捷键 | 核心快捷键 `New/Open/Save/Search/QuickOpen/View/Focus/Typewriter` | macOS/Windows/Linux 修饰键按平台显示并触发正确动作 |
-| P0-077 | APP | Toast 与错误反馈 | 触发保存成功、保存失败、导出失败、设置导入失败 | 文案可读；不会遮挡核心操作；错误 toast 保留足够时间 |
-| P0-078 | APP | 帮助与关于 | 打开快捷键、关于、Markdown 参考、迁移指南、GitHub、反馈 | 内部弹窗和外部链接正确；离线或失败有提示 |
-| P0-079 | APP | 检查更新 | 在线/离线分别触发检查更新 | 显示检查中和最终态；latest/失败/发现更新三类文案可区分 |
-| P0-080 | PERF | 真实预览性能基准 | 1MB/3MB 文档打开、切预览、滚动、搜索、右键、源码定位 | 响应无明显冻结；记录耗时；结果不只依赖 jsdom |
-
-## P1 深度功能与回归用例
-
-| ID | 类型 | 覆盖点 | 步骤 | 预期 |
-|---|---|---|---|---|
-| P1-001 | APP | 首次启动种子文档 | 清空 appData 后首次启动 | 如启用 seed docs，则复制到工作区或显示引导；不重复复制 |
-| P1-002 | APP | 文件夹启动参数 | 使用 `?folder=` 启动 | 授权目录并加载文件树；不覆盖显式 `?file=` 优先级 |
-| P1-003 | INT | 大文件确认 | 打开超过 large-file 阈值文档 | 普通打开需要确认；startup/open-system 可按策略跳过确认 |
-| P1-004 | APP | 只读/权限不足路径 | 打开只读目录或无写权限文件后保存 | 保存失败可读；另存为可用；不误标已保存 |
-| P1-005 | APP | 文件树重命名 | 对文件执行内联重命名 | 文件系统更新、当前文档路径同步、冲突文件名阻止 |
-| P1-006 | APP | 文件树新增/删除 | 新建文件夹/文件、删除文件 | 文件树刷新；删除当前文档有确认；错误有 toast |
-| P1-007 | APP | 工作区焦点刷新 | 外部增删文件后 Prism 获得焦点 | 文件树和索引刷新；展开状态尽量保留 |
-| P1-008 | INT | 最近文件 localStorage 兼容 | settings recentFiles 为空，legacy cache 存在 | 回退读取 cache；添加/清空时同步 legacy 行为 |
-| P1-009 | APP | Rich copy | 选区复制纯文本、Markdown、HTML | 剪贴板 MIME/内容正确；代码块、链接、表格不丢结构 |
-| P1-010 | APP | 自动格式化 | 输入常见 Markdown 触发 auto format | 不破坏代码块；可 undo；关闭相关能力后不触发 |
-| P1-011 | APP | 标题升降级 | 对当前标题执行 increase/decrease heading | Markdown heading 等级正确变化；正文段落不误处理 |
-| P1-012 | APP | 段落移动/复制/删除 | 当前段落上移、下移、复制、删除 | 段落边界正确；列表/引用/代码块不被切坏 |
-| P1-013 | APP | 章节移动/复制/折叠 | 对当前标题章节执行操作 | 标题树边界正确；折叠状态不影响保存内容 |
-| P1-014 | APP | 选区转格式 | 选区转引用、Callout、任务列表、有/无序列表 | 多行选区语法正确；undo 一步回退 |
-| P1-015 | APP | 模板插入 | 插入会议纪要、PRD、技术方案、周报、公众号、学术笔记等 | 空文档可作为整篇模板；非空文档插入光标处；占位符替换正确 |
-| P1-016 | APP | YAML 与导出设置联动 | Front Matter 含 title/export/tags/date | 属性面板解析；导出标题/TOC/页面设置按策略应用 |
-| P1-017 | APP | 脚注/TOC | 文档含脚注和目录命令 | 预览跳转、导出 TOC 和脚注格式正确 |
-| P1-018 | APP | HTML 表格转换 | 粘贴或命令转换 HTML table 到 Markdown | 表头、单元格、转义和对齐正确 |
-| P1-019 | APP | 表格排序/移动 | 选择表格列排序、移动行列 | 数据行顺序正确；表头不参与错误排序 |
-| P1-020 | APP | Markmap | 文档含 markmap 代码块 | 渲染成功；库加载失败时 fallback 可读 |
-| P1-021 | APP | PlantUML/Graphviz | 文档含 PlantUML/Graphviz 代码块 | 渲染成功或错误块可诊断；不阻塞普通预览 |
-| P1-022 | APP | Presentation mode | 文档含 slide 分隔符后进入演示模式 | 无 slides 时 toast；有 slides 时 overlay 可导航、退出 |
-| P1-023 | APP | Wiki link 兼容 | 文档含既有 `[[文档名]]` | 预览可识别并跳转；保存不强制改写 |
-| P1-024 | APP | 图谱范围和搜索 | 图谱面板切换当前文档/当前工作区，搜索节点 | 节点和边准确；点击节点打开文档；无关系空态合理 |
-| P1-025 | INT | 反链解析边界 | 相对链接、标题锚点、大小写、外链、mailto | 只把工作区 Markdown 文档计入关系；外链不计图谱 |
-| P1-026 | APP | 导出取消 | 打开保存面板后取消导出 | 不创建 job 或文件；状态栏不残留导出中 |
-| P1-027 | APP | 导出保存面板默认路径 | 对已保存/未保存文档分别导出 | 默认文件名、扩展名、目录符合设置；覆盖确认生效 |
-| P1-028 | APP | HTML 包含主题开关 | 导出 HTML 时切换 include theme | 开启时独立可读；关闭时结构仍存在但不注入主题 CSS |
-| P1-029 | APP | PDF 页眉页脚 | 开启页眉页脚并设置 `{title}`/`{filename}` | PDF 对应区域出现正确替换文本 |
-| P1-030 | APP | DOCX 字体策略 | theme/preview/custom 三种 DOCX 字体策略 | DOCX 内容字体符合设置；缺失自定义字体时提示 |
-| P1-031 | APP | Pandoc 引用 | 设置 bibliography 和 CSL 后导出 HTML/DOCX | Pandoc ready 时引用和参考文献正确；未安装时标记阻塞或提示 |
-| P1-032 | APP | 主题导入 | 导入合法/重复/非法主题包 | 合法主题入库并可应用；重复主题有替换确认；非法主题说明原因 |
-| P1-033 | APP | 自定义字体导入/删除 | 导入 ttf/otf/woff 字体并应用到编辑器/预览 | 字体注册、持久化、删除回退正确 |
-| P1-034 | INT | i18n 资源完整性 | 切换语言或扫描命令/设置文案 key | 无明显缺失 key；命令 label/category 在菜单和命令面板一致 |
-| P1-035 | APP | 通用命令面板 | 如保留命令面板，打开默认态并搜索命令 | 命令列表、分组、禁用态、快捷键、执行路径正确 |
-| P1-036 | APP | 浮层统一关闭 | 快速打开、搜索、右键菜单、设置弹窗、诊断面板按 Esc | 一次 Esc 关闭当前浮层；焦点回到合理位置 |
-| P1-037 | VIS | 窄窗口布局 | 900px、700px 宽度打开核心界面 | 文字不重叠；工具按钮不挤压内容；核心操作仍可达 |
-| P1-038 | VIS | 低高度窗口布局 | 高度约 560px 打开设置/导出/图谱 | 弹窗可滚动；底部按钮可见；无截断 |
-| P1-039 | PERF | 导出大文档 | 复杂长文导出 PDF/PNG/DOCX | 不超过可接受时间；失败时给出资源/分页/图片风险 |
-| P1-040 | PERF | 工作区索引性能 | 1000 个文档、混合 Markdown/Text/assets | 索引不阻塞 UI；搜索结果合理；内存无持续增长 |
-| P1-041 | INT | 命令注册覆盖 | 扫描 commandRegistry | ID 唯一；快捷键冲突可解释；palette/menu 可见性符合产品口径 |
-| P1-042 | INT | 主题契约 | 内置主题 contract 与 CSS 变量 | 主题 token 完整；导出/搜索/Mermaid 变量存在 |
-| P1-043 | APP | 打印命令 | 触发 print | 系统打印面板可打开或不可用时 toast；不崩溃 |
-| P1-044 | APP | DevTools/缩放 | 触发缩放、重置、DevTools | WebView zoom 或 CSS fallback 生效；DevTools 不可用时提示 |
-
-## P2 平台、可用性与发布用例
-
-| ID | 类型 | 覆盖点 | 步骤 | 预期 |
-|---|---|---|---|---|
-| P2-001 | APP | macOS Finder 文件关联 | 设置 Prism 为 `.md/.markdown/.txt/.json/.sql` 默认打开方式 | 双击文件进入 Prism；bundle id 为 `com.prism.editor.v1` |
-| P2-002 | APP | macOS 标题栏/全屏/最小化 | 最小化、恢复、全屏、退出全屏 | 窗口状态同步；布局恢复；焦点不丢 |
-| P2-003 | APP | macOS 拖拽图片 | Finder 普通拖拽和 Option 拖拽图片到编辑器 | 普通拖拷贝到 assets；Option 尽量保留原路径或提示限制 |
-| P2-004 | APP | Windows 安装器 | 安装/卸载 Windows 包 | 开始菜单、卸载项、文件关联、权限正常 |
-| P2-005 | APP | Windows 文件关联 | 双击 `.md/.txt/.json/.sql` | Prism 打开对应文件；路径含中文和空格正常 |
-| P2-006 | VIS | Windows 标题栏 | Windows 下打开主界面、设置、导出 | 标题栏控件位置正确；不套用 macOS-only 表达 |
-| P2-007 | APP | Linux 包 | 安装 Linux 包并启动 | 菜单、文件打开、权限提示、字体 fallback 正常 |
-| P2-008 | APP | Linux 文件关联 | Linux 桌面双击支持文件 | 打开到当前 Prism；失败则记录桌面环境限制 |
-| P2-009 | VIS | 跨平台字体 fallback | macOS/Windows/Linux 对比中文、英文、代码、公式 | 字体回退可读；行高和预览排版不明显崩坏 |
-| P2-010 | APP | Updater artifacts | 正式构建并生成 `.sig/latest.json` | manifest 版本、URL、signature 正确；`--check` 能发现不一致 |
-| P2-011 | APP | DMG fallback | macOS Finder AppleScript 超时时使用 skip-finder DMG | DMG 可 verify；说明仅跳过布局美化，不替代签名公证 |
-| P2-012 | APP | 签名/公证前检查 | 检查 bundle id、entitlements、capabilities | 无静态全盘 `**` scope；release note 如实说明签名/公证状态 |
-| P2-013 | A11Y | 键盘可达性 | 仅键盘完成打开、搜索、切视图、保存、导出设置 | 焦点顺序合理；关键按钮有 aria-label 或可读文本 |
-| P2-014 | A11Y | 高对比/暗色可读性 | 暗色主题、系统暗色、不同内容主题 | 文本对比足够；选区、链接、错误不只靠颜色 |
-| P2-015 | APP | 离线外链失败 | 离线时打开 GitHub/更新/外部帮助 | 失败不崩溃；有明确说明 |
-| P2-016 | PERF | 长时运行 | 连续编辑、搜索、切预览、导出 30 分钟 | 内存无明显泄漏；快捷键和保存仍响应 |
-| P2-017 | APP | 崩溃后恢复 | 强制结束进程后重新打开 | 恢复快照出现；last session 不覆盖系统打开文件 |
-| P2-018 | VIS | 发布截图基线 | 1200/1440/1920 宽度截图：空状态、编辑、分栏、预览、设置 | 视觉符合跨平台写作器气质；无重叠、截断、异常滚动条 |
-
-## 全量详细追踪矩阵
-
-本节是执行层规格。上面的 P0/P1/P2 是管理视图；真正执行时按本节逐项打勾。每项至少记录 `Pass / Fail / Blocked / Not executed`，失败必须给出复现路径和证据。
-
-### A. 文件类型与 Document Profile
-
-| ID | 优先级 | 覆盖项 | 前置数据 | 操作 | 必验断言 | 证据 |
+| ID | 功能域 | 代码依据 | 前置条件 | 步骤 | 预期结果 | 建议自动化 |
 |---|---|---|---|---|---|---|
-| D-PROFILE-001 | P0 | Markdown 扩展 | `.md`、`.markdown` | 打开、编辑、预览、导出、索引、链接补全 | profile 为 `markdown`；预览/导出/关系图谱/Markdown 链接均可用 | UI 截图 + 单测 |
-| D-PROFILE-002 | P0 | Text 基础扩展 | `.txt`、`.text` | 打开、编辑、保存、搜索 | profile 为 `text`；可编辑保存；无 Markdown 预览和导出承诺 | UI 截图 + 单测 |
-| D-PROFILE-003 | P0 | 数据/配置文本 | `.sql`、`.json`、`.jsonc`、`.yaml`、`.yml`、`.toml`、`.xml`、`.csv`、`.tsv`、`.log`、`.ini`、`.conf`、`.env` | 逐个打开并执行保存、另存、搜索、最近文件 | 均按 Text Document 处理；不进入 Markdown 关系图谱 | manifest 明细 |
-| D-PROFILE-004 | P0 | Unsupported 源码 | `.js`、`.ts`、`.tsx`、`.py`、`.rs`、`.go`、`.java`、`.css`、`.html` | 在打开对话框、文件关联、索引中检查 | 不作为默认支持文件；若通过高级路径打开，不扩大产品承诺 | 截图/单测 |
-| D-PROFILE-005 | P1 | 大小写扩展 | `README.MD`、`DATA.JSON` | 打开与索引 | 扩展名大小写不影响 profile 判定 | 单测 |
-| D-PROFILE-006 | P1 | 无扩展和隐藏文件 | `.env`、`README`、`.gitignore` | 打开/索引 | `.env` 支持；未列入白名单的无扩展文件不进入默认承诺 | 单测 |
+| PRISM-FF-001 | 首启种子文档 | `initial_documents.rs`、`useBootstrap.ts` | 清空 Prism 首启 marker，确保 app bundle 有 `Resources/Initial` | 启动 Prism | 首次启动复制 Initial 到用户文档目录下 `Prism/`，直接打开 `Examples/Prism Markdown 语法指南.md`，不显示空指引页 | Rust `initial_documents` + Playwright/app smoke |
+| PRISM-FF-002 | 普通启动默认文档 | `useBootstrap.ts` | 用户文档目录已有 `/Documents/Prism/Examples/Prism Markdown 语法指南.md` | 关闭所有窗口后重新打开 Prism | 直接打开 Prism 目录和指南文档；窗口显示前不闪现空页面 | app smoke 截图 |
+| PRISM-FF-003 | 新建窗口 | `openWindow.ts`、`useBootstrap.ts` | Prism 已打开 | 主菜单 `窗口 > 新建窗口` 或 `Cmd+Shift+N` | 新窗口直接打开默认 Prism 工作区指南，不带 `?empty` 或旧指引页 | `src/lib/openWindow.test.ts` + app smoke |
+| PRISM-FF-004 | 系统打开文件 | `startup_files.rs`、`useStartupFileOpen.ts` | 准备 `.md/.txt/.json/.sql` 文件 | 从 Finder 双击或 `open -a Prism <file>` | 支持文档在当前/新窗口打开，路径顺序保持，Unsupported 文件不打开 | Rust `startup_files` + 手工 |
+| PRISM-FF-005 | 显式 URL 打开文件 | `useBootstrap.ts` | 启动 URL 带 `?file=` | 用含空格和中文路径启动窗口 | 文件被解码并打开，工作区同步到文件所在目录 | `src/hooks/useBootstrap.test.tsx` |
+| PRISM-FF-006 | 显式 URL 打开文件夹 | `useBootstrap.ts` | 启动 URL 带 `?folder=` | 打开指定目录 | 请求目录授权，加载文件树，不自动打开无关文档 | `src/hooks/useBootstrap.test.tsx` |
+| PRISM-FF-007 | Markdown 文件打开 | `fileAssociation.ts`、`document_io.rs` | 准备 `.md` 和 `.markdown` | `文件 > 打开` | Markdown profile 生效，支持编辑/分栏/预览/导出/链接/图谱 | `openDocumentFlow.test.ts` |
+| PRISM-FF-008 | Text Document 打开 | `fileAssociation.ts`、`document_io.rs` | 准备 `.txt/.sql/.json/.yaml/.env/.csv` | 逐个打开 | 进入源码编辑模式，状态栏显示文本类型；分栏/预览/导出/图谱不可用或不显示 | 单元 + 手工 |
+| PRISM-FF-009 | 不支持文件拒绝 | `document_io.rs`、`openDocumentFlow.ts` | 准备 `unsupported.ts` | 尝试打开 | 明确提示仅支持 Markdown/Text 文档，不读入内容，不污染最近文件 | Rust + `openDocumentFlow.test.ts` |
+| PRISM-FF-010 | 大文件保护 | `openDocumentFlow.ts` | 准备超过 10MB 支持文件 | 打开文件 | 弹出大文件确认；取消则不打开，确认则加载 | `src/lib/fileActions.test.ts` |
+| PRISM-FF-011 | 文件 > 新建文稿 | `fileCommands.ts`、`fileActions.ts` | 当前已有工作区 | 点击 `文件 > 新建文稿` | 在当前目录创建唯一 `Untitled.md`，当前窗口打开，左上文件名可内联改名 | 单元 + 手工 |
+| PRISM-FF-012 | 无工作区新建文稿 | `fileCommands.ts` | 无当前文档路径且无工作区 | 点击新建文稿 | 不打开新窗口；提示需要工作区或位置 | 手工 |
+| PRISM-FF-013 | 保存与另存 | `fileCommands.ts`、`fileSafety.ts` | 打开文档并修改 | `Cmd+S`、`Cmd+Shift+S` | 标题栏显示保存中/已保存；另存后路径、最近文件、快照更新 | 单元 + 手工 |
+| PRISM-FF-014 | 自动保存 | `useAutoSave.ts` | 自动保存开启 | 修改文档，等待间隔 | 内容写入磁盘，保存状态恢复，失败显示标题栏错误 | `useAutoSave.test.tsx` |
+| PRISM-FF-015 | 外部修改冲突 | `fileSafety.ts`、`SaveConflictModal.tsx` | 文档打开后从外部修改磁盘文件 | 在 Prism 保存 | 出现冲突状态和冲突弹窗；不会覆盖外部内容，用户可选择处理 | 单元 + 手工 |
+| PRISM-FF-016 | 恢复快照 | `recovery.ts`、`RecoveryModal.tsx` | 制造未保存恢复快照 | 启动或触发恢复 | 恢复弹窗列出文档，可恢复/丢弃；恢复后内容一致 | `App.recovery.test.tsx` |
+| PRISM-FF-017 | 标题栏文件名 | `TitleBar.tsx` | 打开保存文档 | 查看标题栏、点击文件名改名 | 显示无 `.md` 后缀、无 `- Prism` 后缀、无 P 图标；可内联重命名 | `TitleBar.test.tsx` |
+| PRISM-FF-018 | 标题栏保存状态 | `TitleBar.tsx` | 打开文档 | 修改、保存失败、制造冲突 | dirty/saving/failed/conflict 均以标题旁 badge 表达且不抖动 | `TitleBar.test.tsx` |
+| PRISM-FF-019 | 视图模式 | `viewCommands.ts`、`SplitView.tsx` | 打开 Markdown | 切换源码、分栏、预览 | 三种模式切换正确；Text Document 强制源码模式 | `SplitView.test.tsx` |
+| PRISM-FF-020 | 编辑搜索 | `SearchPanel.tsx`、`editorSearchRuntime.ts` | 文档含多个关键词 | `Cmd+F` 搜索，跳转上一/下一项 | 命中计数、高亮、滚动和无结果态准确 | `SearchPanel.test.tsx` |
+| PRISM-FF-021 | 替换 | `SearchPanel.tsx`、`SplitView.tsx` | 文档含多个关键词 | `Cmd+H`，单次替换和全部替换 | 预览模式触发替换时切到 split；替换范围准确 | `SearchPanel.test.tsx` |
+| PRISM-FF-022 | 预览搜索 | `SplitView.tsx` | 预览模式文档 | 搜索预览文本 | 预览区域高亮命中，当前命中可滚动到中间 | `SplitView.test.tsx` |
+| PRISM-FF-023 | 分栏滚动同步 | `SplitView.tsx`、`previewScrollMap.ts` | 长 Markdown | 编辑区/预览区分别滚动 | 分栏模式滚动比例同步；源码行到预览块映射稳定 | 单元 + 手工 |
+| PRISM-FF-024 | 预览任务勾选 | `SplitView.tsx`、`markdownToHtml.ts` | Markdown 含 `- [ ]` | 在预览模式点击 checkbox | Markdown 源码对应行切换 `[ ]/[x]`；编辑态 checkbox 不替代预览态交互 | `SplitView.test.tsx` |
+| PRISM-FF-025 | 基础编辑命令 | `editorCommands.ts` | 打开文档 | 撤销、重做、剪切、复制、粘贴、粘贴纯文本、全选 | CodeMirror 内容和剪贴板行为正确 | `EditorPane.integration.test.tsx` |
+| PRISM-FF-026 | 复制为多格式 | `richCopy.ts`、`editorCommands.ts` | 选中文本 | 执行复制为 Plain/Markdown/HTML | 剪贴板内容与选区语义一致 | 单元 + 手工 |
+| PRISM-FF-027 | 行内格式 | `formatting.ts`、`SelectionFloatingToolbar.tsx` | 选中文本 | 加粗、斜体、下划线、删除线、行内代码、链接、高亮、引用 | Markdown 标记正确，预览一致 | `formatting.test.ts` |
+| PRISM-FF-028 | 块格式 | `editorBlockCommands.ts` | 文档含段落 | 段落、H1-H6、升降标题、引用、有序/无序/任务列表、代码块、数学块、分割线、脚注、TOC、YAML | 插入/转换后的 Markdown 可读可预览 | 单元 + 手工 |
+| PRISM-FF-029 | 段落和章节操作 | `blockOperations.ts` | 文档含多段多标题 | 上移/下移/复制/删除段落，复制/移动章节，折叠当前标题 | 范围准确，不破坏其他内容 | `blockOperations.test.ts` |
+| PRISM-FF-030 | 编辑区右键菜单 | `contextMenu.ts`、`ContextMenu.tsx` | 有/无选区、表格内/外 | 右键编辑区 | 菜单项启用态合理；Esc 关闭；选区时有链接入口；表格内有表格子菜单 | `ContextMenu.test.tsx` |
+| PRISM-FF-031 | Slash 片段 | `slashSnippets.ts` | Markdown 编辑区 | 输入 `/time`、`/table`、`/img`、`/video`、`/markmap`、`/mermaid`、`/plantuml`、`/fold`、`/task` 后 Tab | 插入对应标准 Markdown/HTML 片段，选区光标位置正确 | `slashSnippets.test.ts` |
+| PRISM-FF-032 | 模板插入 | `templates.ts`、`fileCommands.ts` | 有当前文档和无当前文档两种 | 插入 README、PRD、会议纪要、周报、技术方案、公众号长文、论文草稿、读书笔记、研究摘要、白皮书 | 无文档时创建模板文档；有文档时插入到当前光标；占位符解析 | `templates.test.ts` |
+| PRISM-FF-033 | 图片插入/粘贴 | `imagePaste.ts`、`EditorPane.tsx` | 有本地图片 | 插入图片、粘贴图片 | 图片保存到资产路径或插入路径，预览能显示 | 单元 + 手工 |
+| PRISM-FF-034 | Wiki 链接补全 | `linkCompletion.ts` | 工作区有多个 Markdown | 输入 `[[` 和关键词 | 候选来自工作区索引/回退树，选择后插入正确链接 | `linkCompletion.test.ts` |
+| PRISM-FF-035 | 表格插入 | `TableInsertPopover.tsx`、`tables.ts` | 打开 Markdown | 打开表格 popover，hover 网格，输入行列，对齐 | 插入表格尺寸、表头、对齐正确 | `tables.test.ts` + 手工 |
+| PRISM-FF-036 | 表格工具栏 | `TableFloatingToolbar.tsx`、`useEditorTableModel.ts` | 光标在表格内 | 插入/删除/移动行列，左右中对齐，格式化，选中表格 | 源码表格结构正确，工具栏位置稳定 | 单元 + 手工 |
+| PRISM-FF-037 | 表格复制/转换/排序 | `tables.ts` | 表格含多行数据 | 复制 Markdown/HTML/CSV/TSV，升序/降序排序，Markdown/HTML 转换 | 剪贴板和源码结果准确 | `tables.test.ts` |
+| PRISM-FF-038 | Markdown 基础预览 | `markdownToHtml.ts`、`PreviewPane.tsx` | 指南文档 | 切到预览 | 标题、段落、列表、引用、链接、图片、表格、代码、脚注、任务列表按主题渲染 | `markdownToHtml.test.ts` + 截图 |
+| PRISM-FF-039 | Front Matter 预览 | `frontMatterProperties.ts`、`markdownToHtml.ts` | 文档含合法 YAML | 预览顶部元信息 | title/tags/description/author/date/status/export 展示正确，源码行映射保留 | 单元 + 手工 |
+| PRISM-FF-040 | 非法 Front Matter | `DocumentPropertiesPanel.tsx`、`markdownToHtml.ts` | 文档含非法 YAML | 打开属性面板和预览 | 属性面板禁用应用；预览显示可读错误，不计入无关错误 | 单元 + 手工 |
+| PRISM-FF-041 | KaTeX | `PreviewPane.tsx`、`markdownToHtml.ts` | 文档含行内、块级公式和错误公式 | 预览和导出 | 正确公式渲染清晰；错误公式有定位和可读错误 | `markdownToHtml.test.ts` |
+| PRISM-FF-042 | Mermaid | `PreviewPane.tsx`、`exportPipeline.ts` | 文档含流程图、关系图、mindmap 等 Mermaid | 预览、HTML/PDF/PNG/DOCX 导出 | 预览和导出节点完整，主题一致，无空白图和裁切 | 单元 + 手工导出 |
+| PRISM-FF-043 | PlantUML 离线渲染 | `plantUml.ts`、`exportPipeline.ts` | 断网，文档含 PlantUML/puml | 预览和导出 | 不请求在线服务；SVG 渲染完整；PNG/PDF/DOCX 不少节点不裁切 | `plantUml.test.ts` + 断网手工 |
+| PRISM-FF-044 | Markmap | `markmap.ts`、`PreviewPane.tsx`、`exportPipeline.ts` | 文档含 `markmap` 和 Markdown-outline mindmap | 预览和导出 | 思维导图完整渲染，颜色随主题，导出不退化成源码 | `markmap.test.ts` |
+| PRISM-FF-045 | 本地媒体预览 | `PreviewPane.tsx` | 文档引用 png/svg/gif/webp | 预览 | 相对路径按文档目录解析，object URL 缓存更新，缺失图片显示合理占位 | 单元 + 手工 |
+| PRISM-FF-046 | 安全 HTML | `markdownToHtml.ts` | 文档含 `script`、危险 href、事件属性 | 预览 | 危险标签/属性被剔除，普通 HTML/details 保留 | `markdownToHtml.test.ts` |
+| PRISM-FF-047 | 大文档预览性能 | `PreviewPane.performance.test.tsx`、`markdownRenderService.ts` | 打开 300KB+ 长文档 | 滚动、搜索、切换视图 | 不白屏；Worker/降级路径不丢核心内容；长表格走轻量路径 | 性能测试 + 手工 |
+| PRISM-FF-048 | 演示模式 | `presentation.ts`、`PresentationOverlay.tsx` | 文档含 slide 分隔语法 | 执行演示模式 | 有 slides 时打开演示层；无 slides 时 toast 提示 | `presentation.test.ts` |
+| PRISM-FF-049 | 链接诊断 | `linkDiagnostics.ts`、`DocumentDiagnosticsPanel.tsx` | 文档含断链、空链接、缺失 heading | 查看状态栏 ERROR 并点击 | ERROR 计数准确；弹窗分组显示；点击跳到源码行 | 单元 + 手工 |
+| PRISM-FF-050 | 图片诊断 | `imageDiagnostics.ts` | 文档含缺失图片 | 查看 ERROR | 缺失本地图片计入 actionable error，点击定位 | 单元 + 手工 |
+| PRISM-FF-051 | Heading/Table/Render 诊断 | `headingDiagnostics.ts`、`tables.ts`、`preflight.ts` | 文档含重复 heading、坏表格、坏图表/公式 | 查看 ERROR 与导出 preflight | 分类、数量、位置正确；导出前阻断真正错误 | 单元 + 手工 |
+| PRISM-FF-052 | Typography 诊断 | `typographyDiagnostics.ts` | 文档含中文排版问题 | 点击排版诊断入口 | 排版建议只在用户打开时展示，不默认计入 ERROR | 单元 + 手工 |
+| PRISM-FF-053 | 文档属性面板 | `DocumentPropertiesPanel.tsx` | Markdown 文档 | 打开属性，修改字段，应用 | YAML Front Matter 写回顶部，内容其他部分不变 | 单元 + 手工 |
+| PRISM-FF-054 | 当前链接面板 | `DocumentLinksPanel.tsx` | Markdown 有 Markdown/wiki/outbound 链接 | 打开当前链接 | 出链列表准确，可跳转内部文档；外部链接不当作图谱关系 | 单元 + 手工 |
+| PRISM-FF-055 | 反链面板 | `BacklinksPanel.tsx`、`workspace_index.rs` | 工作区文档互相链接 | 打开被引用文档并查看反链 | 反链来源、片段、点击跳转准确 | Rust + 手工 |
+| PRISM-FF-056 | 关系图谱条件按钮 | `StatusBar.tsx`、`workspaceIndexQuery.ts` | 有链接关系和无链接关系文档各一份 | 分别打开 | 有文档关系时状态栏显示图谱按钮；无关系或 Text Document 不显示 | 单元 + 手工 |
+| PRISM-FF-057 | 关系图谱面板 | `RelationGraphPanel.tsx` | 工作区有 1-2 跳链接网络 | 打开图谱，切 current/workspace，深度 1/2，搜索，hover，拖拽，双击节点 | 节点/边完整，当前文档高亮；双击打开目标文档 | 单元 + 手工 |
+| PRISM-FF-058 | 大纲 | `OutlinePanel.tsx` | 文档有/无标题 | 切换大纲，搜索标题，点击标题 | 层级、空态、无结果态、跳转都正确 | `OutlinePanel.test.tsx` |
+| PRISM-FF-059 | 快速打开 | `CommandPalette.tsx`、`workspaceIndexQuery.ts` | 工作区有多文件和最近文件 | `Cmd+P` 搜文件名/标题/路径 | 排名合理；回车打开；索引/native/fallback 状态清楚 | `CommandPalette.test.tsx` |
+| PRISM-FF-060 | 全文搜索 | `CommandPalette.tsx`、`workspace_index.rs` | 工作区有可搜索内容 | `Cmd+Shift+F` 搜标题/正文/heading | 结果显示文件名、匹配类型、片段；无索引时有说明 | Rust + React 测试 |
+| PRISM-FF-061 | 文件树基础 | `FileTree.tsx` | 打开工作区 | 展开/折叠、选中文件、active 态 | 层级、缩进、预览摘要、选中态稳定 | `FileTree.test.tsx` |
+| PRISM-FF-062 | 文件树视图与排序 | `FileTree.tsx`、`fileTree.ts` | 工作区含不同大小/时间文件 | 切树/列表，按名称/修改/创建/大小排序 | 顺序变化可见；列表显示 folder label | 单元 + 手工 |
+| PRISM-FF-063 | 文件树上下文菜单 | `fileTreeContextMenu.ts`、`fileActions.ts` | 文件、文件夹、空白区分别右键 | 执行打开、新窗口、新建、重命名、复制、删除、复制路径、显示位置、刷新 | 文件系统和 UI 同步；删除先进入废纸篓，失败才二次确认永久删除 | 单元 + 手工 |
+| PRISM-FF-064 | 侧栏/状态栏 | `Sidebar.tsx`、`StatusBar.tsx` | 打开文档 | 切文件/大纲 tab，隐藏/显示侧栏，隐藏/显示状态栏 | 主区域重排正确；状态栏无重叠 | 手工 + CSS 测试 |
+| PRISM-FF-065 | 写作统计 | `writingStats.ts`、`StatusBar.tsx` | 有正文和选区 | 查看状态栏、选中文本 | 字数、行列、选区统计准确，数字本地化 | 单元 + 手工 |
+| PRISM-FF-066 | 专注模式 | `workspace/store.ts` | 打开文档 | 点击状态栏专注按钮或 F8 | 侧栏和状态栏收起/恢复，编辑连续性不丢 | 手工 |
+| PRISM-FF-067 | 打字机模式 | `typewriter.ts` | 长文档 | 开启 F9 后输入和滚动 | 光标保持在可视区域合理位置 | 单元 + 手工 |
+| PRISM-FF-068 | 行号/自动换行 | `editorAppearanceRuntime.ts`、`SettingsModal.tsx` | 打开写作设置 | 切换显示行号和自动换行 | CodeMirror 扩展热更新，布局稳定 | `editorAppearanceRuntime.test.ts` |
+| PRISM-FF-069 | 导出菜单启用态 | `menuModel.ts`、`exportCommands.ts` | Markdown 与 Text Document 各一份 | 展开导出菜单 | Markdown 可导出 PDF/Word/HTML/PNG；Text Document 导出禁用并显示原因 | 单元 + 手工 |
+| PRISM-FF-070 | 导出 preflight | `preflight.ts`、`exportCommands.ts` | 文档含 actionable errors | 尝试导出 | 打开诊断面板并阻断导出；错误修复后可导出 | 单元 + 手工 |
+| PRISM-FF-071 | HTML 导出 | `exportPipeline.ts` | 指南文档 | 导出 HTML，打开产物 | 主题内联可选；本地图片、KaTeX、Mermaid、PlantUML、Markmap、链接、TOC 保真 | 集成 + 手工 |
+| PRISM-FF-072 | PDF 导出 | `exportPipeline.ts`、`pdf_capture.rs` | 指南文档 | 导出 PDF | 分页不切半文字；页眉页脚/页码/边距/纸张生效；图表完整 | 手工 + PDF 渲染检查 |
+| PRISM-FF-073 | PNG 导出 | `exportPipeline.ts` | 长指南文档，清晰度 1x/2x/4x | 导出 PNG | 按用户选择清晰度导出；超大画布走分片，不强制降级；PlantUML 不裁切 | 手工 + 像素尺寸检查 |
+| PRISM-FF-074 | DOCX 导出 | `exportPipeline.ts` | 指南文档 | 导出 DOCX，用 WPS/Word 打开 | 可打开；标题、表格、图片、公式、图表、列表、脚注、callout 语义尽量保真 | 手工 + unzip 检查 |
+| PRISM-FF-075 | 导出历史 | `exportCommands.ts`、`settings/types.ts` | 已完成一次导出 | 使用覆盖上次导出/按上次设置导出 | 无历史时禁用；有历史时输出路径和设置复用正确 | 单元 + 手工 |
+| PRISM-FF-076 | 导出任务状态 | `exportJob.ts`、`useExportTaskUi.tsx` | 执行导出 | 观察状态栏和 toast | 导出中、成功、取消、失败状态和打开/显示位置动作正确 | 单元 + 手工 |
+| PRISM-FF-077 | 导出设置 | `SettingsModal.tsx`、`useExportSettingsModel.ts` | 打开设置 > 导出 | 修改默认格式、PNG 清晰度、HTML 主题、PDF 纸张/边距/页码/页眉页脚、模板、目录、默认位置、DOCX 字体策略 | 设置持久化并影响下一次导出 | 单元 + 手工 |
+| PRISM-FF-078 | Front Matter 覆盖导出 | `frontMatter.ts`、`templates.ts` | 文档 Front Matter 含 `export` 设置 | 开启覆盖并导出 | title/author/date/template/paper/margin/toc 等覆盖符合 schema | `templates.test.ts` |
+| PRISM-FF-079 | 引用/Pandoc | `pandoc.rs`、`citations.ts`、`exportPipeline.ts` | 配置 bibliography/csl/Pandoc | 检测 Pandoc，导出含 citekey 文档 | Pandoc 可用时渲染引用；不可用时有明确警告，不无声失败 | Rust + 手工 |
+| PRISM-FF-080 | 设置通用 | `SettingsModal.tsx`、`settings/types.ts` | 打开设置 | 修改语言、界面明暗、默认视图、快捷键风格 | 设置立即生效并持久化 | 单元 + 手工 |
+| PRISM-FF-081 | 设置写作 | `SettingsModal.tsx` | 打开设置 > 写作 | 修改字体、字号、行高、自动保存、策略、行号、自动换行 | 编辑器热更新；保存后重启仍保留 | 单元 + 手工 |
+| PRISM-FF-082 | 设置外观/主题 | `themes/*`、`theme_store.rs` | 打开设置 > 外观 | 切 6 个内置主题，导入/应用/删除用户主题，导入无效主题 | 主题可切换；无效主题禁用或报错；删除有确认 | 单元 + 手工 |
+| PRISM-FF-083 | 设置字体 | `fontService.ts` | 准备 ttf/otf/woff/woff2 | 导入字体，应用到编辑器/预览/DOCX | 字体列表和渲染生效，删除后回退合理 | 手工 |
+| PRISM-FF-084 | 设置文件 | `settings/types.ts`、`SettingsModal.tsx` | 最近文件不为空 | 修改恢复会话、最近文件数量、清空最近文件 | 最近文件列表和恢复行为符合设置 | 单元 + 手工 |
+| PRISM-FF-085 | 主菜单完整性 | `menuModel.ts` | 打开 app | 逐个展开 文件/编辑/插入/格式/导航/视图/导出/窗口/帮助 | 菜单项、分隔线、快捷键、勾选态、禁用原因符合当前文档状态 | `menuModel` 单元 + 截图 |
+| PRISM-FF-086 | 命令快捷键 | `registry.ts`、`platform.ts` | macOS/Windows 风格各一次 | 执行主快捷键 | 平台显示和触发匹配；冲突命令不误触 | `platform.test.ts` |
+| PRISM-FF-087 | 快捷键面板 | `ShortcutPanel.tsx` | 打开帮助 > 快捷键 | 查看分类和滚动 | 文件/编辑/插入/格式/视图/窗口/帮助快捷键完整可读 | 手工 |
+| PRISM-FF-088 | 关于与更新 | `AboutModal.tsx`、`updateService.ts` | 打开帮助 > 关于/检查更新 | 点击检查更新 | 显示版本、品牌信息；检查中、最新、不可用、可更新、失败状态清楚 | 单元 + 手工 |
 
-### B. 启动、窗口和会话恢复
+## P1 完整功能与边界
 
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 | 证据 |
+| ID | 功能域 | 代码依据 | 前置条件 | 步骤 | 预期结果 | 建议自动化 |
+|---|---|---|---|---|---|---|
+| PRISM-FF-089 | 最近文件 | `recentFiles.ts`、`menuModel.ts` | 打开超过 10 个文件 | 展开打开最近，清空最近文件 | 只显示设置限制数量，排序按 lastOpened | 单元 + 手工 |
+| PRISM-FF-090 | 当前文档重复打开 | `openDocumentFlow.ts` | 当前文档已打开 | 从文件树再次打开同一路径 | 不触发 dirty guard，不重复窗口，工作区刷新合理 | 单元 |
+| PRISM-FF-091 | 菜单打开已有文档时新窗口策略 | `openDocumentFlow.ts` | 当前窗口已有文档 | `文件 > 打开` 选择另一个文件 | 因 entry prefers new window，新文件进新窗口，当前窗口不丢内容 | 单元 + 手工 |
+| PRISM-FF-092 | 工作区导航 dirty guard | `openDocumentFlow.ts` | 当前文档未保存 | 点击文件树其他文件 | 弹出保存/另存/丢弃/取消，按选择执行 | 单元 + 手工 |
+| PRISM-FF-093 | 打开文件同步工作区 | `fileActions.ts` | 当前工作区不含目标文件 | Finder 打开外部文件 | 左侧工作区切到文件所在目录或刷新当前树 | 单元 |
+| PRISM-FF-094 | 文件夹授权失败 | `fileSystemScope.ts` | 模拟授权拒绝 | 打开文件夹 | 有错误提示，不留下半加载状态 | 手工 |
+| PRISM-FF-095 | 文件属性信息 | `fileActions.ts` | 文件树文件/目录 | 执行属性/信息动作（如菜单暴露） | 显示名称、路径、类型、大小、时间 | 手工 |
+| PRISM-FF-096 | 删除当前打开文件 | `fileActions.ts` | 当前文档在工作区 | 从文件树删除该文件 | 删除后当前文档关闭，文件树刷新 | 单元 + 手工 |
+| PRISM-FF-097 | 重命名当前文件夹 | `fileActions.ts` | 当前文档在被重命名目录下 | 重命名父文件夹 | 当前文档路径同步更新，保存仍写到新位置 | 单元 + 手工 |
+| PRISM-FF-098 | 文件树复制文件 | `fileActions.ts` | 文件树有文件 | 复制文件 | 新文件名唯一，内容一致，工作区刷新 | 单元 |
+| PRISM-FF-099 | 文件树新建文件夹 | `fileActions.ts` | 工作区打开 | 新建文件夹并内联改名 | 文件夹创建、树模式展开、非法名提示 | 单元 + 手工 |
+| PRISM-FF-100 | 状态栏工作区 hover 操作 | `StatusBar.tsx` | 侧栏显示 | hover 状态栏左侧工作区区域 | 新建文件、工作区菜单、树/列表切换按钮显示/隐藏正确 | 手工 |
+| PRISM-FF-101 | 主题内容排版质量 | `src/styles/global.css`、`themeContract.ts` | 指南文档 | 切换 miaoyan/inkstone/slate/mono/nocturne/carbon | 编辑/预览正文颜色、字体、代码、表格、公式、图表都有主题差异且可读 | CSS 测试 + 截图 |
+| PRISM-FF-102 | 暗黑主题 | `themeContract.ts` | 系统或 app 暗色 | 切 nocturne/carbon 并预览 | 背景接近黑色或深色，正文/代码/图表对比度合格 | CSS 测试 + 截图 |
+| PRISM-FF-103 | 用户主题包扫描 | `theme_store.rs` | 准备有效/无效主题包 | 导入并重启 | 有效主题进入列表，无效主题带错误原因 | Rust + 手工 |
+| PRISM-FF-104 | 主题目录打开 | `theme_store.rs` | 设置外观 | 点击打开主题目录 | 系统文件管理器打开主题目录 | 手工 |
+| PRISM-FF-105 | 自托管字体 | `src/assets/fonts/README.md` | 离线环境 | 打开 app 并切主题 | UI/内容字体不依赖远程资源 | 手工 |
+| PRISM-FF-106 | CodeMirror 主题 | `editorAppearanceRuntime.ts`、`markdownHighlight.ts` | 6 个主题 | 查看编辑态 Markdown token、代码块、数学、图表源码 | token 颜色与主题契约一致，无漏色 | CSS/截图 |
+| PRISM-FF-107 | 编辑器横向滚动条 | `HorizontalScrollbar.tsx` | 关闭 word wrap，长行 | 编辑与预览区域横向滚动 | 滚动条同步且不遮挡状态栏 | 单元 + 手工 |
+| PRISM-FF-108 | 行内 Markdown 装饰 | `markdownHighlight.ts` | 文档含粗体、链接、图片、数学、代码 | 编辑态查看 | 装饰不改变源码字符，不把 `[]` 误显示成 checkbox | 单元 + 截图 |
+| PRISM-FF-109 | Callout 选择器 | `CalloutPickerPopover.tsx` | 光标在正文 | 插入 callout，选择 note/tip/warning/important | 插入标准 blockquote callout，预览样式正确 | 手工 |
+| PRISM-FF-110 | Selection callout | `calloutSnippets.ts` | 选中多行文本 | 转为 note/warning/tip/important | 选区行全部被正确包装 | 单元 |
+| PRISM-FF-111 | Markdown 列表编辑 | `markdownLists.ts` | 多级列表 | 回车、缩进、取消任务项 | 列表延续、缩进和 checkbox 状态正确 | 单元 |
+| PRISM-FF-112 | 图片诊断异步更新 | `imageDiagnostics.ts` | 修改图片路径从缺失到存在 | 观察 ERROR | 诊断异步消失，不需要重启 | 手工 |
+| PRISM-FF-113 | 渲染错误 action | `PreviewPane.tsx` | 错误 KaTeX/Mermaid | 点击错误中的定位/查看源码动作 | 跳到对应源码行 | 手工 |
+| PRISM-FF-114 | Wiki 链接点击 | `PreviewPane.tsx`、`useDocumentNavigationModel.ts` | 预览中含 wiki link | 点击 wiki link | 内部文档打开；找不到时 toast 提示 | 单元 + 手工 |
+| PRISM-FF-115 | Markdown 普通链接点击 | `PreviewPane.tsx` | 预览含相对 `.md` 链接、外链、锚点 | 点击 | 内部文档走 Prism 打开；外链走系统浏览器；不支持协议被拦截 | 单元 + 手工 |
+| PRISM-FF-116 | 预览源码 flash | `SplitView.tsx` | 分栏模式 | 点击预览块定位源码 | 编辑区跳转并短暂高亮源码区域 | 手工 |
+| PRISM-FF-117 | 文档索引增量 | `workspace_index.rs`、`useWorkspaceIndexModel.tsx` | 工作区有多文档 | 修改当前文档和磁盘文件 | 索引增量更新，搜索/反链/图谱读到最新内容 | Rust + 手工 |
+| PRISM-FF-118 | 索引任务取消 | `workspace_index_job.rs` | 大工作区 | 快速切换工作区 | 旧任务取消，新任务完成，不读错 root | Rust |
+| PRISM-FF-119 | 工作区搜索 native 回退 | `CommandPalette.tsx` | 模拟 native command 不可用 | 搜索文件/正文 | 回退 TypeScript 查询，UI 标明状态，不崩溃 | 单元 |
+| PRISM-FF-120 | 图谱 native 回退 | `RelationGraphPanel.tsx` | 模拟 native graph 查询失败 | 打开图谱 | 使用 TS fallback，节点一致 | 单元 |
+| PRISM-FF-121 | 关系图谱交互 | `RelationGraphPanel.tsx` | 多节点图谱 | 单击、长按拖拽、hover、搜索无结果 | 聚焦、拖拽、空态和物理布局稳定 | 手工 |
+| PRISM-FF-122 | PDF 链接注释 | `pdfLinks.ts`、`exportPipeline.ts` | 文档含外链 | 导出 PDF 并点击链接 | 外链可点；内部锚点不生成危险链接 | 单元 + PDF 检查 |
+| PRISM-FF-123 | 导出本地资源解析 | `export_resources.rs`、`assets.ts` | 图片含相对路径、绝对路径、file URL、query/hash | 导出 | 路径解析正确；外部资源策略可解释 | Rust + 单元 |
+| PRISM-FF-124 | PNG 分片边界 | `exportPipeline.ts` | 超宽 PlantUML 或超长文档 | 4x PNG 导出 | 分片拼接后无横向/纵向裁切、无白缝 | 手工 + 像素检查 |
+| PRISM-FF-125 | PDF 分页避切 | `exportPipeline.ts` | 文档含长段落、标题、表格、图表 | 导出 PDF | 文字不被上下两页切半；图表尽量整体分页 | 手工 |
+| PRISM-FF-126 | DOCX 图片 fallback | `exportPipeline.ts` | SVG/PNG/JPG/GIF/WebP 图片 | 导出 DOCX | Word/WPS 可显示；不支持格式有可读 fallback | 手工 |
+| PRISM-FF-127 | DOCX 表格宽度 | `exportPipeline.ts` | 宽表格 | 导出 DOCX | 表格宽度铺满内容宽度，不局促；列宽合理 | 手工 |
+| PRISM-FF-128 | DOCX 公式 | `exportPipeline.ts` | 行内/块级公式 | 导出 DOCX | 公式以图片或兼容形式显示，不出现乱码方框 | 手工 |
+| PRISM-FF-129 | HTML 导出自包含 | `exportPipeline.ts` | `htmlIncludeTheme=true` | 导出 HTML 后离线打开 | CSS、图片、图表样式仍可用 | 手工 |
+| PRISM-FF-130 | 导出失败诊断 | `diagnostics.ts` | 制造不可写输出路径或超限 | 导出 | 诊断包含时间、格式、阶段、文档、输出、设置、Pandoc、错误和下一步 | 单元 + 手工 |
+| PRISM-FF-131 | 导出取消 | `exportCommands.ts` | 打开保存面板 | 取消导出 | 状态栏显示取消后恢复，无失败误报 | 单元 + 手工 |
+| PRISM-FF-132 | 导出打开产物动作 | `exportCommands.ts` | 导出成功 | 点击打开/显示位置 | 优先系统 native 打开，失败回退 opener，失败有 toast | 单元 |
+| PRISM-FF-133 | 后台导出状态 | `useExportTaskUi.tsx` | 导出时切窗口或后台 | 观察状态栏 | 仅有任务时显示导出中；成功短暂展示；失败保留可点详情 | 单元 + 手工 |
+| PRISM-FF-134 | 设置迁移/旧配置 | `settings_store.rs`、`commands/settings.rs` | 准备旧设置文件 | 启动 | 能读取/迁移或兼容旧设置，不覆盖新设置 | Rust |
+| PRISM-FF-135 | 设置持久化错误 | `settings_store.rs` | 模拟 app data 不可写 | 修改设置 | 错误可见，不导致 UI 崩溃 | 手工 |
+| PRISM-FF-136 | 三语 i18n | `domains/i18n` | 切中文/英文/日文/自动 | 遍历主菜单、设置、导出、诊断 | 无 missing key，布局不溢出 | 单元 + 截图 |
+| PRISM-FF-137 | Toast 行为 | `Toast.tsx`、`useAppToast.tsx` | 触发成功/警告/错误 toast | 点击 action、等待自动关闭 | action 执行、可选择不关闭、计时清理 | 单元 |
+| PRISM-FF-138 | Error Boundary | `AppErrorBoundary.tsx` | 注入渲染异常 | 打开 app | 显示可读错误边界，不白屏 | 手工/测试 |
+| PRISM-FF-139 | DevTools | `registry.ts` | debug/dev build | `Shift+F12` | 可切 DevTools；不可用时 toast | 手工 |
+| PRISM-FF-140 | 窗口最小化/全屏/置顶 | `windowCommands.ts` | 桌面 app | 执行窗口命令 | 状态同步，菜单 checked 正确 | 手工 |
+| PRISM-FF-141 | macOS close/hide/reopen | `src-tauri/src/lib.rs` | macOS | 关闭主窗口、Dock reopen、打开文件事件 | 关闭隐藏而非退出；reopen 显示主窗口 | 手工 |
+| PRISM-FF-142 | 打印 | `fileCommands.ts` | 打开 Markdown | 执行打印 | 调出系统打印，不改变文档 | 手工 |
+| PRISM-FF-143 | 帮助外链 | `registry.ts` | 网络可用或离线 | Markdown 参考、迁移指南、GitHub、反馈 | 在线打开对应 URL；离线失败不影响 app | 手工 |
+| PRISM-FF-144 | 更新检查异常 | `updateService.ts` | 离线或 updater 不可用 | 检查更新 | 显示不可用/失败原因，不无限 loading | 单元 + 手工 |
+
+## P2 跨平台和系统集成
+
+| ID | 平台 | 功能域 | 代码依据 | 步骤 | 预期结果 |
 |---|---|---|---|---|---|
-| D-BOOT-001 | P0 | 普通启动 | 清空 appData 后启动 | 不崩溃；空状态、标题栏、侧栏状态一致；无旧会话污染 | 首屏截图 |
-| D-BOOT-002 | P0 | `?file=` 显式文件 | 用含空格/中文路径启动 | 显式文件优先于 last session；路径解码正确 | 截图 + 日志 |
-| D-BOOT-003 | P0 | `?folder=` 显式目录 | 用 workspace 目录启动 | 目录权限授权；文件树和索引加载；无当前文档时停留工作区 | 截图 |
-| D-BOOT-004 | P0 | `?new=1` | 有 last session 时启动新文档 | 创建未命名文档；不恢复旧文件 | 截图 |
-| D-BOOT-005 | P0 | `?empty=1` | 有 last session 时启动空窗口 | 不创建新文档，不恢复旧文件 | 截图 |
-| D-BOOT-006 | P0 | pending startup files | 模拟 1 个 pending file | 在当前窗口打开；不再恢复 last session | 单测/APP |
-| D-BOOT-007 | P0 | 多 pending files | 模拟 3 个 pending files | 第一个当前窗口，后两个新窗口；失败不阻断首文件 | 单测/APP |
-| D-BOOT-008 | P1 | macOS 延迟 pending | pending 第一次为空第二次出现 | 延迟轮询后打开 pending，不提前恢复 last session | 单测 |
-| D-BOOT-009 | P1 | 首启种子文档 | 清空 appData、保留 bundle resources | 只在首次复制；重复启动不覆盖用户改动 | APP |
-| D-WINDOW-001 | P0 | 单活动文档窗口 | 文件树切换、系统打开、新建窗口 | 无标签页；每窗口只有一个 active document | 截图 |
-| D-WINDOW-002 | P0 | 新窗口参数 | `newWindow`、多文件打开、打开文件夹且当前有文档 | 新窗口隔离 store；当前窗口不被覆盖 | APP |
-| D-WINDOW-003 | P2 | 全屏/最小化/置顶 | `fullscreen`、`minimize`、`alwaysOnTop` | 窗口状态与 store 同步；恢复后布局不乱 | 平台截图 |
+| PRISM-FF-145 | macOS | Bundle 身份 | `tauri.conf.json` | `plutil -p /Applications/Prism.app/Contents/Info.plist` | `CFBundleIdentifier` 为 `com.prism.editor.v1`，文档类型含 `.md/.markdown` 和文档图标 |
+| PRISM-FF-146 | macOS | Finder 图标 | `scripts/generate-document-icons.mjs`、`patch-macos-document-icons.mjs` | 设置 Prism 为 `.md` 默认打开方式，重启 Finder | 所有 `.md` 显示 Prism 文档图标，不是空白图标 |
+| PRISM-FF-147 | macOS | 文件关联 | `tauri.conf.json`、`startup_files.rs` | 双击 `.md/.markdown/.txt/.json/.sql` | 支持类型由 Prism 打开；若系统只注册 Markdown，Text Document 通过 Open With 验证 |
+| PRISM-FF-148 | macOS | 沙盒授权 | `file_scope.rs` | 首次打开工作区和外部文件 | 授权流程出现一次，后续同目录可读写 |
+| PRISM-FF-149 | macOS | PDF capture | `pdf_capture.rs` | 导出 PDF | 平台能力检测正确，失败时回退或报错可读 |
+| PRISM-FF-150 | Windows | 标题栏布局 | `TitleBar.tsx` | Windows 真机打开 | 视图切换、文件名、窗口按钮不重叠 |
+| PRISM-FF-151 | Windows | 文件关联 | `tauri.conf.json` | 安装后双击 `.md/.markdown` | 由 Prism 打开，标题栏和工作区路径正确 |
+| PRISM-FF-152 | Windows | 路径处理 | `path.ts`、`export_resources.rs` | 打开含空格、中文、盘符路径文档 | 预览图片、导出资源、链接解析正确 |
+| PRISM-FF-153 | Windows | 导出 | `exportPipeline.ts` | 导出 HTML/PDF/PNG/DOCX | 产物可打开，路径和字体 fallback 正常 |
+| PRISM-FF-154 | Linux | 标题栏布局 | `TitleBar.tsx` | Linux 真机打开 | 窗口控件、标题、视图切换协调 |
+| PRISM-FF-155 | Linux | 文件关联 | `tauri.conf.json` | 安装后打开 `.md/.markdown` | Prism 打开文件，MIME/desktop integration 正常 |
+| PRISM-FF-156 | Linux | 导出 | `exportPipeline.ts` | 导出 HTML/PDF/PNG/DOCX | 产物可打开，系统字体 fallback 可读 |
+| PRISM-FF-157 | 全平台 | 离线渲染 | `PreviewPane.tsx`、`exportPipeline.ts` | 断网打开含图表文档并导出 | Mermaid/PlantUML/Markmap 不因断网失败；帮助/更新外链可失败但不影响编辑 |
+| PRISM-FF-158 | 全平台 | 窄窗口 | CSS/布局 | 1024x768、窄宽、低高度 | 标题栏、状态栏、浮层、设置、导出菜单无严重重叠 |
+| PRISM-FF-159 | 全平台 | 高 DPI | CSS/导出 | Retina/高缩放显示器 | 编辑/预览/图表清晰；PNG 1x/2x/4x 尺寸符合选择 |
+| PRISM-FF-160 | 全平台 | 系统字体 | `themeContract.ts`、字体资源 | 中英日混排、emoji、代码 | 无豆腐块；emoji 不额外生成方框；代码等宽可读 |
 
-### C. 文件操作、保存和防丢稿
+## P3 质量、兼容性和长期稳定
 
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-FILE-001 | P0 | `new` | 无文档/有文档两种状态执行 | 无文档当前窗口创建；有文档时新窗口创建 | 截图/单测 |
-| D-FILE-002 | P0 | `open` | 打开 Markdown/Text/取消选择 | 成功打开支持文件；取消无副作用；错误弹窗可读 | APP |
-| D-FILE-003 | P0 | `save` 未命名 | 新建文档保存到新路径 | 写入磁盘；路径、名称、dirty 状态更新 | 产物 + 截图 |
-| D-FILE-004 | P0 | `save` 已命名 | 编辑已有文件保存 | 写入磁盘；恢复快照按策略清理 | 产物 |
-| D-FILE-005 | P0 | `saveAs` | 已保存和未保存文档另存 | 当前文档切换到新路径；recent files 更新 | 产物 |
-| D-FILE-006 | P0 | `closeDocument` 干净文档 | 直接关闭 | 当前文档清空；工作区保留 | 截图 |
-| D-FILE-007 | P0 | `closeDocument` dirty 文档 | 保存/取消/保存失败三条路径 | 不静默丢稿；失败后文档仍打开 | APP |
-| D-FILE-008 | P0 | 外部冲突 | 打开后外部改文件再保存 | 标记 save conflict；用户可处理；不覆盖外部内容 | APP/单测 |
-| D-FILE-009 | P0 | 保存失败 | mock 写入失败或只读目录 | dirty 状态保留；错误和恢复快照可见 | 单测/APP |
-| D-FILE-010 | P0 | recovery snapshots | 构造 manual-save/save-failed/crash 快照 | 弹窗列出；恢复/删除/清理行为正确 | 单测/APP |
-| D-FILE-011 | P0 | 最近文件 | 添加重复路径、超过上限、清空 | 去重、排序、上限、legacy cache 同步 | 单测 |
-| D-FILE-012 | P1 | `openCurrentLocation` | 当前文件/仅工作区/都没有 | reveal 文件、打开目录、toast 三种结果正确 | APP |
-| D-FILE-013 | P1 | 打印 | 执行 `print` | 系统打印面板可打开；不可用时有 toast | APP |
-
-### D. 编辑器基础命令和搜索
-
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-EDIT-001 | P0 | undo/redo | 输入多段后执行 `undo`、`redo` | 内容、预览、dirty 状态同步回退/恢复 | APP |
-| D-EDIT-002 | P0 | cut/copy/paste/pastePlain/selectAll | 有选区、无选区、跨段落选区 | 剪贴板内容正确；纯文本粘贴去格式；无文档禁用 | APP |
-| D-EDIT-003 | P0 | 查找 | 搜索中文、英文、大小写、无结果 | 匹配计数、上下跳转、滚动定位、关闭行为正确 | APP |
-| D-EDIT-004 | P0 | 替换 | 单次替换、全部替换、预览模式触发 | 编辑模式可替换；预览模式不沉默降级 | APP |
-| D-EDIT-005 | P0 | copyPlain/copyMd/copyHtml | 选中标题、列表、表格、代码 | 三种输出格式符合语义；HTML 不注入危险脚本 | APP/单测 |
-| D-EDIT-006 | P1 | rich copy 边界 | 选区跨代码块、链接、图片、表格 | 格式不丢结构；失败有回退 | APP |
-| D-EDIT-007 | P1 | 自动格式化 | 对乱序列表、表格、标题间距执行 `autoFormat` | 只整理 Markdown，不破坏代码块和 front matter | 单测/APP |
-| D-EDIT-008 | P1 | 光标与状态栏 | 输入、点击、选区、多行移动 | `字数 · 行:列` 更新；预览无光标时隐藏行列 | APP |
-
-### E. 格式、插入和块操作命令
-
-| ID | 优先级 | 覆盖项 | 命令/入口 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-FMT-001 | P0 | 行内格式 | `bold`、`italic`、`underline`、`strikethrough`、`inlineCode`、`link` | 选区和空光标都产生正确 Markdown/HTML；undo 一步回退 | APP/单测 |
-| D-FMT-002 | P0 | 段落/标题 | `paragraph`、H1-H6、`increaseHeading`、`decreaseHeading`、`clearFormat` | 标题等级正确；清除格式不删正文 | APP |
-| D-INS-001 | P0 | 基础块插入 | `codeBlock`、`mathBlock`、`quote`、`orderedList`、`unorderedList`、`taskList`、`hr` | 插入标准 Markdown；预览显示正确 | APP |
-| D-INS-002 | P0 | 图片 | `insertImage`、粘贴图片、拖拽图片 | 资源复制/路径写入/预览/保存后重开均正确 | APP |
-| D-INS-003 | P0 | Callout/Toggle | `insertCallout`、`insertToggle`、Callout picker | 源码可读；预览轻量；导出保留 | APP |
-| D-INS-004 | P1 | footnote/linkReference/toc/yaml | 插入并预览/导出 | 脚注跳转、引用定义、TOC、YAML 均合法 | APP |
-| D-BLOCK-001 | P1 | 段落操作 | `moveParagraphUp/Down`、`duplicateParagraph`、`deleteParagraph` | 段落边界准确；列表/引用不被切坏 | 单测/APP |
-| D-BLOCK-002 | P1 | 章节操作 | `moveSectionUp/Down`、`duplicateSection`、`foldCurrentHeading` | 以标题层级为边界；折叠不改内容 | APP |
-| D-BLOCK-003 | P1 | 选区转换 | `selectionQuote`、`selectionCallout*`、`selectionUnorderedList`、`selectionOrderedList`、`selectionTaskList` | 多行选区正确加前缀；Callout 类型 NOTE/TIP/WARNING/IMPORTANT 全覆盖 | 单测/APP |
-
-### F. 表格全操作
-
-| ID | 优先级 | 覆盖项 | 命令/入口 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-TABLE-001 | P0 | 插入与格式化 | `insertTable`、popover 网格、`formatTable` | 表头、分隔行、对齐语法合法；格式化保留内容 | APP/单测 |
-| D-TABLE-002 | P0 | 行列增删 | `addTableRow`、`addTableColumn`、`deleteTableRow`、`deleteTableColumn`、`insertTableRowAbove/Below`、`insertTableColumnLeft/Right` | 当前单元格定位准确；表格最小结构不被删坏 | APP |
-| D-TABLE-003 | P0 | 对齐 | `alignTableColumnLeft/Center/Right` | Markdown 对齐标记和预览对齐一致 | APP |
-| D-TABLE-004 | P0 | 选择与复制 | `selectTable`、`copyTableMarkdown`、`copyTableHtml`、`copyTableCsv`、`copyTableTsv` | Markdown/HTML/CSV/TSV 均可复制；逗号、引号、制表符转义正确 | APP/单测 |
-| D-TABLE-005 | P1 | 移动行列 | `moveTableRowUp/Down`、`moveTableColumnLeft/Right` | 表头和数据列不乱；移动边界无副作用 | APP |
-| D-TABLE-006 | P1 | 排序 | `sortTableAsc`、`sortTableDesc` | 数字、中文、空值排序可解释；表头不参与数据排序 | APP/单测 |
-| D-TABLE-007 | P1 | HTML 转换 | `convertTableToHtml`、`convertHtmlTableToMarkdown` | 转换后结构等价；不引入危险 HTML | 单测/APP |
-
-### G. 斜杠菜单、模板和演示模式
-
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-SLASH-001 | P0 | 触发与过滤 | 在源码编辑区输入 `/`、`/mer`、`/table` | 仅编辑区触发；过滤结果准确；Esc 关闭 | APP |
-| D-SLASH-002 | P0 | 键盘交互 | 上下键、Enter、鼠标点击 | 插入到正确光标位置；焦点回编辑器 | APP |
-| D-TEMPLATE-001 | P0 | 全部内置模板 | README、PRD、会议纪要、周报、技术方案、公众号长文、论文草稿、读书笔记、研究摘要、白皮书 | 空文档作为整篇模板；非空文档插入光标；文件名建议正确 | APP/单测 |
-| D-TEMPLATE-002 | P1 | 占位符 | `{{date}}`、`{{title}}`、`{{author}}` | 替换正确；未知占位符不破坏 Markdown | 单测 |
-| D-PRESENT-001 | P1 | 演示模式 | 无 slides 文档、有 slides 文档、退出 overlay | 无 slides toast；有 slides 可翻页、退出、保持文档内容 | APP |
-
-### H. 预览、渲染和视觉主题
-
-| ID | 优先级 | 覆盖项 | 数据 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-PREVIEW-001 | P0 | 基础排版 | 标题、段落、列表、引用、代码、表格、链接、脚注 | 排版、间距、代码高亮、链接可读 | 截图 |
-| D-PREVIEW-002 | P0 | Mermaid | flowchart、sequence、非法语法 | 合法渲染；非法错误块进入诊断 | 截图/单测 |
-| D-PREVIEW-003 | P0 | KaTeX | 行内、块级、非法公式 | 合法公式清晰；非法公式不破坏全页 | 截图 |
-| D-PREVIEW-004 | P0 | 图片 | 相对、绝对、SVG、缺失图片 | 可访问图片显示；缺失图片诊断可定位 | 截图 |
-| D-PREVIEW-005 | P0 | Callout/Toggle | NOTE/TIP/WARNING/IMPORTANT、details | 样式克制；Toggle 可展开；源码可读 | 截图 |
-| D-PREVIEW-006 | P0 | 滚动同步 | 长文源码滚动、预览滚动、快速滚动 | 大致对齐；无抢滚和空白 | 录屏/截图 |
-| D-PREVIEW-007 | P0 | 点击定位 | 标题、段落、代码、图片附近点击 | 源码定位到对应行附近 | APP |
-| D-THEME-001 | P0 | 内置内容主题 | Miaoyan、Inkstone、Slate、Mono、Nocturne、Carbon | 编辑器、预览、搜索、Mermaid、导出预览主题一致 | 6 组截图 |
-| D-THEME-002 | P1 | 主题导入管理 | 文件夹/压缩包导入、重复 ID、删除当前用户主题、reload | 合法导入；重复确认；非法说明原因；删除回退 | APP |
-| D-VIS-001 | P1 | 窗口尺寸 | 900x700、1200x800、1440x900、低高度 560 | 无重叠、截断；弹窗可滚动；状态栏不挤压内容 | 截图 |
-| D-VIS-002 | P2 | 平台外观 | macOS、Windows、Linux | 主工作区一致；平台 chrome/文件管理器措辞平台化 | 平台截图 |
-
-### I. 工作区、索引、搜索、链接和图谱
-
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-WS-001 | P0 | 打开工作区 | `openFolder` 选择测试 workspace | 授权、文件树、状态栏、索引加载正确 | 截图 |
-| D-WS-002 | P0 | 文件树导航 | 展开/折叠/选中/当前文档同步 | 层级、排序、选中态正确；dirty 切换受保护 | APP |
-| D-WS-003 | P0 | 文件树菜单 | 文件、目录、工作区右键 | 打开、在新窗口打开、显示位置、重命名等状态正确；Esc 关闭 | APP |
-| D-WS-004 | P0 | 快速打开 | 文件名、路径、preview、空查询、recent boost | 排名可解释；limit 生效；回车打开 | APP/单测 |
-| D-WS-005 | P0 | 全文搜索 | 标题、正文、路径、无结果 | snippet、排序、点击打开/定位正确 | APP/单测 |
-| D-WS-006 | P0 | 大纲 | H1-H4、重复标题、修改标题后刷新 | 层级和跳转正确；空文档空态 | APP |
-| D-LINK-001 | P0 | 页面链接补全 | 输入 `[[` 搜索文件和标题 | 插入标准 Markdown link；标题 anchor 正确 | APP/单测 |
-| D-LINK-002 | P0 | 出链面板 | 普通相对链接、标题链接、外链、断链、wiki link | 分类和状态准确；点击行为正确 | APP |
-| D-LINK-003 | P0 | 反链面板 | 多文档链接当前文档 | 来源、片段、路径、点击跳转正确 | APP/单测 |
-| D-LINK-004 | P0 | 关系图谱 | 有关系、无关系、Text Document、外链-only | 入口启用逻辑正确；节点/边准确；点击打开文档 | APP/单测 |
-| D-LINK-005 | P1 | 图谱高级交互 | 当前文档/全工作区范围、搜索节点、1-2 跳关系 | 范围切换和搜索不丢当前选择；空态清楚 | APP |
-| D-WS-007 | P1 | 工作区刷新 | 外部新增/删除/重命名文件后回到 Prism | 文件树和索引刷新；展开状态尽量保留 | APP |
-| D-WS-008 | P1 | 索引性能 | 1000 文件 workspace | UI 不冻结；搜索结果可用；内存不过度增长 | PERF |
-
-### J. 诊断、属性和 Front Matter
-
-| ID | 优先级 | 覆盖项 | 数据 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-DIAG-001 | P0 | ERROR 统计 | 断链、缺图、Mermaid 失败、KaTeX 失败、锚点冲突、导出阻断 | 只统计需处理问题；backlink/outlink 数量不计 ERROR | APP/单测 |
-| D-DIAG-002 | P0 | 诊断面板 | 点击 `ERROR n` | 360-420px 左右轻量浮层；分类、严重度、位置、操作正确 | 截图 |
-| D-DIAG-003 | P0 | 跳转定位 | 点击诊断项 | 编辑器跳到对应源码附近；预览同步 | APP |
-| D-PROP-001 | P0 | 合法 Front Matter | title、tags、description、author、date、status、export | 属性面板显示和保存回写正确 | APP/单测 |
-| D-PROP-002 | P0 | 非法 YAML | 缩进错误、未闭合字符串 | 面板错误态清楚；不会覆盖原文 | APP |
-| D-PROP-003 | P1 | 导出字段联动 | front matter 覆盖导出 title、author、date、toc、paper | 设置开启时生效；关闭时不覆盖 | APP/单测 |
-
-### K. 导出全链路
-
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 | 证据 |
-|---|---|---|---|---|---|
-| D-EXPORT-001 | P0 | HTML 导出 | 导出 `07-export.md` | 文件存在；主题、代码、Callout、Toggle、Mermaid、KaTeX、图片保真 | 产物 + 截图 |
-| D-EXPORT-002 | P0 | PDF 导出 | A4/Letter、compact/standard/wide | 文件可打开；分页不明显切断核心块；页边距生效 | 产物 |
-| D-EXPORT-003 | P0 | PNG 导出 | 1x/2x/3x/4x 清晰度 | 输出尺寸和清晰度匹配；超限风险可诊断 | 产物 |
-| D-EXPORT-004 | P0 | DOCX 导出 | theme/preview/custom 字体策略 | DOCX 可打开；复杂块尽量保真；字体策略可见 | 产物 |
-| D-EXPORT-005 | P0 | Text Document 禁用 | `.json`、`.sql` 触发导出入口 | 导出命令禁用或明确说明；无空文件 | 截图 |
-| D-EXPORT-006 | P0 | 保存面板取消 | 任一格式打开保存面板后取消 | 不创建文件；状态栏不残留 job | APP |
-| D-EXPORT-007 | P0 | 导出中/成功/失败反馈 | 成功导出、缺图失败、渲染失败 | 状态栏和 toast 稳定；失败含阶段、路径、下一步 | APP |
-| D-EXPORT-008 | P0 | 历史导出 | `exportWithPrevious`、`exportOverwritePrevious` | 读取上次设置；覆盖路径确认；历史不存在时禁用 | APP/单测 |
-| D-EXPORT-009 | P1 | HTML include theme | 开/关 `htmlIncludeTheme` | 开启可独立阅读；关闭仍结构完整 | 产物 |
-| D-EXPORT-010 | P1 | 页眉页脚和页码 | 开启 page numbers、header/footer `{title}`/`{filename}` | PDF 页眉页脚替换正确 | 产物 |
-| D-EXPORT-011 | P1 | TOC | 设置和 front matter 双路径开启 TOC | 导出出现目录；锚点唯一 | 产物 |
-| D-EXPORT-012 | P1 | Pandoc 引用 | 有/无 pandoc、合法/非法 bibliography、CSL | ready 时引用生成；not ready 时提示，不误成功 | APP/产物 |
-| D-EXPORT-013 | P1 | 大文档导出 | 1MB/3MB 长文，含图表公式 | 不长时间无反馈；失败可诊断；内存不过度增长 | PERF |
-
-### L. 设置中心全控件
-
-| ID | 优先级 | 设置项 | 操作 | 必验断言 |
+| ID | 功能域 | 代码依据 | 步骤 | 预期结果 |
 |---|---|---|---|---|
-| D-SET-GEN-001 | P0 | 语言、默认视图、快捷键风格 | 逐项切换并重启 | 值持久化；UI 和快捷键显示同步 |
-| D-SET-WRITE-001 | P0 | 行号、自动保存、自动保存策略 | 开关和 instant/balanced/battery 切换 | 编辑器显示和保存节奏变化；非法值归一 |
-| D-SET-WRITE-002 | P0 | 编辑器字体、字号、行高 | builtin/system/custom/theme 来源切换 | 编辑区样式即时更新；文字不溢出 |
-| D-SET-APP-001 | P0 | 内容主题、预览字体、预览字号 | 切换所有内置主题和字号 | 预览、编辑、导出读取一致 |
-| D-SET-APP-002 | P1 | 主题管理 | 导入并应用、只导入、打开主题目录、重载、删除 | 每个按钮有结果反馈；确认弹窗可取消 |
-| D-SET-APP-003 | P1 | 字体导入/删除 | 支持 ttf/otf/woff/woff2 和不支持格式 | 支持格式注册；不支持格式错误清楚 |
-| D-SET-EXPORT-001 | P0 | 导出模板、PDF 纸张、Front Matter 覆盖、TOC、页边距 | 逐项切换后导出 | 导出结果反映设置 |
-| D-SET-EXPORT-002 | P0 | 页码、页眉页脚、页眉文本、页脚文本 | 开关和文本输入 | UI 条件显示正确；导出替换正确 |
-| D-SET-EXPORT-003 | P0 | 默认导出位置、自定义目录 | ask/document/downloads/custom | 默认路径符合设置；无权限有提示 |
-| D-SET-EXPORT-004 | P0 | DOCX 字体、HTML 包含主题、导出清晰度 | 所有选项切换 | 设置持久化；导出读取正确 |
-| D-SET-CITE-001 | P1 | Pandoc path、bibliography、CSL、状态 | 输入、清空、检测 | 状态可区分 ready/not-ready/error |
-| D-SET-FILE-001 | P0 | 恢复上次会话、最近文件上限、清空最近文件 | 切换/输入/清空并重启 | last session 策略和 recent files 符合设置 |
+| PRISM-FF-161 | 性能日志 | `PreviewPane.tsx` | 设置 `localStorage.prism.previewPerf=1` 后打开长文档 | 控制台输出 render/katex/mermaid 性能，不影响 UI |
+| PRISM-FF-162 | Worker 降级 | `markdownRenderService.ts` | 禁用 Worker 或模拟 Worker error | 主线程 fallback 正确，结果一致 |
+| PRISM-FF-163 | 内存释放 | `PreviewPane.tsx` | 连续打开含大量图片文档 | object URL 和缓存有上限，不持续增长 |
+| PRISM-FF-164 | 导出大图内存 | `exportPipeline.ts` | 连续 4x PNG 导出长文档 | 分片 canvas 释放，失败不残留状态 |
+| PRISM-FF-165 | 超大工作区 | `workspace_index.rs` | 1000+ 文档工作区 | 索引进度、取消、搜索响应可接受 |
+| PRISM-FF-166 | 无障碍基础 | Shell/Editor/Settings | 键盘访问菜单、弹窗、表格 popover、设置 | 焦点顺序、Esc、aria label 基本可用 |
+| PRISM-FF-167 | 减少动画 | `global.css` | 系统开启 reduced motion | 浮层、toast、状态反馈不做过度动画 |
+| PRISM-FF-168 | 打包 smoke | `scripts/run-app-smoke.mjs` | 执行 app bundle smoke | 启动、bundle id、默认文档、基础 UI 验证通过 |
 
-### M. 命令、菜单、快捷键和帮助
+## 建议验证命令
 
-| ID | 优先级 | 覆盖项 | 必测命令 | 必验断言 |
-|---|---|---|---|---|
-| D-CMD-001 | P0 | File/Window 命令 | `new`、`newWindow`、`open`、`save`、`saveAs`、`print`、`openCurrentLocation`、`closeDocument`、`minimize`、`fullscreen`、`alwaysOnTop` | enabled/disabled、菜单、快捷键和执行结果一致 |
-| D-CMD-002 | P0 | Edit 命令 | `undo`、`redo`、`cut`、`copy`、`paste`、`pastePlain`、`selectAll`、`showSearch`、`showReplace`、`workspaceSearch` | 无文档时禁用；有文档执行正确 |
-| D-CMD-003 | P0 | Insert/Format 命令 | 所有 `insert*`、表格命令、heading、inline format、block operations、selection operations | 命令面板/菜单/快捷键/右键入口不互相矛盾 |
-| D-CMD-004 | P0 | View 命令 | `sourceMode`、`splitMode`、`previewMode`、`toggleSidebar`、`showFiles`、`showOutline`、`focusMode`、`typewriterMode`、`wordWrap`、`statusBar` | checked 状态准确；Text Document 限制正确 |
-| D-CMD-005 | P1 | Zoom/DevTools | `actualSize`、`zoomIn`、`zoomOut`、`devTools` | WebView API 可用时生效，不可用时 fallback/toast |
-| D-CMD-006 | P0 | Document info | `openDocumentProperties`、`showDocumentLinks`、`showBacklinks`、`showRelationGraph` | Markdown 有效；Text Document 不承诺；无关系时禁用图谱 |
-| D-CMD-007 | P0 | Export commands | `exportPdf`、`exportDocx`、`exportHtml`、`exportPng`、`exportWithPrevious`、`exportOverwritePrevious`、`exportSettings` | 导出能力和历史状态决定启用态 |
-| D-CMD-008 | P1 | Theme commands | `themeMiaoyan`、`themeInkstone`、`themeSlate`、`themeMono`、`themeNocturne`、`themeCarbon` | 菜单 checked 和设置中心一致 |
-| D-CMD-009 | P0 | Help commands | `preferences`、`mdReference`、`migrationGuide`、`showShortcuts`、`checkUpdate`、`github`、`feedback`、`about` | 弹窗/外链/更新最终态均可验证 |
-| D-CMD-010 | P1 | 命令注册质量 | 扫描 registry | ID 唯一；快捷键冲突可解释；i18n label/category 完整 |
+文档变更只需：
 
-### N. 平台、发布和长期稳定性
+```bash
+git diff --check
+```
 
-| ID | 优先级 | 覆盖项 | 操作 | 必验断言 |
-|---|---|---|---|---|
-| D-PLAT-001 | P2 | macOS app identity | `plutil -p Prism.app/Contents/Info.plist` | `CFBundleIdentifier=com.prism.editor.v1`；文档类型注册正确 |
-| D-PLAT-002 | P2 | macOS 文件关联 | Finder 双击 `.md/.markdown/.txt/.json/.sql` | Prism 打开对应文件；多文件策略正确 |
-| D-PLAT-003 | P2 | Windows 安装器和文件关联 | 安装、双击文件、卸载 | 开始菜单、卸载、文件关联、路径含中文空格均正常 |
-| D-PLAT-004 | P2 | Linux 包和文件关联 | 安装、打开文件、卸载 | 桌面环境差异写清楚；不能用 macOS 代替 |
-| D-PLAT-005 | P2 | Updater assets | 正式构建、生成 manifest、`--check` | `.sig`、URL、version、pub_date 正确；signature 改变会失败 |
-| D-SEC-001 | P0 | 文件系统权限 | 检查 `src-tauri/capabilities` 和真实授权 | 无静态全盘 `**` scope；打开目录后只授权需要范围 |
-| D-A11Y-001 | P2 | 键盘可达 | 只用键盘完成打开、搜索、切视图、保存、导出设置 | 焦点顺序合理；Esc/Enter/Tab 行为一致 |
-| D-A11Y-002 | P2 | 可读性 | 明暗主题、高对比、缩放 125%/150% | 文字不重叠；错误/选区/链接不只靠颜色 |
-| D-PERF-001 | P0 | 真实预览性能 | 1MB/3MB 文档打开、切预览、滚动、搜索、右键、源码定位 | 记录耗时；不能只用 jsdom 结论 |
-| D-PERF-002 | P1 | 导出性能 | 复杂长文 PDF/PNG/DOCX | 长任务有反馈；失败可诊断；不会卡死 |
-| D-PERF-003 | P2 | 长时运行 | 连续编辑/搜索/预览/导出 30 分钟 | 内存无持续增长；自动保存和快捷键仍响应 |
+全功能回归建议分层执行：
 
-## 自动化落地建议
+```bash
+npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/lib/openDocumentFlow.test.ts src/domains/commands/registry.test.ts src/domains/commands/categories/fileCommands.test.ts
+npm test -- --run src/components/shell/TitleBar.test.tsx src/components/shell/CommandPalette.test.tsx src/components/shell/ContextMenu.test.tsx src/components/shell/SettingsModal.test.tsx
+npm test -- --run src/domains/editor/components/SplitView.test.tsx src/domains/editor/components/PreviewPane.test.tsx src/domains/editor/components/SearchPanel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
+npm test -- --run src/domains/editor/extensions/formatting.test.ts src/domains/editor/extensions/slashSnippets.test.ts src/domains/editor/extensions/tables.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/extensions/imageDiagnostics.test.ts
+npm test -- --run src/lib/markdownToHtml.test.ts src/lib/markdownRenderService.test.ts src/domains/editor/components/plantUml.test.ts src/domains/editor/components/markmap.test.ts
+npm test -- --run src/domains/export/exportPipeline.test.ts src/domains/commands/exportCommand.integration.test.ts src/domains/export/preflight.test.ts src/domains/export/templates.test.ts src/hooks/useExportTaskUi.test.tsx
+(
+  cd src-tauri
+  cargo test initial_documents startup_files document_io workspace_tree workspace_index workspace_index_job export_job export_resources settings_store theme_store pdf_capture
+  cargo fmt --check
+)
+npm run build
+```
 
-1. UT/INT 优先补齐：Document Profile、recent files、workspace index query、command registry、export diagnostics、settings migration、theme contract。
-2. APP smoke 优先覆盖：启动打开文件、多 pending files、保存冲突、分栏预览、快速打开、导出成功/失败、设置持久化。
-3. VIS 截图基线按主题和窗口尺寸采样，不要求每个控件都截图，但 P0 用户路径必须有真实 App 证据。
-4. 性能用例必须在真实 Tauri WebView 里跑，不能只用 jsdom/Node 基准替代。
-5. 每次发布至少执行全部 P0；P1 根据变更范围选择；P2 在发布包、平台适配或视觉变更时执行。
+打包后手工 smoke：
 
-## 执行记录模板
+```bash
+npm run tauri:build:app-smoke
+plutil -p /Applications/Prism.app/Contents/Info.plist | rg 'CFBundleIdentifier|CFBundleName|CFBundleDocumentTypes|UTExportedTypeDeclarations'
+osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'
+```
+
+## 交付证据目录建议
+
+执行本测试集时新建目录，不复用任何旧证据：
 
 ```text
-执行日期：
-Prism 版本 / commit：
-平台 / 架构：
-构建产物：
-测试范围：P0 全量 / P1 子集 / P2 平台项
-未执行原因：
-失败用例：
-截图目录：
-导出产物：
-结论：通过 / 未通过 / 阻塞
+docs/verification/runs/prism-full-functional-YYYY-MM-DD/
+  manifest.json
+  test-report.md
+  issues.md
+  screenshots/
+  exports/
+  logs/
 ```
+
+`manifest.json` 条目必须和截图/导出证据一一对应。P2 的 Windows/Linux 项如果没有真机，状态写 `Blocked: no device`，不能用 macOS 结果代替。
