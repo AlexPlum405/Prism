@@ -167,7 +167,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-105-cold-open-sql-file-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-106-cold-open-txt-file-window.png`
 - 备注：browser mock 中 Text Document 通过结果不代表真实 `/Applications/Prism.app` 的系统打开路径。
-- 修复进展：2026-06-30 源码已修复启动 listener 与 bootstrap 的竞争路径：运行期 `file-opened` listener 不再抢冷启动 pending files，bootstrap 在文档已由启动 listener 打开时仍会 reveal native window。已补 `useBootstrap` / `useAppFileActionsModel` 回归测试并通过；重新打包替换 `/Applications/Prism.app` 后，安装版 smoke 已通过 JSON/SQL/TXT 启动不白屏，证据见 `screenshots/16-installed-app-smoke/00b-launch-json.png`、`screenshots/16-installed-app-smoke/00c-launch-sql.png`、`screenshots/16-installed-app-smoke/00d-launch-txt.png` 和 `logs/app-smoke-installed-20260630/report.json`。
+- 修复进展：2026-06-30 源码已修复启动 listener 与 bootstrap 的竞争路径：运行期 `file-opened` listener 不再抢冷启动 pending files，bootstrap 在文档已由启动 listener 打开时仍会 reveal native window。已补 `useBootstrap` / `useAppFileActionsModel` 回归测试并通过；重新打包替换 `/Applications/Prism.app` 后，安装版 smoke 已通过 JSON/SQL/TXT 启动不白屏。2026-06-30 追加正式复测截图：`PRISM-CU-268` 确认 JSON 不白屏，`PRISM-CU-269` 确认 SQL 不白屏，`PRISM-CU-270` 确认 TXT 不白屏；证据见 `screenshots/26-installed-file-types-smoke/` 和 `logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json`。
 
 ### P0-FILE-003 外部修改冲突未弹出处理入口
 

@@ -4541,6 +4541,66 @@
       ],
       "expected": "Dock/open reopen 应恢复 Prism 主窗口，状态一致，不应生成残留窗口或保持 0 窗口。",
       "notes": "此前 close/reopen 从 3 个窗口降到 2 个且状态不完整；本次换包后在单窗口基线下通过。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "app-smoke capture 2200x1520 pixels",
+      "id": "PRISM-CU-268",
+      "path": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/data.json",
+      "issueRef": "P0-FILE-002",
+      "area": "文件打开与普通文本模式",
+      "feature": "安装版系统打开 JSON 不白屏",
+      "status": "Pass",
+      "screenshot": "screenshots/26-installed-file-types-smoke/PRISM-CU-268-system-open-json-no-blank.png",
+      "actual": "安装版 smoke 通过系统路径打开 data.json 后进入可见编辑界面，lastSession 记录 filePath 为 data.json，未出现空白白屏窗口。",
+      "steps": [
+        "通过 /Applications/Prism.app 打开 data.json",
+        "等待窗口加载",
+        "校验 lastSession filePath 和截图"
+      ],
+      "expected": "JSON 文件应以普通文本模式打开，窗口不应白屏。",
+      "notes": "证据来自本轮已通过的安装版 app-smoke；report 归档在 logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "app-smoke capture 2200x1520 pixels",
+      "id": "PRISM-CU-269",
+      "path": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/query.sql",
+      "issueRef": "P0-FILE-002",
+      "area": "文件打开与普通文本模式",
+      "feature": "安装版系统打开 SQL 不白屏",
+      "status": "Pass",
+      "screenshot": "screenshots/26-installed-file-types-smoke/PRISM-CU-269-system-open-sql-no-blank.png",
+      "actual": "安装版 smoke 通过系统路径打开 query.sql 后进入可见编辑界面，lastSession 记录 filePath 为 query.sql，未出现空白白屏窗口。",
+      "steps": [
+        "通过 /Applications/Prism.app 打开 query.sql",
+        "等待窗口加载",
+        "校验 lastSession filePath 和截图"
+      ],
+      "expected": "SQL 文件应以普通文本模式打开，窗口不应白屏。",
+      "notes": "证据来自本轮已通过的安装版 app-smoke；report 归档在 logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "app-smoke capture 2200x1520 pixels",
+      "id": "PRISM-CU-270",
+      "path": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/plain.txt",
+      "issueRef": "P0-FILE-002",
+      "area": "文件打开与普通文本模式",
+      "feature": "安装版系统打开 TXT 不白屏",
+      "status": "Pass",
+      "screenshot": "screenshots/26-installed-file-types-smoke/PRISM-CU-270-system-open-txt-no-blank.png",
+      "actual": "安装版 smoke 通过系统路径打开 plain.txt 后进入可见编辑界面，lastSession 记录 filePath 为 plain.txt，未出现空白白屏窗口。",
+      "steps": [
+        "通过 /Applications/Prism.app 打开 plain.txt",
+        "等待窗口加载",
+        "校验 lastSession filePath 和截图"
+      ],
+      "expected": "TXT 文件应以普通文本模式打开，窗口不应白屏。",
+      "notes": "证据来自本轮已通过的安装版 app-smoke；report 归档在 logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json。"
     }
   ],
   "testCases": [
@@ -8089,17 +8149,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T23:30:00+08:00",
+  "generatedAt": "2026-06-30T23:42:00+08:00",
   "counts": {
     "total": 168,
     "Pass": 94,
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 406,
-    "manifestScreenshots": 975,
-    "uniqueManifestScreenshots": 429,
-    "computerUseRealAppEvidence": 224
+    "screenshotFiles": 409,
+    "manifestScreenshots": 978,
+    "uniqueManifestScreenshots": 432,
+    "computerUseRealAppEvidence": 227
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9710,6 +9770,21 @@
         "PRISM-CU-266/267 confirm red close hides the window and open -a restores one Prism window"
       ],
       "notes": "Historical PRISM-FF-140/141 failure entries remain as pre-fix evidence. PRISM-CU-261 through PRISM-CU-267 are the post-fix installed-app pass evidence."
+    },
+    {
+      "id": "installed-retest-system-open-text-file-types-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-FILE-002"
+      ],
+      "verification": [
+        "PRISM-CU-268 confirms installed app opens JSON without a blank screen",
+        "PRISM-CU-269 confirms installed app opens SQL without a blank screen",
+        "PRISM-CU-270 confirms installed app opens TXT without a blank screen",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed and archived report includes matching lastSession filePath for data.json, query.sql, and plain.txt"
+      ],
+      "notes": "Historical PRISM-FF-008 and related blank-window screenshots remain as pre-fix evidence. PRISM-CU-268 through PRISM-CU-270 are post-fix installed-app pass evidence."
     }
   ],
   "appSmokeRuns": [
