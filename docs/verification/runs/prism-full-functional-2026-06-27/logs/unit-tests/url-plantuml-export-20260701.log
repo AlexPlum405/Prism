@@ -1,0 +1,12 @@
+
+> prism@1.4.1 test
+> vitest --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/editor/components/plantUml.test.ts src/domains/export/exportPipeline.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  4 passed (4)
+      Tests  90 passed (90)
+   Start at  02:59:27
+   Duration  8.11s (transform 1.06s, setup 178ms, import 1.15s, tests 7.91s, environment 1.34s)

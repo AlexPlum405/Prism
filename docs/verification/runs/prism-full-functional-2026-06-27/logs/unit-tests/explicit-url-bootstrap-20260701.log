@@ -1,0 +1,12 @@
+
+> prism@1.4.1 test
+> vitest --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  2 passed (2)
+      Tests  18 passed (18)
+   Start at  02:42:00
+   Duration  1.25s (transform 398ms, setup 78ms, import 303ms, tests 732ms, environment 627ms)

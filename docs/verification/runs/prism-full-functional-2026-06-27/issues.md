@@ -435,7 +435,7 @@ Bundle ID：com.prism.editor.v1
   - `logs/playwright-console.log`
 - 备注：由于原生 Tauri 窗口不可见，暂未确认该问题在真实 WebView 中是否完全一致。
 
-### P0-PREVIEW-002 PlantUML 预览渲染失败
+### P0-PREVIEW-002 PlantUML 预览渲染失败（历史 browser mock 记录）
 
 - 严重度：P0
 - 用例 ID：PRISM-FF-043
@@ -449,7 +449,7 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
   - `screenshots/05-preview-rendering/PRISM-FF-043-plantuml-plantuml.png`
   - `logs/playwright-console.log`
-- 备注：当前证据来自 browser mock；原生窗口恢复后需用 `/Applications/Prism.app` 复测。
+- 备注：当前证据来自早期 browser mock。2026-07-01 修复后，真实 `/Applications/Prism.app` 与独立 PlantUML PNG 回归均已通过；`PRISM-FF-043` 已改为 Pass。修复后证据见 `PRISM-CU-300/301`。
 
 ### P0-PREVIEW-002 复测更新：真实 App 中 PlantUML 已渲染
 
@@ -467,7 +467,7 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：Computer Use 实时截图中可见 Mermaid、PlantUML、Markmap 渲染图。
 - 备注：browser mock 中的 PlantUML/WASM 失败不应继续当作真实 App 当前缺陷；导出产物是否完全复用屏幕预览仍需另测。
 
-### P1-PREVIEW-004 PlantUML 预览与导出缺失节点文字
+### P1-PREVIEW-004 PlantUML 预览与导出缺失节点文字（已修复）
 
 - 严重度：P1
 - 用例 ID：PRISM-FF-043、PRISM-FF-071、PRISM-FF-072、PRISM-FF-073、PRISM-FF-074
@@ -489,7 +489,15 @@ Bundle ID：com.prism.editor.v1
   - `fixtures/computer-use-real-app/real-complex-diagrams-export.pdf`
   - `fixtures/computer-use-real-app/real-complex-diagrams-export.docx`
   - `logs/computer-use-real-app/export-artifact-validation.log`
-- 备注：当前 fixture 使用 `rectangle Prism`。若 Prism 的 PlantUML 渲染器对该语法生成空标签，应在渲染层兼容，或在诊断中提示用户使用显式别名语法。
+- 修复状态：2026-07-01 已修复。
+- 根因：离线主路径 `plantuml-little` 对 `rectangle Prism` 生成的 SVG 中，`g.entity[data-qualified-name="Prism"]` 只有矩形没有文字节点；预览和导出正确复用了同一 SVG，所以缺字一起进入 PNG/PDF/DOCX。
+- 修复方式：在 PlantUML SVG 后处理阶段恢复 `data-qualified-name` 占位符，并对缺少自身文字的 entity 补回居中文本；不走在线服务，不替换为远程 PlantUML。
+- 修复后证据：
+  - `screenshots/31-plantuml-regression/PRISM-CU-300-plantuml-png-regression-pass.png`
+  - `screenshots/31-plantuml-regression/PRISM-CU-301-installed-plantuml-prism-label-pass.png`
+  - `logs/unit-tests/url-plantuml-export-20260701.log`
+  - `logs/plantuml-regression/plantuml-png-regression-20260701.log`
+- 验收结果：真实安装版预览中 `Prism` 节点文字已显示；PlantUML PNG 回归同时覆盖 MiaoYan 人物关系图与 Prism Relationship，SVG 文本完整且 PNG 未贴边裁切。
 
 ### P1-PREVIEW-005 预览链接需要双击才会打开（已修复）
 

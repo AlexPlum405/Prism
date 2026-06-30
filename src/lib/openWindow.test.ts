@@ -48,4 +48,14 @@ describe('openPrismWindow', () => {
       url: '/?file=%2Ftmp%2F%E4%B8%AD%E6%96%87+%E6%96%87%E6%A1%A3.markdown',
     }));
   });
+
+  it('keeps explicit folder paths in the new window URL', async () => {
+    const { openPrismWindow } = await import('./openWindow');
+
+    await openPrismWindow({ folderPath: '/Users/Alex/Documents/Prism 测试' });
+
+    expect(webviewWindowMock.mock.calls[0][1]).toEqual(expect.objectContaining({
+      url: '/?folder=%2FUsers%2FAlex%2FDocuments%2FPrism+%E6%B5%8B%E8%AF%95',
+    }));
+  });
 });

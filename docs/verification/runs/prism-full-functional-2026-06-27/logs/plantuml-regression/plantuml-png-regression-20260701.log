@@ -1,0 +1,30 @@
+{
+  "status": "Pass",
+  "screenshot": ".codex-smoke/plantuml-png-regression/out/plantuml-export.png",
+  "report": ".codex-smoke/plantuml-png-regression/out/report.json",
+  "png": {
+    "width": 1084,
+    "height": 938,
+    "rightMargin": 284
+  },
+  "cases": [
+    {
+      "id": "miaoyan-character",
+      "svg": {
+        "width": 542,
+        "height": 507,
+        "viewBox": "0 0 542 507",
+        "containerRightMargin": 243
+      }
+    },
+    {
+      "id": "prism-relationship",
+      "svg": {
+        "width": 400,
+        "height": 187,
+        "viewBox": "0 0 400 187",
+        "containerRightMargin": 314
+      }
+    }
+  ]
+}

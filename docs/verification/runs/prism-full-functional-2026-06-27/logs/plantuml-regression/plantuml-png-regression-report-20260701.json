@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "id": "miaoyan-character",
+      "title": "《聊斋志异》人物关系图",
+      "minWidth": 500,
+      "requiredTokens": [
+        "王子服",
+        "婴宁",
+        "婴宁母亲",
+        "鬼仆",
+        "母女情深",
+        "忠心侍奉"
+      ],
+      "svg": {
+        "width": "542",
+        "height": "507",
+        "viewBox": "0 0 542 507",
+        "styleWidth": "542px",
+        "text": "王子服姓名: String身份: 书生性格: 痴情游学()求婚()婴宁真身: 狐仙特点: 善笑美貌: 绝世化身人形()展现真容()婴宁母亲身份: 老狐仙性格: 慈祥保护女儿()成全恋情()鬼仆职责: 护卫服侍主人()爱慕钟情母女情深忠心侍奉",
+        "rect": {
+          "left": 279,
+          "top": 72,
+          "width": 542,
+          "height": 507,
+          "right": 821
+        },
+        "captureTag": "img"
+      },
+      "placeholder": {
+        "left": 36,
+        "width": 1028,
+        "right": 1064,
+        "overflow": "visible"
+      }
+    },
+    {
+      "id": "prism-relationship",
+      "title": "Prism Relationship",
+      "minWidth": 350,
+      "requiredTokens": [
+        "Prism",
+        "Writer",
+        "Workspace",
+        "edit markdown",
+        "preview and export",
+        "save"
+      ],
+      "svg": {
+        "width": "400",
+        "height": "187",
+        "viewBox": "0 0 400 187",
+        "styleWidth": "400px",
+        "text": "PrismWriterWorkspaceedit markdownsavepreview and export",
+        "rect": {
+          "left": 350,
+          "top": 663,
+          "width": 400,
+          "height": 187,
+          "right": 750
+        },
+        "captureTag": "img"
+      },
+      "placeholder": {
+        "left": 36,
+        "width": 1028,
+        "right": 1064,
+        "overflow": "visible"
+      }
+    }
+  ],
+  "target": {
+    "width": 1084,
+    "height": 938,
+    "scrollHeight": 938
+  },
+  "canvas": {
+    "width": 1084,
+    "height": 938,
+    "contentBounds": {
+      "minX": 29,
+      "minY": 9,
+      "maxX": 799,
+      "maxY": 831,
+      "width": 771,
+      "height": 823
+    }
+  }
+}

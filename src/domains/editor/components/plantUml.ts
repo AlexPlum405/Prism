@@ -313,11 +313,71 @@ function restorePlantUmlTextPlaceholders(svg: SVGSVGElement, replacements: Array
     textElement.removeAttribute('lengthAdjust');
     textElement.removeAttribute('textLength');
   });
+
+  svg.querySelectorAll<SVGElement>('[data-qualified-name]').forEach((element) => {
+    const qualifiedName = element.getAttribute('data-qualified-name');
+    if (!qualifiedName) return;
+    let restored = qualifiedName;
+    for (const [placeholder, value] of replacements) {
+      restored = restored.split(placeholder).join(value);
+    }
+    if (restored !== qualifiedName) element.setAttribute('data-qualified-name', restored);
+  });
+}
+
+function getSvgNumberAttribute(element: SVGElement, attribute: string) {
+  const value = Number(element.getAttribute(attribute));
+  return Number.isFinite(value) ? value : null;
+}
+
+function entityHasVisibleOwnText(entity: SVGElement, label: string) {
+  return Array.from(entity.querySelectorAll('text')).some((textElement) => (
+    (textElement.textContent ?? '').trim().includes(label)
+  ));
+}
+
+function appendMissingEntityLabel(
+  entity: SVGElement,
+  label: string,
+  contentTheme: ContentTheme | undefined,
+) {
+  const rect = Array.from(entity.children)
+    .find((child): child is SVGRectElement => child.tagName.toLowerCase() === 'rect');
+  if (!rect) return false;
+
+  const x = getSvgNumberAttribute(rect, 'x') ?? 0;
+  const y = getSvgNumberAttribute(rect, 'y') ?? 0;
+  const width = getSvgNumberAttribute(rect, 'width');
+  const height = getSvgNumberAttribute(rect, 'height');
+  if (!width || !height) return false;
+
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.textContent = label;
+  text.setAttribute('x', String(x + width / 2));
+  text.setAttribute('y', String(y + height / 2 + 4.5));
+  text.setAttribute('fill', getPlantUmlThemeColors(contentTheme ?? 'miaoyan').textColor);
+  text.setAttribute('font-family', 'sans-serif');
+  text.setAttribute('font-size', '14');
+  text.setAttribute('text-anchor', 'middle');
+  entity.append(text);
+  return true;
+}
+
+function repairMissingPlantUmlEntityLabels(
+  svg: SVGSVGElement,
+  contentTheme?: ContentTheme,
+) {
+  svg.querySelectorAll<SVGElement>('g.entity[data-qualified-name]').forEach((entity) => {
+    const label = entity.getAttribute('data-qualified-name')?.trim();
+    if (!label || entityHasVisibleOwnText(entity, label)) return;
+    appendMissingEntityLabel(entity, label, contentTheme);
+  });
 }
 
 export function createPlantUmlSvgElementFromString(
   svgText: string,
   metadata: {
+    contentTheme?: ContentTheme;
     graphvizVersion?: string;
     replacements?: Array<[string, string]>;
     rendererVersion?: string;
@@ -338,6 +398,7 @@ export function createPlantUmlSvgElementFromString(
 
   const svg = document.importNode(parsedSvg, true) as unknown as SVGSVGElement;
   restorePlantUmlTextPlaceholders(svg, metadata.replacements ?? []);
+  repairMissingPlantUmlEntityLabels(svg, metadata.contentTheme);
   svg.classList.add('plantuml-image');
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'PlantUML diagram');
@@ -367,6 +428,7 @@ async function renderPlantUmlSvgStringUncached(
   const { encoded, replacements } = encodeNonAsciiRunsForPlantUmlLittle(preparedSource);
   const svgText = runtime.convert(encoded);
   const svg = createPlantUmlSvgElementFromString(svgText, {
+    contentTheme,
     graphvizVersion: runtime.graphvizVersion,
     rendererVersion: runtime.version,
     replacements,

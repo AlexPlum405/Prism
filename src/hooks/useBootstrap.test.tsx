@@ -307,6 +307,47 @@ describe('useBootstrap', () => {
     expect(openPrismWindow).not.toHaveBeenCalled();
   });
 
+  it('opens encoded explicit workspace folders before pending files and last session', async () => {
+    const explicitFolder = 'C:/Users/Alex/Documents/Prism 测试';
+    const explicitTree = [
+      {
+        name: 'Examples',
+        path: `${explicitFolder}/Examples`,
+        children: [
+          { name: 'Prism Markdown 语法指南.md', path: `${explicitFolder}/Examples/Prism Markdown 语法指南.md` },
+        ],
+      },
+    ];
+    window.history.replaceState({}, '', `/?folder=${encodeURIComponent(explicitFolder)}`);
+    useSettingsStore.setState({
+      restoreLastSession: true,
+      lastSession: {
+        filePath: 'C:/docs/last.md',
+        folderPath: 'C:/docs/last-workspace',
+        viewMode: 'preview',
+        updatedAt: 1,
+      },
+      recentFiles: [],
+      saveSettings: vi.fn(),
+    });
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue(['C:/docs/opened.md']);
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue(explicitTree);
+
+    renderHook(() => useBootstrap(true));
+
+    await waitFor(() => {
+      expect(useWorkspaceStore.getState().rootPath).toBe(explicitFolder);
+    });
+
+    expect(useWorkspaceStore.getState().fileTree).toEqual(explicitTree);
+    expect(loadFolderTree).toHaveBeenCalledWith(explicitFolder);
+    expect(nativeCommandCallCount('grant_workspace_directory_scope')).toBe(1);
+    expect(readTextFile).not.toHaveBeenCalledWith('C:/docs/last.md');
+    expect(invoke).not.toHaveBeenCalledWith('get_pending_files');
+    expect(openPrismWindow).not.toHaveBeenCalled();
+    expect(revealWindowCallCount()).toBe(1);
+  });
+
   it('waits for delayed pending startup files before restoring the last session', async () => {
     window.history.replaceState({}, '', '/');
     const wait = vi.fn(async () => undefined);

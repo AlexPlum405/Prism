@@ -16,6 +16,24 @@ const graphvizLoadMock = vi.hoisted(() => vi.fn(async () => ({
 })));
 const setupMock = vi.hoisted(() => vi.fn());
 const convertMock = vi.hoisted(() => vi.fn((source: string) => {
+  if (source.includes('rectangle Prism')) {
+    return [
+      '<?plantuml 1.2026.2?>',
+      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="187" viewBox="0 0 400 187">',
+      '<g>',
+      '<rect fill="#F7F7F7" height="187" width="400" x="0" y="0"></rect>',
+      '<g class="entity" data-qualified-name="Prism" id="ent0002">',
+      '<rect fill="#F1F1F1" height="48" rx="2.5" ry="2.5" width="71.0195" x="164.26" y="7"></rect>',
+      '</g>',
+      '<g class="entity" data-qualified-name="Writer" id="ent0003">',
+      '<rect fill="#FFFFFF" height="48" width="75.3467" x="78.09" y="132"></rect>',
+      '<text fill="#262626" font-family="sans-serif" font-size="14" x="107.09" y="152.8467">Writer</text>',
+      '</g>',
+      '</g>',
+      '</svg>',
+    ].join('');
+  }
+
   const tokens = Array.from(new Set(source.match(/PrismCjk[0-9a-z]+/g) ?? []));
   const labels = tokens.length > 0 ? tokens : ['Alice', 'Bob', 'Hello'];
   return [
@@ -154,6 +172,30 @@ describe('PlantUML rendering helpers', () => {
     expect(svg.style.maxWidth).toBe('100%');
     expect(svg.style.height).toBe('auto');
     expect(svg.querySelector('text')?.hasAttribute('textLength')).toBe(false);
+  });
+
+  it('repairs PlantUML rectangle entities whose renderer output omits the visible label', async () => {
+    const svg = await createPlantUmlSvgElement([
+      '@startuml',
+      'actor Writer',
+      'rectangle Prism',
+      'database Workspace',
+      'Writer --> Prism : edit markdown',
+      'Prism --> Workspace : save',
+      'Prism --> Writer : preview and export',
+      '@enduml',
+    ].join('\n'), 'miaoyan');
+
+    const prismEntity = svg.querySelector<SVGGElement>('g.entity[data-qualified-name="Prism"]');
+    const prismLabel = Array.from(prismEntity?.querySelectorAll('text') ?? [])
+      .find((textElement) => textElement.textContent === 'Prism');
+
+    expect(prismEntity).toBeTruthy();
+    expect(prismLabel).toBeTruthy();
+    expect(prismLabel?.getAttribute('text-anchor')).toBe('middle');
+    expect(prismLabel?.getAttribute('fill')).toBe('#262626');
+    expect(svg.textContent).toContain('Prism');
+    expect(svg.textContent).toContain('Writer');
   });
 
   it('injects theme skinparams and removes inline skinparam overrides before encoding', () => {

@@ -4777,6 +4777,56 @@
       "logEvidence": [
         "logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log"
       ]
+    },
+    {
+      "id": "PRISM-CU-300",
+      "date": "2026-07-01",
+      "area": "预览渲染",
+      "feature": "PlantUML PNG 回归双用例",
+      "app": "Browser regression harness using Prism preview/export code",
+      "path": "scripts/run-plantuml-png-regression.mjs",
+      "steps": [
+        "渲染 MiaoYan 人物关系图 PlantUML",
+        "渲染真实失败 fixture 的 Prism Relationship PlantUML",
+        "执行 PlantUML SVG normalize 与 export rasterize 路径",
+        "用 html2canvas 生成 PNG 并断言文本和右边界"
+      ],
+      "expected": "MiaoYan 人物关系图和 Prism Relationship 均保留完整 SVG 文本，PNG 不贴边裁切。",
+      "actual": "回归通过：Prism、Writer、Workspace、edit markdown、preview and export、save 等文本均存在；PNG 宽 1084，高 938，右边距 284px。",
+      "status": "Pass",
+      "screenshot": "screenshots/31-plantuml-regression/PRISM-CU-300-plantuml-png-regression-pass.png",
+      "issueRef": "P1-PREVIEW-004",
+      "notes": "覆盖真实 plantuml-little 主路径、PlantUML SVG label repair、导出前 rasterizePlantUmlSvgsForCapture。",
+      "windowSize": "Playwright viewport 1100x900 logical pixels",
+      "logEvidence": [
+        "logs/plantuml-regression/plantuml-png-regression-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-report-20260701.json"
+      ]
+    },
+    {
+      "id": "PRISM-CU-301",
+      "date": "2026-07-01",
+      "area": "预览渲染",
+      "feature": "安装版 PlantUML Prism 节点文字",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-complex-diagrams-export.md",
+      "steps": [
+        "替换 /Applications/Prism.app 为修复后构建产物",
+        "用真实安装版打开 real-complex-diagrams-export.md",
+        "切到预览模式",
+        "滚动到 PlantUML Relationship 并截图"
+      ],
+      "expected": "PlantUML Relationship 中顶部 rectangle Prism 节点文字完整显示，图表不是源码、空白或失败块。",
+      "actual": "真实安装版预览中 Prism 节点文字已显示；Writer、Workspace 和关系标签可见。",
+      "status": "Pass",
+      "screenshot": "screenshots/31-plantuml-regression/PRISM-CU-301-installed-plantuml-prism-label-pass.png",
+      "issueRef": "P1-PREVIEW-004",
+      "notes": "旧 PRISM-CU-124/137/139-P1 作为修复前失败证据保留。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/unit-tests/url-plantuml-export-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-20260701.log"
+      ]
     }
   ],
   "testCases": [
@@ -4889,13 +4939,18 @@
       "steps": "用含空格和中文路径启动窗口",
       "expected": "文件被解码并打开，工作区同步到文件所在目录",
       "automationHint": "`src/hooks/useBootstrap.test.tsx`",
-      "screenshot": "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png",
-      "status": "Fail",
-      "actual": "原生 /Applications/Prism.app 启动后只有进程和菜单栏，Accessibility 显示 application process \"app\" windows=0；15:03 复核 activate 后前台仍为 EasyConnect，无法执行真实首启、启动 URL、打开文件/文件夹、新建窗口流程。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "2026-06-27 15:03 重新验证仍复现；证据见 logs/native-window-recheck-150348.log 和 screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck-150348.png。",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png",
+      "status": "Pass",
+      "actual": "自动化回归通过：openPrismWindow 会把含空格/中文的显式 filePath 编码到 ?file=；useBootstrap 会优先解码并打开该文件，不再被 pending files 或 last session 覆盖。",
+      "issueRef": "",
+      "notes": "旧 P0-STARTUP-001 原生窗口阻塞截图保留为历史 pre-fix 证据；当前验收以 URL/bootstrap 单元集成测试日志为准。",
       "screenshots": [
-        "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png"
+        "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png"
+      ],
+      "automationResult": "Unit/Integration Pass",
+      "automationActual": "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts 通过 2 个文件 / 18 条测试。",
+      "logEvidence": [
+        "logs/unit-tests/explicit-url-bootstrap-20260701.log"
       ]
     },
     {
@@ -4908,13 +4963,18 @@
       "steps": "打开指定目录",
       "expected": "请求目录授权，加载文件树，不自动打开无关文档",
       "automationHint": "`src/hooks/useBootstrap.test.tsx`",
-      "screenshot": "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png",
-      "status": "Fail",
-      "actual": "原生 /Applications/Prism.app 启动后只有进程和菜单栏，Accessibility 显示 application process \"app\" windows=0；15:03 复核 activate 后前台仍为 EasyConnect，无法执行真实首启、启动 URL、打开文件/文件夹、新建窗口流程。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "2026-06-27 15:03 重新验证仍复现；证据见 logs/native-window-recheck-150348.log 和 screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck-150348.png。",
+      "screenshot": "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png",
+      "status": "Pass",
+      "actual": "自动化回归通过：openPrismWindow 会把含空格/中文的显式 folderPath 编码到 ?folder=；useBootstrap 会优先解码、授权目录、加载文件树并 reveal 窗口，不会自动打开无关文档。",
+      "issueRef": "",
+      "notes": "本批新增 ?folder= 覆盖，补齐此前缺失的显式文件夹 URL 启动测试；旧 P0-STARTUP-001 原生窗口阻塞截图保留为历史 pre-fix 证据。",
       "screenshots": [
-        "screenshots/00-pipeline/PRISM-PIPELINE-native-window-recheck.png"
+        "screenshots/27-installed-startup-guide-smoke/PRISM-CU-272-new-window-default-guide-open.png"
+      ],
+      "automationResult": "Unit/Integration Pass",
+      "automationActual": "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts 通过 2 个文件 / 18 条测试。",
+      "logEvidence": [
+        "logs/unit-tests/explicit-url-bootstrap-20260701.log"
       ]
     },
     {
@@ -5730,13 +5790,21 @@
       "steps": "预览和导出",
       "expected": "不请求在线服务；SVG 渲染完整；PNG/PDF/DOCX 不少节点不裁切",
       "automationHint": "`plantUml.test.ts` + 断网手工",
-      "screenshot": "screenshots/05-preview-rendering/PRISM-FF-043-plantuml-plantuml.png",
-      "status": "Fail",
-      "actual": "PlantUML 预览区域显示 PlantUML render failed，WASM instantiate magic word 错误。",
-      "issueRef": "P0-PREVIEW-002",
-      "notes": "当前 browser mock 稳定复现；需原生 Tauri WebView 复核。",
+      "screenshot": "screenshots/31-plantuml-regression/PRISM-CU-301-installed-plantuml-prism-label-pass.png",
+      "status": "Pass",
+      "actual": "修复后通过：真实 /Applications/Prism.app 预览中 PlantUML Relationship 的 rectangle Prism 节点文字完整显示；真实 plantuml-little + html2canvas PNG 回归同时覆盖 MiaoYan 人物关系图和 Prism Relationship，SVG 文本完整且 PNG 未贴边裁切。",
+      "issueRef": "",
+      "notes": "旧 browser mock WASM 失败和旧真实 App Prism 节点缺字截图保留为 pre-fix 证据；当前修复在 SVG 后处理阶段补回 plantuml-little 遗漏的 entity label，未引入在线服务。",
       "screenshots": [
-        "screenshots/05-preview-rendering/PRISM-FF-043-plantuml-plantuml.png"
+        "screenshots/31-plantuml-regression/PRISM-CU-301-installed-plantuml-prism-label-pass.png",
+        "screenshots/31-plantuml-regression/PRISM-CU-300-plantuml-png-regression-pass.png"
+      ],
+      "automationResult": "Unit/Browser/Installed App Pass",
+      "automationActual": "Vitest 4 个文件 / 90 条测试通过；node scripts/run-plantuml-png-regression.mjs 通过；安装版预览截图确认 Prism 节点文字可见。",
+      "logEvidence": [
+        "logs/unit-tests/url-plantuml-export-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-report-20260701.json"
       ]
     },
     {
@@ -8409,17 +8477,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T02:40:00+08:00",
+  "generatedAt": "2026-07-01T03:02:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 123,
-    "Fail": 15,
+    "Pass": 126,
+    "Fail": 12,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 419,
-    "manifestScreenshots": 990,
-    "uniqueManifestScreenshots": 440,
-    "computerUseRealAppEvidence": 235
+    "screenshotFiles": 421,
+    "manifestScreenshots": 995,
+    "uniqueManifestScreenshots": 442,
+    "computerUseRealAppEvidence": 237
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9760,6 +9828,14 @@
     {
       "file": "screenshots/30-installed-preview-link-click-single/05-postfix-wiki-single-click-opened.png",
       "testCaseId": "PRISM-CU-278"
+    },
+    {
+      "file": "screenshots/31-plantuml-regression/PRISM-CU-300-plantuml-png-regression-pass.png",
+      "testCaseId": "PRISM-CU-300"
+    },
+    {
+      "file": "screenshots/31-plantuml-regression/PRISM-CU-301-installed-plantuml-prism-label-pass.png",
+      "testCaseId": "PRISM-CU-301"
     }
   ],
   "unitTestRuns": [
@@ -9919,6 +9995,24 @@
         "logs/unit-tests/preview-link-pointerup-20260701.log"
       ],
       "notes": "Covers preview wiki/local Markdown document links opening on pointerup and suppressing duplicate click navigation. npm run build passed. tauri build produced Prism.app and then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured; the produced app bundle was installed for real UI retest."
+    },
+    {
+      "id": "url-plantuml-export-20260701",
+      "status": "Pass",
+      "testFiles": 4,
+      "testsPassed": 90,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/editor/components/plantUml.test.ts src/domains/export/exportPipeline.test.ts",
+        "node scripts/run-plantuml-png-regression.mjs",
+        "npm run build",
+        "npm run tauri:build -- --bundles app"
+      ],
+      "logs": [
+        "logs/unit-tests/url-plantuml-export-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-20260701.log"
+      ],
+      "notes": "Covers explicit ?file/?folder startup URLs, PlantUML missing entity label repair for rectangle Prism, export PlantUML normalization/rasterization, and installed-app replacement. tauri build produced Prism.app and then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured; the produced app bundle was installed for real UI retest."
     }
   ],
   "sourceFixBatches": [
@@ -10433,6 +10527,45 @@
         "settings opens with Cmd+,",
         "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
       ]
+    }
+  ],
+  "regressionRuns": [
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P0-STARTUP-001"
+      ],
+      "evidence": [
+        "PRISM-FF-005",
+        "PRISM-FF-006",
+        "logs/unit-tests/explicit-url-bootstrap-20260701.log"
+      ],
+      "tests": [
+        "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts"
+      ],
+      "notes": "Explicit ?file= and ?folder= startup URL paths are covered by focused unit/integration tests. Folder URL coverage was added in this batch; both cases are marked Pass. PlantUML remains the only P0 Fail."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P0-PREVIEW-002",
+        "P1-PREVIEW-004"
+      ],
+      "evidence": [
+        "PRISM-FF-043",
+        "PRISM-CU-300",
+        "PRISM-CU-301",
+        "logs/unit-tests/url-plantuml-export-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-20260701.log",
+        "logs/plantuml-regression/plantuml-png-regression-report-20260701.json"
+      ],
+      "tests": [
+        "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/editor/components/plantUml.test.ts src/domains/export/exportPipeline.test.ts",
+        "node scripts/run-plantuml-png-regression.mjs",
+        "npm run build",
+        "npm run tauri:build -- --bundles app"
+      ],
+      "notes": "PlantUML now stays offline through plantuml-little, repairs omitted entity labels such as rectangle Prism, and uses the same normalized SVG/raster path for preview and PNG export evidence. All P0 main test cases are now Pass except one Blocked item that requires external conditions."
     }
   ]
 }
