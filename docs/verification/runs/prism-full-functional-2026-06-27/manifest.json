@@ -7300,20 +7300,25 @@
       "steps": "导出 PDF 并点击链接",
       "expected": "外链可点；内部锚点不生成危险链接",
       "automationHint": "单元 + PDF 检查",
-      "status": "Fail",
-      "actual": "real-links-click.pdf 成功生成，但 PDF 内部没有 /URI、/Annots 或 /Link；外链、wiki link、相对 Markdown link 均只保留为纯文本。",
-      "issueRef": "P1-EXPORT-007",
-      "notes": "真实 App 导出 + PDF 字符串检查；证据：logs/computer-use-real-app/pdf-link-annotations-20260630.log",
+      "status": "Pass",
+      "actual": "真实导出产物 real-links-click.pdf 使用 pdf-lib 解析后确认第 1 页包含 1 个 /Subtype /Link 注释，URI 为 https://github.com/AlexPlum405/Prism；原 strings 检查未覆盖压缩/对象流场景，属于验收误判。wiki link 和相对 Markdown link 按当前安全策略不生成外部 URI。",
+      "issueRef": "",
+      "notes": "修正验收口径：使用 pdf-lib 解析真实 PDF，而不是 strings 原始字符串搜索。证据：logs/computer-use-real-app/pdf-link-annotations-pdf-lib-20260701.log。已补 native WebKit PDF + 页眉页脚保留 URI annotation 单测。",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-122-pdf-pdf.png",
       "unitTestEvidence": [
-        "logs/unit-tests/export-settings-theme-commands.log"
+        "logs/unit-tests/export-settings-theme-commands.log",
+        "logs/unit-tests/export-pdf-link-annotations-20260701.log",
+        "logs/unit-tests/export-pipeline-pdf-links-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "automationResult": "Pass",
+      "automationActual": "pdf-lib 解析真实 real-links-click.pdf 找到 1 个 URI link annotation；完整导出回归 2 个测试文件 / 66 条测试通过。",
       "screenshots": [
         "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png"
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png",
+      "logEvidence": [
+        "logs/computer-use-real-app/pdf-link-annotations-pdf-lib-20260701.log"
+      ]
     },
     {
       "id": "PRISM-FF-123",
@@ -8235,8 +8240,8 @@
   "generatedAt": "2026-06-30T23:47:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 94,
-    "Fail": 44,
+    "Pass": 95,
+    "Fail": 43,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 413,
@@ -9666,6 +9671,20 @@
         "npm test -- --run src/hooks/useBootstrap.test.tsx src/lib/openWindow.test.ts src/domains/commands/categories/fileCommands.test.ts"
       ],
       "notes": "Covers default Prism workspace/guide bootstrap, default guide reveal timing, openPrismWindow empty URL, and File > New Window command path."
+    },
+    {
+      "id": "export-pdf-link-annotations-20260701",
+      "status": "Pass",
+      "testFiles": 2,
+      "testsPassed": 66,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/export/exportPipeline.test.ts src/domains/export/pdf/pdfLinks.test.ts"
+      ],
+      "logs": [
+        "logs/unit-tests/export-pipeline-pdf-links-20260701.log"
+      ],
+      "notes": "Covers native WebKit PDF URI annotations with header/footer overlay and pdf link rectangle collection."
     }
   ],
   "sourceFixBatches": [
@@ -9918,6 +9937,24 @@
         "PRISM-CU-217"
       ],
       "notes": "No new source edits were required in this batch; current installed-app evidence confirms backlinks and relation graph are usable for the real-wiki-target/link-click fixture workspace. Historical PRISM-FF-055/056/057 and PRISM-CU-044/072 failures remain as pre-fix evidence."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P1-EXPORT-007"
+      ],
+      "evidence": [
+        "PRISM-FF-122",
+        "logs/computer-use-real-app/pdf-link-annotations-pdf-lib-20260701.log",
+        "logs/unit-tests/export-pdf-link-annotations-20260701.log",
+        "logs/unit-tests/export-pipeline-pdf-links-20260701.log"
+      ],
+      "tests": [
+        "npm test -- --run src/domains/export/exportPipeline.test.ts -t \"URI annotations|native PDF export applies headers\" passed",
+        "npm test -- --run src/domains/export/exportPipeline.test.ts src/domains/export/pdf/pdfLinks.test.ts passed",
+        "npm run build passed"
+      ],
+      "notes": "No product source fix was required: stronger pdf-lib parsing showed the real PDF already contains a URI link annotation. Added native WebKit PDF regression coverage so header/footer overlay cannot drop annotations."
     }
   ],
   "appSmokeRuns": [

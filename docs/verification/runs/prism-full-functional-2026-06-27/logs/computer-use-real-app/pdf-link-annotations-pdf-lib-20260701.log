@@ -1,0 +1,9 @@
+file=docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.pdf
+verifiedAt=2026-06-30T16:05:33.552Z
+parser=pdf-lib
+pages=1
+page=1 annots=1
+annot=0 subtype=/Link uri=https://github.com/AlexPlum405/Prism
+totalAnnots=1
+totalUriLinks=1
+result=Pass

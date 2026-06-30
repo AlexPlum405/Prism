@@ -1625,6 +1625,99 @@ describe('export pipeline image progress', () => {
     expect(updated.getPageCount()).toBe(1);
   });
 
+  it('preserves URI annotations when native PDF export applies headers and footers', async () => {
+    const getBoundingClientRectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingClientRect(this: HTMLElement) {
+        if (this.classList?.contains('prism-export-document')) {
+          return createTestRect(0, 0, 980, 1200);
+        }
+        if (this.tagName === 'A') {
+          return createTestRect(120, 160, 240, 24);
+        }
+        return createTestRect(0, 0, 0, 0);
+      });
+    const getClientRectsSpy = vi.spyOn(HTMLElement.prototype, 'getClientRects')
+      .mockImplementation(function getClientRects(this: HTMLElement) {
+        if (this.tagName === 'A') {
+          return createTestRectList([createTestRect(120, 160, 240, 24)]);
+        }
+        return createTestRectList([]);
+      });
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+    const scrollWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');
+
+    try {
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+        configurable: true,
+        get() {
+          return (this as HTMLElement).classList?.contains('prism-export-document') ? 1200 : 0;
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+        configurable: true,
+        get() {
+          return (this as HTMLElement).classList?.contains('prism-export-document') ? 980 : 0;
+        },
+      });
+
+      (window as PrismRuntimeWindow).__TAURI_INTERNALS__ = {};
+      (window as PrismRuntimeWindow).__PRISM_EXPORT_WORKER__ = true;
+      mockPdfCaptureRuntime();
+      const { PDFDict, PDFDocument, PDFName, PDFString, StandardFonts } = await import('pdf-lib');
+      const sourcePdf = await PDFDocument.create();
+      const sourceFont = await sourcePdf.embedFont(StandardFonts.Helvetica);
+      sourcePdf.addPage([980, 1200]).drawText('Vector PDF source', {
+        x: 24,
+        y: 1160,
+        size: 12,
+        font: sourceFont,
+      });
+      const sourceBytes = new Uint8Array(await sourcePdf.save()) as Uint8Array<ArrayBuffer>;
+      const persistedWrites = new Map<string, Uint8Array<ArrayBuffer>>();
+      fsMock.readFile.mockImplementation(async (filePath: string) => {
+        if (filePath.endsWith('.webkit-capture-1.pdf')) return sourceBytes;
+        const persisted = persistedWrites.get(filePath);
+        if (persisted) return persisted;
+        return new Uint8Array();
+      });
+      fsMock.writeFile.mockImplementation(async (filePath: string, contents: Uint8Array<ArrayBufferLike>) => {
+        persistedWrites.set(filePath, new Uint8Array(contents) as Uint8Array<ArrayBuffer>);
+      });
+
+      await exportPdf(createInput({
+        content: '# Links\n\nOpen [Prism repository](https://github.com/AlexPlum405/Prism) from PDF.',
+        pageHeaderFooter: true,
+        pageHeaderText: '{title}',
+        pageFooterText: '{filename}',
+        title: 'PDF Link Test',
+      }), '/tmp/native-link.pdf');
+
+      const output = persistedWrites.get('/tmp/native-link.pdf');
+      expect(output).toBeInstanceOf(Uint8Array);
+      const pdf = await PDFDocument.load(output!);
+      const annots = pdf.getPage(0).node.Annots();
+      expect(annots?.size()).toBe(1);
+      const annotation = pdf.context.lookup(annots!.get(0), PDFDict);
+      const action = pdf.context.lookup(annotation.get(PDFName.of('A')), PDFDict);
+      expect(annotation.get(PDFName.of('Subtype'))?.toString()).toBe('/Link');
+      expect(action.lookup(PDFName.of('URI'), PDFString).asString()).toBe('https://github.com/AlexPlum405/Prism');
+    } finally {
+      getBoundingClientRectSpy.mockRestore();
+      getClientRectsSpy.mockRestore();
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollHeight', scrollHeightDescriptor);
+      } else {
+        delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+      }
+      if (scrollWidthDescriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollWidth', scrollWidthDescriptor);
+      } else {
+        delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollWidth;
+      }
+      resetFsMockImplementations();
+    }
+  });
+
   it('captures long native PDF documents in bounded batches without rasterizing pages', async () => {
     const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
     const scrollWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');

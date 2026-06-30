@@ -1,0 +1,14 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/export/exportPipeline.test.ts src/domains/export/pdf/pdfLinks.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+(node:68292) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  2 passed (2)
+      Tests  66 passed (66)
+   Start at  00:13:55
+   Duration  8.70s (transform 417ms, setup 74ms, import 551ms, tests 7.81s, environment 619ms)

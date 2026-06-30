@@ -789,27 +789,33 @@ Bundle ID：com.prism.editor.v1
   - `fixtures/computer-use-real-app/real-complex-diagrams-export.pdf`
 - 备注：该问题不影响文件生成，但会降低导出 PDF 的阅读质量和宣传素材可用性。
 
-### P1-EXPORT-007 PDF 导出没有保留链接注释
+### P1-EXPORT-007 PDF 链接注释验收误判已修正
 
 - 严重度：P1
 - 用例 ID：PRISM-FF-122
-- 用户影响：PDF 里外链、相对链接和 wiki link 都变成纯文本，读者无法点击跳转，文档交付能力下降。
+- 用户影响：原验收把 `strings` 未检出 `/URI`、`/Annots`、`/Link` 判定为链接丢失，可能误导后续修复方向；真实外链注释需要用 PDF parser 验证。
 - 触发动作：
   1. 打开 `fixtures/computer-use-real-app/real-links-click.md`。
   2. 通过真实 Prism 执行 `导出 > 导出为 PDF`。
-  3. 检查生成的 `real-links-click.pdf` 元数据、文本和原始字符串。
-- 问题表现：
+  3. 检查生成的 `real-links-click.pdf` 元数据、文本和链接注释。
+- 原问题表现：
   - PDF 成功生成，`mdls` 显示 1 页 `com.adobe.pdf`。
   - `strings real-links-click.pdf` 中没有 `/URI`、`/Annots` 或 `/Link`。
   - `pdftotext` 只能提取链接显示文字，例如 `Prism repository`，没有可点击链接目标。
-- 预期表现：外链应在 PDF 中保留为安全的可点击链接注释；内部锚点和本地路径应按安全策略处理，不能静默全部丢失。
-- 复现稳定性：2026-06-30 真实 App + Computer Use 复测一次。
+- 修正后结果：
+  - 2026-07-01 使用 `pdf-lib` 解析同一个真实导出产物，确认第 1 页包含 1 个 `/Subtype /Link` 注释。
+  - 注释 URI 为 `https://github.com/AlexPlum405/Prism`，外链并未丢失。
+  - wiki link 和相对 Markdown link 按当前安全策略不生成外部 URI，避免把本地路径或内部文档关系写成不安全外链。
+- 预期表现：外链应在 PDF 中保留为安全的可点击链接注释；内部锚点和本地路径应按安全策略处理。
+- 复现稳定性：2026-06-30 真实 App + Computer Use 导出一次；2026-07-01 使用 PDF parser 复核通过。
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png`
   - `fixtures/computer-use-real-app/real-links-click.pdf`
   - `logs/computer-use-real-app/pdf-link-annotations-20260630.log`
-- 建议修复方向：检查 PDF 导出路径是否把 preview DOM 中的 `<a href>` 传给 PDF 渲染器；若使用截图/打印管线，需要显式生成 PDF link annotations。
-- 验收标准：导出的 PDF 中外链包含 `/Subtype /Link` 和 `/URI`，点击可打开目标；相对链接和 wiki link 有明确安全策略并可测试。
+  - `logs/computer-use-real-app/pdf-link-annotations-pdf-lib-20260701.log`
+  - `logs/unit-tests/export-pdf-link-annotations-20260701.log`
+- 建议修复方向：无需产品代码修复；保留 native WebKit PDF + 页眉页脚不丢 URI annotation 的回归测试，后续验收 PDF 链接必须使用 PDF parser 而不是 `strings`。
+- 验收标准：导出的 PDF 中外链包含 `/Subtype /Link` 和 `/URI`，PDF parser 可读出目标 URI；相对链接和 wiki link 有明确安全策略并可测试。
 
 ## 设置、主题与字体
 

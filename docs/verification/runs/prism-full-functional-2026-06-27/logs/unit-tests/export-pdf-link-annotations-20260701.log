@@ -1,0 +1,12 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/export/exportPipeline.test.ts -t URI annotations|native PDF export applies headers
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 62 skipped (64)
+   Start at  00:06:34
+   Duration  2.68s (transform 331ms, setup 35ms, import 474ms, tests 1.78s, environment 295ms)
