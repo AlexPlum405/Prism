@@ -1,0 +1,12 @@
+windowCountAfterMinimize=7
+axMinimizedAfterMinimize=false
+onscreenAfterMinimize=3
+windowCountAfterOpenRestore=7
+axMinimizedAfterOpenRestore=false
+/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-232-window-restored-after-native-minimize-window.png
+  pixelWidth: 2424
+  pixelHeight: 1744
+zoom-action-capture:
+/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png
+  pixelWidth: 2424
+  pixelHeight: 1744

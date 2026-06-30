@@ -755,6 +755,28 @@ Bundle ID：com.prism.editor.v1
   - `fixtures/computer-use-real-app/real-complex-diagrams-export.pdf`
 - 备注：该问题不影响文件生成，但会降低导出 PDF 的阅读质量和宣传素材可用性。
 
+### P1-EXPORT-007 PDF 导出没有保留链接注释
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-122
+- 用户影响：PDF 里外链、相对链接和 wiki link 都变成纯文本，读者无法点击跳转，文档交付能力下降。
+- 触发动作：
+  1. 打开 `fixtures/computer-use-real-app/real-links-click.md`。
+  2. 通过真实 Prism 执行 `导出 > 导出为 PDF`。
+  3. 检查生成的 `real-links-click.pdf` 元数据、文本和原始字符串。
+- 问题表现：
+  - PDF 成功生成，`mdls` 显示 1 页 `com.adobe.pdf`。
+  - `strings real-links-click.pdf` 中没有 `/URI`、`/Annots` 或 `/Link`。
+  - `pdftotext` 只能提取链接显示文字，例如 `Prism repository`，没有可点击链接目标。
+- 预期表现：外链应在 PDF 中保留为安全的可点击链接注释；内部锚点和本地路径应按安全策略处理，不能静默全部丢失。
+- 复现稳定性：2026-06-30 真实 App + Computer Use 复测一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png`
+  - `fixtures/computer-use-real-app/real-links-click.pdf`
+  - `logs/computer-use-real-app/pdf-link-annotations-20260630.log`
+- 建议修复方向：检查 PDF 导出路径是否把 preview DOM 中的 `<a href>` 传给 PDF 渲染器；若使用截图/打印管线，需要显式生成 PDF link annotations。
+- 验收标准：导出的 PDF 中外链包含 `/Subtype /Link` 和 `/URI`，点击可打开目标；相对链接和 wiki link 有明确安全策略并可测试。
+
 ## 设置、主题与字体
 
 ### P1-SETTINGS-002 设置弹窗视觉可用但 AX 语义树未暴露弹窗控件
@@ -974,5 +996,54 @@ Bundle ID：com.prism.editor.v1
 - 备注：同一轮复测中 `Markdown 参考`、`GitHub`、`反馈` 分别可打开 Markdown Guide、Prism 仓库和 GitHub Issues。
 
 ## macOS 平台集成
+
+### P1-WINDOW-001 macOS 最小化和缩放/全屏动作没有生效
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-140
+- 用户影响：用户点击窗口黄灯、使用 `Cmd+M`、原生 `Window > Minimize` 或缩放/全屏动作时，窗口状态没有按 macOS 标准行为变化，影响多窗口管理和全屏写作。
+- 触发动作：
+  1. 在真实 `/Applications/Prism.app` 中打开 Markdown 文档。
+  2. 尝试通过 `AXMinimized`、交通灯黄灯、`Cmd+M`、原生 `Window > Minimize` 执行最小化。
+  3. 尝试执行全屏按钮的 `zoom the window` secondary action。
+  4. 读取 `AXMinimized`、on-screen Prism 窗口数并截图。
+- 问题表现：
+  - `AXMinimized` 设置后仍为 `false`。
+  - 原生 `Window > Minimize` 后 `AXMinimized=false`，屏幕上仍有 Prism 窗口。
+  - `zoom the window` 后截图尺寸仍为 `2424x1744`，没有明显缩放或全屏变化。
+  - `Cmd+M` 没有最小化，还导致当前文档路径切到默认 Prism 指南，快捷键行为异常。
+- 预期表现：最小化、恢复、缩放/全屏均应使用 macOS 标准窗口行为；执行后状态可观测，恢复后文档和滚动位置保持。
+- 复现稳定性：2026-06-30 真实 App + Computer Use/System Events 复测。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png`
+  - `screenshots/15-computer-use-real-app/PRISM-CU-232-window-restored-after-native-minimize-window.png`
+  - `screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png`
+  - `logs/computer-use-real-app/window-lifecycle-20260630.log`
+  - `logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log`
+- 建议修复方向：检查自定义标题栏与 Tauri/macOS 窗口控制绑定，确保交通灯、原生 Window 菜单和快捷键都调用同一窗口 API；避免编辑器快捷键拦截系统 `Cmd+M`。
+- 验收标准：黄灯、`Cmd+M`、`Window > Minimize` 均能最小化；Dock/open 恢复后仍显示同一文档；Zoom/全屏动作改变窗口状态并可恢复。
+
+### P1-WINDOW-002 Close Window / reopen 生命周期状态不完整
+
+- 严重度：P1
+- 用例 ID：PRISM-FF-141
+- 用户影响：用户关闭窗口后再从 Dock 或 `open -a` 回到 Prism，窗口状态可能不是标准恢复路径；多窗口数量和当前文档状态不清晰。
+- 触发动作：
+  1. 在真实 Prism 窗口执行原生 `Window > Close Window`。
+  2. 统计 on-screen Prism 窗口数量。
+  3. 执行 `open -a /Applications/Prism.app`。
+  4. 再次统计窗口数量并截图。
+- 问题表现：
+  - 关闭前 on-screen Prism 窗口数为 3。
+  - `Close Window` 后降为 2。
+  - `open -a` 后仍为 2，没有恢复到关闭前窗口数。
+  - 仍能显示一个文档窗口，但 close/reopen 的窗口生命周期状态不完整。
+- 预期表现：关闭窗口后 reopen 应恢复主窗口；如果产品只允许单窗口，也应保证窗口数和当前文档状态一致，不留下隐藏/残留窗口。
+- 复现稳定性：2026-06-30 真实 App + System Events 复测一次。
+- 截图/证据：
+  - `screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png`
+  - `logs/computer-use-real-app/window-close-reopen-20260630.log`
+- 建议修复方向：梳理 Tauri window close/reopen 事件，统一隐藏、关闭、新建主窗口策略；记录/清理内部窗口，避免 Window 菜单和 CGWindowList 出现残留状态。
+- 验收标准：`Close Window` 后窗口状态明确；Dock/open reopen 后主窗口出现且只保留预期窗口；当前文档、工作区和标题栏状态一致。
 
 ## Windows/Linux 待真机回填

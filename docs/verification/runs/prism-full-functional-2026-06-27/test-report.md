@@ -11,7 +11,7 @@ Bundle ID：com.prism.editor.v1
 
 测试继续推进，并在 2026-06-29 恢复了真实 `/Applications/Prism.app` + Computer Use 验证。旧结论“Computer Use 不可用、真实 App 完全不可测”不再成立：本轮真实窗口中已验证编辑/预览/分栏、快速打开、全文搜索、替换、设置六个分区、完整主菜单、文件树菜单、帮助弹窗、知识面板、图表预览、任务列表与脚注等功能。
 
-截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 `screenshots/15-computer-use-real-app/` 内有 187 张真实 Prism/导出产物截图，并已全部登记到 `manifest.json` 的 `computerUseRealAppEvidence`。
+截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 `screenshots/15-computer-use-real-app/` 内有 195 张真实 Prism/导出产物/Finder 截图，并已全部登记到 `manifest.json` 的 `computerUseRealAppEvidence`。
 
 2026-06-29 继续补测文件类型与导出：Markdown fixture 可正常打开；但真实 App 通过系统路径打开 JSON/SQL/TXT 会进入空白白屏窗口，`PRISM-FF-008` 已从 browser mock Pass 改为真实 App Fail。错误文档 preflight 已真实阻断 HTML 导出；干净 Markdown fixture 的 HTML/PDF/PNG/DOCX 四种真实导出已完成基础验收，PNG 保持 `极致 4x` 输出为 `4160x4800`，DOCX 通过 zip 结构和 `textutil` 正文提取校验。
 
@@ -55,6 +55,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 继续补测启动默认指南、Selection callout、工作区搜索回退、图谱 fallback 可观测性、导出取消/后台状态/成功动作、外部文件打开同步工作区、原生 File 菜单、文件树创建副本和新建文件夹。新增失败项：启动/新窗口未直接打开 `Examples/Prism Markdown 语法指南.md`（`P0-STARTUP-003`）、Selection callout 丢失当前选区（`P1-EDITOR-006`）、选区右键菜单剪切/复制/链接 disabled（`P1-EDITOR-007`）、工作区全文搜索入口不可达（`P1-SEARCH-001`）、原生 File 菜单缺少 Prism 核心文件入口（`P1-MENU-002`）。新增通过项：外部 Markdown 打开会同步工作区、文件树创建副本、工作区菜单新建文件夹、导出取消和后台导出状态。
 
+2026-06-30 收尾补测剩余可安全执行项：新增文件 `real-index-incremental-20260630.md` 后，不重启 App 重新激活可在文件树看到新文件，`PRISM-FF-117` 标记 Pass，但即时刷新仍需后续关注；真实导出 `real-links-click.pdf` 成功，平台 PDF capture 可用，但 PDF 内没有 `/URI`、`/Annots`、`/Link`，`PRISM-FF-122` 标记 Fail；Finder 中 `.md` 文件显示 Markdown 文档图标，`PRISM-FF-146` 标记 Pass；macOS 最小化、缩放和 close/reopen 生命周期未按标准行为变化，`PRISM-FF-140/141` 标记 Fail。删除、重命名父文件夹、用户主题包、字体导入、设置错误、断网、Worker/内存/超大工作区等需要破坏性操作、真实平台或注入故障的项目均标记 Blocked，并写明原因。
+
 ## 执行统计
 
 - 总用例：168
@@ -62,24 +64,24 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：91
-- Fail：40
-- Blocked：14
-- Not Run：23
+- Pass：94
+- Fail：44
+- Blocked：30
+- Not Run：0
 - P0 执行：Pass 58 / Fail 29 / Blocked 1 / Not Run 0
-- P1 执行：Pass 28 / Fail 11 / Blocked 4 / Not Run 13
-- P2 执行：Pass 3 / Blocked 9 / Not Run 4
-- P3 执行：Pass 2 / Not Run 6
-- 当前截图文件总数：318
-- Manifest 真实 Computer Use 截图引用：187
+- P1 执行：Pass 29 / Fail 14 / Blocked 13 / Not Run 0
+- P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
+- P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
+- 当前截图文件总数：326
+- Manifest 真实 Computer Use 截图引用：195
 - Pipeline/环境证据截图：9
-- 真实 Computer Use 截图：187（`screenshots/15-computer-use-real-app/`）
+- 真实 Computer Use 截图：195（`screenshots/15-computer-use-real-app/`）
 - 单元/集成测试批次：5
 - 单元/集成测试文件通过：53
 - 单元/集成测试断言通过：484
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
-- 原生 macOS app 窗口验证：2026-06-29 当前恢复可测；窗口生命周期问题保留待专项复测
+- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已真实复测并记录失败
 - 浏览器 mock 补充截图：已执行，用于保留前端视觉证据和宣传素材初筛
 - Windows/Linux 真机验证：未执行，保持 Blocked，不伪造结果
 
@@ -140,15 +142,16 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 追加横向滚动截图：关闭自动换行后按 End 到长行尾部。
 - 2026-06-30 追加预览链接、渲染错误 action、源码定位与图片诊断异步截图：链接 fixture 基线、wiki link 双击后目标、相对 Markdown link 双击后目标、预览错误块、跳到源码后的分栏定位、预览源码 flash 未稳定捕捉证据、缺失图片错误、补齐文件但诊断未刷新、修正路径后错误清除。
 - 2026-06-30 追加启动/菜单/导出/文件树截图：默认 Prism 指南未打开、Selection callout 丢选区、工作区搜索快捷键回到文档查找、图谱 fallback 状态不可观测、导出取消/成功/后台任务、外部文件打开同步工作区、原生 File 菜单缺少打开入口、文件树创建副本、工作区菜单新建文件夹。
+- 2026-06-30 追加收尾截图：窗口最小化/缩放/关闭恢复异常、增量索引新增文件、Finder Markdown 文件图标、链接 fixture PDF 导出完成。
 - 2026-06-29 补充单元/集成测试：文件打开/自动保存/冲突/恢复、编辑命令、富复制、块操作、图片、表格、诊断、文件树、导出 preflight、导出设置、命令注册、主题、更新、工作区索引、反链、图谱、i18n、toast、reduced motion。
 - 菜单与帮助：File/Edit/Insert/Format/Navigate/View/Export/Window/Help、快捷键、关于、检查更新。
 - 布局：1024x768 窄窗口、低高度窗口。
 
 ## 未覆盖风险
 
-- 当前真实 App 窗口可测，但启动/新建窗口默认文档、窗口生命周期仍需专项复测；系统打开非 Markdown 文件已真实复现白屏失败。
+- 当前真实 App 窗口可测，但启动/新建窗口默认文档、最小化/缩放/close-reopen 生命周期均存在真实失败；系统打开非 Markdown 文件已真实复现白屏失败。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 `screenshots/15-computer-use-real-app/` 下的 187 张截图是真实 Prism/导出产物截图；其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 `screenshots/15-computer-use-real-app/` 下的 195 张截图是真实 Prism/导出产物/Finder 截图；其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
-- `manifest.json` 中 Pass 项如备注含 browser mock，均需要在原生窗口恢复后抽样复验。
+- `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。

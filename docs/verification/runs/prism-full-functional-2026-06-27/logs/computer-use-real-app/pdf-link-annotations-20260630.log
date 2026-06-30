@@ -1,0 +1,21 @@
+file=docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.pdf
+-rw-r--r--@ 1 Alex  staff  14268 Jun 30 15:56 docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.pdf
+--- mdls ---
+kMDItemContentType   = "com.adobe.pdf"
+kMDItemKind          = "PDF文稿"
+kMDItemNumberOfPages = 1
+--- strings URI/action/link annotations ---
+--- text ---
+Link Click Fixture
+Use this document to verify preview link navigation.
+
+Wiki Link
+Open real-wiki-target from preview.
+
+Relative Markdown Link
+Open relative target from preview.
+
+External Link
+Open Prism repository from preview.
+
+

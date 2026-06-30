@@ -3792,6 +3792,164 @@
       "issueRef": "",
       "notes": "未看到内联重命名态，非法名提示未在本轮覆盖。",
       "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-231",
+      "area": "macOS 平台集成",
+      "feature": "AX 最小化后恢复采样",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png",
+      "actual": "通过 AXMinimized 设置最小化后日志仍显示 minimized=false，窗口保持可见；截图为尝试恢复后的窗口。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "通过 System Events 设置 AXMinimized=true",
+        "再次读取 AXMinimized",
+        "恢复并截图"
+      ],
+      "expected": "窗口应进入最小化状态，并可恢复到原文档。",
+      "issueRef": "P1-WINDOW-001",
+      "notes": "日志：logs/computer-use-real-app/window-lifecycle-20260630.log",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-232",
+      "area": "macOS 平台集成",
+      "feature": "原生 Window > Minimize 不生效",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-232-window-restored-after-native-minimize-window.png",
+      "actual": "点击原生 Window > Minimize 后，AXMinimized 仍为 false，on-screen Prism 窗口仍存在。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "点击原生 Window 菜单 Minimize",
+        "读取 AXMinimized 和 on-screen 窗口数",
+        "open -a 恢复并截图"
+      ],
+      "expected": "原生最小化菜单应把主窗口最小化，恢复后文档状态保持。",
+      "issueRef": "P1-WINDOW-001",
+      "notes": "日志：logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-233",
+      "area": "macOS 平台集成",
+      "feature": "缩放/Zoom 动作未改变窗口尺寸",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png",
+      "actual": "执行全屏按钮 secondary action “zoom the window” 后，窗口截图尺寸仍为 2424x1744，没有明显缩放或全屏变化。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-selection-callout.md",
+      "steps": [
+        "执行窗口全屏按钮的 zoom secondary action",
+        "截图并比较窗口尺寸"
+      ],
+      "expected": "Zoom 或全屏动作应改变窗口尺寸/状态，并能恢复。",
+      "issueRef": "P1-WINDOW-001",
+      "notes": "日志：logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-234",
+      "area": "macOS 平台集成",
+      "feature": "关闭窗口后 reopen 状态不完整",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png",
+      "actual": "执行 Window > Close Window 后 on-screen Prism 窗口数从 3 降到 2，open -a 后仍为 2，没有恢复到关闭前窗口数；仍能显示一个文档窗口。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-selection-callout.md",
+      "steps": [
+        "执行原生 Window > Close Window",
+        "统计 on-screen Prism 窗口数",
+        "open -a Prism",
+        "再次统计并截图"
+      ],
+      "expected": "关闭/隐藏后 reopen 应恢复主窗口且状态一致。",
+      "issueRef": "P1-WINDOW-002",
+      "notes": "日志：logs/computer-use-real-app/window-close-reopen-20260630.log",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-235",
+      "area": "工作区索引",
+      "feature": "新增文件后文件树未即时刷新",
+      "status": "Blocked",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-235-index-incremental-file-tree-window.png",
+      "actual": "新增 real-index-incremental-20260630.md 后等待 2 秒，文件树当前可见区未显示该文件；随后重新激活/打开文件后才出现。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-index-incremental-20260630.md",
+      "steps": [
+        "在测试 fixture 目录新增 Markdown 文件",
+        "等待 2 秒",
+        "截图文件树"
+      ],
+      "expected": "文件监听应在不重启的情况下更新索引和文件树。",
+      "issueRef": "",
+      "notes": "与 PRISM-CU-237 配套；日志：logs/computer-use-real-app/index-incremental-20260630.log",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-236",
+      "area": "macOS 平台集成",
+      "feature": "Finder Markdown 文件图标",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-236-finder-markdown-file-icon-window.png",
+      "actual": "Finder 列表视图中多个 .md 文件显示 Markdown 文档图标，选中 real-links-click.md 后种类为 Markdown，mdls 显示 kMDItemKind=Markdown Document。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.md",
+      "steps": [
+        "open -R real-links-click.md",
+        "读取 Finder 列表视图和 mdls 元数据",
+        "截图"
+      ],
+      "expected": "所有 .md 文件应显示 Prism/Markdown 文档图标，不是空白图标。",
+      "issueRef": "",
+      "notes": "日志：logs/computer-use-real-app/finder-markdown-icon-20260630.log",
+      "windowSize": "Finder window / 2064x1096 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-237",
+      "area": "工作区索引",
+      "feature": "新增文件重新激活后可见",
+      "status": "Pass",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-237-index-incremental-visible-after-refocus-window.png",
+      "actual": "同一 Prism 会话中重新激活/通过 open -a 打开当前 fixture 后，文件树显示 real-index-incremental-20260630.md。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-index-incremental-20260630.md",
+      "steps": [
+        "新增文件后重新激活 Prism 并打开当前 workspace 文档",
+        "观察文件树"
+      ],
+      "expected": "索引增量应在不重启 App 的情况下读到新文件。",
+      "issueRef": "",
+      "notes": "不重启 App 可刷新，但不是即时刷新；后续可单独评估刷新延迟是否要作为体验问题。",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "id": "PRISM-CU-238",
+      "area": "导出",
+      "feature": "PDF 链接注释缺失",
+      "status": "Fail",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png",
+      "actual": "real-links-click.pdf 成功导出，但 strings 检查没有 /URI、/Annots 或 /Link；PDF 文本中链接只剩可见文字。",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-links-click.pdf",
+      "steps": [
+        "导出 real-links-click.md 为 PDF",
+        "检查 PDF 元数据、文本和原始字符串"
+      ],
+      "expected": "外链应保留为可点击 PDF 链接注释；内部锚点不应生成危险链接。",
+      "issueRef": "P1-EXPORT-007",
+      "notes": "日志：logs/computer-use-real-app/pdf-link-annotations-20260630.log",
+      "windowSize": "1100x760 logical / 2424x1744 captured pixels"
     }
   ],
   "testCases": [
@@ -5787,11 +5945,12 @@
       "steps": "打开文件夹",
       "expected": "有错误提示，不留下半加载状态",
       "automationHint": "手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "文件夹授权失败需要拒绝 macOS 授权或构造不可读目录；本轮不改系统安全设置、不污染真实目录，未执行。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-094-case-94.png"
+      "notes": "需要专用权限沙箱或人工授权拒绝场景。",
+      "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-094-case-94.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-095",
@@ -5824,16 +5983,17 @@
       "steps": "从文件树删除该文件",
       "expected": "删除后当前文档关闭，文件树刷新",
       "automationHint": "单元 + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "删除当前打开文件需要通过 GUI 删除本地文件，属于高风险破坏性操作；本轮未获得逐次确认，未执行。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/diagnostics-workspace-editor.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "后续应使用 throwaway fixture 并在执行前获得确认，或改用单元/集成测试覆盖。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-096-case-96.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。"
+      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-097",
@@ -5845,16 +6005,17 @@
       "steps": "重命名父文件夹",
       "expected": "当前文档路径同步更新，保存仍写到新位置",
       "automationHint": "单元 + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "重命名当前父文件夹会改变测试工作区路径并影响后续证据归档；本轮未执行。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/diagnostics-workspace-editor.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "需要独立临时 workspace 并自动恢复路径后专项验证。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-097-case-97.png",
       "unitTestEvidence": [
         "logs/unit-tests/diagnostics-workspace-editor.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。"
+      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-098",
@@ -5976,11 +6137,12 @@
       "steps": "导入并重启",
       "expected": "有效主题进入列表，无效主题带错误原因",
       "automationHint": "Rust + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "用户主题包扫描需要写入真实 App Support themes 目录并重启/刷新 UI；本轮为避免污染用户配置未执行。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-103-case-103.png"
+      "notes": "建议后续使用临时 HOME 或可配置 app data dir 专项验证。",
+      "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-103-case-103.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-104",
@@ -6016,11 +6178,12 @@
       "steps": "打开 app 并切主题",
       "expected": "UI/内容字体不依赖远程资源",
       "automationHint": "手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "自托管字体需要导入字体或检查实际字体资源加载链路；本轮未写入用户字体/主题资源，未执行。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-105-case-105.png"
+      "notes": "需要专用字体 fixture 和可清理的 app data dir。",
+      "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-105-case-105.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-106",
@@ -6282,16 +6445,21 @@
       "steps": "修改当前文档和磁盘文件",
       "expected": "索引增量更新，搜索/反链/图谱读到最新内容",
       "automationHint": "Rust + 手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Pass",
+      "actual": "新增 real-index-incremental-20260630.md 后，文件树未在 2 秒内即时刷新；但同一 App 会话重新激活/打开当前 workspace 文档后，新文件出现在文件树中。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "按“不重启 App 可增量读到新文件”判定 Pass；刷新即时性仍有体验风险。",
       "plannedScreenshot": "screenshots/07-knowledge/PRISM-FF-117-case-117.png",
       "unitTestEvidence": [
         "logs/unit-tests/workspace-i18n-shell.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-235-index-incremental-file-tree-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-237-index-incremental-visible-after-refocus-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-235-index-incremental-file-tree-window.png"
     },
     {
       "id": "PRISM-FF-118",
@@ -6303,16 +6471,17 @@
       "steps": "快速切换工作区",
       "expected": "旧任务取消，新任务完成，不读错 root",
       "automationHint": "Rust",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "索引任务取消需要快速切换工作区或注入慢索引任务；本轮为避免污染真实工作区且缺少可见索引任务状态，未执行。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "需要专用大工作区 fixture 或测试钩子验证取消旧任务、新任务完成。",
       "plannedScreenshot": "screenshots/07-knowledge/PRISM-FF-118-case-118.png",
       "unitTestEvidence": [
         "logs/unit-tests/workspace-i18n-shell.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-119",
@@ -6397,16 +6566,20 @@
       "steps": "导出 PDF 并点击链接",
       "expected": "外链可点；内部锚点不生成危险链接",
       "automationHint": "单元 + PDF 检查",
-      "status": "Not Run",
-      "actual": "",
-      "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/export-settings-theme-commands.log。不替代真实 UI/原生产物截图验收。",
+      "status": "Fail",
+      "actual": "real-links-click.pdf 成功生成，但 PDF 内部没有 /URI、/Annots 或 /Link；外链、wiki link、相对 Markdown link 均只保留为纯文本。",
+      "issueRef": "P1-EXPORT-007",
+      "notes": "真实 App 导出 + PDF 字符串检查；证据：logs/computer-use-real-app/pdf-link-annotations-20260630.log",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-122-pdf-pdf.png",
       "unitTestEvidence": [
         "logs/unit-tests/export-settings-theme-commands.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。"
+      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png"
     },
     {
       "id": "PRISM-FF-123",
@@ -6671,16 +6844,17 @@
       "steps": "启动",
       "expected": "能读取/迁移或兼容旧设置，不覆盖新设置",
       "automationHint": "Rust",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "设置迁移/旧配置需要替换真实 App Support 配置或以临时 HOME 启动 App；本轮不污染真实配置，未执行真实 UI。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/export-settings-theme-commands.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "代码层自动化已有通过证据，不替代真实 UI。",
       "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-134-case-134.png",
       "unitTestEvidence": [
         "logs/unit-tests/export-settings-theme-commands.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。"
+      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-135",
@@ -6692,11 +6866,12 @@
       "steps": "修改设置",
       "expected": "错误可见，不导致 UI 崩溃",
       "automationHint": "手工",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "设置持久化错误需要制造不可写配置目录或 I/O 失败；本轮不改系统权限，未执行。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-135-case-135.png"
+      "notes": "需要测试钩子或临时 app data dir。",
+      "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-135-case-135.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-136",
@@ -6756,16 +6931,17 @@
       "steps": "打开 app",
       "expected": "显示可读错误边界，不白屏",
       "automationHint": "手工/测试",
-      "status": "Not Run",
-      "actual": "",
+      "status": "Blocked",
+      "actual": "Error Boundary 需要注入渲染异常或测试构建开关；本轮真实 App 未提供安全触发入口，未执行。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "代码层自动化已有通过证据，不替代真实 UI。",
       "plannedScreenshot": "screenshots/00-p1-other/PRISM-FF-138-error-boundary-error-boundary.png",
       "unitTestEvidence": [
         "logs/unit-tests/workspace-i18n-shell.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-139",
@@ -6796,11 +6972,17 @@
       "steps": "执行窗口命令",
       "expected": "状态同步，菜单 checked 正确",
       "automationHint": "手工",
-      "status": "Not Run",
-      "actual": "",
-      "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/03-shell-status/PRISM-FF-140-case-140.png"
+      "status": "Fail",
+      "actual": "通过 AXMinimized、真实交通灯/快捷键、原生 Window > Minimize、全屏按钮 zoom secondary action 尝试窗口操作，最小化和缩放均未产生预期窗口状态变化。",
+      "issueRef": "P1-WINDOW-001",
+      "notes": "日志：logs/computer-use-real-app/window-lifecycle-20260630.log、logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log",
+      "plannedScreenshot": "screenshots/03-shell-status/PRISM-FF-140-case-140.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-232-window-restored-after-native-minimize-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png"
     },
     {
       "id": "PRISM-FF-141",
@@ -6812,11 +6994,15 @@
       "steps": "关闭主窗口、Dock reopen、打开文件事件",
       "expected": "关闭隐藏而非退出；reopen 显示主窗口",
       "automationHint": "手工",
-      "status": "Not Run",
-      "actual": "",
-      "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/03-shell-status/PRISM-FF-141-macos-close-hide-reopen-macos-close-hide-reopen.png"
+      "status": "Fail",
+      "actual": "执行原生 Window > Close Window 后 on-screen Prism 窗口数从 3 降到 2；open -a Prism 后仍为 2，没有恢复到关闭前窗口数。主窗口仍可用，但 close/reopen 生命周期状态不完整。",
+      "issueRef": "P1-WINDOW-002",
+      "notes": "日志：logs/computer-use-real-app/window-close-reopen-20260630.log",
+      "plannedScreenshot": "screenshots/03-shell-status/PRISM-FF-141-macos-close-hide-reopen-macos-close-hide-reopen.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png"
     },
     {
       "id": "PRISM-FF-142",
@@ -6909,11 +7095,15 @@
       "steps": "设置 Prism 为 `.md` 默认打开方式，重启 Finder",
       "expected": "所有 `.md` 显示 Prism 文档图标，不是空白图标",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Pass",
+      "actual": "Finder 列表视图中 .md 文件显示 Markdown 文档图标，非空白；mdls 显示 kMDItemKind=Markdown Document，Prism bundle id 为 com.prism.editor.v1。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-146-macos-finder.png"
+      "notes": "本轮验证 macOS 当前机器的 Finder 列表视图；未代表 Windows/Linux。",
+      "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-146-macos-finder.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-236-finder-markdown-file-icon-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-236-finder-markdown-file-icon-window.png"
     },
     {
       "id": "PRISM-FF-147",
@@ -6957,11 +7147,15 @@
       "steps": "导出 PDF",
       "expected": "平台能力检测正确，失败时回退或报错可读",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Pass",
+      "actual": "real-links-click.md 可通过真实 Prism 导出为 PDF，生成 1 页 com.adobe.pdf，文件大小 14268 bytes，未出现平台能力检测错误。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/09-export/PRISM-FF-149-macos-pdf-capture.png"
+      "notes": "PDF 链接注释缺失另见 P1-EXPORT-007；平台 PDF capture 本身可用。日志：logs/computer-use-real-app/pdf-link-annotations-20260630.log",
+      "plannedScreenshot": "screenshots/09-export/PRISM-FF-149-macos-pdf-capture.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png"
     },
     {
       "id": "PRISM-FF-150",
@@ -7085,11 +7279,12 @@
       "steps": "断网打开含图表文档并导出",
       "expected": "Mermaid/PlantUML/Markmap 不因断网失败；帮助/更新外链可失败但不影响编辑",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "离线渲染需要断网或网络请求拦截环境验证；本轮未修改系统网络状态，不能伪造离线通过。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-157-case-157.png"
+      "notes": "已有导出产物未发现明显远程资源引用，但不等同于断网验证。",
+      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-157-case-157.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-158",
@@ -7121,11 +7316,12 @@
       "steps": "Retina/高缩放显示器",
       "expected": "编辑/预览/图表清晰；PNG 1x/2x/4x 尺寸符合选择",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "当前 Retina 截图和 4x PNG 导出已覆盖高 DPI 的部分证据，但未完整执行 1x/2x/4x 对照和跨显示器缩放验证。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-159-dpi.png"
+      "notes": "需要专门矩阵验证后才能判定通过。",
+      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-159-dpi.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-160",
@@ -7156,11 +7352,12 @@
       "steps": "设置 `localStorage.prism.previewPerf=1` 后打开长文档",
       "expected": "控制台输出 render/katex/mermaid 性能，不影响 UI",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "性能日志需要修改 WebView localStorage 或打开 DevTools 注入开关；本轮未改变运行态调试配置。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-161-case-161.png"
+      "notes": "后续可用专用 debug profile 验证。",
+      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-161-case-161.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-162",
@@ -7172,16 +7369,17 @@
       "steps": "禁用 Worker 或模拟 Worker error",
       "expected": "主线程 fallback 正确，结果一致",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "Worker 降级需要禁用 Worker 或模拟 Worker error；真实 App 无安全触发入口，本轮未执行。",
       "issueRef": "",
-      "notes": "代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "代码层自动化已有通过证据，不替代真实 UI。",
       "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-162-worker-worker.png",
       "unitTestEvidence": [
         "logs/unit-tests/workspace-i18n-shell.log"
       ],
       "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-163",
@@ -7193,11 +7391,12 @@
       "steps": "连续打开含大量图片文档",
       "expected": "object URL 和缓存有上限，不持续增长",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "内存释放需要长时间连续打开大量图片文档并采样内存；本轮未执行压力测试。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-163-case-163.png"
+      "notes": "需要单独性能脚本和时间窗口。",
+      "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-163-case-163.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-164",
@@ -7209,11 +7408,12 @@
       "steps": "连续 4x PNG 导出长文档",
       "expected": "分片 canvas 释放，失败不残留状态",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "导出大图内存需要连续 4x PNG 压力导出；本轮未执行重复压力，避免长时间占用 UI。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/09-export/PRISM-FF-164-case-164.png"
+      "notes": "已有单次复杂 PNG 导出证据，不等同于内存压力通过。",
+      "plannedScreenshot": "screenshots/09-export/PRISM-FF-164-case-164.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-165",
@@ -7225,11 +7425,12 @@
       "steps": "1000+ 文档工作区",
       "expected": "索引进度、取消、搜索响应可接受",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
+      "status": "Blocked",
+      "actual": "超大工作区需要 1000+ 文档 fixture；本轮未生成大规模工作区，未执行。",
       "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/13-quality/PRISM-FF-165-case-165.png"
+      "notes": "需要专用临时目录和索引性能脚本。",
+      "plannedScreenshot": "screenshots/13-quality/PRISM-FF-165-case-165.png",
+      "screenshots": []
     },
     {
       "id": "PRISM-FF-166",
@@ -7241,11 +7442,17 @@
       "steps": "键盘访问菜单、弹窗、表格 popover、设置",
       "expected": "焦点顺序、Esc、aria label 基本可用",
       "automationHint": "",
-      "status": "Not Run",
-      "actual": "本轮未执行该项；未用推测结果替代。",
-      "issueRef": "",
-      "notes": "",
-      "plannedScreenshot": "screenshots/04-editor/PRISM-FF-166-case-166.png"
+      "status": "Fail",
+      "actual": "本轮多处真实 App AX 树暴露不足：设置弹窗控件未语义化，菜单/窗口操作状态不稳定，部分菜单项只能通过坐标或视觉判断。",
+      "issueRef": "P1-SETTINGS-002",
+      "notes": "复用设置 AX 问题和窗口操作问题作为无障碍基础失败证据。",
+      "plannedScreenshot": "screenshots/04-editor/PRISM-FF-166-case-166.png",
+      "screenshots": [
+        "screenshots/15-computer-use-real-app/PRISM-CU-050-settings-general-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-052-settings-appearance-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png"
+      ],
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-050-settings-general-window.png"
     },
     {
       "id": "PRISM-FF-167",
@@ -7291,17 +7498,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T15:25:00+08:00",
+  "generatedAt": "2026-06-30T16:02:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 91,
-    "Fail": 40,
-    "Blocked": 14,
-    "Not Run": 23,
-    "screenshotFiles": 318,
-    "manifestScreenshots": 822,
-    "uniqueManifestScreenshots": 305,
-    "computerUseRealAppEvidence": 187
+    "Pass": 94,
+    "Fail": 44,
+    "Blocked": 30,
+    "Not Run": 0,
+    "screenshotFiles": 326,
+    "manifestScreenshots": 857,
+    "uniqueManifestScreenshots": 313,
+    "computerUseRealAppEvidence": 195
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -8510,6 +8717,38 @@
     {
       "file": "screenshots/15-computer-use-real-app/PRISM-CU-230-workspace-menu-new-folder-entry-window.png",
       "testCaseId": "PRISM-CU-230"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png",
+      "testCaseId": "PRISM-CU-231"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-232-window-restored-after-native-minimize-window.png",
+      "testCaseId": "PRISM-CU-232"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png",
+      "testCaseId": "PRISM-CU-233"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png",
+      "testCaseId": "PRISM-CU-234"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-235-index-incremental-file-tree-window.png",
+      "testCaseId": "PRISM-CU-235"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-236-finder-markdown-file-icon-window.png",
+      "testCaseId": "PRISM-CU-236"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-237-index-incremental-visible-after-refocus-window.png",
+      "testCaseId": "PRISM-CU-237"
+    },
+    {
+      "file": "screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png",
+      "testCaseId": "PRISM-CU-238"
     }
   ],
   "unitTestRuns": [
