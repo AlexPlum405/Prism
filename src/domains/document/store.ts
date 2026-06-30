@@ -19,7 +19,7 @@ interface DocumentStore extends DocumentState {
   setViewMode: (viewMode: 'edit' | 'split' | 'preview') => void;
   updateFileSnapshot: (path: string, snapshot: FileSnapshot | null) => void;
   markSaving: (path?: string) => void;
-  markSaved: (path?: string, snapshot?: FileSnapshot | null) => void;
+  markSaved: (path?: string, snapshot?: FileSnapshot | null, savedContent?: string) => void;
   markSaveFailed: (error: unknown, path?: string) => void;
   markSaveConflict: (error: unknown, path?: string, issue?: DocumentSaveIssue) => void;
 }
@@ -52,6 +52,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
         content,
         isDirty: false,
         lastSavedAt: Date.now(),
+        lastSavedContent: content,
         lastKnownMtime: snapshot?.mtimeMs ?? null,
         lastKnownSize: snapshot?.size ?? null,
         saveStatus: 'saved',
@@ -78,6 +79,7 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
         content,
         isDirty: hasInitialContent,
         lastSavedAt: Date.now(),
+        lastSavedContent: hasInitialContent ? null : content,
         lastKnownMtime: null,
         lastKnownSize: null,
         saveStatus: hasInitialContent ? 'dirty' : 'saved',
@@ -177,20 +179,23 @@ export const useDocumentStore = create<DocumentStore>((set) => ({
     });
   },
 
-  markSaved: (path, snapshot) => {
+  markSaved: (path, snapshot, savedContent) => {
     set((state) => {
       if (!state.currentDocument) return state;
       if (path !== undefined && state.currentDocument.path !== path) return state;
+      const contentWrittenToDisk = savedContent ?? state.currentDocument.content;
+      const hasNewerLocalEdits = state.currentDocument.content !== contentWrittenToDisk;
       return {
         currentDocument: {
           ...state.currentDocument,
-          isDirty: false,
+          isDirty: hasNewerLocalEdits,
           lastSavedAt: Date.now(),
+          lastSavedContent: contentWrittenToDisk,
           lastKnownMtime: snapshot ? snapshot.mtimeMs : state.currentDocument.lastKnownMtime,
           lastKnownSize: snapshot ? snapshot.size : state.currentDocument.lastKnownSize,
-          saveStatus: 'saved',
-          saveError: null,
-          saveIssue: null,
+          saveStatus: hasNewerLocalEdits ? 'dirty' : 'saved',
+          saveError: hasNewerLocalEdits ? state.currentDocument.saveError : null,
+          saveIssue: hasNewerLocalEdits ? state.currentDocument.saveIssue : null,
         },
       };
     });

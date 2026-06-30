@@ -99,6 +99,49 @@ describe('useExternalFileChangeMonitor', () => {
     expect(useDocumentStore.getState().currentDocument?.saveStatus).toBe('conflict');
   });
 
+  it('uses the saved content baseline to detect dirty conflicts when the file snapshot is incomplete', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 3, mtime: null });
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# Disk changed');
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: null, mtimeMs: null });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(1000, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# B',
+      isDirty: true,
+      saveStatus: 'conflict',
+      saveError: '文件已在磁盘上被外部修改，请先重新加载或另存为。',
+    });
+  });
+
+  it('keeps dirty documents editable when an incomplete snapshot still matches the saved baseline', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 3, mtime: null });
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# A');
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: null, mtimeMs: null });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(1000, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# B',
+      isDirty: true,
+      saveStatus: 'dirty',
+    });
+  });
+
   it('checks the active document when the page becomes visible again', async () => {
     (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 9, mtime: new Date(2000) });
     useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { stat, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 import { useDocumentStore } from '../store';
 import { useAutoSave } from './useAutoSave';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../services/recovery';
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
+  readTextFile: vi.fn(),
   stat: vi.fn(),
   writeTextFile: vi.fn(),
 }));
@@ -23,6 +24,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useDocumentStore.setState({ currentDocument: null });
   (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 3, mtime: new Date(1000) });
+  (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# A');
   (createRecoverySnapshot as ReturnType<typeof vi.fn>).mockResolvedValue(null);
   (clearRecoverySnapshotsForDocument as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 });
@@ -131,6 +133,49 @@ describe('useAutoSave', () => {
       isDirty: true,
       saveStatus: 'conflict',
       saveError: '文件已在磁盘上被外部修改，请先重新加载或另存为。',
+    });
+  });
+
+  it('uses the saved content baseline to detect conflicts when the file snapshot is incomplete', async () => {
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# Disk changed');
+    (writeTextFile as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: null, mtimeMs: null });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useAutoSave(100, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    expect(readTextFile).toHaveBeenCalledWith('/tmp/a.md');
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# B',
+      isDirty: true,
+      saveStatus: 'conflict',
+      saveError: '文件已在磁盘上被外部修改，请先重新加载或另存为。',
+    });
+  });
+
+  it('can save with a fresh snapshot when the file snapshot was incomplete but disk content matches the baseline', async () => {
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# A');
+    (writeTextFile as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: null, mtimeMs: null });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useAutoSave(100, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    expect(writeTextFile).toHaveBeenCalledWith('/tmp/a.md', '# B');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# B',
+      isDirty: false,
+      lastSavedContent: '# B',
+      saveStatus: 'saved',
     });
   });
 

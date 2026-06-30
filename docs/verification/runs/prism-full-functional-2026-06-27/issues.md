@@ -189,7 +189,9 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-188-conflict-not-shown-auto-merged-window.png`
   - `logs/computer-use-real-app/external-conflict-check.log`
 - 备注：该测试只操作本次 verification fixture，不涉及用户真实文档。
-- 修复进展：2026-06-30 源码已强化 `useExternalFileChangeMonitor`：检查时读取当前 store 中最新的 dirty/snapshot 状态，dirty 文档新增 1 秒快速冲突巡检，并在页面重新可见时触发检查。相关外部修改、autosave 和冲突弹窗单测通过；待换包后用 `real-conflict.md` 真实复测。
+- 修复进展：2026-06-30 源码已强化 `useExternalFileChangeMonitor`：检查时读取当前 store 中最新的 dirty/snapshot 状态，dirty 文档新增 1 秒快速冲突巡检，并在页面重新可见时触发检查。后续安装版复测 `PRISM-CU-247` 仍发现静默合并，根因是 snapshot 不完整或未变化时提前 return，内容基线兜底没有执行。
+- 修复进展：2026-06-30 追加 `lastSavedContent` 内容基线：打开/保存文档时记录最近磁盘内容；dirty 外部监测在 snapshot 不完整时读取磁盘内容与基线比对；auto-save 保存前也用同一基线兜底，并使用最新当前 snapshot 写入。`npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/store.test.ts`、`npm run build`、干净 worktree `npm run tauri:build:app-smoke` 均通过。
+- 安装版复测：2026-06-30 已重新打包并替换 `/Applications/Prism.app`。`PRISM-CU-249` 真实 UI 复测通过：dirty 状态下从终端追加外部内容后，Prism 显示“文件冲突”状态和弹窗，包含“重新加载磁盘版本 / 保留我的版本并另存为 / 覆盖磁盘版本”三个处理入口；编辑区保留本地未保存内容，未静默合并外部行。替换后 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs` 通过，报告见 `logs/app-smoke-installed-conflict-baseline-fix-20260630/report.json`。
 
 ### P1-FILE-004 Prism 内缺少文件属性/信息入口
 

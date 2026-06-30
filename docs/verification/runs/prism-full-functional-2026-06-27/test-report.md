@@ -59,6 +59,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 源码修复批次已覆盖本轮 P0/P1 中的启动/系统打开文本文件、dirty 外部修改冲突、Typography 入口、基础剪贴板、图片粘贴、Selection callout、选区右键、工作区搜索、原生 macOS File 菜单和窗口菜单路径。自动化验证已通过：相关 Vitest 批次 17 个文件 / 190 条断言通过，`cargo check` 通过，`npm run build` 通过，`git diff --check` 通过。由于尚未重新打包替换 `/Applications/Prism.app` 并做真实 UI 复测，统计中的真实 App Fail 数暂不改为 Pass，相关 issue 记录为“源码已修复，待换包回归”。
 
+2026-06-30 追加 `P0-FILE-003` dirty 外部修改冲突专项回归：第一次安装版复测 `PRISM-CU-247` 仍复现静默合并，定位为 snapshot 不完整或未变化时外部监测提前 return，内容基线兜底未执行。随后源码新增 `lastSavedContent` 内容基线，dirty 外部监测和 auto-save 保存前均用磁盘内容与基线比对兜底；重新打包替换 `/Applications/Prism.app` 后，`PRISM-CU-249` 真实 UI 复测确认出现“文件冲突”弹窗，提供重新加载、另存为、覆盖三个处理入口，编辑区保留本地未保存内容。验证通过：文档安全 Vitest 3 文件 / 26 条断言、`npm run build`、干净 worktree `npm run tauri:build:app-smoke`、替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
+
 ## 执行统计
 
 - 总用例：168
@@ -74,13 +76,13 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1 执行：Pass 29 / Fail 14 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：326
-- Manifest 真实 Computer Use 截图引用：195
+- 当前截图文件总数：361
+- Manifest 真实 Computer Use 截图引用：206
 - Pipeline/环境证据截图：9
-- 真实 Computer Use 截图：195（`screenshots/15-computer-use-real-app/`）
-- 单元/集成测试批次：5
-- 单元/集成测试文件通过：53
-- 单元/集成测试断言通过：484
+- 真实 Computer Use 截图：206（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`）
+- 单元/集成测试批次：6
+- 单元/集成测试文件通过：56
+- 单元/集成测试断言通过：510
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已真实复测并记录失败
@@ -135,6 +137,14 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 已通过 `npm test -- --run src/domains/commands/registry.test.ts src/domains/editor/components/SplitView.test.tsx`、`npm run build`、`npm run tauri:build:app-smoke` 和替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
 - 选区浮动工具条残留不在本批搜索修复范围内，仍作为单独残余风险跟踪。
 
+## 2026-06-30 外部修改冲突修复
+
+- 已补文档内容基线：打开/保存文档时记录 `lastSavedContent`，用于 snapshot 不完整或无法可靠判断时的冲突兜底。
+- 已修 dirty 外部修改监测提前返回：snapshot 判定未变化时，dirty 文档仍会读取磁盘内容并与内容基线比对。
+- 已修 auto-save 保存前兜底：保存前先 inspect 当前磁盘 snapshot；若原始 snapshot 不完整，则读取磁盘内容与基线比对，确认未变后再用最新 snapshot 写入。
+- 安装版复测 `PRISM-CU-247` 保留了修复前静默合并失败证据；重新打包替换后 `PRISM-CU-249` 确认冲突弹窗和三个处理入口可见。
+- 已通过 `npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/store.test.ts`、`npm run build`、`npm run tauri:build:app-smoke` 和替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
+
 ## 最高优先级问题
 
 1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 已重新打包替换安装版，`PRISM-CU-239` 真实 UI 复测确认默认指南无 `ERROR`。
@@ -142,7 +152,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。
 4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。
 5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版 smoke 与 `PRISM-CU-239` 已覆盖启动默认文档；新建窗口仍待原用例单独复测。
-6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。
+6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。2026-06-30 已重新打包替换安装版，`PRISM-CU-249` 真实 UI 复测确认冲突弹窗和处理入口可见。
 7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。
 8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。
 9. P0-EDITOR-005：图片剪贴板粘贴未进入资产管线，无法从剪贴板直接插入图片。

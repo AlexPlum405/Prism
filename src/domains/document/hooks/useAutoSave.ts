@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react';
 import {
   createKnownFileSnapshot,
+  FileAccessIssueError,
+  FileConflictError,
   fileConflictDetector,
   isFileAccessIssueError,
   isFileConflictError,
+  readDocumentFileSession,
   recoverySnapshotStore,
   writeDocumentFileSession,
 } from '../services/fileSafety';
@@ -15,6 +18,7 @@ export function useAutoSave(interval = 2000, enabled = true) {
   const documentName = useDocumentStore((s) => s.currentDocument?.name ?? '');
   const documentContent = useDocumentStore((s) => s.currentDocument?.content ?? '');
   const isDirty = useDocumentStore((s) => s.currentDocument?.isDirty ?? false);
+  const lastSavedContent = useDocumentStore((s) => s.currentDocument?.lastSavedContent ?? null);
   const saveStatus = useDocumentStore((s) => s.currentDocument?.saveStatus ?? 'saved');
   const lastKnownMtime = useDocumentStore((s) => s.currentDocument?.lastKnownMtime ?? null);
   const lastKnownSize = useDocumentStore((s) => s.currentDocument?.lastKnownSize ?? null);
@@ -46,13 +50,25 @@ export function useAutoSave(interval = 2000, enabled = true) {
         }).catch(() => undefined);
         if (enabled) {
           const knownSnapshot = createKnownFileSnapshot(lastKnownMtime, lastKnownSize);
-          await fileConflictDetector.ensureUnchanged(documentPath, knownSnapshot);
+          const inspection = await fileConflictDetector.inspect(documentPath, knownSnapshot);
+          if (inspection.kind !== 'ok') {
+            throw new FileAccessIssueError(inspection.kind, documentPath, inspection.message);
+          }
+          if (inspection.changed) {
+            throw new FileConflictError(fileConflictDetector.message);
+          }
+          if (lastSavedContent !== null && (knownSnapshot.mtimeMs === null || knownSnapshot.size === null)) {
+            const diskSession = await readDocumentFileSession(documentPath);
+            if (diskSession.content !== lastSavedContent) {
+              throw new FileConflictError(fileConflictDetector.message);
+            }
+          }
           markSaving(documentPath);
           markSaved(documentPath, await writeDocumentFileSession({
             path: documentPath,
             content: documentContent,
-            expectedSnapshot: knownSnapshot,
-          }));
+            expectedSnapshot: inspection.currentSnapshot,
+          }), documentContent);
           await recoverySnapshotStore.clearForDocument(documentPath).catch(() => undefined);
         }
       } catch (err) {
@@ -82,6 +98,7 @@ export function useAutoSave(interval = 2000, enabled = true) {
     enabled,
     interval,
     isDirty,
+    lastSavedContent,
     lastKnownMtime,
     lastKnownSize,
     markSaveConflict,

@@ -4090,6 +4090,88 @@
       ],
       "expected": "全文搜索打开时应收起文档搜索，不出现两个搜索 UI 叠加。",
       "notes": "安装版真实 UI 复测通过；修复覆盖 workspaceSearch 命令直接打开全局面板的路径。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/conflict-retest/real-conflict-retest-211612.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-FILE-003",
+      "id": "PRISM-CU-246",
+      "area": "文件安全",
+      "feature": "安装版外部修改冲突复测修复前基线",
+      "status": "Pass",
+      "screenshot": "screenshots/18-installed-conflict-smoke/01-conflict-retest-baseline.png",
+      "actual": "修复前复测开始时，Prism 打开 real-conflict-retest-211612.md，编辑区显示初始磁盘内容且无冲突弹窗。",
+      "steps": [
+        "打开专用冲突复测文件",
+        "确认 Prism 前台窗口和初始内容",
+        "截图"
+      ],
+      "expected": "复测前置状态清晰，当前文件无冲突弹窗。",
+      "notes": "修复前基线截图，保留用于对比，不作为修复通过证据。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/conflict-retest/real-conflict-retest-211612.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-FILE-003",
+      "id": "PRISM-CU-247",
+      "area": "文件安全",
+      "feature": "安装版 dirty 外部修改修复前仍静默合并",
+      "status": "Fail",
+      "screenshot": "screenshots/18-installed-conflict-smoke/02-conflict-retest-after-external-mutation.png",
+      "actual": "输入本地未保存行后从终端追加外部行，2 秒后 Prism 未显示冲突弹窗，编辑器同时包含本地行和外部行，并回到已保存状态。",
+      "steps": [
+        "在编辑器输入 Local unsaved edit before disk mutation.",
+        "从终端向同一文件追加 Second external mutation while Prism is dirty.",
+        "等待 2 秒并截图"
+      ],
+      "expected": "dirty 状态下磁盘外部修改应进入文件冲突状态，不能静默合并为已保存。",
+      "notes": "该复测暴露源码中 snapshot 未变化提前 return，内容基线兜底没有执行。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/conflict-retest/real-conflict-retest-213205.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-FILE-003",
+      "id": "PRISM-CU-248",
+      "area": "文件安全",
+      "feature": "安装版外部修改冲突修复后基线",
+      "status": "Pass",
+      "screenshot": "screenshots/18-installed-conflict-smoke/03-after-fix-baseline.png",
+      "actual": "重新打包并替换 /Applications/Prism.app 后，Prism 打开 real-conflict-retest-213205.md，编辑区显示初始磁盘内容。",
+      "steps": [
+        "重新打包并替换 /Applications/Prism.app",
+        "打开新的专用冲突复测文件",
+        "确认初始内容并截图"
+      ],
+      "expected": "修复后复测前置状态清晰，当前文件无冲突弹窗。",
+      "notes": "该截图用于关联后续 PRISM-CU-249 通过证据。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/conflict-retest/real-conflict-retest-213205.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-FILE-003",
+      "id": "PRISM-CU-249",
+      "area": "文件安全",
+      "feature": "安装版 dirty 外部修改显示冲突处理入口",
+      "status": "Pass",
+      "screenshot": "screenshots/18-installed-conflict-smoke/04-after-fix-conflict-result.png",
+      "actual": "输入本地未保存行后从终端追加外部行，Prism 显示“文件冲突”状态和弹窗；弹窗包含“重新加载磁盘版本”“保留我的版本并另存为”“覆盖磁盘版本”，编辑区保留本地未保存内容，未静默合并外部行。",
+      "steps": [
+        "在编辑器输入 Local unsaved edit after fix.",
+        "确认标题栏显示未保存",
+        "从终端向同一文件追加 External mutation after fix while Prism is dirty.",
+        "等待 2 秒并截图",
+        "读取 Computer Use 可访问性树确认冲突按钮存在"
+      ],
+      "expected": "dirty 状态下磁盘外部修改必须进入冲突状态，并提供加载磁盘、另存本地、覆盖磁盘的处理入口。",
+      "notes": "安装版真实 UI 复测通过；Computer Use AX 树同时确认冲突状态和 3 个处理按钮。"
     }
   ],
   "testCases": [
@@ -7645,10 +7727,10 @@
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 357,
-    "manifestScreenshots": 864,
-    "uniqueManifestScreenshots": 315,
-    "computerUseRealAppEvidence": 202
+    "screenshotFiles": 361,
+    "manifestScreenshots": 868,
+    "uniqueManifestScreenshots": 319,
+    "computerUseRealAppEvidence": 206
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -8917,6 +8999,22 @@
     {
       "file": "screenshots/17-installed-anchor-search-smoke/07-workspace-search-closes-document-search-after-fix.png",
       "testCaseId": "PRISM-CU-245"
+    },
+    {
+      "file": "screenshots/18-installed-conflict-smoke/01-conflict-retest-baseline.png",
+      "testCaseId": "PRISM-CU-246"
+    },
+    {
+      "file": "screenshots/18-installed-conflict-smoke/02-conflict-retest-after-external-mutation.png",
+      "testCaseId": "PRISM-CU-247"
+    },
+    {
+      "file": "screenshots/18-installed-conflict-smoke/03-after-fix-baseline.png",
+      "testCaseId": "PRISM-CU-248"
+    },
+    {
+      "file": "screenshots/18-installed-conflict-smoke/04-after-fix-conflict-result.png",
+      "testCaseId": "PRISM-CU-249"
     }
   ],
   "unitTestRuns": [
@@ -9067,6 +9165,27 @@
         "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement"
       ],
       "notes": "Installed-app retest first exposed a missing workspaceSearch command event path; the follow-up fix was rebuilt, installed, smoke-tested, and verified by PRISM-CU-245. Selection floating toolbar cleanup remains separate residual risk."
+    },
+    {
+      "id": "source-fix-dirty-external-conflict-baseline-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-FILE-003"
+      ],
+      "verification": [
+        "Added lastSavedContent baseline to document state for dirty conflict detection when file snapshots are incomplete",
+        "External change monitor now checks dirty content baseline before returning on unchanged/incomplete snapshots",
+        "Auto-save now inspects disk, compares content baseline when snapshot is incomplete, and writes against a fresh current snapshot",
+        "npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/store.test.ts passed",
+        "npm run build passed",
+        "npm run tauri:build:app-smoke passed in clean install worktree",
+        "Replaced /Applications/Prism.app with rebuilt bundle",
+        "PRISM-CU-247 documents the pre-fix installed app still silently merged dirty external modifications",
+        "PRISM-CU-249 confirms the rebuilt installed app shows the file conflict modal with reload/save-as/overwrite actions",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement"
+      ],
+      "notes": "Historical failure evidence remains intact. PRISM-CU-249 is the post-fix installed-app pass evidence for P0-FILE-003."
     }
   ],
   "appSmokeRuns": [
@@ -9100,6 +9219,28 @@
       "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
       "report": "logs/app-smoke-installed-search-event-fix-20260630/report.json",
       "screenshots": "screenshots/17-installed-anchor-search-smoke/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
+    },
+    {
+      "id": "installed-app-smoke-conflict-baseline-fix-20260630",
+      "status": "Pass",
+      "date": "2026-06-30",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-conflict-baseline-fix-20260630/report.json",
+      "screenshots": "screenshots/18-installed-conflict-smoke/",
       "coverage": [
         ".markdown launch with Chinese and space path",
         "JSON launch without blank screen",

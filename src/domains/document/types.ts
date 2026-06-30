@@ -10,6 +10,7 @@ export interface OpenDocument {
   content: string;
   isDirty: boolean;
   lastSavedAt: number;
+  lastSavedContent?: string | null;
   lastKnownMtime: number | null;
   lastKnownSize: number | null;
   saveStatus: DocumentSaveStatus;

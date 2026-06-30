@@ -26,6 +26,7 @@ describe('document store save status', () => {
 
     expect(useDocumentStore.getState().currentDocument).toMatchObject({
       isDirty: false,
+      lastSavedContent: '# A',
       lastKnownMtime: 1000,
       lastKnownSize: 3,
       saveStatus: 'saved',

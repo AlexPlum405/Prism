@@ -38,15 +38,28 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
         return;
       }
 
-      if (!result.changed) return;
-
       const activeDocument = useDocumentStore.getState().currentDocument;
       if (!activeDocument?.path || activeDocument.path !== documentPath) return;
 
       if (activeDocument.isDirty) {
+        if (
+          !result.changed
+          && activeDocument.lastSavedContent != null
+          && (knownSnapshot.mtimeMs === null || knownSnapshot.size === null)
+        ) {
+          const diskSession = await readDocumentFileSession(documentPath);
+          const latestDirtyDocument = useDocumentStore.getState().currentDocument;
+          if (!latestDirtyDocument?.path || latestDirtyDocument.path !== documentPath) return;
+          if (latestDirtyDocument.isDirty && diskSession.content !== activeDocument.lastSavedContent) {
+            markSaveConflict(fileConflictDetector.message, documentPath);
+          }
+          return;
+        }
         markSaveConflict(fileConflictDetector.message, documentPath);
         return;
       }
+
+      if (!result.changed) return;
 
       const session = await readDocumentFileSession(documentPath);
       const latestDocument = useDocumentStore.getState().currentDocument;
