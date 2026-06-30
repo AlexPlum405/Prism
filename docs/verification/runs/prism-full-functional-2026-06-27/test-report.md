@@ -69,6 +69,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 追加 `P1-EDITOR-006/007` 选区菜单与 callout 安装版复测：真实 UI 中选中两行正文后，右键点击选中文字，`剪切`、`复制`、`链接` 菜单项均为可用状态；继续选择 `块级源码操作 > 选区转警告提示块` 后，选区原地变为 warning callout，保存后的磁盘文件只包含一个 warning callout，未在文末追加空块。证据见 `PRISM-CU-256/257` 和 `screenshots/23-installed-selection-context-smoke/`。
 
+2026-06-30 追加 `P1-SEARCH-001` 与 `P1-MENU-002` 安装版复测：`Cmd+Shift+F` 直接打开“全文搜索 工作区”面板，输入 `NeedleWorkspaceTerm` 后显示根文件和子目录文件两个命中，回车可打开子目录文件；macOS 系统菜单栏 `File` 已显示新建、打开文件、打开文件夹、快速打开、保存、另存为、在访达中显示和关闭文稿等核心入口。证据见 `PRISM-CU-258/259/260` 和 `screenshots/24-installed-workspace-search-menu-smoke/`。
+
 ## 执行统计
 
 - 总用例：168
@@ -126,6 +128,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 图片剪贴板修复后安装版 smoke 报告：logs/app-smoke-installed-image-paste-fix-20260630/report.json
 - 2026-06-30 图片剪贴板安装版复测截图：screenshots/22-installed-image-paste-smoke/
 - 2026-06-30 选区菜单与 callout 安装版复测截图：screenshots/23-installed-selection-context-smoke/
+- 2026-06-30 工作区全文搜索与原生 File 菜单安装版复测截图：screenshots/24-installed-workspace-search-menu-smoke/
 
 ## 2026-06-30 修复批次状态
 
@@ -172,7 +175,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。2026-06-30 安装版真实复测 `PRISM-CU-250/251` 确认入口可见且面板可打开。
 8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。2026-06-30 已重新打包替换安装版，`PRISM-CU-252/253/254` 确认复制、粘贴、剪切均与系统剪贴板和磁盘保存一致。
 9. P0-EDITOR-005：图片剪贴板粘贴未进入资产管线，无法从剪贴板直接插入图片。2026-06-30 已重新打包替换安装版，`PRISM-CU-255` 确认系统 PNG 剪贴板粘贴会插入 Markdown 图片语法，并在当前文档目录生成 assets 图片文件。
-10. P1-MENU-002：原生 macOS File 菜单缺少 Prism 核心文件入口。
+10. P1-MENU-002：原生 macOS File 菜单缺少 Prism 核心文件入口。2026-06-30 安装版真实复测 `PRISM-CU-260` 确认 File 菜单已显示新建、打开、保存、另存为等核心入口。
 
 ## 本轮新增有效截图覆盖
 
@@ -203,6 +206,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 追加安装版剪贴板复测截图：复制选区写入系统剪贴板、粘贴插入文本、剪切写入剪贴板并删除正文。
 - 2026-06-30 追加安装版图片剪贴板复测截图：系统 PNG 剪贴板粘贴进入资产管线，编辑器插入 Markdown 图片语法并生成 assets 图片文件。
 - 2026-06-30 追加安装版选区菜单与 callout 复测截图：选区右键菜单剪切/复制/链接可用，选区转 warning callout 原地生效并保存到磁盘。
+- 2026-06-30 追加安装版工作区全文搜索和原生 File 菜单复测截图：`Cmd+Shift+F` 打开全文搜索工作区、关键词命中跨文件结果、回车打开子目录结果文件、macOS File 菜单显示 Prism 核心文件入口。
 - 2026-06-29 补充单元/集成测试：文件打开/自动保存/冲突/恢复、编辑命令、富复制、块操作、图片、表格、诊断、文件树、导出 preflight、导出设置、命令注册、主题、更新、工作区索引、反链、图谱、i18n、toast、reduced motion。
 - 菜单与帮助：File/Edit/Insert/Format/Navigate/View/Export/Window/Help、快捷键、关于、检查更新。
 - 布局：1024x768 窄窗口、低高度窗口。
@@ -212,6 +216,6 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期仍只有源码修复与构建通过证据，待换包后按原窗口生命周期用例单独复测。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 manifest 中登记了 214 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 manifest 中登记了 217 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。

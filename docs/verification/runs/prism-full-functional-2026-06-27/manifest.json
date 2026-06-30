@@ -4344,6 +4344,69 @@
       ],
       "expected": "非空选区转换后原文完整保留且只改动选区区域，不应移动到文末或生成空 warning callout。",
       "notes": "安装版真实 UI 复测通过；磁盘校验 warning_count=1。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/workspace-search-retest/main-search-retest.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P1-SEARCH-001",
+      "id": "PRISM-CU-258",
+      "area": "搜索与导航",
+      "feature": "安装版 Cmd+Shift+F 打开工作区全文搜索并显示跨文件命中",
+      "status": "Pass",
+      "screenshot": "screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png",
+      "actual": "按 Cmd+Shift+F 后打开“全文搜索 工作区”面板；输入 NeedleWorkspaceTerm 后显示 main-search-retest.md 和 notes/secondary-search-target.md 两个命中。",
+      "steps": [
+        "打开包含根文件和 notes 子目录文件的临时工作区",
+        "按 Cmd+Shift+F",
+        "确认弹层标题为 全文搜索 工作区",
+        "输入 NeedleWorkspaceTerm",
+        "截图记录根文件和子目录文件两个命中"
+      ],
+      "expected": "公开快捷键应进入工作区全文搜索，结果列表包含文件名、路径和命中片段。",
+      "notes": "安装版真实 UI 复测通过；该用例同时证明快捷键不再落到文档内查找。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/workspace-search-retest/notes/secondary-search-target.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P1-SEARCH-001",
+      "id": "PRISM-CU-259",
+      "area": "搜索与导航",
+      "feature": "安装版工作区全文搜索结果可打开子目录文件",
+      "status": "Pass",
+      "screenshot": "screenshots/24-installed-workspace-search-menu-smoke/02-workspace-search-result-opened.png",
+      "actual": "在全文搜索结果中选中 Secondary Target 后按回车，Prism 打开 notes/secondary-search-target.md，编辑区显示目标文件内容。",
+      "steps": [
+        "在全文搜索结果列表中选中 Secondary Target",
+        "按 Return",
+        "确认当前文档路径切到 notes/secondary-search-target.md",
+        "截图记录目标文件内容"
+      ],
+      "expected": "工作区全文搜索结果应可通过回车或点击打开对应文件。",
+      "notes": "安装版真实 UI 复测通过。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/workspace-search-retest/notes/secondary-search-target.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P1-MENU-002",
+      "id": "PRISM-CU-260",
+      "area": "主菜单与系统集成",
+      "feature": "安装版 macOS File 菜单显示 Prism 核心文件入口",
+      "status": "Pass",
+      "screenshot": "screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png",
+      "actual": "macOS 系统菜单栏 File 显示 新建文稿、新建窗口、打开文件...、打开文件夹...、快速打开...、保存、另存为...、在访达中显示、关闭文稿。",
+      "steps": [
+        "激活安装版 Prism 窗口",
+        "点击 macOS 系统菜单栏 File",
+        "读取菜单项并截图"
+      ],
+      "expected": "系统菜单栏 File 应暴露新建、打开、保存、另存为和关闭文稿等核心文件工作流入口。",
+      "notes": "安装版真实 UI 复测通过；菜单不再退化为仅 Close Window / Close All。"
     }
   ],
   "testCases": [
@@ -7892,17 +7955,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T22:58:00+08:00",
+  "generatedAt": "2026-06-30T23:10:00+08:00",
   "counts": {
     "total": 168,
     "Pass": 94,
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 396,
-    "manifestScreenshots": 965,
-    "uniqueManifestScreenshots": 419,
-    "computerUseRealAppEvidence": 214
+    "screenshotFiles": 399,
+    "manifestScreenshots": 968,
+    "uniqueManifestScreenshots": 422,
+    "computerUseRealAppEvidence": 217
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9207,6 +9270,18 @@
     {
       "file": "screenshots/23-installed-selection-context-smoke/03-selection-callout-warning-applied.png",
       "testCaseId": "PRISM-CU-257"
+    },
+    {
+      "file": "screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png",
+      "testCaseId": "PRISM-CU-258"
+    },
+    {
+      "file": "screenshots/24-installed-workspace-search-menu-smoke/02-workspace-search-result-opened.png",
+      "testCaseId": "PRISM-CU-259"
+    },
+    {
+      "file": "screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png",
+      "testCaseId": "PRISM-CU-260"
     }
   ],
   "unitTestRuns": [
@@ -9448,6 +9523,21 @@
         "Disk validation confirms one warning callout and the unselected tail line remains outside the callout"
       ],
       "notes": "No new source edits were required in this batch; this records post-fix installed-app evidence for source changes already present in the rebuilt application."
+    },
+    {
+      "id": "installed-retest-workspace-search-native-file-menu-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P1-SEARCH-001",
+        "P1-MENU-002"
+      ],
+      "verification": [
+        "PRISM-CU-258 confirms Cmd+Shift+F opens workspace full-text search and returns cross-file matches",
+        "PRISM-CU-259 confirms a workspace search result opens the nested target file",
+        "PRISM-CU-260 confirms the macOS native File menu exposes Prism core file actions"
+      ],
+      "notes": "No source edits were required in this batch; it records current installed-app evidence for previously rebuilt fixes."
     }
   ],
   "appSmokeRuns": [

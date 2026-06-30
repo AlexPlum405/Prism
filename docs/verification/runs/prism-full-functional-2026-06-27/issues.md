@@ -684,6 +684,7 @@ Bundle ID：com.prism.editor.v1
 - 建议修复方向：明确 Quick Open 与 Workspace Search 的命令、快捷键和菜单入口；如果暂时不支持全文搜索，应在测试口径和 UI 中降级说明。
 - 验收标准：一个公开入口可打开工作区全文搜索；输入 fixture 中存在的词后显示跨文件命中列表，回车或点击可打开对应文件位置。
 - 修复进展：2026-06-30 源码已修复 `Cmd+Shift+F` 被文档内搜索抢占的问题，并让文件树 `searchInFolder` 发 `workspace` 搜索事件，由 `useAppAuxiliaryModalsModel` 打开全局搜索模式；`SplitView` 会忽略带 `rootPath` 的 workspace 搜索事件。安装版复测又补出直接 `workspaceSearch` 命令路径漏发事件的问题，已修为先广播 `search.open { action: 'workspace' }` 再打开全局搜索。`npm test -- --run src/domains/commands/registry.test.ts src/domains/editor/components/SplitView.test.tsx`、`npm run build`、`npm run tauri:build:app-smoke` 和替换后的安装版 smoke 均通过；真实 UI 证据见 `screenshots/17-installed-anchor-search-smoke/07-workspace-search-closes-document-search-after-fix.png`。
+- 安装版复测：2026-06-30 追加当前安装版真实复测通过。临时工作区包含根文件和 `notes/secondary-search-target.md`，按 `Cmd+Shift+F` 后打开“全文搜索 工作区”面板，不再打开文档内查找；输入 `NeedleWorkspaceTerm` 后显示根文件和子目录文件两个命中；选中第二个命中后按回车可打开 `notes/secondary-search-target.md`。证据见 `screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png` 和 `screenshots/24-installed-workspace-search-menu-smoke/02-workspace-search-result-opened.png`。
 
 ## 导出
 
@@ -972,7 +973,8 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png`
 - 建议修复方向：检查 Tauri/macOS menu 构建逻辑，确保窗口创建后注册完整应用菜单；同时消除“文件 > 新建文稿”和“窗口 > 新建窗口”的语义重复。
 - 验收标准：系统菜单栏 `File` 可见新建文稿、打开文件、打开文件夹、最近打开、保存、另存为、关闭文稿等入口；各入口行为与窗口内菜单一致。
-- 修复进展：2026-06-30 源码已在 Tauri setup 注册原生 app menu，File/Edit/View/Window/Help 暴露 Prism 核心入口；自定义菜单项通过 Tauri event 桥接到现有前端 `command.run` 逻辑。`useAppCommandContext` 已补 native menu event 回归测试，`cargo check` 通过；待换包后用 macOS 系统菜单真实复测。
+- 修复进展：2026-06-30 源码已在 Tauri setup 注册原生 app menu，File/Edit/View/Window/Help 暴露 Prism 核心入口；自定义菜单项通过 Tauri event 桥接到现有前端 `command.run` 逻辑。`useAppCommandContext` 已补 native menu event 回归测试，`cargo check` 通过。
+- 安装版复测：2026-06-30 已在替换后的 `/Applications/Prism.app` 真实复测通过。macOS 系统菜单栏 `File` 显示 `新建文稿`、`新建窗口`、`打开文件...`、`打开文件夹...`、`快速打开...`、`保存`、`另存为...`、`在访达中显示`、`关闭文稿`，不再只有 `Close Window / Close All`。证据见 `screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png`。
 
 ### P1-PRINT-001 打印入口未暴露，快捷键无反应
 
