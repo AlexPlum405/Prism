@@ -61,6 +61,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 追加 `P0-FILE-003` dirty 外部修改冲突专项回归：第一次安装版复测 `PRISM-CU-247` 仍复现静默合并，定位为 snapshot 不完整或未变化时外部监测提前 return，内容基线兜底未执行。随后源码新增 `lastSavedContent` 内容基线，dirty 外部监测和 auto-save 保存前均用磁盘内容与基线比对兜底；重新打包替换 `/Applications/Prism.app` 后，`PRISM-CU-249` 真实 UI 复测确认出现“文件冲突”弹窗，提供重新加载、另存为、覆盖三个处理入口，编辑区保留本地未保存内容。验证通过：文档安全 Vitest 3 文件 / 26 条断言、`npm run build`、干净 worktree `npm run tauri:build:app-smoke`、替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
 
+2026-06-30 追加 `P0-DIAGNOSTICS-002` 排版诊断入口安装版复测：打开 `real-typography-diagnostics.md` 后，状态栏显示“排版”入口，点击后入口变为 `TYPO 14` 并打开“排版提示”面板；AX 树显示 14 个排版提示，覆盖间距、标点、连续空行和标题层级跳级，并提供逐条定位动作。证据见 `PRISM-CU-250/251`。
+
 ## 执行统计
 
 - 总用例：168
@@ -76,10 +78,10 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1 执行：Pass 29 / Fail 14 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：361
-- Manifest 真实 Computer Use 截图引用：206
+- 当前截图文件总数：363
+- Manifest 真实 Computer Use 截图引用：208
 - Pipeline/环境证据截图：9
-- 真实 Computer Use 截图：206（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`）
+- 真实 Computer Use 截图：208（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`）
 - 单元/集成测试批次：6
 - 单元/集成测试文件通过：56
 - 单元/集成测试断言通过：510
@@ -153,7 +155,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。
 5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版 smoke 与 `PRISM-CU-239` 已覆盖启动默认文档；新建窗口仍待原用例单独复测。
 6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。2026-06-30 已重新打包替换安装版，`PRISM-CU-249` 真实 UI 复测确认冲突弹窗和处理入口可见。
-7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。
+7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。2026-06-30 安装版真实复测 `PRISM-CU-250/251` 确认入口可见且面板可打开。
 8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。
 9. P0-EDITOR-005：图片剪贴板粘贴未进入资产管线，无法从剪贴板直接插入图片。
 10. P1-MENU-002：原生 macOS File 菜单缺少 Prism 核心文件入口。

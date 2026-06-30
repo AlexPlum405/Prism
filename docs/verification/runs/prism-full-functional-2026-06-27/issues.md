@@ -551,6 +551,7 @@ Bundle ID：com.prism.editor.v1
   - `src/domains/workspace/components/StatusBar.tsx`
 - 备注：这不是选择器问题。图片/链接诊断同轮真实复测可通过 `ERROR 3` 直接打开，见 `PRISM-CU-160`；缺失范围收敛到 Typography 入口未渲染。
 - 修复进展：2026-06-30 源码已在 `StatusBar` 解构并渲染 Typography 入口：Markdown 文档下显示 `TYPO n` 或 `排版`，并且不计入 `ERROR`；纯文本文档隐藏。`StatusBar.test.tsx` 和 `useDocumentDiagnosticsModel` 相关测试通过；待换包后真实点击排版面板复测。
+- 安装版复测：2026-06-30 已在替换后的 `/Applications/Prism.app` 真实复测通过。`PRISM-CU-250` 确认状态栏显示“排版”入口；`PRISM-CU-251` 确认点击后打开“排版提示”面板，AX 树显示 14 个排版提示，覆盖间距、标点、连续空行和标题层级跳级，并提供逐条定位动作。
 
 ### P2-DIAGNOSTICS-003 补齐缺失图片文件后诊断不自动刷新
 
