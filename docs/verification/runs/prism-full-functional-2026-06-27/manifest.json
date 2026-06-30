@@ -5706,13 +5706,18 @@
       "steps": "预览、HTML/PDF/PNG/DOCX 导出",
       "expected": "预览和导出节点完整，主题一致，无空白图和裁切",
       "automationHint": "单元 + 手工导出",
-      "screenshot": "screenshots/05-preview-rendering/PRISM-FF-042-mermaid-mermaid.png",
-      "status": "Fail",
-      "actual": "Mermaid 流程图视觉上渲染，但控制台持续出现 transform NaN 错误；不满足“无渲染错误”标准。",
-      "issueRef": "P0-PREVIEW-001",
-      "notes": "需原生 Tauri WebView 恢复后复核；当前为 browser mock。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-123-complex-diagrams-preview-mermaid-window.png",
+      "status": "Pass",
+      "actual": "真实 App 复杂图表复测通过：Mermaid flowchart 在预览中完整可见，非源码、空白或失败块；复杂导出产物中 Mermaid 也以图像/SVG 形式保留。早期 browser mock 的 transform NaN 控制台噪音不再作为真实 App 当前 Fail。",
+      "issueRef": "",
+      "notes": "旧 browser mock 截图和 console 失败证据保留；真实 App 通过证据见 PRISM-CU-123 和 export-artifact-validation.log。",
       "screenshots": [
-        "screenshots/05-preview-rendering/PRISM-FF-042-mermaid-mermaid.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-123-complex-diagrams-preview-mermaid-window.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 复杂图表预览与导出补测通过 Mermaid 可见性验收。",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-artifact-validation.log"
       ]
     },
     {
@@ -5744,13 +5749,19 @@
       "steps": "预览和导出",
       "expected": "思维导图完整渲染，颜色随主题，导出不退化成源码",
       "automationHint": "`markmap.test.ts`",
-      "screenshot": "screenshots/05-preview-rendering/PRISM-FF-044-markmap-markmap.png",
-      "status": "Fail",
-      "actual": "Markmap 视觉上渲染，但控制台持续出现 transform NaN 错误，且同屏暴露 PlantUML 失败块。",
-      "issueRef": "P0-PREVIEW-001",
-      "notes": "需原生 Tauri WebView 恢复后复核。",
+      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-125-complex-diagrams-preview-markmap-window.png",
+      "status": "Pass",
+      "actual": "真实 App 复杂图表复测通过：Markmap 思维导图在预览中完整可见，节点与分支可读；复杂导出产物第 2 页 Markmap 区域完整可见。早期 browser mock 的 transform NaN 控制台噪音不再作为真实 App 当前 Fail。",
+      "issueRef": "",
+      "notes": "旧 browser mock 截图和 console 失败证据保留；真实 App 通过证据见 PRISM-CU-125、PRISM-CU-139-P2 和 export-artifact-validation.log。PDF 第 1 页孤立标题仍由 P2-EXPORT-002 单独跟踪。",
       "screenshots": [
-        "screenshots/05-preview-rendering/PRISM-FF-044-markmap-markmap.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-125-complex-diagrams-preview-markmap-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-139-complex-export-pdf-page-2.png"
+      ],
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 复杂图表预览与导出补测通过 Markmap 可见性验收。",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-artifact-validation.log"
       ]
     },
     {
@@ -8398,11 +8409,11 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T02:32:00+08:00",
+  "generatedAt": "2026-07-01T02:40:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 121,
-    "Fail": 17,
+    "Pass": 123,
+    "Fail": 15,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 419,
@@ -10270,6 +10281,24 @@
         "git diff --check passed before the previous source-fix commit; this batch requires manifest/report consistency checks only."
       ],
       "notes": "Closed stale historical P0 Fail records whose corresponding issues already had installed-app post-fix evidence. Explicit URL file/folder open and graph rendering fidelity remain open because this batch did not add direct evidence for those paths."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P0-PREVIEW-001"
+      ],
+      "evidence": [
+        "PRISM-FF-042",
+        "PRISM-FF-044",
+        "PRISM-CU-123",
+        "PRISM-CU-125",
+        "PRISM-CU-139-P2",
+        "logs/computer-use-real-app/export-artifact-validation.log"
+      ],
+      "tests": [
+        "No new source changes; reconciled stale browser-mock Fail status against existing real installed-app evidence."
+      ],
+      "notes": "Mermaid and Markmap are marked Pass based on real Prism preview/export evidence. PlantUML remains Fail because real app evidence still shows missing node text."
     }
   ],
   "appSmokeRuns": [

@@ -41,6 +41,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 批量闭环历史 P0 Fail：依据既有安装版 post-fix 证据，把默认指南启动/新窗口、系统打开文本文件、外部修改冲突、基础剪贴板、图片粘贴、默认指南诊断、Typography 诊断、反链/图谱和设置六分区相关用例从历史 Fail 改为 Pass。此次不新增源码改动，只同步 manifest/report 状态；显式 URL 打开文件/文件夹和图表渲染保真仍保持 Fail，等待专项验证。
 
+2026-07-01 继续闭环图表历史 Fail：真实 `/Applications/Prism.app` 复杂图表复测已证明 Mermaid 和 Markmap 在预览中完整可见，导出产物中也保留图像内容；早期 browser mock 的 transform NaN 控制台噪音不再作为真实 App 当前 Fail。`PRISM-FF-042/044` 改为 Pass。PlantUML 仍保持 Fail，因为真实证据 `PRISM-CU-124/137/139-P1` 仍显示顶部 `Prism` 节点文字缺失。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -96,11 +98,11 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：121
-- Fail：17
+- Pass：123
+- Fail：15
 - Blocked：30
 - Not Run：0
-- P0 执行：Pass 82 / Fail 5 / Blocked 1 / Not Run 0
+- P0 执行：Pass 84 / Fail 3 / Blocked 1 / Not Run 0
 - P1 执行：Pass 32 / Fail 11 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
