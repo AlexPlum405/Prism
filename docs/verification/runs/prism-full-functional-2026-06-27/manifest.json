@@ -4936,16 +4936,21 @@
       "steps": "点击新建文稿",
       "expected": "不打开新窗口；提示需要工作区或位置",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "代码层自动化复跑 registry.test.ts 仍失败：runCommand(\"new\") 后 createNewDocument 未被调用。",
-      "issueRef": "P0-COMMAND-001",
-      "notes": "失败与“文件 > 新建文稿”语义直接相关；本轮只记录不修复。",
+      "status": "Pass",
+      "actual": "当前产品语义已修正并复核：new 命令不会创建内存 Untitled 文稿，也不会打开新窗口；有当前文档路径时在当前目录触发 newFile，无当前文档但有工作区时在工作区根目录触发 newFile，无目标目录时提示“当前没有打开的工作区”且不会请求保存路径。",
+      "issueRef": "",
+      "notes": "2026-07-01 复跑 registry.test.ts 与 fileCommands.test.ts 通过；证据：logs/unit-tests/command-new-registry-20260701.log。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-012-case-12.png",
       "unitTestEvidence": [
         "logs/unit-tests/export-settings-theme-commands.log",
-        "logs/unit-tests/registry-rerun.log"
+        "logs/unit-tests/registry-rerun.log",
+        "logs/unit-tests/command-new-registry-20260701.log"
       ],
-      "automationResult": "Unit Fail"
+      "automationResult": "Pass",
+      "automationActual": "npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/categories/fileCommands.test.ts 通过，2 个测试文件 / 40 条断言。",
+      "logEvidence": [
+        "logs/unit-tests/command-new-registry-20260701.log"
+      ]
     },
     {
       "id": "PRISM-FF-013",
@@ -6525,21 +6530,23 @@
       "expected": "平台显示和触发匹配；冲突命令不误触",
       "automationHint": "`platform.test.ts`",
       "screenshot": "screenshots/08-command-search/PRISM-FF-086-case-86.png",
-      "status": "Fail",
-      "actual": "命令注册/快捷键相关自动化部分失败：registry.test.ts 单独复跑中 `new` 命令未触发 createNewDocument，和 P0-COMMAND-001 一致；真实 UI 未继续扩大快捷键覆盖。",
-      "issueRef": "P0-COMMAND-001",
-      "notes": "证据：logs/unit-tests/registry-rerun.log、logs/unit-tests/export-settings-theme-commands.log。该状态同步已有问题记录，不新增截图。",
+      "status": "Pass",
+      "actual": "命令注册和快捷键相关自动化中，new 命令当前按产品语义触发 newFile 路径，且不会误触 createNewDocument、openPrismWindow 或保存路径请求；相关 registry/fileCommands 测试已通过。",
+      "issueRef": "",
+      "notes": "旧 registry-rerun.log 保留为 pre-fix 失败证据；修复后通过证据见 logs/unit-tests/command-new-registry-20260701.log。",
       "screenshots": [
         "screenshots/08-command-search/PRISM-FF-086-case-86.png"
       ],
       "unitTestEvidence": [
-        "logs/unit-tests/export-settings-theme-commands.log"
+        "logs/unit-tests/export-settings-theme-commands.log",
+        "logs/unit-tests/command-new-registry-20260701.log"
       ],
-      "automationResult": "Partial Unit Fail",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "automationResult": "Pass",
+      "automationActual": "npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/categories/fileCommands.test.ts 通过，2 个测试文件 / 40 条断言。",
       "logEvidence": [
         "logs/unit-tests/registry-rerun.log",
-        "logs/unit-tests/export-settings-theme-commands.log"
+        "logs/unit-tests/export-settings-theme-commands.log",
+        "logs/unit-tests/command-new-registry-20260701.log"
       ]
     },
     {
@@ -8269,8 +8276,8 @@
   "generatedAt": "2026-06-30T23:47:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 96,
-    "Fail": 42,
+    "Pass": 98,
+    "Fail": 40,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 414,
@@ -9734,6 +9741,20 @@
         "logs/unit-tests/export-frontmatter-toc-20260701.log"
       ],
       "notes": "Covers nested Front Matter export overrides, export.margin narrow alias, resolved export toc, and actual HTML TOC markup. tauri build produced Prism.app and then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured; the produced app bundle was installed for real UI retest."
+    },
+    {
+      "id": "command-new-registry-20260701",
+      "status": "Pass",
+      "testFiles": 2,
+      "testsPassed": 40,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/categories/fileCommands.test.ts"
+      ],
+      "logs": [
+        "logs/unit-tests/command-new-registry-20260701.log"
+      ],
+      "notes": "Covers current New Document command semantics: create file beside current document or at workspace root, do not create Untitled in-memory document, do not open a new window, and show no-workspace toast when no target folder exists."
     }
   ],
   "sourceFixBatches": [
@@ -10023,6 +10044,21 @@
         "npm run tauri:build -- --bundles app produced Prism.app; updater signing failed because TAURI_SIGNING_PRIVATE_KEY is not configured"
       ],
       "notes": "Front Matter export parser now supports nested export.* fields and maps export.margin: narrow to compact. Installed-app retest confirms export.toc generates actual HTML TOC markup and heading anchors."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P0-COMMAND-001"
+      ],
+      "evidence": [
+        "PRISM-FF-012",
+        "PRISM-FF-086",
+        "logs/unit-tests/command-new-registry-20260701.log"
+      ],
+      "tests": [
+        "npm test -- --run src/domains/commands/registry.test.ts src/domains/commands/categories/fileCommands.test.ts passed"
+      ],
+      "notes": "No new source edit was required in this batch; current code and tests already reflect the corrected File > New Document semantics. Manifest old Fail records were updated to the verified current behavior."
     }
   ],
   "appSmokeRuns": [

@@ -61,6 +61,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 修复 `PRISM-FF-078 / P0-EXPORT-006` Front Matter 嵌套导出覆盖：原解析器只读取顶层 `toc/template/paper/margin`，导致 fixture 中的 `export.toc: true` 被忽略。源码已同时支持嵌套 `export.template/export.paper/export.margin/export.toc`，并将 `export.margin: narrow` 兼容映射为 `compact`。重新打包替换 `/Applications/Prism.app` 后，真实安装版导出 `real-frontmatter-export.md` 通过：HTML 产物包含 `prism-export-toc` nav、`#front-matter-export-fixture` 和 `#section-one` 锚点。证据见 `PRISM-CU-275`、`screenshots/29-installed-frontmatter-export-toc-smoke/` 和 `logs/computer-use-real-app/frontmatter-export-html-check-20260701.log`。
 
+2026-07-01 闭环 `PRISM-FF-012/086 / P0-COMMAND-001` 新建文稿命令验收：当前产品语义是 `new` 在当前文档目录或工作区根目录触发 `newFile`，没有目标目录时提示“当前没有打开的工作区”，不会创建内存 Untitled，也不会打开新窗口。复跑 `src/domains/commands/registry.test.ts` 和 `src/domains/commands/categories/fileCommands.test.ts` 通过 2 个测试文件 / 40 条断言，旧 Fail 改为 Pass。证据见 `logs/unit-tests/command-new-registry-20260701.log`。
+
 2026-06-30 源码修复批次已覆盖本轮 P0/P1 中的启动/系统打开文本文件、dirty 外部修改冲突、Typography 入口、基础剪贴板、图片粘贴、Selection callout、选区右键、工作区搜索、原生 macOS File 菜单和窗口菜单路径。自动化验证已通过：相关 Vitest 批次 17 个文件 / 190 条断言通过，`cargo check` 通过，`npm run build` 通过，`git diff --check` 通过。随后已分批重新打包替换 `/Applications/Prism.app` 并补充安装版真实 UI 复测；历史 Fail 证据保留为 pre-fix 记录，修复后 Pass 证据以 `PRISM-CU-*` delta 追加。
 
 2026-06-30 追加 `P0-FILE-003` dirty 外部修改冲突专项回归：第一次安装版复测 `PRISM-CU-247` 仍复现静默合并，定位为 snapshot 不完整或未变化时外部监测提前 return，内容基线兜底未执行。随后源码新增 `lastSavedContent` 内容基线，dirty 外部监测和 auto-save 保存前均用磁盘内容与基线比对兜底；重新打包替换 `/Applications/Prism.app` 后，`PRISM-CU-249` 真实 UI 复测确认出现“文件冲突”弹窗，提供重新加载、另存为、覆盖三个处理入口，编辑区保留本地未保存内容。验证通过：文档安全 Vitest 3 文件 / 26 条断言、`npm run build`、干净 worktree `npm run tauri:build:app-smoke`、替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
@@ -90,11 +92,11 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：96
-- Fail：42
+- Pass：98
+- Fail：40
 - Blocked：30
 - Not Run：0
-- P0 执行：Pass 59 / Fail 28 / Blocked 1 / Not Run 0
+- P0 执行：Pass 61 / Fail 26 / Blocked 1 / Not Run 0
 - P1 执行：Pass 30 / Fail 13 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
@@ -102,9 +104,9 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - Manifest 真实 Computer Use 截图引用：232
 - Pipeline/环境证据截图：9
 - 真实 Computer Use/安装版 UI 截图：232（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`）
-- 单元/集成测试批次：8
-- 单元/集成测试文件通过：61
-- 单元/集成测试断言通过：659
+- 单元/集成测试批次：9
+- 单元/集成测试文件通过：63
+- 单元/集成测试断言通过：699
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已重新打包后安装版真实复测通过，历史失败证据保留为 pre-fix 记录

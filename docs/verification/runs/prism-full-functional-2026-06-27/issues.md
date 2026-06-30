@@ -642,9 +642,10 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
   - `logs/unit-tests/export-settings-theme-commands.log`
   - `logs/unit-tests/registry-rerun.log`
+  - `logs/unit-tests/command-new-registry-20260701.log`
   - `src/domains/commands/registry.test.ts:1500`
 - 备注：这与用户之前指出“文件 > 新建文稿”和“新建窗口”语义重复/混淆的问题相关。本轮只记录，不修复。
-- 修复进展：2026-06-30 测试口径已修正为当前产品语义：`new` 不再创建内存中的 Untitled 文稿，而是在当前文档目录或工作区根目录触发 `newFile`；无目标目录时提示“当前没有打开的工作区”，不会误触保存路径请求。`fileCommands` 与 `registry` 测试通过。
+- 修复进展：2026-06-30 测试口径已修正为当前产品语义：`new` 不再创建内存中的 Untitled 文稿，而是在当前文档目录或工作区根目录触发 `newFile`；无目标目录时提示“当前没有打开的工作区”，不会误触保存路径请求。2026-07-01 复跑 `registry.test.ts` 与 `fileCommands.test.ts` 通过 2 个测试文件 / 40 条断言，旧 `PRISM-FF-012/086` 标记为 Pass。
 
 ### P1-COMMAND-002 自绘菜单/上下文菜单对 Escape 关闭响应不一致
 
