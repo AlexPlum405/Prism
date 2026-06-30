@@ -557,7 +557,7 @@ Bundle ID：com.prism.editor.v1
   - `fixtures/computer-use-real-app/real-typography-diagnostics.md`
   - `src/domains/workspace/components/StatusBar.tsx`
 - 备注：这不是选择器问题。图片/链接诊断同轮真实复测可通过 `ERROR 3` 直接打开，见 `PRISM-CU-160`；缺失范围收敛到 Typography 入口未渲染。
-- 修复进展：2026-06-30 源码已在 `StatusBar` 解构并渲染 Typography 入口：Markdown 文档下显示 `TYPO n` 或 `排版`，并且不计入 `ERROR`；纯文本文档隐藏。`StatusBar.test.tsx` 和 `useDocumentDiagnosticsModel` 相关测试通过；待换包后真实点击排版面板复测。
+- 修复进展：2026-06-30 源码已在 `StatusBar` 解构并渲染 Typography 入口：Markdown 文档下显示 `TYPO n` 或 `排版`，并且不计入 `ERROR`；纯文本文档隐藏。`StatusBar.test.tsx` 和 `useDocumentDiagnosticsModel` 相关测试通过。
 - 安装版复测：2026-06-30 已在替换后的 `/Applications/Prism.app` 真实复测通过。`PRISM-CU-250` 确认状态栏显示“排版”入口；`PRISM-CU-251` 确认点击后打开“排版提示”面板，AX 树显示 14 个排版提示，覆盖间距、标点、连续空行和标题层级跳级，并提供逐条定位动作。
 
 ### P2-DIAGNOSTICS-003 补齐缺失图片文件后诊断不自动刷新
@@ -1056,7 +1056,7 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log`
 - 建议修复方向：检查自定义标题栏与 Tauri/macOS 窗口控制绑定，确保交通灯、原生 Window 菜单和快捷键都调用同一窗口 API；避免编辑器快捷键拦截系统 `Cmd+M`。
 - 验收标准：黄灯、`Cmd+M`、`Window > Minimize` 均能最小化；Dock/open 恢复后仍显示同一文档；Zoom/全屏动作改变窗口状态并可恢复。
-- 修复进展：2026-06-30 源码已让原生 Window 菜单的最小化、缩放、全屏走 Rust/Tauri 当前 Prism 文档窗口路径，不依赖前端焦点快捷键；macOS close/reopen 生命周期也已扩展到 `main` 和 `prism-*` 文档窗口。`cargo check` 通过；交通灯和系统窗口状态仍需换包后真实复测。
+- 修复进展：2026-06-30 已重新打包并替换 `/Applications/Prism.app`，安装版真实复测通过。主窗口和动态新窗口均显式启用 `minimizable/maximizable/closable`；原生 `Window` 菜单的最小化、缩放、全屏改用 Tauri/macOS `PredefinedMenuItem`，不再由 Prism 自定义事件挑选窗口。`PRISM-CU-262` 确认 `Cmd+M` 后 `AXMinimized=true`；`PRISM-CU-264` 确认 `Window > 最小化` 后 `AXMinimized=true`；`PRISM-CU-265` 确认 `Window > 缩放` 将窗口从 `1100x760` 改为 `1496x852`。验证通过：相关 Vitest 4 文件 / 46 条断言、`cargo check`、`npm run build`、安装版 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
 
 ### P1-WINDOW-002 Close Window / reopen 生命周期状态不完整
 
@@ -1080,6 +1080,6 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/window-close-reopen-20260630.log`
 - 建议修复方向：梳理 Tauri window close/reopen 事件，统一隐藏、关闭、新建主窗口策略；记录/清理内部窗口，避免 Window 菜单和 CGWindowList 出现残留状态。
 - 验收标准：`Close Window` 后窗口状态明确；Dock/open reopen 后主窗口出现且只保留预期窗口；当前文档、工作区和标题栏状态一致。
-- 修复进展：2026-06-30 源码已将 macOS close/reopen 处理从仅 `main` 窗口扩展到 `main` 与 `prism-*` 文档窗口，关闭时 prevent_close + hide，reopen/opened 时 show/unminimize/focus 首选 Prism 窗口。`cargo check` 通过；待换包后真实复测 on-screen 窗口数量和 Dock reopen。
+- 修复进展：2026-06-30 已重新打包并替换 `/Applications/Prism.app`，安装版真实复测通过。红色关闭按钮后 Prism 进程仍在且窗口数变为 `0`，符合 macOS hide-on-close 策略；随后 `open -a /Applications/Prism.app` 恢复为 `1` 个窗口且 `AXMinimized=false`。证据见 `PRISM-CU-266/267` 与 `logs/computer-use-real-app/window-lifecycle-installed-retest-20260630.md`。
 
 ## Windows/Linux 待真机回填

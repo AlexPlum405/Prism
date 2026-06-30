@@ -11,17 +11,17 @@ Bundle ID：com.prism.editor.v1
 
 测试继续推进，并在 2026-06-29 恢复了真实 `/Applications/Prism.app` + Computer Use 验证。旧结论“Computer Use 不可用、真实 App 完全不可测”不再成立：本轮真实窗口中已验证编辑/预览/分栏、快速打开、全文搜索、替换、设置六个分区、完整主菜单、文件树菜单、帮助弹窗、知识面板、图表预览、任务列表与脚注等功能。
 
-截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 `screenshots/15-computer-use-real-app/` 内有 195 张真实 Prism/导出产物/Finder 截图，并已全部登记到 `manifest.json` 的 `computerUseRealAppEvidence`。
+截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 224 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续 `17` 到 `25` 的安装版专项截图目录。
 
 2026-06-29 继续补测文件类型与导出：Markdown fixture 可正常打开；但真实 App 通过系统路径打开 JSON/SQL/TXT 会进入空白白屏窗口，`PRISM-FF-008` 已从 browser mock Pass 改为真实 App Fail。错误文档 preflight 已真实阻断 HTML 导出；干净 Markdown fixture 的 HTML/PDF/PNG/DOCX 四种真实导出已完成基础验收，PNG 保持 `极致 4x` 输出为 `4160x4800`，DOCX 通过 zip 结构和 `textutil` 正文提取校验。
 
 2026-06-29 追加复杂图表导出补测：`real-complex-diagrams-export.md` 覆盖 Mermaid、PlantUML、Markmap、本地 SVG、表格和数学公式；HTML/PDF/PNG/DOCX 均通过真实 Prism 导出并生成产物。PNG 为 `4108x11072`，保持 4x 宽度；PDF 为 2 页 A4；DOCX 为有效 Office Open XML 且包内含图表与公式媒体。该补测发现 PlantUML 顶部 `Prism` 节点文字在预览与导出中缺失，以及 PDF 孤立标题分页问题。真实 App 中 `Shift+F12` 可打开 Web Inspector，DevTools 用例从 browser mock 未覆盖修正为真实 App Pass；打印用例真实复测失败，`Cmd+P` 和文件菜单均未暴露打印；帮助菜单的 Markdown 参考外链已打开 Chrome 参考页面，剩余帮助外链尚待继续复测。
 
-`P0-STARTUP-002` 保留为窗口生命周期待复测问题：此前从临时文件切回默认指南后曾出现“进程存在但窗口数为 0”的状态；但本轮开始时真实 Prism 窗口已恢复，可继续执行 UI 测试。后续需要单独设计非破坏性启动/新窗口复测，不再把它当作当前测试会话的活动阻塞。
+`P0-STARTUP-002` 的历史“进程存在但窗口数为 0”问题已通过 2026-06-30 窗口生命周期专项重新验证：红色关闭按钮后窗口数变为 0，`open -a /Applications/Prism.app` 可恢复为 1 个窗口。启动/新窗口默认指南仍按 `P0-STARTUP-003` 单独跟踪。
 
 Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可用于视觉参考和宣传素材初筛，但不能替代真实 Tauri WebView / macOS App 验证。报告中凡标注 browser mock 的 Pass，都需要与真实 App 证据区分。
 
-2026-06-29 20:53 后续 UI 测试暂停在执行环境层面：macOS 图形会话已锁屏，`ioreg` 显示 `CGSSessionScreenIsLocked=Yes`，Computer Use 对 Prism/Finder/Chrome 均返回 `cgWindowNotFound`。这不是 Prism 产品问题，已记录到 `logs/computer-use-real-app/screen-locked-blocker-2026-06-29.log`；当前已有旧 `caffeinate` 进程仅防系统睡眠，尝试在锁屏状态下新建 `caffeinate -dims` 未能保持运行，状态记录见 `logs/computer-use-real-app/caffeinate-ui-test.status`。继续真实 UI 测试前需要先人工解锁图形会话。
+2026-06-29 20:53 曾因 macOS 图形会话锁屏暂停 UI 测试，记录见 `logs/computer-use-real-app/screen-locked-blocker-2026-06-29.log`；该问题属于执行环境历史阻塞，不是 Prism 产品问题。2026-06-30 后真实 App 复测已恢复。
 
 2026-06-30 09:34 图形会话已解锁，Computer Use 对 Prism 恢复可读。本轮继续补测帮助外链：Markdown 参考、GitHub、反馈入口可打开对应页面；`Prism 迁移帮助` 打开 GitHub `File not found`，新增 `P1-HELP-002`。
 
@@ -57,7 +57,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 收尾补测剩余可安全执行项：新增文件 `real-index-incremental-20260630.md` 后，不重启 App 重新激活可在文件树看到新文件，`PRISM-FF-117` 标记 Pass，但即时刷新仍需后续关注；真实导出 `real-links-click.pdf` 成功，平台 PDF capture 可用，但 PDF 内没有 `/URI`、`/Annots`、`/Link`，`PRISM-FF-122` 标记 Fail；Finder 中 `.md` 文件显示 Markdown 文档图标，`PRISM-FF-146` 标记 Pass；macOS 最小化、缩放和 close/reopen 生命周期未按标准行为变化，`PRISM-FF-140/141` 标记 Fail。删除、重命名父文件夹、用户主题包、字体导入、设置错误、断网、Worker/内存/超大工作区等需要破坏性操作、真实平台或注入故障的项目均标记 Blocked，并写明原因。
 
-2026-06-30 源码修复批次已覆盖本轮 P0/P1 中的启动/系统打开文本文件、dirty 外部修改冲突、Typography 入口、基础剪贴板、图片粘贴、Selection callout、选区右键、工作区搜索、原生 macOS File 菜单和窗口菜单路径。自动化验证已通过：相关 Vitest 批次 17 个文件 / 190 条断言通过，`cargo check` 通过，`npm run build` 通过，`git diff --check` 通过。由于尚未重新打包替换 `/Applications/Prism.app` 并做真实 UI 复测，统计中的真实 App Fail 数暂不改为 Pass，相关 issue 记录为“源码已修复，待换包回归”。
+2026-06-30 源码修复批次已覆盖本轮 P0/P1 中的启动/系统打开文本文件、dirty 外部修改冲突、Typography 入口、基础剪贴板、图片粘贴、Selection callout、选区右键、工作区搜索、原生 macOS File 菜单和窗口菜单路径。自动化验证已通过：相关 Vitest 批次 17 个文件 / 190 条断言通过，`cargo check` 通过，`npm run build` 通过，`git diff --check` 通过。随后已分批重新打包替换 `/Applications/Prism.app` 并补充安装版真实 UI 复测；历史 Fail 证据保留为 pre-fix 记录，修复后 Pass 证据以 `PRISM-CU-*` delta 追加。
 
 2026-06-30 追加 `P0-FILE-003` dirty 外部修改冲突专项回归：第一次安装版复测 `PRISM-CU-247` 仍复现静默合并，定位为 snapshot 不完整或未变化时外部监测提前 return，内容基线兜底未执行。随后源码新增 `lastSavedContent` 内容基线，dirty 外部监测和 auto-save 保存前均用磁盘内容与基线比对兜底；重新打包替换 `/Applications/Prism.app` 后，`PRISM-CU-249` 真实 UI 复测确认出现“文件冲突”弹窗，提供重新加载、另存为、覆盖三个处理入口，编辑区保留本地未保存内容。验证通过：文档安全 Vitest 3 文件 / 26 条断言、`npm run build`、干净 worktree `npm run tauri:build:app-smoke`、替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
 
@@ -70,6 +70,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 2026-06-30 追加 `P1-EDITOR-006/007` 选区菜单与 callout 安装版复测：真实 UI 中选中两行正文后，右键点击选中文字，`剪切`、`复制`、`链接` 菜单项均为可用状态；继续选择 `块级源码操作 > 选区转警告提示块` 后，选区原地变为 warning callout，保存后的磁盘文件只包含一个 warning callout，未在文末追加空块。证据见 `PRISM-CU-256/257` 和 `screenshots/23-installed-selection-context-smoke/`。
 
 2026-06-30 追加 `P1-SEARCH-001` 与 `P1-MENU-002` 安装版复测：`Cmd+Shift+F` 直接打开“全文搜索 工作区”面板，输入 `NeedleWorkspaceTerm` 后显示根文件和子目录文件两个命中，回车可打开子目录文件；macOS 系统菜单栏 `File` 已显示新建、打开文件、打开文件夹、快速打开、保存、另存为、在访达中显示和关闭文稿等核心入口。证据见 `PRISM-CU-258/259/260` 和 `screenshots/24-installed-workspace-search-menu-smoke/`。
+
+2026-06-30 追加 `P1-WINDOW-001/002` 安装版复测：重新打包替换 `/Applications/Prism.app` 后，`Cmd+M` 和 `Window > 最小化` 均能让当前窗口进入 `AXMinimized=true`，`Window > 缩放` 将窗口从 `1100x760` 改为 `1496x852`；红色关闭按钮后窗口数变为 `0`，再次 `open -a /Applications/Prism.app` 恢复为 `1` 个窗口且未最小化。证据见 `PRISM-CU-261` 到 `PRISM-CU-267`、`screenshots/25-installed-window-lifecycle-smoke/` 和 `logs/computer-use-real-app/window-lifecycle-installed-retest-20260630.md`。
 
 ## 执行统计
 
@@ -86,16 +88,16 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1 执行：Pass 29 / Fail 14 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：392
-- Manifest 真实 Computer Use 截图引用：211
+- 当前截图文件总数：406
+- Manifest 真实 Computer Use 截图引用：224
 - Pipeline/环境证据截图：9
-- 真实 Computer Use 截图：211（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`）
+- 真实 Computer Use/安装版 UI 截图：224（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`）
 - 单元/集成测试批次：6
 - 单元/集成测试文件通过：56
 - 单元/集成测试断言通过：510
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
-- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已真实复测并记录失败
+- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已重新打包后安装版真实复测通过，历史失败证据保留为 pre-fix 记录
 - 浏览器 mock 补充截图：已执行，用于保留前端视觉证据和宣传素材初筛
 - Windows/Linux 真机验证：未执行，保持 Blocked，不伪造结果
 
@@ -213,9 +215,9 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 ## 未覆盖风险
 
-- 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期仍只有源码修复与构建通过证据，待换包后按原窗口生命周期用例单独复测。
+- 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期已完成源码修复、换包和真实安装版复测，后续只需补更细的全屏/多显示器专项。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 manifest 中登记了 217 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 manifest 中登记了 224 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。

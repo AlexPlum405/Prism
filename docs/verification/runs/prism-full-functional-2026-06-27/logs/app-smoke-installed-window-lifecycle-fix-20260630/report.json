@@ -1,0 +1,260 @@
+{
+  "generatedAt": "2026-06-30T15:25:01.958Z",
+  "scope": "full",
+  "appPath": "/Applications/Prism.app",
+  "workspaceDir": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+  "sourceFile": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/app-smoke.md",
+  "targetFile": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/target.md",
+  "startupMarkdownFile": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/中文 路径.markdown",
+  "jsonFile": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/data.json",
+  "sqlFile": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/query.sql",
+  "textFile": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/plain.txt",
+  "marker": "prismappsmoke1782833055073",
+  "configRestoredAfterRun": true,
+  "exportArtifacts": {
+    "command": "npm test -- --run src/domains/export/exportPipeline.test.ts -t \"writes complex export smoke artifacts for all supported formats\"",
+    "outputDir": ".codex-smoke/complex-export/out",
+    "html": {
+      "path": ".codex-smoke/complex-export/out/complex-export.html",
+      "size": 13837,
+      "checks": [
+        "title",
+        "toc",
+        "table",
+        "mermaid",
+        "katex",
+        "image",
+        "citation-placeholder"
+      ]
+    },
+    "pdf": {
+      "path": ".codex-smoke/complex-export/out/complex-export.pdf",
+      "size": 1549,
+      "pageCount": 1,
+      "firstPage": {
+        "width": 595.28,
+        "height": 841.89
+      }
+    },
+    "png": {
+      "path": ".codex-smoke/complex-export/out/complex-export.png",
+      "size": 68,
+      "width": 1,
+      "height": 1,
+      "format": "png"
+    },
+    "docx": {
+      "path": ".codex-smoke/complex-export/out/complex-export.docx",
+      "size": 12809,
+      "mediaFileCount": 2,
+      "checks": [
+        "document.xml",
+        "chinese-title",
+        "code-text",
+        "table-text",
+        "no-mermaid-source-leak",
+        "image-media"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "name": "launch opens .markdown fixture with Chinese space path",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/中文 路径.markdown",
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/中文 路径.markdown",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+        "viewMode": "edit",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1782833057858
+      }
+    },
+    {
+      "name": "launch opens JSON fixture without blank screen",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/data.json",
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/data.json",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+        "viewMode": "edit",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1782833061740
+      }
+    },
+    {
+      "name": "launch opens SQL fixture without blank screen",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/query.sql",
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/query.sql",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+        "viewMode": "edit",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1782833065875
+      }
+    },
+    {
+      "name": "launch opens TXT fixture without blank screen",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/plain.txt",
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/plain.txt",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+        "viewMode": "edit",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1782833069862
+      }
+    },
+    {
+      "name": "launch opens markdown fixture",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/app-smoke.md",
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/app-smoke.md",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+        "viewMode": "edit",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1782833074063
+      }
+    },
+    {
+      "name": "ERROR diagnostic opens from status bar",
+      "status": "pass",
+      "diff": {
+        "changedPixels": 47070,
+        "totalPixels": 3344000,
+        "changedRatio": 0.014075956937799044,
+        "averageDelta": 0.8220796451355632
+      }
+    },
+    {
+      "name": "Cmd+P opens workspace target file",
+      "status": "pass",
+      "diff": {
+        "changedPixels": 203758,
+        "totalPixels": 3344000,
+        "changedRatio": 0.06093241626794258,
+        "averageDelta": 2.8734199561404083
+      },
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/target.md",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+        "viewMode": "edit",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1782833092356
+      }
+    },
+    {
+      "name": "basic edit and Cmd+S save writes fixture file",
+      "status": "pass",
+      "marker": "prismappsmoke1782833055073"
+    },
+    {
+      "name": "export menu opens from status bar",
+      "status": "pass",
+      "diff": {
+        "changedPixels": 58341,
+        "totalPixels": 3344000,
+        "changedRatio": 0.01744647129186603,
+        "averageDelta": 0.8468603468899522
+      }
+    },
+    {
+      "name": "settings center opens with Cmd+,",
+      "status": "pass",
+      "diff": {
+        "changedPixels": 259479,
+        "totalPixels": 3344000,
+        "changedRatio": 0.0775953947368421,
+        "averageDelta": 4.024905402711331
+      }
+    },
+    {
+      "name": "complex export artifacts generated and validated",
+      "status": "pass",
+      "summary": "HTML/PDF/PNG/DOCX",
+      "artifacts": {
+        "command": "npm test -- --run src/domains/export/exportPipeline.test.ts -t \"writes complex export smoke artifacts for all supported formats\"",
+        "outputDir": ".codex-smoke/complex-export/out",
+        "html": {
+          "path": ".codex-smoke/complex-export/out/complex-export.html",
+          "size": 13837,
+          "checks": [
+            "title",
+            "toc",
+            "table",
+            "mermaid",
+            "katex",
+            "image",
+            "citation-placeholder"
+          ]
+        },
+        "pdf": {
+          "path": ".codex-smoke/complex-export/out/complex-export.pdf",
+          "size": 1549,
+          "pageCount": 1,
+          "firstPage": {
+            "width": 595.28,
+            "height": 841.89
+          }
+        },
+        "png": {
+          "path": ".codex-smoke/complex-export/out/complex-export.png",
+          "size": 68,
+          "width": 1,
+          "height": 1,
+          "format": "png"
+        },
+        "docx": {
+          "path": ".codex-smoke/complex-export/out/complex-export.docx",
+          "size": 12809,
+          "mediaFileCount": 2,
+          "checks": [
+            "document.xml",
+            "chinese-title",
+            "code-text",
+            "table-text",
+            "no-mermaid-source-leak",
+            "image-media"
+          ]
+        }
+      }
+    },
+    {
+      "name": "wrote app smoke evidence report",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/evidence/report.json"
+    }
+  ]
+}

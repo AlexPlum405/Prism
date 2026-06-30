@@ -4407,6 +4407,140 @@
       ],
       "expected": "系统菜单栏 File 应暴露新建、打开、保存、另存为和关闭文稿等核心文件工作流入口。",
       "notes": "安装版真实 UI 复测通过；菜单不再退化为仅 Close Window / Close All。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-261",
+      "issueRef": "P1-WINDOW-001",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版窗口生命周期基线",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-261-window-open-before-minimize.png",
+      "actual": "显式激活安装版 Prism 后，前台进程 bundle 为 com.prism.editor.v1，窗口数为 1；Prism 窗口 minimized=false，尺寸 1100x760。",
+      "steps": [
+        "启动并激活 /Applications/Prism.app",
+        "通过 System Events 读取前台进程、窗口数量、AXMinimized 和尺寸",
+        "截图记录基线窗口"
+      ],
+      "expected": "安装版 Prism 应只有一个可见主窗口，且未处于最小化状态。",
+      "notes": "Computer Use get_app_state 在本线程读取 Prism 超时；该证据使用真实安装版 UI、AppleScript accessibility 状态和全屏截图。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-262",
+      "issueRef": "P1-WINDOW-001",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版 Cmd+M 最小化",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-262-window-after-cmd-m.png",
+      "actual": "按 Cmd+M 后 Prism 窗口 AXMinimized=true，窗口尺寸保持 1100x760。",
+      "steps": [
+        "激活安装版 Prism 窗口",
+        "发送 Cmd+M",
+        "读取 AXMinimized 并截图"
+      ],
+      "expected": "Cmd+M 应按 macOS 标准行为最小化当前 Prism 文档窗口。",
+      "notes": "此前同路径复测显示 minimized=false；本次换包后通过。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-263",
+      "issueRef": "P1-WINDOW-001",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版最小化后恢复",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-263-window-restored-after-cmd-m.png",
+      "actual": "通过 open -a 和 activate 恢复后，Prism 窗口数为 1，AXMinimized=false。",
+      "steps": [
+        "在 Cmd+M 最小化后执行 open -a /Applications/Prism.app",
+        "激活 Prism",
+        "读取窗口状态并截图"
+      ],
+      "expected": "最小化后重新打开 Prism 应恢复同一个文档窗口，不应丢失窗口或生成多余窗口。",
+      "notes": "恢复路径未产生之前观察到的多窗口残留。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-264",
+      "issueRef": "P1-WINDOW-001",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版 Window 菜单最小化",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-264-window-after-menu-minimize.png",
+      "actual": "点击 macOS 系统菜单 Window > 最小化 后，Prism 窗口 AXMinimized=true。",
+      "steps": [
+        "恢复并激活 Prism 窗口",
+        "点击系统菜单 Window > 最小化",
+        "读取 AXMinimized 并截图"
+      ],
+      "expected": "系统 Window 菜单的最小化项应作用于当前 key window。",
+      "notes": "菜单项已改为 Tauri/macOS 预定义最小化项，不再由 Prism 自行挑选窗口。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-265",
+      "issueRef": "P1-WINDOW-001",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版 Window 菜单缩放",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-265-window-after-menu-zoom.png",
+      "actual": "点击 Window > 缩放 后窗口从 1100x760 变为 1496x852，AXMinimized=false。",
+      "steps": [
+        "恢复并激活 Prism 窗口",
+        "记录缩放前尺寸",
+        "点击系统菜单 Window > 缩放",
+        "记录缩放后尺寸并截图"
+      ],
+      "expected": "系统 Window 菜单的缩放项应改变当前 Prism 窗口尺寸，且不应误触发最小化或前端缩放。",
+      "notes": "本次覆盖 Zoom 行为；全屏仍可在后续平台专项中补更细截图。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-266",
+      "issueRef": "P1-WINDOW-002",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版红色关闭按钮隐藏窗口",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-266-window-after-red-close.png",
+      "actual": "点击红色关闭按钮后 Prism 进程仍 frontmost=true，但 AX 窗口数变为 0。",
+      "steps": [
+        "激活安装版 Prism 窗口",
+        "点击窗口左上角红色关闭按钮",
+        "读取 Prism 进程窗口数量并截图"
+      ],
+      "expected": "macOS 关闭按钮应隐藏文档窗口而不是退出应用或留下残留可见窗口。",
+      "notes": "该状态符合当前 Prism 的 macOS hide-on-close 生命周期策略。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "id": "PRISM-CU-267",
+      "issueRef": "P1-WINDOW-002",
+      "area": "macOS 窗口生命周期",
+      "feature": "安装版关闭后 reopen 恢复窗口",
+      "status": "Pass",
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-267-window-restored-after-close-reopen.png",
+      "actual": "关闭后执行 open -a /Applications/Prism.app，Prism 恢复 1 个窗口，AXMinimized=false，尺寸 1496x852。",
+      "steps": [
+        "在红色关闭按钮隐藏窗口后执行 open -a /Applications/Prism.app",
+        "激活 Prism",
+        "读取窗口数量、AXMinimized 和尺寸并截图"
+      ],
+      "expected": "Dock/open reopen 应恢复 Prism 主窗口，状态一致，不应生成残留窗口或保持 0 窗口。",
+      "notes": "此前 close/reopen 从 3 个窗口降到 2 个且状态不完整；本次换包后在单窗口基线下通过。"
     }
   ],
   "testCases": [
@@ -7955,17 +8089,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T23:10:00+08:00",
+  "generatedAt": "2026-06-30T23:30:00+08:00",
   "counts": {
     "total": 168,
     "Pass": 94,
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 399,
-    "manifestScreenshots": 968,
-    "uniqueManifestScreenshots": 422,
-    "computerUseRealAppEvidence": 217
+    "screenshotFiles": 406,
+    "manifestScreenshots": 975,
+    "uniqueManifestScreenshots": 429,
+    "computerUseRealAppEvidence": 224
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9356,6 +9490,20 @@
       "commands": [
         "npm test -- --run src/domains/editor/components/SplitView.test.tsx"
       ]
+    },
+    {
+      "id": "window-lifecycle-source-fix-20260630",
+      "status": "Pass",
+      "testFiles": 4,
+      "testsPassed": 46,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/lib/openWindow.test.ts src-tauri/windowConfig.test.ts src/components/shell/TitleBar.test.tsx src/domains/commands/registry.test.ts",
+        "cargo fmt --manifest-path src-tauri/Cargo.toml",
+        "cargo check --manifest-path src-tauri/Cargo.toml",
+        "npm run build"
+      ],
+      "notes": "tauri build --bundles app produced Prism.app but returned non-zero because TAURI_SIGNING_PRIVATE_KEY is not configured; local bundle was still installed for smoke/retest."
     }
   ],
   "sourceFixBatches": [
@@ -9538,6 +9686,30 @@
         "PRISM-CU-260 confirms the macOS native File menu exposes Prism core file actions"
       ],
       "notes": "No source edits were required in this batch; it records current installed-app evidence for previously rebuilt fixes."
+    },
+    {
+      "id": "source-fix-native-window-lifecycle-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P1-WINDOW-001",
+        "P1-WINDOW-002"
+      ],
+      "verification": [
+        "Window menu now uses Tauri/macOS PredefinedMenuItem minimize, maximize, and fullscreen items instead of Prism custom native-window dispatch",
+        "Main Tauri window config and dynamic WebviewWindow creation explicitly set minimizable, maximizable, and closable to true",
+        "src-tauri/windowConfig.test.ts now asserts document windows remain eligible for native close/minimize/zoom actions",
+        "npm test -- --run src/lib/openWindow.test.ts src-tauri/windowConfig.test.ts src/components/shell/TitleBar.test.tsx src/domains/commands/registry.test.ts passed",
+        "cargo check --manifest-path src-tauri/Cargo.toml passed",
+        "npm run build passed",
+        "Replaced /Applications/Prism.app with rebuilt local Prism.app bundle",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement",
+        "PRISM-CU-262 confirms Cmd+M sets AXMinimized=true",
+        "PRISM-CU-264 confirms Window > 最小化 sets AXMinimized=true",
+        "PRISM-CU-265 confirms Window > 缩放 changes window size from 1100x760 to 1496x852",
+        "PRISM-CU-266/267 confirm red close hides the window and open -a restores one Prism window"
+      ],
+      "notes": "Historical PRISM-FF-140/141 failure entries remain as pre-fix evidence. PRISM-CU-261 through PRISM-CU-267 are the post-fix installed-app pass evidence."
     }
   ],
   "appSmokeRuns": [
@@ -9637,6 +9809,28 @@
       "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
       "report": "logs/app-smoke-installed-image-paste-fix-20260630/report.json",
       "screenshots": "screenshots/22-installed-image-paste-smoke/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
+    },
+    {
+      "id": "installed-app-smoke-window-lifecycle-fix-20260630",
+      "status": "Pass",
+      "date": "2026-06-30",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-window-lifecycle-fix-20260630/report.json",
+      "screenshots": "screenshots/25-installed-window-lifecycle-smoke/",
       "coverage": [
         ".markdown launch with Chinese and space path",
         "JSON launch without blank screen",

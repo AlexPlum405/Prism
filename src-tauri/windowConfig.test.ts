@@ -12,4 +12,17 @@ describe('macOS window hit testing configuration', () => {
       }
     }
   });
+
+  it('keeps macOS document windows eligible for native close, minimize, and zoom actions', () => {
+    const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+    const windows = config.app?.windows ?? [];
+
+    expect(windows.length).toBeGreaterThan(0);
+
+    for (const windowConfig of windows) {
+      expect(windowConfig.closable).toBe(true);
+      expect(windowConfig.minimizable).toBe(true);
+      expect(windowConfig.maximizable).toBe(true);
+    }
+  });
 });
