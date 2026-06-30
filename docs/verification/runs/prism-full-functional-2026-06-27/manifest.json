@@ -4212,6 +4212,72 @@
       ],
       "expected": "点击排版入口后应打开“排版提示”面板，展示类型、位置、原因和处理动作。",
       "notes": "安装版真实 UI 复测通过；面板中可见关闭按钮和逐条定位动作。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/editor-clipboard-retest/real-editor-clipboard-retest-215738.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-EDITOR-004",
+      "id": "PRISM-CU-252",
+      "area": "编辑器与剪贴板",
+      "feature": "安装版复制选区写入系统剪贴板",
+      "status": "Pass",
+      "screenshot": "screenshots/20-installed-editor-clipboard-smoke/03-after-race-fix-copy-selection.png",
+      "actual": "选中 Alpha line for copy paste testing. 后按 Cmd+C，系统 pbpaste 精确返回该选区文本。",
+      "steps": [
+        "打开新的剪贴板回归 Markdown 文件",
+        "选中 Alpha line for copy paste testing.",
+        "截图记录选区与浮动工具条",
+        "按 Cmd+C",
+        "通过 pbpaste 读取系统剪贴板"
+      ],
+      "expected": "复制命令必须把当前编辑器选区写入系统剪贴板。",
+      "notes": "安装版真实 UI 复测通过；剪贴板断言为 match=true。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/editor-clipboard-retest/real-editor-clipboard-retest-215738.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-EDITOR-004",
+      "id": "PRISM-CU-253",
+      "area": "编辑器与剪贴板",
+      "feature": "安装版粘贴系统剪贴板文本到编辑器",
+      "status": "Pass",
+      "screenshot": "screenshots/20-installed-editor-clipboard-smoke/04-after-race-fix-paste-inserted.png",
+      "actual": "在 Beta 行后换行并按 Cmd+V，编辑器出现第二条 Alpha line for copy paste testing.；随后 Cmd+S 保存后磁盘文件中 Alpha 行计数为 2。",
+      "steps": [
+        "将光标放到 Beta line for paste insertion target. 行末",
+        "按 Return 新建一行",
+        "按 Cmd+V 粘贴系统剪贴板内容",
+        "截图记录插入后的编辑器",
+        "按 Cmd+S 并读取磁盘文件内容"
+      ],
+      "expected": "粘贴命令应在光标位置插入系统剪贴板文本，并可正常保存到磁盘。",
+      "notes": "安装版真实 UI 复测通过；保存后 alpha_count=2。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/editor-clipboard-retest/real-editor-clipboard-retest-215738.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P0-EDITOR-004",
+      "id": "PRISM-CU-254",
+      "area": "编辑器与剪贴板",
+      "feature": "安装版剪切选区写入剪贴板并删除正文",
+      "status": "Pass",
+      "screenshot": "screenshots/20-installed-editor-clipboard-smoke/05-after-race-fix-cut-removed-beta.png",
+      "actual": "选中 Beta line for paste insertion target. 后按 Cmd+X，系统 pbpaste 精确返回 Beta 行，编辑器中 Beta 行消失；Cmd+S 保存后磁盘文件 beta_count=0、alpha_count=2。",
+      "steps": [
+        "选中 Beta line for paste insertion target.",
+        "按 Cmd+X",
+        "通过 pbpaste 读取系统剪贴板",
+        "截图记录 Beta 行被删除后的编辑器",
+        "按 Cmd+S 并读取磁盘文件内容"
+      ],
+      "expected": "剪切命令必须把选区写入系统剪贴板，并从编辑器正文删除选区。",
+      "notes": "安装版真实 UI 复测通过；未出现文件冲突误报。"
     }
   ],
   "testCases": [
@@ -7767,10 +7833,10 @@
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 363,
-    "manifestScreenshots": 870,
-    "uniqueManifestScreenshots": 321,
-    "computerUseRealAppEvidence": 208
+    "screenshotFiles": 392,
+    "manifestScreenshots": 962,
+    "uniqueManifestScreenshots": 416,
+    "computerUseRealAppEvidence": 211
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9248,6 +9314,27 @@
         "PRISM-CU-251 confirms clicking the entry opens 排版提示 with 14 diagnostics and item actions"
       ],
       "notes": "This batch records installed-app evidence for a source fix that had already passed unit tests in the previous repair batch."
+    },
+    {
+      "id": "source-fix-saving-race-and-editor-clipboard-retest-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-FILE-003",
+        "P0-EDITOR-004"
+      ],
+      "verification": [
+        "External change monitor now re-reads current document state after inspect and skips conflict promotion if saveStatus became saving or conflict mid-check",
+        "npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/store.test.ts passed",
+        "npm run build passed",
+        "npm run tauri:build:app-smoke passed in clean install worktree",
+        "Replaced /Applications/Prism.app with rebuilt bundle",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed after replacement",
+        "PRISM-CU-252 confirms Cmd+C writes the selected Alpha line to system clipboard",
+        "PRISM-CU-253 confirms Cmd+V inserts clipboard text into the editor and saves to disk",
+        "PRISM-CU-254 confirms Cmd+X writes the selected Beta line to system clipboard and removes it from the document"
+      ],
+      "notes": "This batch closes the installed-app retest loop for P0-EDITOR-004 and fixes a self-save/external-monitor race discovered during the clipboard retest. Historical fail evidence remains as pre-fix evidence."
     }
   ],
   "appSmokeRuns": [
@@ -9303,6 +9390,28 @@
       "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
       "report": "logs/app-smoke-installed-conflict-baseline-fix-20260630/report.json",
       "screenshots": "screenshots/18-installed-conflict-smoke/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
+    },
+    {
+      "id": "installed-app-smoke-saving-race-fix-20260630",
+      "status": "Pass",
+      "date": "2026-06-30",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-saving-race-fix-20260630/report.json",
+      "screenshots": "screenshots/21-installed-app-smoke-saving-race-fix/",
       "coverage": [
         ".markdown launch with Chinese and space path",
         "JSON launch without blank screen",

@@ -142,6 +142,36 @@ describe('useExternalFileChangeMonitor', () => {
     });
   });
 
+  it('does not treat the app own save write as an external conflict when saving starts mid-check', async () => {
+    let resolveStat!: (value: { size: number; mtime: Date }) => void;
+    (stat as ReturnType<typeof vi.fn>).mockReturnValue(new Promise((resolve) => {
+      resolveStat = resolve;
+    }));
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(1000, true));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+
+    useDocumentStore.getState().markSaving('/tmp/a.md');
+
+    await act(async () => {
+      resolveStat({ size: 9, mtime: new Date(2000) });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      isDirty: true,
+      saveStatus: 'saving',
+      saveError: null,
+    });
+  });
+
   it('checks the active document when the page becomes visible again', async () => {
     (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 9, mtime: new Date(2000) });
     useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });

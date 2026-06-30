@@ -40,6 +40,7 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
 
       const activeDocument = useDocumentStore.getState().currentDocument;
       if (!activeDocument?.path || activeDocument.path !== documentPath) return;
+      if (activeDocument.saveStatus === 'saving' || activeDocument.saveStatus === 'conflict') return;
 
       if (activeDocument.isDirty) {
         if (
