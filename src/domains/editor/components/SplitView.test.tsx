@@ -573,6 +573,79 @@ describe('SplitView editor lifecycle', () => {
     }
   });
 
+  it('clears preview search marks when closing document search', async () => {
+    vi.useFakeTimers();
+
+    render(
+      <SplitView
+        content="alpha beta alpha"
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.keyDown(window, {
+      bubbles: true,
+      cancelable: true,
+      code: 'KeyF',
+      key: 'f',
+      metaKey: true,
+    });
+    fireEvent.change(screen.getByPlaceholderText('查找'), { target: { value: 'alpha' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(140);
+      vi.advanceTimersByTime(16);
+    });
+
+    expect(document.querySelectorAll('.preview-search-match')).toHaveLength(2);
+
+    fireEvent.click(screen.getByTitle('完成'));
+
+    expect(screen.queryByPlaceholderText('查找')).toBeNull();
+    expect(document.querySelectorAll('.preview-search-match')).toHaveLength(0);
+  });
+
+  it('closes document search when workspace search opens', async () => {
+    vi.useFakeTimers();
+
+    render(
+      <SplitView
+        content="alpha beta alpha"
+        viewMode="preview"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.keyDown(window, {
+      bubbles: true,
+      cancelable: true,
+      code: 'KeyF',
+      key: 'f',
+      metaKey: true,
+    });
+    fireEvent.change(screen.getByPlaceholderText('查找'), { target: { value: 'alpha' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(140);
+      vi.advanceTimersByTime(16);
+    });
+
+    expect(screen.getByPlaceholderText('查找')).toBeTruthy();
+    expect(document.querySelectorAll('.preview-search-match')).toHaveLength(2);
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-search', {
+        detail: { action: 'workspace', rootPath: '/repo/notes' },
+      }));
+    });
+
+    expect(screen.queryByPlaceholderText('查找')).toBeNull();
+    expect(document.querySelectorAll('.preview-search-match')).toHaveLength(0);
+  });
+
   it('switches from preview to split before opening replace', async () => {
     useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', 'alpha beta alpha');
     useDocumentStore.getState().setViewMode('preview');

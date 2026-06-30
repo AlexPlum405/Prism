@@ -896,6 +896,21 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       }
     }, [getSearchSeed, schedulePreviewSearch]);
 
+    const closeSearch = useCallback(() => {
+      setSearchVisible(false);
+      setSearchParams(DEFAULT_SEARCH_PARAMS);
+      setSearchMatchCount(0);
+      setSearchCurrentMatch(0);
+      searchParamsRef.current = DEFAULT_SEARCH_PARAMS;
+      searchCurrentMatchRef.current = 0;
+      cancelPreviewSearchWork();
+      const preview = previewContainerRef.current;
+      if (preview) clearPreviewSearchMarks(preview);
+      if (viewModeRef.current !== 'preview') {
+        editorRef.current?.execSearch?.('input', DEFAULT_SEARCH_PARAMS);
+      }
+    }, [cancelPreviewSearchWork]);
+
     useEffect(() => {
       const handleGlobalKeyDown = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
@@ -921,14 +936,17 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       };
       window.addEventListener('keydown', handleGlobalKeyDown, true);
       const unsubscribeSearch = onAppEvent('search.open', ({ action, rootPath }) => {
-        if (rootPath || action === 'workspace') return;
+        if (rootPath || action === 'workspace') {
+          closeSearch();
+          return;
+        }
         activateSearch(action === 'replace' ? 'replace' : 'find');
       });
       return () => {
         window.removeEventListener('keydown', handleGlobalKeyDown, true);
         unsubscribeSearch();
       };
-    }, [activateSearch, getPreviewRawSelectedText]);
+    }, [activateSearch, closeSearch, getPreviewRawSelectedText]);
 
     useEffect(() => {
       return onAppEvent('presentation.open', () => {
@@ -1154,7 +1172,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           matchCount={searchMatchCount}
           currentMatch={searchCurrentMatch}
           activationKey={searchActivationKey}
-          onClose={() => setSearchVisible(false)}
+          onClose={closeSearch}
           onSearch={handleSearch}
           onModeChange={setSearchMode}
         />

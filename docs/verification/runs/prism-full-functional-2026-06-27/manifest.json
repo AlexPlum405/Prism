@@ -8813,6 +8813,16 @@
       "commands": [
         "npm test -- --run src/lib/markdownToHtml.test.ts src/domains/editor/extensions/linkDiagnostics.test.ts src/domains/editor/components/PreviewPane.test.tsx"
       ]
+    },
+    {
+      "id": "source-fix-document-search-state-20260630",
+      "status": "Pass",
+      "testFiles": 1,
+      "testsPassed": 27,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/editor/components/SplitView.test.tsx"
+      ]
     }
   ],
   "sourceFixBatches": [
@@ -8861,6 +8871,22 @@
         "npm run build passed"
       ],
       "notes": "Source regression passed. This batch is not yet packaged into /Applications/Prism.app, so historical real-app screenshots remain Fail until install retest."
+    },
+    {
+      "id": "source-fix-document-search-state-20260630",
+      "status": "SourceRegressionPassedPendingInstallRetest",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P1-EDITOR-001",
+        "P1-EDITOR-002"
+      ],
+      "verification": [
+        "Closing document search clears preview search marks and resets search state",
+        "Workspace search events close document search before the global search UI opens",
+        "npm test -- --run src/domains/editor/components/SplitView.test.tsx passed",
+        "npm run build passed"
+      ],
+      "notes": "Search highlight and search-panel overlap are covered by source regression. Selection floating toolbar cleanup remains a separate residual risk until real UI retest."
     }
   ],
   "appSmokeRuns": [

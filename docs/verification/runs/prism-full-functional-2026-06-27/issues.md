@@ -265,6 +265,7 @@ Bundle ID：com.prism.editor.v1
 - 复现稳定性：本轮真实 App 多次复现。
 - 截图/证据：Computer Use 实时截图显示 `Markdown` 命中 `1/5` 与关闭后残留高亮。
 - 备注：中文关键词 `精卫` 在 Computer Use 输入路径下没有进入搜索框，本轮暂按自动化输入法限制处理，不单独归为产品缺陷。
+- 修复进展：2026-06-30 源码已新增统一 `closeSearch` 路径：关闭文档搜索时取消预览搜索任务、清除预览 `.preview-search-match` 高亮、重置搜索 query/count/current，并向编辑器发送空搜索 query 清理编辑区搜索状态。`SplitView.test.tsx` 已覆盖预览搜索关闭后高亮清空。选区浮动工具条残留不在本次搜索修复范围内，仍需真实 UI 复测确认。
 
 ### P1-EDITOR-002 文档搜索与全文搜索可同时叠加显示
 
@@ -281,6 +282,7 @@ Bundle ID：com.prism.editor.v1
 - 复现稳定性：本轮真实 App 复现一次。
 - 截图/证据：Computer Use 实时截图可见全文搜索浮层与右上角文档搜索条同时存在。
 - 备注：`Cmd+Shift+F` 在 Computer Use 路径下先触发了文档搜索，随后通过菜单可打开全文搜索；需用人工键盘复核快捷键本身是否也存在路由问题。
+- 修复进展：2026-06-30 源码已让 `SplitView` 在收到 `search.open` 的 workspace/rootPath 事件时主动关闭文档内搜索并清理预览高亮，避免全文搜索与文档搜索 UI 叠加。`SplitView.test.tsx` 已覆盖 workspace search 打开时收起文档搜索；待换包后用真实菜单/快捷键复测。
 
 ### P0-EDITOR-003 预览态任务列表复选框真实可点击并写回文件
 

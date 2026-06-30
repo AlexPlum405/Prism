@@ -124,6 +124,14 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 已通过 `npm run build`。
 - 本批次尚未替换安装版 app，真实 `/Applications/Prism.app` 状态栏和目录点击仍需换包后复测。
 
+## 2026-06-30 文档搜索状态修复
+
+- 已修文档搜索关闭后预览高亮残留：关闭搜索会取消预览搜索任务、清理 `.preview-search-match`、重置 query/count/current，并向编辑器发送空搜索 query。
+- 已修全文搜索与文档搜索叠加：workspace/rootPath 搜索事件会先收起文档内搜索。
+- 已通过 `npm test -- --run src/domains/editor/components/SplitView.test.tsx`。
+- 已通过 `npm run build`。
+- 选区浮动工具条残留不在本批搜索修复范围内；真实 `/Applications/Prism.app` 仍需换包后复测菜单和快捷键路径。
+
 ## 最高优先级问题
 
 1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 源码回归已确认打包资源目录链接不误报，待换包后真实状态栏复测。
