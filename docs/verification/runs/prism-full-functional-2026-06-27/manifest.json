@@ -4301,6 +4301,49 @@
       ],
       "expected": "从系统剪贴板粘贴图片应进入资产管线，复制到当前文档资源目录并在光标位置插入 Markdown 图片语法。",
       "notes": "安装版真实 UI 复测通过；资产文件为 PNG image data, 220 x 120, 4295 bytes。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/selection-callout-retest/real-selection-callout-retest-20260630225055.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P1-EDITOR-007",
+      "id": "PRISM-CU-256",
+      "area": "编辑器与选区菜单",
+      "feature": "安装版选区右键菜单启用剪切复制链接",
+      "status": "Pass",
+      "screenshot": "screenshots/23-installed-selection-context-smoke/02-context-menu-selection-actions-enabled.png",
+      "actual": "选中两行正文后右键点击选中文字，菜单中的 剪切、复制、链接 均为可用状态，块级源码操作子菜单可继续打开。",
+      "steps": [
+        "打开新的 selection callout 回归 Markdown 文件",
+        "选中 First selected line for callout. 和 Second selected line for callout. 两行",
+        "右键点击选中文字区域",
+        "读取菜单项状态并截图"
+      ],
+      "expected": "存在非空选区时，右键菜单中的剪切、复制、链接动作应启用。",
+      "notes": "安装版真实 UI 复测通过；右键必须落在选中文字上，点击编辑区空白处会按系统文本编辑习惯折叠选区。"
+    },
+    {
+      "date": "2026-06-30",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism-local-artifacts/2026-06-30/selection-callout-retest/real-selection-callout-retest-20260630225055.md",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "issueRef": "P1-EDITOR-006",
+      "id": "PRISM-CU-257",
+      "area": "编辑器与选区菜单",
+      "feature": "安装版选区转警告提示块保留原选区",
+      "status": "Pass",
+      "screenshot": "screenshots/23-installed-selection-context-smoke/03-selection-callout-warning-applied.png",
+      "actual": "通过右键菜单 块级源码操作 > 选区转警告提示块 后，两行选区原地变为 warning callout；保存后磁盘文件包含一个 > [!WARNING]，未在文末追加空块。",
+      "steps": [
+        "保持两行正文选区",
+        "打开右键菜单的块级源码操作子菜单",
+        "点击 选区转警告提示块",
+        "截图记录编辑器结果",
+        "按 Cmd+S 保存并读取磁盘文件内容"
+      ],
+      "expected": "非空选区转换后原文完整保留且只改动选区区域，不应移动到文末或生成空 warning callout。",
+      "notes": "安装版真实 UI 复测通过；磁盘校验 warning_count=1。"
     }
   ],
   "testCases": [
@@ -7849,17 +7892,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-06-30T22:45:00+08:00",
+  "generatedAt": "2026-06-30T22:58:00+08:00",
   "counts": {
     "total": 168,
     "Pass": 94,
     "Fail": 44,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 394,
-    "manifestScreenshots": 963,
-    "uniqueManifestScreenshots": 417,
-    "computerUseRealAppEvidence": 212
+    "screenshotFiles": 396,
+    "manifestScreenshots": 965,
+    "uniqueManifestScreenshots": 419,
+    "computerUseRealAppEvidence": 214
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9156,6 +9199,14 @@
     {
       "file": "screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png",
       "testCaseId": "PRISM-CU-255"
+    },
+    {
+      "file": "screenshots/23-installed-selection-context-smoke/02-context-menu-selection-actions-enabled.png",
+      "testCaseId": "PRISM-CU-256"
+    },
+    {
+      "file": "screenshots/23-installed-selection-context-smoke/03-selection-callout-warning-applied.png",
+      "testCaseId": "PRISM-CU-257"
     }
   ],
   "unitTestRuns": [
@@ -9382,6 +9433,21 @@
         "PRISM-CU-255 confirms installed app PNG clipboard paste inserts Markdown image syntax and creates the assets PNG file"
       ],
       "notes": "Historical P0-EDITOR-005 failure evidence remains as pre-fix evidence. PRISM-CU-255 is the post-fix installed-app pass evidence."
+    },
+    {
+      "id": "installed-retest-selection-context-callout-20260630",
+      "status": "InstalledAppRetestPassed",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P1-EDITOR-006",
+        "P1-EDITOR-007"
+      ],
+      "verification": [
+        "PRISM-CU-256 confirms selection context menu enables cut/copy/link when right-clicking the selected text",
+        "PRISM-CU-257 confirms selection callout warning wraps the original selection in place and saves to disk",
+        "Disk validation confirms one warning callout and the unselected tail line remains outside the callout"
+      ],
+      "notes": "No new source edits were required in this batch; this records post-fix installed-app evidence for source changes already present in the rebuilt application."
     }
   ],
   "appSmokeRuns": [

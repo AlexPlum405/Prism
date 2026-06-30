@@ -378,7 +378,8 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png`
 - 建议修复方向：检查块级源码操作拿到的选区范围与 CodeMirror transaction；命令执行前应优先读取当前 selection，并用 replacement 包装选区。
 - 验收标准：多行选区、单行选区、空选区三种路径分别有明确行为；非空选区转换后原文完整保留且只改动选区区域。
-- 修复进展：2026-06-30 源码已在 selection callout picker 打开前保存原始 CodeMirror selection，用户点击具体 callout 类型前恢复 selection，避免焦点变化导致丢选区。`EditorPane.integration.test.tsx` 已覆盖焦点变更后仍包装原选区；待真实 App 复测。
+- 修复进展：2026-06-30 源码已在 selection callout picker 打开前保存原始 CodeMirror selection，用户点击具体 callout 类型前恢复 selection，避免焦点变化导致丢选区。`EditorPane.integration.test.tsx` 已覆盖焦点变更后仍包装原选区。
+- 安装版复测：2026-06-30 已在替换后的 `/Applications/Prism.app` 真实复测通过。选中两行正文后，通过右键菜单 `块级源码操作 > 选区转警告提示块`，Prism 在原位置生成 `> [!WARNING]`、`> First selected line for callout.`、`> Second selected line for callout.`，未在文末追加空块；保存后磁盘文件中 warning callout 计数为 1。证据见 `screenshots/23-installed-selection-context-smoke/03-selection-callout-warning-applied.png`。
 
 ### P1-EDITOR-007 选区右键菜单剪切/复制/链接仍 disabled
 
@@ -396,7 +397,8 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png`
 - 建议修复方向：统一 selection toolbar 与 context menu 的选区状态来源，避免右键打开菜单时 selection 被清空或菜单状态读取滞后。
 - 验收标准：选中文字后右键菜单显示可用的剪切/复制/链接动作；动作执行结果与快捷键一致。
-- 修复进展：2026-06-30 源码已放宽右键 selection 判断：`posAtCoords === null` 或点击落在 selection 边界附近时不折叠选区；编辑器上下文菜单动作优先走本地 inline/source block/table/basic command。已补右键菜单剪切/复制/链接启用态和复制写剪贴板集成测试；待真实 App 复测。
+- 修复进展：2026-06-30 源码已放宽右键 selection 判断：`posAtCoords === null` 或点击落在 selection 边界附近时不折叠选区；编辑器上下文菜单动作优先走本地 inline/source block/table/basic command。已补右键菜单剪切/复制/链接启用态和复制写剪贴板集成测试。
+- 安装版复测：2026-06-30 已在替换后的 `/Applications/Prism.app` 真实复测通过。选中两行正文后，右键点击选中文字，菜单中的 `剪切`、`复制`、`链接` 均为可用状态；同时保留 `块级源码操作` 子菜单。证据见 `screenshots/23-installed-selection-context-smoke/02-context-menu-selection-actions-enabled.png`。
 
 ## 预览渲染
 

@@ -67,6 +67,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 追加 `P0-EDITOR-005` 图片剪贴板粘贴安装版复测：重新打包替换 `/Applications/Prism.app` 后，真实 UI 复测系统 PNG 剪贴板粘贴通过。系统剪贴板含 `PNGf` 数据，安装版 Prism 中执行 `Cmd+V` 并点击 macOS `Paste` 菜单后，编辑器插入 Markdown 图片语法，磁盘生成 `assets/real-image-paste-retest-20260630224136/image-20260630-224213.png`。证据见 `PRISM-CU-255` 和 `screenshots/22-installed-image-paste-smoke/02-image-paste-after-installed-fix.png`。
 
+2026-06-30 追加 `P1-EDITOR-006/007` 选区菜单与 callout 安装版复测：真实 UI 中选中两行正文后，右键点击选中文字，`剪切`、`复制`、`链接` 菜单项均为可用状态；继续选择 `块级源码操作 > 选区转警告提示块` 后，选区原地变为 warning callout，保存后的磁盘文件只包含一个 warning callout，未在文末追加空块。证据见 `PRISM-CU-256/257` 和 `screenshots/23-installed-selection-context-smoke/`。
+
 ## 执行统计
 
 - 总用例：168
@@ -123,6 +125,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 保存 race 修复后安装版 smoke 截图：screenshots/21-installed-app-smoke-saving-race-fix/
 - 2026-06-30 图片剪贴板修复后安装版 smoke 报告：logs/app-smoke-installed-image-paste-fix-20260630/report.json
 - 2026-06-30 图片剪贴板安装版复测截图：screenshots/22-installed-image-paste-smoke/
+- 2026-06-30 选区菜单与 callout 安装版复测截图：screenshots/23-installed-selection-context-smoke/
 
 ## 2026-06-30 修复批次状态
 
@@ -199,6 +202,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-06-30 追加安装版锚点与搜索修复截图：默认指南无 ERROR、目录锚点跳到图表段落、预览搜索关闭无高亮残留、全文搜索叠加修复前失败和修复后通过。
 - 2026-06-30 追加安装版剪贴板复测截图：复制选区写入系统剪贴板、粘贴插入文本、剪切写入剪贴板并删除正文。
 - 2026-06-30 追加安装版图片剪贴板复测截图：系统 PNG 剪贴板粘贴进入资产管线，编辑器插入 Markdown 图片语法并生成 assets 图片文件。
+- 2026-06-30 追加安装版选区菜单与 callout 复测截图：选区右键菜单剪切/复制/链接可用，选区转 warning callout 原地生效并保存到磁盘。
 - 2026-06-29 补充单元/集成测试：文件打开/自动保存/冲突/恢复、编辑命令、富复制、块操作、图片、表格、诊断、文件树、导出 preflight、导出设置、命令注册、主题、更新、工作区索引、反链、图谱、i18n、toast、reduced motion。
 - 菜单与帮助：File/Edit/Insert/Format/Navigate/View/Export/Window/Help、快捷键、关于、检查更新。
 - 布局：1024x768 窄窗口、低高度窗口。
@@ -208,6 +212,6 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期仍只有源码修复与构建通过证据，待换包后按原窗口生命周期用例单独复测。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 manifest 中登记了 212 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 manifest 中登记了 214 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。
