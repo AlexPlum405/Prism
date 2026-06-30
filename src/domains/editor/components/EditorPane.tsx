@@ -248,6 +248,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     } = useEditorTableModel({ editorRef, viewRef });
     const [calloutPicker, setCalloutPicker] = useState<{
       mode: 'insert' | 'selection';
+      selection?: { from: number; to: number };
       x: number;
       y: number;
     } | null>(null);
@@ -349,8 +350,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     const showCalloutPicker = useCallback((mode: 'insert' | 'selection') => {
       const view = viewRef.current;
       if (!view) return;
+      const selection = view.state.selection.main;
       setCalloutPicker({
         mode,
+        selection: mode === 'selection' && selection.from !== selection.to
+          ? { from: selection.from, to: selection.to }
+          : undefined,
         ...getEditorInlinePopoverPosition(view, editorRef.current),
       });
     }, []);
@@ -365,10 +370,18 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     }, []);
 
     const handleSelectionCallout = useCallback((kind: CalloutKind) => {
+      const view = viewRef.current;
+      const savedSelection = calloutPicker?.mode === 'selection' ? calloutPicker.selection : undefined;
+      if (view && savedSelection && (
+        view.state.selection.main.from !== savedSelection.from
+        || view.state.selection.main.to !== savedSelection.to
+      )) {
+        view.dispatch({ selection: { anchor: savedSelection.from, head: savedSelection.to } });
+      }
       const handled = handleSourceBlockOperation(getSelectionCalloutOperation(kind));
       setCalloutPicker(null);
       return handled;
-    }, [handleSourceBlockOperation]);
+    }, [calloutPicker, handleSourceBlockOperation]);
 
     const handleCalloutPickerSelect = useCallback((kind: CalloutKind) => {
       if (calloutPicker?.mode === 'selection') {
@@ -376,7 +389,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       } else {
         handleInsertCallout(kind);
       }
-    }, [calloutPicker?.mode, handleInsertCallout, handleSelectionCallout]);
+    }, [calloutPicker, handleInsertCallout, handleSelectionCallout]);
 
     const handleInsertImage = useCallback(async () => {
       const view = viewRef.current;

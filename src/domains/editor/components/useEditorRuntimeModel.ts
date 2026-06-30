@@ -311,7 +311,8 @@ export function useEditorRuntimeModel({
         selection.from !== selection.to &&
         (
           rightClickedSelectionDom ||
-          (pos !== null && pos >= selection.from && pos <= selection.to)
+          pos === null ||
+          (pos >= selection.from - 1 && pos <= selection.to + 1)
         );
 
       if (pos !== null && !rightClickedInsideSelection) {

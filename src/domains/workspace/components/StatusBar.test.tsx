@@ -106,20 +106,44 @@ describe('StatusBar', () => {
     expect(onDiagnosticsClick).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render typography suggestions as status bar errors', () => {
+  it('renders typography suggestions as a non-error status bar entry', () => {
+    const onTypographyClick = vi.fn();
     render(
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
         sidebarVisible={true}
         isSidebarHovered={false}
+        documentProfileKind="markdown"
         typographyIssueCount={3}
         typographyIssueTitle="中英文之间缺少空格"
+        onTypographyDiagnosticsClick={onTypographyClick}
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'TYPO 3' });
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('title', '中英文之间缺少空格');
+    expect(screen.queryByRole('button', { name: 'ERROR 3' })).not.toBeInTheDocument();
+    expect(onTypographyClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the typography diagnostics entry for plain text documents', () => {
+    render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        sidebarVisible={true}
+        isSidebarHovered={false}
+        documentProfileKind="text"
+        typographyIssueCount={3}
+        onTypographyDiagnosticsClick={vi.fn()}
       />
     );
 
     expect(screen.queryByRole('button', { name: 'TYPO 3' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'ERROR 3' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '排版' })).not.toBeInTheDocument();
   });
 
   it('does not render backlink count in the status bar', () => {

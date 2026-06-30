@@ -215,11 +215,7 @@ async function handleOpenNewWindow(path: string | undefined, context: FileAction
     return;
   }
 
-  if (!context.workspaceStore.rootPath) {
-    throw new Error(t('file.noWorkspace'));
-  }
-
-  await openPrismWindow({ folderPath: context.workspaceStore.rootPath });
+  await openPrismWindow();
 }
 
 async function handleNewFile(parentPath: string | undefined, context: FileActionContext): Promise<void> {
@@ -457,7 +453,7 @@ export async function executeFileAction(
 
       case 'searchInFolder':
         if (!context.workspaceStore.rootPath) throw new Error(t('file.noWorkspace'));
-        emitAppEvent('search.open', { action: 'open', rootPath: context.workspaceStore.rootPath });
+        emitAppEvent('search.open', { action: 'workspace', rootPath: context.workspaceStore.rootPath });
         return;
 
       default:

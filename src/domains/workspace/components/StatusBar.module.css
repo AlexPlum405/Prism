@@ -339,6 +339,14 @@ button.exportStatus:hover {
   background: var(--c-chalk);
 }
 
+.typographyDiagnostic {
+  color: var(--c-graphite);
+}
+
+.typographyDiagnostic:hover {
+  color: var(--c-void);
+}
+
 @media (max-width: 900px) {
   .optionalStat {
     display: none;
@@ -541,6 +549,14 @@ button.exportStatus:hover {
 
 :global(html[data-content-theme='miaoyan']) .diagnostic:hover {
   background: var(--miaoyan-panel-secondary);
+}
+
+:global(html[data-content-theme='miaoyan']) .typographyDiagnostic {
+  color: var(--miaoyan-secondary-text);
+}
+
+:global(html[data-content-theme='miaoyan']) .typographyDiagnostic:hover {
+  color: var(--miaoyan-accent);
 }
 
 :global(html[data-content-theme='inkstone']) .statusbar,
@@ -776,6 +792,20 @@ button.exportStatus:hover {
 :global(html[data-content-theme='mono']) .diagnostic:hover,
 :global(html[data-content-theme='nocturne']) .diagnostic:hover {
   background: var(--theme-panel-secondary);
+}
+
+:global(html[data-content-theme='inkstone']) .typographyDiagnostic,
+:global(html[data-content-theme='slate']) .typographyDiagnostic,
+:global(html[data-content-theme='mono']) .typographyDiagnostic,
+:global(html[data-content-theme='nocturne']) .typographyDiagnostic {
+  color: var(--theme-secondary-text);
+}
+
+:global(html[data-content-theme='inkstone']) .typographyDiagnostic:hover,
+:global(html[data-content-theme='slate']) .typographyDiagnostic:hover,
+:global(html[data-content-theme='mono']) .typographyDiagnostic:hover,
+:global(html[data-content-theme='nocturne']) .typographyDiagnostic:hover {
+  color: var(--theme-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

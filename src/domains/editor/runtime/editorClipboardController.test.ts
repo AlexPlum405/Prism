@@ -7,11 +7,13 @@ import {
 } from './editorClipboardController';
 
 function createClipboardEvent(input: {
+  files?: Array<{ type: string }>;
   items?: Array<{ type: string }>;
   text?: string;
 }) {
   return {
     clipboardData: {
+      files: input.files ?? [],
       items: input.items ?? [],
       getData: vi.fn(() => input.text ?? ''),
     },
@@ -49,6 +51,7 @@ function createController(handleTablePasteText = vi.fn(() => false)) {
 describe('editorClipboardController', () => {
   it('detects clipboard and dragged images', () => {
     expect(hasClipboardImage(createClipboardEvent({ items: [{ type: 'image/png' }] }))).toBe(true);
+    expect(hasClipboardImage(createClipboardEvent({ files: [{ type: 'image/png' }] }))).toBe(true);
     expect(hasClipboardImage(createClipboardEvent({ items: [{ type: 'text/plain' }] }))).toBe(false);
     expect(hasDraggedImage(createDragEvent([{ type: 'image/jpeg' }]))).toBe(true);
     expect(hasDraggedImage(createDragEvent([{ type: 'text/uri-list' }]))).toBe(false);

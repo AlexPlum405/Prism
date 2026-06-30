@@ -87,6 +87,7 @@ describe('useAppFileActionsModel', () => {
     }));
 
     const input = vi.mocked(useStartupFileOpen).mock.calls[0][0];
+    expect(input.pendingFilePollDelays).toEqual([]);
 
     await act(async () => {
       await input.onOpenFilePath('/repo/startup.md');

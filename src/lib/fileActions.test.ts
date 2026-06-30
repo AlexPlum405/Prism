@@ -6,6 +6,7 @@ import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
 import { deletePathWithTrashFallback, executeFileAction } from './fileActions';
+import { openPrismWindow } from './openWindow';
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   copyFile: vi.fn(),
@@ -405,6 +406,20 @@ describe('executeFileAction openFile workspace sync', () => {
       saveStatus: 'conflict',
       saveIssue: 'missing',
     });
+  });
+});
+
+describe('executeFileAction openNewWindow', () => {
+  it('opens a default Prism window without pinning the current workspace to an empty folder shell', async () => {
+    useWorkspaceStore.setState({
+      fileTree: [{ kind: 'file', name: 'current.md', path: '/repo/current.md' }],
+      mode: 'folder',
+      rootPath: '/repo',
+    });
+
+    await executeFileAction('openNewWindow', fileActionContext());
+
+    expect(openPrismWindow).toHaveBeenCalledWith();
   });
 });
 

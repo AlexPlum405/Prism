@@ -14,6 +14,7 @@ import { t } from '../domains/i18n';
 import type { ToastInput } from '../lib/toast';
 import type { FileActionInput } from '../lib/fileActions';
 import { emitAppEvent, onAppEvent } from '../platform/events/appEvents';
+import { listenForNativeCommands } from '../platform/tauri/nativeMenuEvents';
 import {
   getSlashSnippet,
   isSlashSnippetCommand,
@@ -210,6 +211,26 @@ export function useAppCommandContext({
     return onAppEvent('command.run', ({ action }) => {
       if (action) handleCommandAction(action);
     });
+  }, [handleCommandAction]);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+
+    void listenForNativeCommands((action) => {
+      void handleCommandAction(action);
+    }).then((nextUnlisten) => {
+      if (disposed) {
+        nextUnlisten();
+        return;
+      }
+      unlisten = nextUnlisten;
+    });
+
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
   }, [handleCommandAction]);
 
   useEffect(() => {

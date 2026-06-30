@@ -19,6 +19,13 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
 - 备注：
 
+## 2026-06-30 修复批次更新
+
+- 已打包并替换 `/Applications/Prism.app`；安装包身份为 `com.prism.editor.v1`，包含 Markdown 文档图标和 `Resources/Initial` 首启文档资源。
+- `npm run tauri:build:app-smoke` 通过，构建产物 smoke 覆盖启动、诊断、Quick Open、保存、导出菜单、设置和复杂导出产物。
+- `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs` 通过，安装版 smoke 覆盖 `.markdown` 中文/空格路径、JSON、SQL、TXT、Markdown 启动不白屏，ERROR 状态栏诊断可打开，Quick Open 可打开目标文件，基础编辑保存和 HTML/PDF/PNG/DOCX 复杂导出产物通过。
+- 本批次不能直接把历史全功能截图 Fail 改为 Pass；下面各问题的原始复现证据保留。后续要按原用例逐条重拍真实 UI 截图后再更新单项状态。
+
 ## 启动与窗口
 
 ### P0-STARTUP-001 原生 Prism/Tauri 均无法创建可见窗口
@@ -119,6 +126,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-218-startup-default-guide-not-opened-window.png`
 - 建议修复方向：收敛启动 bootstrap 与新窗口逻辑，避免先创建空文稿；在默认 Prism 目录存在时优先打开指南文档并同步文件树选中态。
 - 验收标准：冷启动、新建窗口、恢复窗口三条路径均直接展示指南文档；标题栏显示指南文件名，正文不出现空指引页或“未命名”空文稿。
+- 修复进展：2026-06-30 源码已修复默认窗口路径：`openNewWindow` 不再把当前 workspace folder 固定传给新窗口，默认新窗口交给 bootstrap 打开 Prism 初始目录和指南；bootstrap 在已有 currentDocument 时仍 reveal native window。`useBootstrap`、`fileActions`、`openWindow` 相关测试通过。安装版 smoke 已通过默认启动路径，证据见 `screenshots/16-installed-app-smoke/00-launch-markdown-chinese-space.png`、`screenshots/16-installed-app-smoke/01-launch-source.png` 和 `logs/app-smoke-installed-20260630/report.json`；新建窗口仍需按原用例单独复测。
 
 ## 文件与工作区
 
@@ -158,6 +166,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-105-cold-open-sql-file-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-106-cold-open-txt-file-window.png`
 - 备注：browser mock 中 Text Document 通过结果不代表真实 `/Applications/Prism.app` 的系统打开路径。
+- 修复进展：2026-06-30 源码已修复启动 listener 与 bootstrap 的竞争路径：运行期 `file-opened` listener 不再抢冷启动 pending files，bootstrap 在文档已由启动 listener 打开时仍会 reveal native window。已补 `useBootstrap` / `useAppFileActionsModel` 回归测试并通过；重新打包替换 `/Applications/Prism.app` 后，安装版 smoke 已通过 JSON/SQL/TXT 启动不白屏，证据见 `screenshots/16-installed-app-smoke/00b-launch-json.png`、`screenshots/16-installed-app-smoke/00c-launch-sql.png`、`screenshots/16-installed-app-smoke/00d-launch-txt.png` 和 `logs/app-smoke-installed-20260630/report.json`。
 
 ### P0-FILE-003 外部修改冲突未弹出处理入口
 
@@ -179,6 +188,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-188-conflict-not-shown-auto-merged-window.png`
   - `logs/computer-use-real-app/external-conflict-check.log`
 - 备注：该测试只操作本次 verification fixture，不涉及用户真实文档。
+- 修复进展：2026-06-30 源码已强化 `useExternalFileChangeMonitor`：检查时读取当前 store 中最新的 dirty/snapshot 状态，dirty 文档新增 1 秒快速冲突巡检，并在页面重新可见时触发检查。相关外部修改、autosave 和冲突弹窗单测通过；待换包后用 `real-conflict.md` 真实复测。
 
 ### P1-FILE-004 Prism 内缺少文件属性/信息入口
 
@@ -311,6 +321,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-167-editing-selection-toolbar-copy-state-window.png`
   - `logs/computer-use-real-app/editing-copy-clipboard-check.log`
 - 备注：日志只记录“剪贴板是否包含预期 Alpha 行”的布尔结果，没有保存用户原剪贴板内容。
+- 修复进展：2026-06-30 源码已把 `copy/cut/paste/pastePlain` 改为直接读取 CodeMirror selection 并写入/读取系统剪贴板；`cut` 写剪贴板后删除选区，`paste` 在光标处插入文本并更新光标。`editorCommandAdapter` 与 `EditorPane.integration` 回归测试通过；待真实 App 人工键盘/Computer Use 复测系统剪贴板。
 
 ### P0-EDITOR-005 图片剪贴板粘贴未进入资产管线
 
@@ -334,6 +345,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-180-image-paste-no-second-asset-window.png`
   - `logs/computer-use-real-app/image-paste-check.log`
 - 备注：图片插入位置落在文档开头，可能与自动化光标落点有关，本轮不单独作为产品缺陷记录。
+- 修复进展：2026-06-30 源码已让图片剪贴板检测同时支持 `clipboardData.items` 和 `clipboardData.files`，粘贴运行时也从两条路径提取图片 File。`editorClipboardController` / `editorClipboardRuntime` 回归测试通过；待换包后用系统 PNG 剪贴板真实复测资产管线。
 
 ### P1-EDITOR-006 Selection callout 丢失当前选区
 
@@ -356,6 +368,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png`
 - 建议修复方向：检查块级源码操作拿到的选区范围与 CodeMirror transaction；命令执行前应优先读取当前 selection，并用 replacement 包装选区。
 - 验收标准：多行选区、单行选区、空选区三种路径分别有明确行为；非空选区转换后原文完整保留且只改动选区区域。
+- 修复进展：2026-06-30 源码已在 selection callout picker 打开前保存原始 CodeMirror selection，用户点击具体 callout 类型前恢复 selection，避免焦点变化导致丢选区。`EditorPane.integration.test.tsx` 已覆盖焦点变更后仍包装原选区；待真实 App 复测。
 
 ### P1-EDITOR-007 选区右键菜单剪切/复制/链接仍 disabled
 
@@ -373,6 +386,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-219-selection-callout-appended-empty-window.png`
 - 建议修复方向：统一 selection toolbar 与 context menu 的选区状态来源，避免右键打开菜单时 selection 被清空或菜单状态读取滞后。
 - 验收标准：选中文字后右键菜单显示可用的剪切/复制/链接动作；动作执行结果与快捷键一致。
+- 修复进展：2026-06-30 源码已放宽右键 selection 判断：`posAtCoords === null` 或点击落在 selection 边界附近时不折叠选区；编辑器上下文菜单动作优先走本地 inline/source block/table/basic command。已补右键菜单剪切/复制/链接启用态和复制写剪贴板集成测试；待真实 App 复测。
 
 ## 预览渲染
 
@@ -530,6 +544,7 @@ Bundle ID：com.prism.editor.v1
   - `fixtures/computer-use-real-app/real-typography-diagnostics.md`
   - `src/domains/workspace/components/StatusBar.tsx`
 - 备注：这不是选择器问题。图片/链接诊断同轮真实复测可通过 `ERROR 3` 直接打开，见 `PRISM-CU-160`；缺失范围收敛到 Typography 入口未渲染。
+- 修复进展：2026-06-30 源码已在 `StatusBar` 解构并渲染 Typography 入口：Markdown 文档下显示 `TYPO n` 或 `排版`，并且不计入 `ERROR`；纯文本文档隐藏。`StatusBar.test.tsx` 和 `useDocumentDiagnosticsModel` 相关测试通过；待换包后真实点击排版面板复测。
 
 ### P2-DIAGNOSTICS-003 补齐缺失图片文件后诊断不自动刷新
 
@@ -613,6 +628,7 @@ Bundle ID：com.prism.editor.v1
   - `logs/unit-tests/registry-rerun.log`
   - `src/domains/commands/registry.test.ts:1500`
 - 备注：这与用户之前指出“文件 > 新建文稿”和“新建窗口”语义重复/混淆的问题相关。本轮只记录，不修复。
+- 修复进展：2026-06-30 测试口径已修正为当前产品语义：`new` 不再创建内存中的 Untitled 文稿，而是在当前文档目录或工作区根目录触发 `newFile`；无目标目录时提示“当前没有打开的工作区”，不会误触保存路径请求。`fileCommands` 与 `registry` 测试通过。
 
 ### P1-COMMAND-002 自绘菜单/上下文菜单对 Escape 关闭响应不一致
 
@@ -653,6 +669,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png`
 - 建议修复方向：明确 Quick Open 与 Workspace Search 的命令、快捷键和菜单入口；如果暂时不支持全文搜索，应在测试口径和 UI 中降级说明。
 - 验收标准：一个公开入口可打开工作区全文搜索；输入 fixture 中存在的词后显示跨文件命中列表，回车或点击可打开对应文件位置。
+- 修复进展：2026-06-30 源码已修复 `Cmd+Shift+F` 被文档内搜索抢占的问题，并让文件树 `searchInFolder` 发 `workspace` 搜索事件，由 `useAppAuxiliaryModalsModel` 打开全局搜索模式；`SplitView` 会忽略带 `rootPath` 的 workspace 搜索事件。相关 `SplitView` 和 auxiliary modal 单测通过；待真实 App 复测快捷键、文件树入口和结果打开。
 
 ## 导出
 
@@ -941,6 +958,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png`
 - 建议修复方向：检查 Tauri/macOS menu 构建逻辑，确保窗口创建后注册完整应用菜单；同时消除“文件 > 新建文稿”和“窗口 > 新建窗口”的语义重复。
 - 验收标准：系统菜单栏 `File` 可见新建文稿、打开文件、打开文件夹、最近打开、保存、另存为、关闭文稿等入口；各入口行为与窗口内菜单一致。
+- 修复进展：2026-06-30 源码已在 Tauri setup 注册原生 app menu，File/Edit/View/Window/Help 暴露 Prism 核心入口；自定义菜单项通过 Tauri event 桥接到现有前端 `command.run` 逻辑。`useAppCommandContext` 已补 native menu event 回归测试，`cargo check` 通过；待换包后用 macOS 系统菜单真实复测。
 
 ### P1-PRINT-001 打印入口未暴露，快捷键无反应
 
@@ -1022,6 +1040,7 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log`
 - 建议修复方向：检查自定义标题栏与 Tauri/macOS 窗口控制绑定，确保交通灯、原生 Window 菜单和快捷键都调用同一窗口 API；避免编辑器快捷键拦截系统 `Cmd+M`。
 - 验收标准：黄灯、`Cmd+M`、`Window > Minimize` 均能最小化；Dock/open 恢复后仍显示同一文档；Zoom/全屏动作改变窗口状态并可恢复。
+- 修复进展：2026-06-30 源码已让原生 Window 菜单的最小化、缩放、全屏走 Rust/Tauri 当前 Prism 文档窗口路径，不依赖前端焦点快捷键；macOS close/reopen 生命周期也已扩展到 `main` 和 `prism-*` 文档窗口。`cargo check` 通过；交通灯和系统窗口状态仍需换包后真实复测。
 
 ### P1-WINDOW-002 Close Window / reopen 生命周期状态不完整
 
@@ -1045,5 +1064,6 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/window-close-reopen-20260630.log`
 - 建议修复方向：梳理 Tauri window close/reopen 事件，统一隐藏、关闭、新建主窗口策略；记录/清理内部窗口，避免 Window 菜单和 CGWindowList 出现残留状态。
 - 验收标准：`Close Window` 后窗口状态明确；Dock/open reopen 后主窗口出现且只保留预期窗口；当前文档、工作区和标题栏状态一致。
+- 修复进展：2026-06-30 源码已将 macOS close/reopen 处理从仅 `main` 窗口扩展到 `main` 与 `prism-*` 文档窗口，关闭时 prevent_close + hide，reopen/opened 时 show/unminimize/focus 首选 Prism 窗口。`cargo check` 通过；待换包后真实复测 on-screen 窗口数量和 Dock reopen。
 
 ## Windows/Linux 待真机回填

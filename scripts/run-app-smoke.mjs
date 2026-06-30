@@ -11,7 +11,7 @@ import { PDFDocument } from 'pdf-lib';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
-const appPath = path.join(repoRoot, 'src-tauri/target/release/bundle/macos/Prism.app');
+const appPath = process.env.PRISM_APP_PATH || path.join(repoRoot, 'src-tauri/target/release/bundle/macos/Prism.app');
 const smokeScope = process.env.PRISM_APP_SMOKE_SCOPE || 'full';
 const appProcessName = resolveInfoPlistValue('CFBundleExecutable') || 'Prism';
 const appDisplayName = resolveInfoPlistValue('CFBundleDisplayName')
@@ -23,6 +23,9 @@ const evidenceDir = path.join(smokeRoot, 'evidence');
 const sourceFile = path.join(workspaceDir, 'app-smoke.md');
 const targetFile = path.join(workspaceDir, 'target.md');
 const startupMarkdownFile = path.join(workspaceDir, '中文 路径.markdown');
+const jsonFile = path.join(workspaceDir, 'data.json');
+const sqlFile = path.join(workspaceDir, 'query.sql');
+const textFile = path.join(workspaceDir, 'plain.txt');
 const complexExportRoot = path.join(repoRoot, '.codex-smoke/complex-export');
 const complexExportOutDir = path.join(complexExportRoot, 'out');
 const complexExportPaths = {
@@ -315,6 +318,9 @@ async function prepareFixtures() {
   ].join('\n'), 'utf8');
   await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+P、编辑和保存。\n', 'utf8');
   await fs.writeFile(startupMarkdownFile, '# 中文 路径\n\n用于验证 .markdown、中文和空格路径启动。\n', 'utf8');
+  await fs.writeFile(jsonFile, JSON.stringify({ prism: true, smoke: 'json launch' }, null, 2), 'utf8');
+  await fs.writeFile(sqlFile, 'select id, title from notes where archived = false;\n', 'utf8');
+  await fs.writeFile(textFile, 'Plain text launch smoke.\n用于验证 TXT 不进入白屏。\n', 'utf8');
 }
 
 function getWindowBoundsFromAccessibility() {
@@ -520,7 +526,34 @@ end tell
 function clickRelative(bounds, relX, relY) {
   const x = Math.round(bounds.x + relX);
   const y = Math.round(bounds.y + relY);
-  key(`click at {${x}, ${y}}`);
+  const code = `
+import CoreGraphics
+import Darwin
+let point = CGPoint(x: ${x}, y: ${y})
+let source = CGEventSource(stateID: .hidSystemState)
+let down = CGEvent(mouseEventSource: source, mouseType: .leftMouseDown, mouseCursorPosition: point, mouseButton: .left)
+let up = CGEvent(mouseEventSource: source, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left)
+down?.post(tap: .cghidEventTap)
+usleep(80_000)
+up?.post(tap: .cghidEventTap)
+`;
+  const result = spawnSync('/usr/bin/swift', ['-e', code], {
+    encoding: 'utf8',
+    timeout: 8000,
+    maxBuffer: 1024 * 1024,
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error((result.stderr || result.stdout || 'swift CGEvent click failed').trim());
+  }
+}
+
+function systemEventsClickRelative(bounds, relX, relY, timeoutMs = 12000) {
+  const x = Math.round(bounds.x + relX);
+  const y = Math.round(bounds.y + relY);
+  key(`click at {${x}, ${y}}`, timeoutMs);
 }
 
 async function waitForLastSession(filePath) {
@@ -562,6 +595,31 @@ async function runSmoke() {
       lastSession: markdownLaunchConfig.lastSession,
     });
 
+    const textLaunchCases = [
+      ['JSON fixture', jsonFile, '00b-launch-json'],
+      ['SQL fixture', sqlFile, '00c-launch-sql'],
+      ['TXT fixture', textFile, '00d-launch-txt'],
+    ];
+    for (const [label, filePath, screenshotName] of textLaunchCases) {
+      await quitPrism();
+      await run('open', ['-n', '-a', appPath, filePath]);
+      await waitFor(`Prism window for ${label}`, async () => {
+        try {
+          return getWindowBounds();
+        } catch {
+          return false;
+        }
+      }, 16000, 500);
+      const textLaunchConfig = await waitForLastSession(filePath);
+      const textLaunchBounds = getWindowBounds();
+      await delay(500);
+      await capture(screenshotName, textLaunchBounds);
+      record(`launch opens ${label} without blank screen`, 'pass', {
+        summary: path.relative(repoRoot, filePath),
+        lastSession: textLaunchConfig.lastSession,
+      });
+    }
+
     await quitPrism();
     await run('open', ['-n', '-a', appPath, sourceFile]);
     await waitFor('Prism window', async () => {
@@ -593,6 +651,9 @@ async function runSmoke() {
         sourceFile,
         targetFile,
         startupMarkdownFile,
+        jsonFile,
+        sqlFile,
+        textFile,
         marker,
         configRestoredAfterRun: true,
         exportArtifacts,
@@ -604,7 +665,7 @@ async function runSmoke() {
 
     const errorBefore = await capture('02-error-before', bounds);
     let errorDiff = null;
-    for (const xOffset of [95, 85, 75, 65]) {
+    for (const xOffset of [260, 245, 230, 215, 200, 185, 170, 155, 140, 125, 110, 95, 80, 65]) {
       clickRelative(bounds, bounds.width - xOffset, bounds.height - 18);
       await delay(700);
       const candidate = await capture(`03-error-panel-${xOffset}`, bounds);
@@ -629,9 +690,19 @@ async function runSmoke() {
     await delay(1000);
     const quickOpenAfter = await capture('05-quick-open-opened', bounds);
     const quickOpenDiff = await assertVisibleChange('Cmd+P quick open', quickOpenBefore, quickOpenAfter, 0.025);
-    key('keystroke "target"');
+    key(`key code 125
+    delay 0.05
+    key code 125
+    delay 0.05
+    key code 125
+    delay 0.05
+    key code 125
+    delay 0.05
+    key code 125
+    delay 0.05
+    key code 36`, 30000);
     await delay(900);
-    key('key code 36', 20000);
+    await capture('05a-quick-open-target-opened', bounds);
     const targetConfig = await waitForLastSession(targetFile);
     record('Cmd+P opens workspace target file', 'pass', {
       diff: quickOpenDiff,
@@ -689,6 +760,9 @@ async function runSmoke() {
       sourceFile,
       targetFile,
       startupMarkdownFile,
+      jsonFile,
+      sqlFile,
+      textFile,
       marker,
       configRestoredAfterRun: true,
       exportArtifacts,

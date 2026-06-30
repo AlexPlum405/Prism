@@ -150,6 +150,19 @@ describe('useBootstrap', () => {
     expect(readTextFile).toHaveBeenCalledWith('C:/docs/bootstrap.md');
   });
 
+  it('reveals the native window when a startup listener already opened the document before bootstrap runs', async () => {
+    window.history.replaceState({}, '', '/');
+    useDocumentStore.getState().openDocument('C:/docs/from-system.json', 'from-system.json', '{"ok":true}');
+
+    renderHook(() => useBootstrap(true));
+
+    await waitFor(() => {
+      expect(revealWindowCallCount()).toBe(1);
+    });
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument?.profile?.kind).toBe('text');
+  });
+
   it('does not require a pre-grant fs exists check before opening an explicit file', async () => {
     const explicitPath = 'C:/external/妙言 Markdown 语法指南.md';
     window.history.replaceState({}, '', `/?file=${encodeURIComponent(explicitPath)}`);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   classifyFileAccessIssue,
   createKnownFileSnapshot,
@@ -9,6 +9,7 @@ import {
 import { useDocumentStore } from '../store';
 
 export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
+  const checkInFlightRef = useRef(false);
   const documentPath = useDocumentStore((s) => s.currentDocument?.path ?? '');
   const isDirty = useDocumentStore((s) => s.currentDocument?.isDirty ?? false);
   const saveStatus = useDocumentStore((s) => s.currentDocument?.saveStatus ?? 'saved');
@@ -17,12 +18,19 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
   const markSaveConflict = useDocumentStore((s) => s.markSaveConflict);
 
   const checkForExternalChange = useCallback(async () => {
-    if (!enabled || !documentPath || saveStatus === 'conflict' || saveStatus === 'saving') {
+    if (!enabled || !documentPath || saveStatus === 'conflict' || saveStatus === 'saving' || checkInFlightRef.current) {
       return;
     }
 
+    const activeAtStart = useDocumentStore.getState().currentDocument;
+    if (!activeAtStart?.path || activeAtStart.path !== documentPath) return;
+
+    checkInFlightRef.current = true;
     try {
-      const knownSnapshot = createKnownFileSnapshot(lastKnownMtime, lastKnownSize);
+      const knownSnapshot = createKnownFileSnapshot(
+        activeAtStart.lastKnownMtime ?? lastKnownMtime,
+        activeAtStart.lastKnownSize ?? lastKnownSize,
+      );
       const result = await fileConflictDetector.inspect(documentPath, knownSnapshot);
 
       if (result.kind !== 'ok') {
@@ -35,7 +43,7 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
       const activeDocument = useDocumentStore.getState().currentDocument;
       if (!activeDocument?.path || activeDocument.path !== documentPath) return;
 
-      if (isDirty) {
+      if (activeDocument.isDirty) {
         markSaveConflict(fileConflictDetector.message, documentPath);
         return;
       }
@@ -51,6 +59,8 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
         documentPath,
         issueKind === 'unavailable' ? 'external-modified' : issueKind,
       );
+    } finally {
+      checkInFlightRef.current = false;
     }
   }, [
     documentPath,
@@ -65,16 +75,29 @@ export function useExternalFileChangeMonitor(interval = 15000, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
 
-    const handleFocus = () => {
+    const handleExternalChangeCheck = () => {
       void checkForExternalChange();
     };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void checkForExternalChange();
+      }
+    };
 
-    window.addEventListener('focus', handleFocus);
-    const timer = window.setInterval(handleFocus, interval);
+    window.addEventListener('focus', handleExternalChangeCheck);
+    window.addEventListener('pageshow', handleExternalChangeCheck);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const timer = window.setInterval(handleExternalChangeCheck, interval);
+    const dirtyTimer = isDirty
+      ? window.setInterval(handleExternalChangeCheck, Math.min(interval, 1000))
+      : null;
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', handleExternalChangeCheck);
+      window.removeEventListener('pageshow', handleExternalChangeCheck);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.clearInterval(timer);
+      if (dirtyTimer !== null) window.clearInterval(dirtyTimer);
     };
-  }, [checkForExternalChange, enabled, interval]);
+  }, [checkForExternalChange, enabled, interval, isDirty]);
 }

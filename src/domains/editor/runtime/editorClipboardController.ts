@@ -11,7 +11,11 @@ interface EditorClipboardControllerInput {
 }
 
 export function hasClipboardImage(event: ClipboardEvent) {
-  return Array.from(event.clipboardData?.items ?? []).some((item) => item.type.startsWith('image/'));
+  const clipboard = event.clipboardData;
+  return (
+    Array.from(clipboard?.items ?? []).some((item) => item.type.startsWith('image/'))
+    || Array.from(clipboard?.files ?? []).some((file) => file.type.startsWith('image/'))
+  );
 }
 
 export function hasDraggedImage(event: DragEvent) {

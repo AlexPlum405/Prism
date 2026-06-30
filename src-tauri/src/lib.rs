@@ -1,9 +1,15 @@
 use std::path::PathBuf;
 
-use tauri::Manager;
+use serde::Serialize;
+use tauri::{Emitter, Manager};
 
 mod commands;
 mod domain;
+
+#[derive(Clone, Serialize)]
+struct NativeCommandPayload<'a> {
+    action: &'a str,
+}
 
 pub(crate) fn first_non_empty_line(text: &[u8]) -> String {
     String::from_utf8_lossy(text)
@@ -21,11 +27,372 @@ pub(crate) fn canonicalize_existing_path(path: &str) -> Result<PathBuf, String> 
 }
 
 #[cfg(target_os = "macos")]
-fn show_main_window(app: &tauri::AppHandle) {
+fn is_prism_document_window(label: &str) -> bool {
+    label == "main" || label.starts_with("prism-")
+}
+
+#[cfg(target_os = "macos")]
+fn show_preferred_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
+        let _ = window.unminimize();
         let _ = window.set_focus();
+        return;
     }
+
+    for (label, window) in app.webview_windows() {
+        if is_prism_document_window(&label) {
+            let _ = window.show();
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+            return;
+        }
+    }
+}
+
+fn get_preferred_window(app: &tauri::AppHandle) -> Option<tauri::WebviewWindow> {
+    if let Some(window) = app.get_webview_window("main") {
+        return Some(window);
+    }
+
+    app.webview_windows()
+        .into_iter()
+        .find_map(|(label, window)| {
+            #[cfg(target_os = "macos")]
+            {
+                if is_prism_document_window(&label) {
+                    return Some(window);
+                }
+            }
+
+            #[cfg(not(target_os = "macos"))]
+            {
+                if label == "main" || label.starts_with("prism-") {
+                    return Some(window);
+                }
+            }
+
+            None
+        })
+}
+
+fn emit_frontend_command(app: &tauri::AppHandle, action: &'static str) {
+    if let Err(error) = app.emit("prism-command", NativeCommandPayload { action }) {
+        eprintln!("[menu] Failed to emit command {action}: {error}");
+    }
+}
+
+fn handle_native_window_command(app: &tauri::AppHandle, command: &str) {
+    let Some(window) = get_preferred_window(app) else {
+        return;
+    };
+
+    match command {
+        "minimize" => {
+            let _ = window.minimize();
+        }
+        "zoom" => {
+            if window.is_maximized().unwrap_or(false) {
+                let _ = window.unmaximize();
+            } else {
+                let _ = window.maximize();
+            }
+        }
+        "fullscreen" => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Some(window) = get_preferred_window(&app) {
+                    let is_fullscreen = window.is_fullscreen().unwrap_or(false);
+                    let _ = window.set_fullscreen(!is_fullscreen);
+                }
+            });
+        }
+        _ => {}
+    }
+}
+
+fn command_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
+    manager: &M,
+    command: &'static str,
+    label: &'static str,
+    accelerator: Option<&'static str>,
+) -> tauri::Result<tauri::menu::MenuItem<R>> {
+    let mut builder =
+        tauri::menu::MenuItemBuilder::with_id(format!("command:{command}"), label);
+    if let Some(accelerator) = accelerator {
+        builder = builder.accelerator(accelerator);
+    }
+    builder.build(manager)
+}
+
+fn native_window_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
+    manager: &M,
+    command: &'static str,
+    label: &'static str,
+    accelerator: Option<&'static str>,
+) -> tauri::Result<tauri::menu::MenuItem<R>> {
+    let mut builder =
+        tauri::menu::MenuItemBuilder::with_id(format!("native-window:{command}"), label);
+    if let Some(accelerator) = accelerator {
+        builder = builder.accelerator(accelerator);
+    }
+    builder.build(manager)
+}
+
+fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
+    use tauri::menu::{
+        MenuBuilder, PredefinedMenuItem, SubmenuBuilder, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID,
+    };
+
+    let handle = app.handle();
+    let app_menu = SubmenuBuilder::new(handle, "Prism")
+        .item(&PredefinedMenuItem::about(
+            handle,
+            Some("关于 Prism"),
+            Some(tauri::menu::AboutMetadata {
+                name: Some("Prism".to_string()),
+                version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                ..Default::default()
+            }),
+        )?)
+        .item(&command_menu_item(
+            handle,
+            "preferences",
+            "设置...",
+            Some("CmdOrCtrl+,"),
+        )?)
+        .separator()
+        .item(&PredefinedMenuItem::hide(handle, Some("隐藏 Prism"))?)
+        .item(&PredefinedMenuItem::hide_others(handle, Some("隐藏其他"))?)
+        .item(&PredefinedMenuItem::show_all(handle, Some("全部显示"))?)
+        .separator()
+        .item(&PredefinedMenuItem::quit(handle, Some("退出 Prism"))?)
+        .build()?;
+
+    let file_menu = SubmenuBuilder::new(handle, "File")
+        .item(&command_menu_item(
+            handle,
+            "new",
+            "新建文稿",
+            Some("CmdOrCtrl+KeyN"),
+        )?)
+        .item(&command_menu_item(
+            handle,
+            "newWindow",
+            "新建窗口",
+            Some("CmdOrCtrl+Shift+KeyN"),
+        )?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "open",
+            "打开文件...",
+            Some("CmdOrCtrl+KeyO"),
+        )?)
+        .item(&command_menu_item(
+            handle,
+            "openFolder",
+            "打开文件夹...",
+            Some("CmdOrCtrl+Shift+KeyO"),
+        )?)
+        .item(&command_menu_item(handle, "quickOpen", "快速打开...", Some("CmdOrCtrl+KeyP"))?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "save",
+            "保存",
+            Some("CmdOrCtrl+KeyS"),
+        )?)
+        .item(&command_menu_item(
+            handle,
+            "saveAs",
+            "另存为...",
+            Some("CmdOrCtrl+Shift+KeyS"),
+        )?)
+        .item(&command_menu_item(
+            handle,
+            "openCurrentLocation",
+            "在访达中显示",
+            None,
+        )?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "closeDocument",
+            "关闭文稿",
+            Some("CmdOrCtrl+KeyW"),
+        )?)
+        .build()?;
+
+    let edit_menu = SubmenuBuilder::new(handle, "Edit")
+        .item(&command_menu_item(handle, "undo", "撤销", Some("CmdOrCtrl+KeyZ"))?)
+        .item(&command_menu_item(
+            handle,
+            "redo",
+            "重做",
+            Some("CmdOrCtrl+Shift+KeyZ"),
+        )?)
+        .separator()
+        .item(&command_menu_item(handle, "cut", "剪切", Some("CmdOrCtrl+KeyX"))?)
+        .item(&command_menu_item(handle, "copy", "复制", Some("CmdOrCtrl+KeyC"))?)
+        .item(&command_menu_item(handle, "paste", "粘贴", Some("CmdOrCtrl+KeyV"))?)
+        .item(&command_menu_item(
+            handle,
+            "pastePlain",
+            "粘贴为纯文本",
+            Some("CmdOrCtrl+Shift+KeyV"),
+        )?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "selectAll",
+            "全选",
+            Some("CmdOrCtrl+KeyA"),
+        )?)
+        .separator()
+        .item(&command_menu_item(handle, "showSearch", "查找", Some("CmdOrCtrl+KeyF"))?)
+        .item(&command_menu_item(
+            handle,
+            "showReplace",
+            "替换",
+            Some("CmdOrCtrl+KeyH"),
+        )?)
+        .item(&command_menu_item(
+            handle,
+            "workspaceSearch",
+            "全文搜索",
+            Some("CmdOrCtrl+Shift+KeyF"),
+        )?)
+        .build()?;
+
+    let view_menu = SubmenuBuilder::new(handle, "View")
+        .item(&command_menu_item(handle, "sourceMode", "编辑", Some("CmdOrCtrl+Key1"))?)
+        .item(&command_menu_item(handle, "splitMode", "分栏", Some("CmdOrCtrl+Key2"))?)
+        .item(&command_menu_item(
+            handle,
+            "previewMode",
+            "预览",
+            Some("CmdOrCtrl+Key3"),
+        )?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "toggleSidebar",
+            "切换侧边栏",
+            Some("CmdOrCtrl+KeyB"),
+        )?)
+        .item(&command_menu_item(handle, "showOutline", "大纲", None)?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "actualSize",
+            "实际大小",
+            Some("CmdOrCtrl+Digit0"),
+        )?)
+        .item(&command_menu_item(handle, "zoomIn", "放大", Some("CmdOrCtrl+Equal"))?)
+        .item(&command_menu_item(handle, "zoomOut", "缩小", Some("CmdOrCtrl+Minus"))?)
+        .build()?;
+
+    let window_menu = SubmenuBuilder::with_id(handle, WINDOW_SUBMENU_ID, "Window")
+        .item(&native_window_menu_item(
+            handle,
+            "minimize",
+            "最小化",
+            Some("CmdOrCtrl+KeyM"),
+        )?)
+        .item(&native_window_menu_item(handle, "zoom", "缩放", None)?)
+        .item(&native_window_menu_item(
+            handle,
+            "fullscreen",
+            "进入全屏",
+            Some("Ctrl+CmdOrCtrl+KeyF"),
+        )?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "alwaysOnTop",
+            "窗口置顶",
+            None,
+        )?)
+        .separator()
+        .item(&command_menu_item(
+            handle,
+            "newWindow",
+            "新建窗口",
+            Some("CmdOrCtrl+Shift+KeyN"),
+        )?)
+        .build()?;
+
+    let help_menu = SubmenuBuilder::with_id(handle, HELP_SUBMENU_ID, "Help")
+        .item(&command_menu_item(handle, "showShortcuts", "快捷键", None)?)
+        .item(&command_menu_item(handle, "mdReference", "Markdown 参考", None)?)
+        .item(&command_menu_item(handle, "migrationGuide", "迁移指南", None)?)
+        .item(&command_menu_item(handle, "checkUpdate", "检查更新...", None)?)
+        .separator()
+        .item(&command_menu_item(handle, "github", "GitHub", None)?)
+        .item(&command_menu_item(handle, "feedback", "反馈", None)?)
+        .build()?;
+
+    let menu = MenuBuilder::new(handle)
+        .item(&app_menu)
+        .item(&file_menu)
+        .item(&edit_menu)
+        .item(&view_menu)
+        .item(&window_menu)
+        .item(&help_menu)
+        .build()?;
+    app.set_menu(menu)?;
+
+    app.on_menu_event(|app, event| {
+        let id = event.id().as_ref();
+        if let Some(action) = id.strip_prefix("command:") {
+            match action {
+                "new" => emit_frontend_command(app, "new"),
+                "newWindow" => emit_frontend_command(app, "newWindow"),
+                "open" => emit_frontend_command(app, "open"),
+                "openFolder" => emit_frontend_command(app, "openFolder"),
+                "quickOpen" => emit_frontend_command(app, "quickOpen"),
+                "save" => emit_frontend_command(app, "save"),
+                "saveAs" => emit_frontend_command(app, "saveAs"),
+                "openCurrentLocation" => emit_frontend_command(app, "openCurrentLocation"),
+                "closeDocument" => emit_frontend_command(app, "closeDocument"),
+                "preferences" => emit_frontend_command(app, "preferences"),
+                "undo" => emit_frontend_command(app, "undo"),
+                "redo" => emit_frontend_command(app, "redo"),
+                "cut" => emit_frontend_command(app, "cut"),
+                "copy" => emit_frontend_command(app, "copy"),
+                "paste" => emit_frontend_command(app, "paste"),
+                "pastePlain" => emit_frontend_command(app, "pastePlain"),
+                "selectAll" => emit_frontend_command(app, "selectAll"),
+                "showSearch" => emit_frontend_command(app, "showSearch"),
+                "showReplace" => emit_frontend_command(app, "showReplace"),
+                "workspaceSearch" => emit_frontend_command(app, "workspaceSearch"),
+                "sourceMode" => emit_frontend_command(app, "sourceMode"),
+                "splitMode" => emit_frontend_command(app, "splitMode"),
+                "previewMode" => emit_frontend_command(app, "previewMode"),
+                "toggleSidebar" => emit_frontend_command(app, "toggleSidebar"),
+                "showOutline" => emit_frontend_command(app, "showOutline"),
+                "actualSize" => emit_frontend_command(app, "actualSize"),
+                "zoomIn" => emit_frontend_command(app, "zoomIn"),
+                "zoomOut" => emit_frontend_command(app, "zoomOut"),
+                "alwaysOnTop" => emit_frontend_command(app, "alwaysOnTop"),
+                "showShortcuts" => emit_frontend_command(app, "showShortcuts"),
+                "mdReference" => emit_frontend_command(app, "mdReference"),
+                "migrationGuide" => emit_frontend_command(app, "migrationGuide"),
+                "checkUpdate" => emit_frontend_command(app, "checkUpdate"),
+                "github" => emit_frontend_command(app, "github"),
+                "feedback" => emit_frontend_command(app, "feedback"),
+                _ => {}
+            }
+            return;
+        }
+
+        if let Some(command) = id.strip_prefix("native-window:") {
+            handle_native_window_command(app, command);
+        }
+    });
+
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
@@ -35,7 +402,7 @@ fn handle_macos_window_lifecycle(app: &tauri::AppHandle, event: &tauri::RunEvent
             label,
             event: tauri::WindowEvent::CloseRequested { api, .. },
             ..
-        } if label == "main" => {
+        } if is_prism_document_window(label) => {
             api.prevent_close();
             if let Some(window) = app.get_webview_window(label) {
                 let _ = window.hide();
@@ -46,11 +413,11 @@ fn handle_macos_window_lifecycle(app: &tauri::AppHandle, event: &tauri::RunEvent
             ..
         } => {
             if !has_visible_windows {
-                show_main_window(app);
+                show_preferred_window(app);
             }
         }
         tauri::RunEvent::Opened { .. } => {
-            show_main_window(app);
+            show_preferred_window(app);
         }
         _ => {}
     }
@@ -130,6 +497,7 @@ pub fn run() {
 
             commands::startup_files::register_startup_files(app);
             seed_initial_documents(app);
+            install_app_menu(app)?;
 
             Ok(())
         })

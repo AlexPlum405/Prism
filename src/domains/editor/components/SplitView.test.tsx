@@ -601,6 +601,47 @@ describe('SplitView editor lifecycle', () => {
     expect(screen.getByTestId('editor-pane')).toBeTruthy();
   });
 
+  it('does not capture Cmd+Shift+F as document search', () => {
+    render(
+      <SplitView
+        content="alpha beta alpha"
+        viewMode="split"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.keyDown(window, {
+      bubbles: true,
+      cancelable: true,
+      code: 'KeyF',
+      key: 'f',
+      metaKey: true,
+      shiftKey: true,
+    });
+
+    expect(screen.queryByPlaceholderText('查找')).toBeNull();
+  });
+
+  it('ignores workspace search events inside the document search panel', () => {
+    render(
+      <SplitView
+        content="alpha beta alpha"
+        viewMode="split"
+        onChange={vi.fn()}
+        onCursorChange={vi.fn()}
+      />,
+    );
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('prism-search', {
+        detail: { action: 'workspace', rootPath: '/repo/notes' },
+      }));
+    });
+
+    expect(screen.queryByPlaceholderText('查找')).toBeNull();
+  });
+
   it('queues preview-only source jumps until the editor is mounted', async () => {
     vi.useFakeTimers();
     mockState.mountDelayFrames = 2;

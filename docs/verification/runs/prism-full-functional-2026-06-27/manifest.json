@@ -8793,6 +8793,71 @@
       "testsFailed": 1,
       "log": "logs/unit-tests/registry-rerun.log",
       "failedTest": "src/domains/commands/registry.test.ts > command registry > runs enabled commands and skips disabled commands"
+    },
+    {
+      "id": "source-fix-regression-20260630",
+      "status": "Pass",
+      "testFiles": 17,
+      "testsPassed": 190,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/hooks/useBootstrap.test.tsx src/app/useAppFileActionsModel.test.tsx src/lib/fileActions.test.ts src/lib/openWindow.test.ts src/domains/commands/categories/fileCommands.test.ts src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts src/app/useAppCommandContext.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx src/domains/editor/components/SplitView.test.tsx src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/runtime/editorClipboardController.test.ts src/domains/editor/runtime/editorClipboardRuntime.test.ts src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/workspace/components/StatusBar.test.tsx"
+      ]
+    }
+  ],
+  "sourceFixBatches": [
+    {
+      "id": "source-fix-p0-p1-20260630",
+      "status": "InstalledAppSmokePassedPendingFullManualRetest",
+      "date": "2026-06-30",
+      "issueRefs": [
+        "P0-STARTUP-003",
+        "P0-FILE-002",
+        "P0-FILE-003",
+        "P0-DIAGNOSTICS-002",
+        "P0-EDITOR-004",
+        "P0-EDITOR-005",
+        "P1-EDITOR-006",
+        "P1-EDITOR-007",
+        "P1-SEARCH-001",
+        "P1-MENU-002",
+        "P1-WINDOW-001",
+        "P1-WINDOW-002"
+      ],
+      "verification": [
+        "17 targeted Vitest files / 190 assertions passed",
+        "cargo check passed",
+        "npm run build passed",
+        "git diff --check passed",
+        "npm run tauri:build:app-smoke passed",
+        "Replaced /Applications/Prism.app with built bundle and registered LaunchServices",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed"
+      ],
+      "notes": "Source fixes are packaged into /Applications/Prism.app and passed installed-app smoke. Historical full-feature Fail evidence remains unchanged until the affected cases are individually retested with real UI screenshots."
+    }
+  ],
+  "appSmokeRuns": [
+    {
+      "id": "installed-app-smoke-20260630",
+      "status": "Pass",
+      "date": "2026-06-30",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-20260630/report.json",
+      "screenshots": "screenshots/16-installed-app-smoke/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
     }
   ]
 }

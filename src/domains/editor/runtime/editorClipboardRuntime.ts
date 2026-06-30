@@ -38,23 +38,42 @@ export function insertTextAtSelection(view: EditorView, text: string) {
   view.focus();
 }
 
+function getClipboardImageFile(event: ClipboardEvent): File | null {
+  const itemFile = Array.from(event.clipboardData?.items ?? [])
+    .find((item) => item.type.startsWith('image/'))
+    ?.getAsFile();
+  if (itemFile) return itemFile;
+
+  return Array.from(event.clipboardData?.files ?? [])
+    .find((file) => file.type.startsWith('image/')) ?? null;
+}
+
+function clipboardHasImagePayload(event: ClipboardEvent): boolean {
+  const clipboard = event.clipboardData;
+  return (
+    Array.from(clipboard?.items ?? []).some((item) => item.type.startsWith('image/'))
+    || Array.from(clipboard?.files ?? []).some((file) => file.type.startsWith('image/'))
+  );
+}
+
 export async function handleEditorClipboardImagePaste(
   event: ClipboardEvent,
   view: EditorView,
   deps: EditorImageClipboardDeps,
 ) {
-  const imageItem = Array.from(event.clipboardData?.items ?? []).find((item) => item.type.startsWith('image/'));
-  if (!imageItem) return false;
+  const imageFile = getClipboardImageFile(event);
+  if (!imageFile) {
+    if (!clipboardHasImagePayload(event)) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    deps.notice(deps.messages.clipboardUnreadable);
+    return true;
+  }
 
   event.preventDefault();
   event.stopPropagation();
 
-  const imageFile = imageItem.getAsFile();
   const document = deps.getCurrentDocument();
-  if (!imageFile) {
-    deps.notice(deps.messages.clipboardUnreadable);
-    return true;
-  }
   if (!document?.path) {
     deps.notice(deps.messages.saveBeforePaste);
     return true;

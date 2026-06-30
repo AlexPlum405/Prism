@@ -20,6 +20,7 @@ import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 
 type EditorCommandDetail = ({ command?: string } & Record<string, unknown>) | null | undefined;
 type EditorCommandRecord = Record<string, unknown>;
+const INLINE_CONTEXT_FORMATS = new Set(['bold', 'italic', 'link', 'underline', 'strikethrough']);
 
 interface UseEditorCommandEventModelInput {
   viewRef: RefObject<EditorView | null>;
@@ -62,12 +63,67 @@ export function useEditorCommandEventModel({
     const view = viewRef.current;
     if (!view) return;
 
+    if (INLINE_CONTEXT_FORMATS.has(action)) {
+      handleFormat(action as EditorFormat);
+      view.focus();
+      return;
+    }
+
+    if (isSourceBlockOperation(action)) {
+      handleSourceBlockOperation(action);
+      view.focus();
+      return;
+    }
+
+    const tableCommand = EDITOR_TABLE_COMMANDS[action];
+    if (tableCommand) {
+      handleTableCommand(tableCommand);
+      view.focus();
+      return;
+    }
+
+    if (runBasicEditorCommand(action, view, { handleTablePasteText })) {
+      view.focus();
+      return;
+    }
+
+    switch (action) {
+      case 'selectTable':
+        handleSelectTable();
+        view.focus();
+        return;
+      case 'copyTableMarkdown':
+        void handleTableCopy('markdown');
+        view.focus();
+        return;
+      case 'copyTableHtml':
+        void handleTableCopy('html');
+        view.focus();
+        return;
+      case 'copyTableCsv':
+        void handleTableCopy('csv');
+        view.focus();
+        return;
+      case 'copyTableTsv':
+        void handleTableCopy('tsv');
+        view.focus();
+        return;
+    }
+
     if (isCommandId(action)) {
       emitAppEvent('command.run', { action });
     }
 
     view.focus();
-  }, [viewRef]);
+  }, [
+    handleFormat,
+    handleSelectTable,
+    handleSourceBlockOperation,
+    handleTableCommand,
+    handleTableCopy,
+    handleTablePasteText,
+    viewRef,
+  ]);
 
   useEffect(() => {
     const onFormat = (detail: { format?: string } | null | undefined) => {

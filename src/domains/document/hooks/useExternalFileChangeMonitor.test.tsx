@@ -79,6 +79,47 @@ describe('useExternalFileChangeMonitor', () => {
     expect(useDocumentStore.getState().currentDocument?.saveStatus).toBe('conflict');
   });
 
+  it('checks dirty documents on the fast conflict timer before the normal interval', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 9, mtime: new Date(2000) });
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(15000, true));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(999);
+    });
+    expect(stat).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+
+    expect(stat).toHaveBeenCalledWith('/tmp/a.md');
+    expect(useDocumentStore.getState().currentDocument?.saveStatus).toBe('conflict');
+  });
+
+  it('checks the active document when the page becomes visible again', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 9, mtime: new Date(2000) });
+    useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
+    useDocumentStore.getState().updateContent('# B');
+
+    renderHook(() => useExternalFileChangeMonitor(15000, true));
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    });
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+
+    expect(stat).toHaveBeenCalledWith('/tmp/a.md');
+    expect(useDocumentStore.getState().currentDocument?.saveStatus).toBe('conflict');
+  });
+
   it('checks clean documents but leaves unchanged content alone', async () => {
     useDocumentStore.getState().openDocument('/tmp/a.md', 'a.md', '# A', { size: 3, mtimeMs: 1000 });
 

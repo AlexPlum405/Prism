@@ -57,6 +57,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 收尾补测剩余可安全执行项：新增文件 `real-index-incremental-20260630.md` 后，不重启 App 重新激活可在文件树看到新文件，`PRISM-FF-117` 标记 Pass，但即时刷新仍需后续关注；真实导出 `real-links-click.pdf` 成功，平台 PDF capture 可用，但 PDF 内没有 `/URI`、`/Annots`、`/Link`，`PRISM-FF-122` 标记 Fail；Finder 中 `.md` 文件显示 Markdown 文档图标，`PRISM-FF-146` 标记 Pass；macOS 最小化、缩放和 close/reopen 生命周期未按标准行为变化，`PRISM-FF-140/141` 标记 Fail。删除、重命名父文件夹、用户主题包、字体导入、设置错误、断网、Worker/内存/超大工作区等需要破坏性操作、真实平台或注入故障的项目均标记 Blocked，并写明原因。
 
+2026-06-30 源码修复批次已覆盖本轮 P0/P1 中的启动/系统打开文本文件、dirty 外部修改冲突、Typography 入口、基础剪贴板、图片粘贴、Selection callout、选区右键、工作区搜索、原生 macOS File 菜单和窗口菜单路径。自动化验证已通过：相关 Vitest 批次 17 个文件 / 190 条断言通过，`cargo check` 通过，`npm run build` 通过，`git diff --check` 通过。由于尚未重新打包替换 `/Applications/Prism.app` 并做真实 UI 复测，统计中的真实 App Fail 数暂不改为 Pass，相关 issue 记录为“源码已修复，待换包回归”。
+
 ## 执行统计
 
 - 总用例：168
@@ -104,19 +106,28 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 屏幕锁定阻塞日志：logs/computer-use-real-app/screen-locked-blocker-2026-06-29.log
 - 防睡眠状态记录：logs/computer-use-real-app/caffeinate-ui-test.status
 - 浏览器 mock 日志：logs/playwright-console.log、logs/playwright-body-start.txt、logs/elements-startup.json
+- 2026-06-30 安装版 smoke 报告：logs/app-smoke-installed-20260630/report.json
+- 2026-06-30 安装版 smoke 截图：screenshots/16-installed-app-smoke/
+
+## 2026-06-30 修复批次状态
+
+- 已重新打包并替换 `/Applications/Prism.app`，Info.plist 身份为 `com.prism.editor.v1`，版本 `1.4.1`，Markdown 文档图标资源和 `Resources/Initial` 均在安装包内。
+- `npm run tauri:build:app-smoke` 已通过，覆盖构建产物的启动、诊断、Quick Open、保存、导出菜单、设置中心和复杂导出产物。
+- `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs` 已通过，覆盖真实安装版 `.markdown` 中文/空格路径、JSON、SQL、TXT、Markdown 启动不白屏、ERROR 状态栏诊断、Quick Open、基础编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
+- 原始全功能截图中的 Fail 不直接改写为 Pass；本节只证明安装版 smoke 覆盖的路径已经回归通过。剩余 P0/P1 项仍需按原 manifest 用例逐项真实 UI 复测后再改状态。
 
 ## 最高优先级问题
 
 1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。
-2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。
+2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。2026-06-30 安装版 smoke 已覆盖 JSON/SQL/TXT 不白屏，待原用例截图复测后更新状态。
 3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。
 4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。
-5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。
-6. P0-COMMAND-001：命令注册测试中 `runCommand("new")` 未触发 `createNewDocument`，影响“文件 > 新建文稿”语义验收。
-7. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。
-8. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。
-9. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。
-10. P0-EDITOR-005：图片剪贴板粘贴未进入资产管线，无法从剪贴板直接插入图片。
+5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版 smoke 已覆盖启动默认文档，待原用例截图复测后更新状态。
+6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。
+7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。
+8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。
+9. P0-EDITOR-005：图片剪贴板粘贴未进入资产管线，无法从剪贴板直接插入图片。
+10. P1-MENU-002：原生 macOS File 菜单缺少 Prism 核心文件入口。
 
 ## 本轮新增有效截图覆盖
 
@@ -149,7 +160,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 ## 未覆盖风险
 
-- 当前真实 App 窗口可测，但启动/新建窗口默认文档、最小化/缩放/close-reopen 生命周期均存在真实失败；系统打开非 Markdown 文件已真实复现白屏失败。
+- 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期仍只有源码修复与构建通过证据，待换包后按原窗口生命周期用例单独复测。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
 - 当前 `screenshots/15-computer-use-real-app/` 下的 195 张截图是真实 Prism/导出产物/Finder 截图；其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。

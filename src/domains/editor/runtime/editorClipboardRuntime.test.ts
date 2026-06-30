@@ -45,12 +45,24 @@ function createDeps(overrides: Partial<EditorImageClipboardDeps> = {}): EditorIm
 function createClipboardEvent(file: File | null) {
   return {
     clipboardData: {
+      files: [],
       items: [
         {
           type: 'image/png',
           getAsFile: () => file,
         },
       ],
+    },
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+  } as unknown as ClipboardEvent;
+}
+
+function createClipboardFilesEvent(file: File) {
+  return {
+    clipboardData: {
+      files: [file],
+      items: [],
     },
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
@@ -92,6 +104,21 @@ describe('editorClipboardRuntime', () => {
         documentPath: '/tmp/note.md',
         file,
       });
+      expect(view.state.doc.toString()).toBe('![image](assets/image.png)');
+    } finally {
+      destroy();
+    }
+  });
+
+  it('accepts image files exposed through clipboardData.files', async () => {
+    const { view, destroy } = createView('');
+    const file = new File(['png'], 'image-from-files.png', { type: 'image/png' });
+    const deps = createDeps();
+
+    try {
+      const handled = await handleEditorClipboardImagePaste(createClipboardFilesEvent(file), view, deps);
+      expect(handled).toBe(true);
+      expect(deps.saveImage).toHaveBeenCalledWith(expect.objectContaining({ file }));
       expect(view.state.doc.toString()).toBe('![image](assets/image.png)');
     } finally {
       destroy();

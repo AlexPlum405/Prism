@@ -88,7 +88,10 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
 
   useEffect(() => {
     if (!enabled) return;
-    if (currentDocument) return;
+    if (currentDocument) {
+      void revealCurrentWindow();
+      return;
+    }
 
     let cancelled = false;
     const params = new URLSearchParams(window.location.search);

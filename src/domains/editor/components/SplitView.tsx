@@ -908,7 +908,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
             return;
           }
         }
-        if ((e.ctrlKey || e.metaKey) && key === 'f') {
+        if ((e.ctrlKey || e.metaKey) && key === 'f' && !e.shiftKey) {
           e.preventDefault();
           e.stopPropagation();
           activateSearch('find');
@@ -920,7 +920,8 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         }
       };
       window.addEventListener('keydown', handleGlobalKeyDown, true);
-      const unsubscribeSearch = onAppEvent('search.open', ({ action }) => {
+      const unsubscribeSearch = onAppEvent('search.open', ({ action, rootPath }) => {
+        if (rootPath || action === 'workspace') return;
         activateSearch(action === 'replace' ? 'replace' : 'find');
       });
       return () => {

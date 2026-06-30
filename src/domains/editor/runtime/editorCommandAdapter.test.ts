@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { EditorSelection } from '@codemirror/state';
 import { createEditorRuntime } from './createEditorRuntime';
 import { runBasicEditorCommand } from './editorCommandAdapter';
@@ -8,7 +8,82 @@ function createView(doc: string) {
   return createEditorRuntime({ doc, extensions: [], parent });
 }
 
+beforeAll(() => {
+  if (!Range.prototype.getClientRects) {
+    Object.defineProperty(Range.prototype, 'getClientRects', {
+      value: () => [],
+    });
+  }
+
+  if (!Range.prototype.getBoundingClientRect) {
+    Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
+      value: () => ({
+        bottom: 0,
+        height: 0,
+        left: 0,
+        right: 0,
+        top: 0,
+        width: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => undefined,
+      }),
+    });
+  }
+});
+
 describe('editorCommandAdapter', () => {
+  it('writes the CodeMirror selection to the system clipboard for copy', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const view = createView('hello world');
+    view.dispatch({ selection: EditorSelection.range(0, 5) });
+
+    expect(runBasicEditorCommand('copy', view, { handleTablePasteText: vi.fn() })).toBe(true);
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('hello');
+    });
+
+    view.destroy();
+  });
+
+  it('cuts the CodeMirror selection only after writing it to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const view = createView('hello world');
+    view.dispatch({ selection: EditorSelection.range(0, 5) });
+
+    expect(runBasicEditorCommand('cut', view, { handleTablePasteText: vi.fn() })).toBe(true);
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('hello');
+      expect(view.state.doc.toString()).toBe(' world');
+    });
+
+    view.destroy();
+  });
+
+  it('pastes plain text from the system clipboard at the active selection', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { readText: vi.fn().mockResolvedValue('Prism') },
+    });
+    const view = createView('hello world');
+    view.dispatch({ selection: EditorSelection.range(0, 5) });
+
+    expect(runBasicEditorCommand('paste', view, { handleTablePasteText: vi.fn(() => false) })).toBe(true);
+    await vi.waitFor(() => {
+      expect(view.state.doc.toString()).toBe('Prism world');
+    });
+
+    view.destroy();
+  });
+
   it('selects all text for selectAll command', () => {
     const view = createView('hello');
 

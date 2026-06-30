@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { CommandPaletteMode } from '../components/shell/CommandPalette';
+import { onAppEvent } from '../platform/events/appEvents';
 
 export function useAppAuxiliaryModalsModel() {
   const [shortcutPanelVisible, setShortcutPanelVisible] = useState(false);
@@ -20,6 +21,13 @@ export function useAppAuxiliaryModalsModel() {
     setCommandPaletteMode('search');
     setCommandPaletteVisible(true);
   }, []);
+
+  useEffect(() => (
+    onAppEvent('search.open', ({ action, rootPath }) => {
+      if (!rootPath && action !== 'workspace') return;
+      openWorkspaceSearch();
+    })
+  ), [openWorkspaceSearch]);
 
   return {
     aboutVisible,

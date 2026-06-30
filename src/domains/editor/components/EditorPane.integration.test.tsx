@@ -396,6 +396,65 @@ describe('EditorPane command event integration', () => {
     }
   });
 
+  it('keeps right-click selection actions enabled when CodeMirror cannot map selection coordinates', async () => {
+    const posSpy = vi.spyOn(EditorView.prototype, 'posAtCoords').mockReturnValue(null);
+    await renderEditorPane('hello world');
+    const view = getMountedEditorView();
+
+    try {
+      act(() => {
+        view.dispatch({ selection: { anchor: 0, head: 5 } });
+      });
+
+      fireEvent.contextMenu(view.dom, {
+        bubbles: true,
+        cancelable: true,
+        clientX: 12,
+        clientY: 12,
+      });
+
+      const menu = (await screen.findAllByRole('menu'))[0];
+      expect(within(menu).getByText('剪切').closest('[role="menuitem"]')).not.toHaveAttribute('aria-disabled');
+      expect(within(menu).getByText('复制').closest('[role="menuitem"]')).not.toHaveAttribute('aria-disabled');
+      expect(within(menu).getByText('链接').closest('[role="menuitem"]')).not.toHaveAttribute('aria-disabled');
+    } finally {
+      posSpy.mockRestore();
+    }
+  });
+
+  it('copies the active CodeMirror selection from the editor context menu', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    await renderEditorPane('hello world');
+    const view = getMountedEditorView();
+
+    act(() => {
+      view.dispatch({ selection: { anchor: 0, head: 5 } });
+    });
+
+    fireEvent.contextMenu(view.dom, {
+      bubbles: true,
+      cancelable: true,
+      clientX: 12,
+      clientY: 12,
+    });
+
+    const menu = (await screen.findAllByRole('menu'))[0];
+    const copyItem = within(menu).getByText('复制').closest('[role="menuitem"]');
+    expect(copyItem).not.toHaveAttribute('aria-disabled');
+    await act(async () => {
+      fireEvent.click(copyItem!);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('hello');
+    });
+  });
+
   it('handles heading events from menus and the command palette', async () => {
     const { changes, onChange } = await renderEditorPane('Section title');
 
@@ -502,6 +561,28 @@ describe('EditorPane command event integration', () => {
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
       expect(latestChange(changes)).toBe('> [!IMPORTANT]\n> Key decision');
+    });
+  });
+
+  it('preserves the original selection while choosing a selection callout kind', async () => {
+    const { changes, onChange } = await renderEditorPane('Keep this selection');
+
+    await dispatchEditorCommand({ command: 'selectAll' });
+    await dispatchEditorCommand({ command: 'selectionCallout' });
+    act(() => {
+      getMountedEditorView().dispatch({ selection: { anchor: 0 } });
+    });
+
+    const warningButton = document.querySelector('button[data-callout-kind="warning"]') as HTMLButtonElement;
+    expect(warningButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(warningButton);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(latestChange(changes)).toBe('> [!WARNING]\n> Keep this selection');
     });
   });
 

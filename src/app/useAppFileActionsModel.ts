@@ -63,7 +63,10 @@ export function useAppFileActionsModel({
     }, { entryPoint: 'system' });
   }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
 
-  useStartupFileOpen({ onOpenFilePath: handleStartupFileOpen });
+  useStartupFileOpen({
+    onOpenFilePath: handleStartupFileOpen,
+    pendingFilePollDelays: [],
+  });
 
   const handleFileClick = useCallback(async (path: string) => {
     await handleFileAction({ action: 'openFile', path });

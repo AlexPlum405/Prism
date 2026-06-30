@@ -115,6 +115,9 @@ export function StatusBar({
   linkIssueCount = 0,
   linkIssueTitle,
   onLinkDiagnosticsClick,
+  typographyIssueCount = 0,
+  typographyIssueTitle,
+  onTypographyDiagnosticsClick,
   onRelationGraphClick,
   hasDocumentRelations = false,
   exportFeedback = null,
@@ -212,6 +215,19 @@ export function StatusBar({
               onClick={onLinkDiagnosticsClick}
             >
               ERROR {linkIssueCount}
+            </button>
+          )}
+          {documentProfileKind !== 'text' && onTypographyDiagnosticsClick && (
+            <button
+              className={`${styles.diagnostic} ${styles.typographyDiagnostic}`}
+              title={typographyIssueTitle ?? (
+                typographyIssueCount > 0
+                  ? t('status.typographyDiagnosticsCount', { count: formatStatusNumber(typographyIssueCount) })
+                  : t('status.typographyDiagnostics')
+              )}
+              onClick={onTypographyDiagnosticsClick}
+            >
+              {typographyIssueCount > 0 ? `TYPO ${formatStatusNumber(typographyIssueCount)}` : t('status.typographyDiagnosticsShort')}
             </button>
           )}
           {exportProgress && exportProgressInBackground && (

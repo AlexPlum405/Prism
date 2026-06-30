@@ -8,6 +8,37 @@ interface BasicEditorCommandDeps {
   handleTablePasteText: (view: EditorView, text: string) => boolean;
 }
 
+async function writePlainTextClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  textarea.style.top = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const copied = document.execCommand?.('copy');
+  document.body.removeChild(textarea);
+  if (!copied) throw new Error('Clipboard write failed');
+}
+
+async function readPlainTextClipboard(): Promise<string> {
+  if (!navigator.clipboard?.readText) return '';
+  return navigator.clipboard.readText();
+}
+
+function getSelectionText(view: EditorView) {
+  const selection = view.state.selection.main;
+  if (selection.from === selection.to) return '';
+  return view.state.doc.sliceString(selection.from, selection.to);
+}
+
 export function getCurrentHeadingFoldRange(view: EditorView) {
   let line = view.state.doc.lineAt(view.state.selection.main.head);
 
@@ -34,15 +65,26 @@ export function runBasicEditorCommand(
     case 'redo':
       redo(view);
       return true;
-    case 'cut':
-      document.execCommand('cut');
+    case 'cut': {
+      const selection = view.state.selection.main;
+      const text = getSelectionText(view);
+      if (text) {
+        void writePlainTextClipboard(text).then(() => {
+          view.dispatch({
+            changes: { from: selection.from, to: selection.to, insert: '' },
+            selection: { anchor: selection.from },
+            scrollIntoView: true,
+          });
+          view.focus();
+        });
+      }
       return true;
+    }
     case 'copy':
     case 'copyMd':
     case 'copyPlain': {
-      const selection = view.state.selection.main;
-      const text = view.state.doc.sliceString(selection.from, selection.to);
-      if (text) void navigator.clipboard.writeText(text);
+      const text = getSelectionText(view);
+      if (text) void writePlainTextClipboard(text);
       return true;
     }
     case 'copyHtml': {
@@ -58,11 +100,15 @@ export function runBasicEditorCommand(
       return true;
     case 'paste':
     case 'pastePlain':
-      void navigator.clipboard.readText().then((text) => {
+      void readPlainTextClipboard().then((text) => {
+        if (!text) return;
         if (deps.handleTablePasteText(view, text)) return;
         view.dispatch({
           changes: { from: view.state.selection.main.from, to: view.state.selection.main.to, insert: text },
+          selection: { anchor: view.state.selection.main.from + text.length },
+          scrollIntoView: true,
         });
+        view.focus();
       });
       return true;
     case 'clearFormat': {

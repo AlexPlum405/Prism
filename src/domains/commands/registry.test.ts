@@ -1497,21 +1497,24 @@ describe('command registry', () => {
     expect(detail.diagnostic).toContain('Pandoc 引用条件: 未满足');
   });
 
-  it('runs enabled commands and skips disabled commands', async () => {
+  it('does not create an in-memory untitled document when new has no target folder and skips disabled save', async () => {
     const createNewDocument = vi.fn();
     const requestSavePath = vi.fn();
+    const showToast = vi.fn();
     const context = createCommandContext({
       documentStore: {
         ...createCommandContext().documentStore,
         createNewDocument,
       },
       requestSavePath,
+      showToast,
     });
 
     await runCommand('new', context);
     await runCommand('save', context);
 
-    expect(createNewDocument).toHaveBeenCalledTimes(1);
+    expect(createNewDocument).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('当前没有打开的工作区');
     expect(requestSavePath).not.toHaveBeenCalled();
   });
 
