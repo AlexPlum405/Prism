@@ -745,7 +745,7 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/export-artifact-validation.log`
 - 备注：复杂图表导出已经覆盖；后续应继续用用户指南级长文档验证分页、WPS 视觉和超长 PNG 分片。
 
-### P0-EXPORT-006 Front Matter export.toc 未覆盖导出目录
+### P0-EXPORT-006 Front Matter export.toc 未覆盖导出目录（已修复）
 
 - 严重度：P0
 - 用例 ID：PRISM-FF-078
@@ -755,12 +755,16 @@ Bundle ID：com.prism.editor.v1
   3. 打开该开关后导出 HTML。
   4. 检查生成的 `fixtures/computer-use-real-app/real-frontmatter-export.html`。
   5. 测试后恢复 `frontMatterOverrides=false`。
-- 问题表现：
+- 原问题表现：
   - HTML 产物包含 `<title>Front Matter Export Override Title</title>`。
   - HTML 产物包含 `<meta name="author" content="Prism QA">`。
   - 但 `export.toc: true` 没有生成实际目录；产物中只有 `.prism-export-toc` CSS，正文直接从 H1 开始。
+- 修正后结果：
+  - 2026-07-01 源码已让导出 Front Matter 解析器同时支持顶层字段和嵌套 `export.template/export.paper/export.margin/export.toc`。
+  - `export.margin: narrow` 兼容映射为 Prism 内部 `compact` 页边距。
+  - 重新打包替换 `/Applications/Prism.app` 后，真实安装版导出同一 fixture，HTML 中已生成 `<nav class="prism-export-toc ...">`，并包含 `#front-matter-export-fixture`、`#section-one` 两个目录链接和 heading id。
 - 预期表现：开启 Front Matter 覆盖导出后，`title`、`author`、`toc` 等字段应按同一 schema 生效；`export.toc: true` 应生成实际目录内容。
-- 复现稳定性：2026-06-30 真实 `/Applications/Prism.app` + Computer Use 复测一次。
+- 复现稳定性：2026-06-30 真实 `/Applications/Prism.app` + Computer Use 复测失败一次；2026-07-01 安装版复测通过一次。
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-181-frontmatter-export-source-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-182-frontmatter-export-menu-window.png`
@@ -768,9 +772,11 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-184-frontmatter-override-setting-off-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-185-frontmatter-override-setting-on-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-186-frontmatter-html-export-complete-window.png`
+  - `screenshots/29-installed-frontmatter-export-toc-smoke/01-frontmatter-html-export-success.png`
   - `fixtures/computer-use-real-app/real-frontmatter-export.html`
   - `logs/computer-use-real-app/frontmatter-export-html-check.log`
-- 备注：本轮仅记录真实导出结果，不修改导出逻辑。
+  - `logs/computer-use-real-app/frontmatter-export-html-check-20260701.log`
+- 备注：历史 `PRISM-CU-186` 和旧日志保留为 pre-fix 失败证据；修复后通过证据见 `PRISM-CU-275`。
 
 ### P2-EXPORT-002 PDF 导出存在孤立标题分页
 

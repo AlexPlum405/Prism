@@ -53,6 +53,31 @@ Content`);
     });
   });
 
+  it('parses nested export overrides used by Prism guide documents', () => {
+    const result = parseExportFrontMatter(`---
+title: Front Matter Export Override Title
+author: Prism QA
+date: 2026-06-30
+export:
+  template: theme
+  toc: true
+  paper: a4
+  margin: narrow
+---
+# Body`);
+
+    expect(result.content).toBe('# Body');
+    expect(result.frontMatter).toEqual({
+      title: 'Front Matter Export Override Title',
+      author: 'Prism QA',
+      date: '2026-06-30',
+      templateId: 'theme',
+      pdfPaper: 'a4',
+      pdfMargin: 'compact',
+      toc: true,
+    });
+  });
+
   it('strips valid front matter but ignores unsupported values', () => {
     const result = parseExportFrontMatter(`---
 template: poster

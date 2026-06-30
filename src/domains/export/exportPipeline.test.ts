@@ -354,6 +354,49 @@ describe('export pipeline html', () => {
     expect(mermaidMock.render).toHaveBeenCalledTimes(1);
   });
 
+  it('exports nested front matter toc overrides as real table of contents markup', async () => {
+    const options = resolveExportOptions({
+      content: `---
+title: Front Matter Export Override Title
+author: Prism QA
+date: 2026-06-30
+export:
+  template: theme
+  toc: true
+  paper: a4
+  margin: narrow
+---
+# Front Matter Export Fixture
+
+## Section One
+
+Export override evidence content.`,
+      filename: 'real-frontmatter-export.md',
+      settings: {
+        ...DEFAULT_SETTINGS,
+        contentTheme: 'miaoyan',
+        exportDefaults: {
+          ...DEFAULT_SETTINGS.exportDefaults,
+          frontMatterOverrides: true,
+          htmlIncludeTheme: true,
+          toc: false,
+        },
+      },
+    });
+
+    await exportHtml(options, '/tmp/frontmatter-export.html');
+
+    const html = fsMock.writeTextFile.mock.calls[0][1] as string;
+    expect(html).toContain('<title>Front Matter Export Override Title</title>');
+    expect(html).toContain('<meta name="author" content="Prism QA">');
+    expect(html).toContain('<meta name="date" content="2026-06-30">');
+    expect(html).toContain('<nav class="prism-export-toc');
+    expect(html).toContain('href="#front-matter-export-fixture"');
+    expect(html).toContain('href="#section-one"');
+    expect(html).toContain('id="front-matter-export-fixture"');
+    expect(html).toContain('id="section-one"');
+  });
+
   it('renders Markmap and PlantUML placeholders before writing html export output', async () => {
     vi.stubGlobal('fetch', vi.fn());
 

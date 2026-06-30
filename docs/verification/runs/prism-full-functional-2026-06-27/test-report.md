@@ -59,6 +59,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 修正 `PRISM-FF-122 / P1-EXPORT-007` PDF 链接注释验收：原 `strings` 检查没有发现 `/URI`、`/Annots`、`/Link`，但该方式会漏掉压缩或间接对象。改用 `pdf-lib` 解析真实导出产物 `real-links-click.pdf` 后，确认第 1 页有 1 个 `/Subtype /Link` 注释，URI 为 `https://github.com/AlexPlum405/Prism`；外链注释实际存在，wiki link 和相对 Markdown link 按当前安全策略不生成外部 URI。已补 native WebKit PDF + 页眉页脚保留 URI annotation 单测，`PRISM-FF-122` 改为 Pass。证据见 `logs/computer-use-real-app/pdf-link-annotations-pdf-lib-20260701.log` 和 `logs/unit-tests/export-pdf-link-annotations-20260701.log`。
 
+2026-07-01 修复 `PRISM-FF-078 / P0-EXPORT-006` Front Matter 嵌套导出覆盖：原解析器只读取顶层 `toc/template/paper/margin`，导致 fixture 中的 `export.toc: true` 被忽略。源码已同时支持嵌套 `export.template/export.paper/export.margin/export.toc`，并将 `export.margin: narrow` 兼容映射为 `compact`。重新打包替换 `/Applications/Prism.app` 后，真实安装版导出 `real-frontmatter-export.md` 通过：HTML 产物包含 `prism-export-toc` nav、`#front-matter-export-fixture` 和 `#section-one` 锚点。证据见 `PRISM-CU-275`、`screenshots/29-installed-frontmatter-export-toc-smoke/` 和 `logs/computer-use-real-app/frontmatter-export-html-check-20260701.log`。
+
 2026-06-30 源码修复批次已覆盖本轮 P0/P1 中的启动/系统打开文本文件、dirty 外部修改冲突、Typography 入口、基础剪贴板、图片粘贴、Selection callout、选区右键、工作区搜索、原生 macOS File 菜单和窗口菜单路径。自动化验证已通过：相关 Vitest 批次 17 个文件 / 190 条断言通过，`cargo check` 通过，`npm run build` 通过，`git diff --check` 通过。随后已分批重新打包替换 `/Applications/Prism.app` 并补充安装版真实 UI 复测；历史 Fail 证据保留为 pre-fix 记录，修复后 Pass 证据以 `PRISM-CU-*` delta 追加。
 
 2026-06-30 追加 `P0-FILE-003` dirty 外部修改冲突专项回归：第一次安装版复测 `PRISM-CU-247` 仍复现静默合并，定位为 snapshot 不完整或未变化时外部监测提前 return，内容基线兜底未执行。随后源码新增 `lastSavedContent` 内容基线，dirty 外部监测和 auto-save 保存前均用磁盘内容与基线比对兜底；重新打包替换 `/Applications/Prism.app` 后，`PRISM-CU-249` 真实 UI 复测确认出现“文件冲突”弹窗，提供重新加载、另存为、覆盖三个处理入口，编辑区保留本地未保存内容。验证通过：文档安全 Vitest 3 文件 / 26 条断言、`npm run build`、干净 worktree `npm run tauri:build:app-smoke`、替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`。
@@ -88,21 +90,21 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：95
-- Fail：43
+- Pass：96
+- Fail：42
 - Blocked：30
 - Not Run：0
-- P0 执行：Pass 58 / Fail 29 / Blocked 1 / Not Run 0
+- P0 执行：Pass 59 / Fail 28 / Blocked 1 / Not Run 0
 - P1 执行：Pass 30 / Fail 13 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：413
-- Manifest 真实 Computer Use 截图引用：231
+- 当前截图文件总数：414
+- Manifest 真实 Computer Use 截图引用：232
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：231（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`）
-- 单元/集成测试批次：7
-- 单元/集成测试文件通过：58
-- 单元/集成测试断言通过：576
+- 真实 Computer Use/安装版 UI 截图：232（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`）
+- 单元/集成测试批次：8
+- 单元/集成测试文件通过：61
+- 单元/集成测试断言通过：659
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已重新打包后安装版真实复测通过，历史失败证据保留为 pre-fix 记录
@@ -226,6 +228,6 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 当前真实 App 窗口可测；2026-06-30 安装版 smoke 已覆盖启动默认文档和 JSON/SQL/TXT 不白屏。最小化/缩放/close-reopen 生命周期已完成源码修复、换包和真实安装版复测，后续只需补更细的全屏/多显示器专项。
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
-- 当前 manifest 中登记了 231 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
+- 当前 manifest 中登记了 232 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。

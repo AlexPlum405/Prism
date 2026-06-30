@@ -208,6 +208,50 @@ toc: true
     });
   });
 
+  it('applies nested yaml export overrides when enabled', () => {
+    const options = resolveExportOptions({
+      content: `---
+title: Front Matter Export Override Title
+author: Prism QA
+date: 2026-06-30
+export:
+  template: theme
+  paper: a4
+  margin: narrow
+  toc: true
+---
+# Body`,
+      filename: 'demo.md',
+      settings: createSettings({
+        exportDefaults: {
+          ...DEFAULT_SETTINGS.exportDefaults,
+          frontMatterOverrides: true,
+          templateId: 'business',
+          pdfPaper: 'letter',
+          pdfMargin: 'wide',
+          toc: false,
+        },
+      }),
+    });
+
+    expect(options).toMatchObject({
+      content: '# Body',
+      title: 'Front Matter Export Override Title',
+      author: 'Prism QA',
+      date: '2026-06-30',
+      templateId: 'theme',
+      pdfPaper: 'a4',
+      pdfMargin: 'compact',
+      toc: true,
+      frontMatter: {
+        title: 'Front Matter Export Override Title',
+        templateId: 'theme',
+        pdfMargin: 'compact',
+        toc: true,
+      },
+    });
+  });
+
   it('applies yaml template defaults when front matter changes the template', () => {
     const options = resolveExportOptions({
       content: `---

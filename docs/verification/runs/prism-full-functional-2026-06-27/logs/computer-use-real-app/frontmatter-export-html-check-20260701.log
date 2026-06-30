@@ -1,0 +1,16 @@
+{
+  "file": "docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-frontmatter-export.html",
+  "verifiedAt": "2026-07-01T00:25:00+08:00",
+  "app": "/Applications/Prism.app",
+  "bundleId": "com.prism.editor.v1",
+  "fileBytes": 400533,
+  "hasFrontMatterTitle": true,
+  "hasAuthor": true,
+  "hasDate": true,
+  "hasTocNav": true,
+  "hasTocTitle": true,
+  "hasSourceHeading": true,
+  "hasRootAnchor": true,
+  "hasSectionAnchor": true,
+  "result": "Pass"
+}

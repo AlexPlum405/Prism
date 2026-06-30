@@ -4684,6 +4684,28 @@
       "issueRef": "P0-KNOWLEDGE-002",
       "notes": "同批次补充安装版证据；PRISM-CU-214 到 PRISM-CU-217 仍作为图谱搜索、聚焦和拖拽交互通过证据。",
       "windowSize": "1100x760 logical / 2200x1520 captured pixels"
+    },
+    {
+      "id": "PRISM-CU-275",
+      "date": "2026-07-01",
+      "area": "Front Matter 覆盖导出",
+      "feature": "嵌套 export.toc 安装版复测",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-frontmatter-export.md",
+      "steps": [
+        "临时开启 Front matter 覆盖导出并打开 real-frontmatter-export.md",
+        "通过真实安装版 Prism 执行 导出 > 导出为 HTML",
+        "检查生成的 real-frontmatter-export.html",
+        "恢复用户原导出设置",
+        "截图记录导出完成 toast"
+      ],
+      "expected": "嵌套 export.toc: true 应生成真实目录 nav，并为目录条目对应标题生成锚点。",
+      "actual": "HTML 导出成功；产物包含 prism-export-toc nav、Front Matter Export Fixture 和 Section One 的目录链接，且包含 #front-matter-export-fixture / #section-one heading id。",
+      "status": "Pass",
+      "screenshot": "screenshots/29-installed-frontmatter-export-toc-smoke/01-frontmatter-html-export-success.png",
+      "issueRef": "P0-EXPORT-006",
+      "notes": "真实 /Applications/Prism.app + Computer Use 复测；检查日志：logs/computer-use-real-app/frontmatter-export-html-check-20260701.log。",
+      "windowSize": "full-screen capture 2992x1934 pixels"
     }
   ],
   "testCases": [
@@ -6322,27 +6344,34 @@
       "steps": "开启覆盖并导出",
       "expected": "title/author/date/template/paper/margin/toc 等覆盖符合 schema",
       "automationHint": "`templates.test.ts`",
-      "status": "Fail",
-      "actual": "真实 UI 复测部分失败：开启“允许 Front matter 覆盖导出”后，HTML 导出产物包含覆盖 title 和 author meta；但 `export.toc: true` 未生成实际目录，仅有 `.prism-export-toc` CSS，正文直接从 H1 开始。测试后已恢复设置开关。",
-      "issueRef": "P0-EXPORT-006",
-      "notes": "证据：PRISM-CU-181/182/183/184/185/186，日志：logs/computer-use-real-app/frontmatter-export-html-check.log。",
+      "status": "Pass",
+      "actual": "源码修复后，导出 Front Matter 解析器同时支持嵌套 export.template/export.paper/export.margin/export.toc；重新打包替换 /Applications/Prism.app 后，真实安装版导出 real-frontmatter-export.html 包含覆盖 title/author/date、真实 prism-export-toc nav、#front-matter-export-fixture 和 #section-one 锚点。",
+      "issueRef": "",
+      "notes": "历史 PRISM-CU-186 和 logs/computer-use-real-app/frontmatter-export-html-check.log 保留为 pre-fix 失败证据；修复后通过证据见 PRISM-CU-275、frontmatter-export-html-check-20260701.log 和 export-frontmatter-toc-20260701.log。",
       "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-078-front-matter-front-matter.png",
       "unitTestEvidence": [
-        "logs/unit-tests/export-settings-theme-commands.log"
+        "logs/unit-tests/export-settings-theme-commands.log",
+        "logs/unit-tests/export-frontmatter-toc-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-186-frontmatter-html-export-complete-window.png",
+      "automationResult": "Pass",
+      "automationActual": "npm test -- --run src/domains/export/frontMatter.test.ts src/domains/export/templates.test.ts src/domains/export/exportPipeline.test.ts 通过，3 个测试文件 / 83 条断言；npm run build 通过；安装版 HTML 导出复测通过。",
+      "screenshot": "screenshots/29-installed-frontmatter-export-toc-smoke/01-frontmatter-html-export-success.png",
       "screenshots": [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "logs/computer-use-real-app/frontmatter-export-html-check.log"
+        "screenshots/15-computer-use-real-app/PRISM-CU-181-frontmatter-export-source-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-182-frontmatter-export-menu-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-183-frontmatter-html-export-dialog-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-184-frontmatter-override-setting-off-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-185-frontmatter-override-setting-on-window.png",
+        "screenshots/15-computer-use-real-app/PRISM-CU-186-frontmatter-html-export-complete-window.png",
+        "screenshots/29-installed-frontmatter-export-toc-smoke/01-frontmatter-html-export-success.png"
       ],
       "logEvidence": [
-        "logs/computer-use-real-app/frontmatter-export-html-check.log"
+        "logs/computer-use-real-app/frontmatter-export-html-check.log",
+        "logs/computer-use-real-app/frontmatter-export-html-check-20260701.log",
+        "logs/unit-tests/export-frontmatter-toc-20260701.log"
+      ],
+      "artifacts": [
+        "fixtures/computer-use-real-app/real-frontmatter-export.html"
       ]
     },
     {
@@ -8240,14 +8269,14 @@
   "generatedAt": "2026-06-30T23:47:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 95,
-    "Fail": 43,
+    "Pass": 96,
+    "Fail": 42,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 413,
-    "manifestScreenshots": 984,
-    "uniqueManifestScreenshots": 436,
-    "computerUseRealAppEvidence": 231
+    "screenshotFiles": 414,
+    "manifestScreenshots": 987,
+    "uniqueManifestScreenshots": 437,
+    "computerUseRealAppEvidence": 232
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9572,6 +9601,10 @@
     {
       "file": "screenshots/28-installed-backlinks-graph-smoke/PRISM-CU-274-relation-graph-real-wiki-target-pass.png",
       "testCaseId": "PRISM-CU-274"
+    },
+    {
+      "file": "screenshots/29-installed-frontmatter-export-toc-smoke/01-frontmatter-html-export-success.png",
+      "testCaseId": "PRISM-CU-275"
     }
   ],
   "unitTestRuns": [
@@ -9685,6 +9718,22 @@
         "logs/unit-tests/export-pipeline-pdf-links-20260701.log"
       ],
       "notes": "Covers native WebKit PDF URI annotations with header/footer overlay and pdf link rectangle collection."
+    },
+    {
+      "id": "export-frontmatter-toc-20260701",
+      "status": "Pass",
+      "testFiles": 3,
+      "testsPassed": 83,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/export/frontMatter.test.ts src/domains/export/templates.test.ts src/domains/export/exportPipeline.test.ts",
+        "npm run build",
+        "npm run tauri:build -- --bundles app"
+      ],
+      "logs": [
+        "logs/unit-tests/export-frontmatter-toc-20260701.log"
+      ],
+      "notes": "Covers nested Front Matter export overrides, export.margin narrow alias, resolved export toc, and actual HTML TOC markup. tauri build produced Prism.app and then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured; the produced app bundle was installed for real UI retest."
     }
   ],
   "sourceFixBatches": [
@@ -9955,6 +10004,25 @@
         "npm run build passed"
       ],
       "notes": "No product source fix was required: stronger pdf-lib parsing showed the real PDF already contains a URI link annotation. Added native WebKit PDF regression coverage so header/footer overlay cannot drop annotations."
+    },
+    {
+      "date": "2026-07-01",
+      "issueRefs": [
+        "P0-EXPORT-006"
+      ],
+      "evidence": [
+        "PRISM-FF-078",
+        "PRISM-CU-275",
+        "logs/computer-use-real-app/frontmatter-export-html-check-20260701.log",
+        "logs/unit-tests/export-frontmatter-toc-20260701.log",
+        "fixtures/computer-use-real-app/real-frontmatter-export.html"
+      ],
+      "tests": [
+        "npm test -- --run src/domains/export/frontMatter.test.ts src/domains/export/templates.test.ts src/domains/export/exportPipeline.test.ts passed",
+        "npm run build passed",
+        "npm run tauri:build -- --bundles app produced Prism.app; updater signing failed because TAURI_SIGNING_PRIVATE_KEY is not configured"
+      ],
+      "notes": "Front Matter export parser now supports nested export.* fields and maps export.margin: narrow to compact. Installed-app retest confirms export.toc generates actual HTML TOC markup and heading anchors."
     }
   ],
   "appSmokeRuns": [

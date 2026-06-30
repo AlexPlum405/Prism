@@ -1,0 +1,12 @@
+> prism@1.4.1 test
+> vitest --run src/domains/export/frontMatter.test.ts src/domains/export/templates.test.ts src/domains/export/exportPipeline.test.ts
+
+RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+Test Files  3 passed (3)
+Tests  83 passed (83)
+Result  Pass
+
+Additional verification:
+npm run build passed.
+npm run tauri:build -- --bundles app produced src-tauri/target/release/bundle/macos/Prism.app, then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured. The produced app bundle was patched for document icons and installed to /Applications/Prism.app for real UI retest.

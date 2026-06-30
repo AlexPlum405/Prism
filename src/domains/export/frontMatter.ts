@@ -60,14 +60,22 @@ function paperValue(value: unknown): PdfPaper | undefined {
 
 function marginValue(value: unknown): PdfMargin | undefined {
   const normalized = stringValue(value)?.toLowerCase();
+  if (normalized === 'narrow') return 'compact';
   return normalized && PDF_MARGINS.has(normalized as PdfMargin)
     ? normalized as PdfMargin
     : undefined;
 }
 
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
 function normalizeFrontMatter(value: unknown): ExportFrontMatter | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const data = value as Record<string, unknown>;
+  const exportData = objectValue(data.export);
   const frontMatter: ExportFrontMatter = {};
 
   const title = stringValue(data.title);
@@ -79,16 +87,16 @@ function normalizeFrontMatter(value: unknown): ExportFrontMatter | null {
   const date = stringValue(data.date);
   if (date) frontMatter.date = date;
 
-  const templateId = templateValue(data.template ?? data.templateId);
+  const templateId = templateValue(exportData?.template ?? exportData?.templateId ?? data.template ?? data.templateId);
   if (templateId) frontMatter.templateId = templateId;
 
-  const pdfPaper = paperValue(data.paper ?? data.pdfPaper);
+  const pdfPaper = paperValue(exportData?.paper ?? exportData?.pdfPaper ?? data.paper ?? data.pdfPaper);
   if (pdfPaper) frontMatter.pdfPaper = pdfPaper;
 
-  const pdfMargin = marginValue(data.margin ?? data.pdfMargin);
+  const pdfMargin = marginValue(exportData?.margin ?? exportData?.pdfMargin ?? data.margin ?? data.pdfMargin);
   if (pdfMargin) frontMatter.pdfMargin = pdfMargin;
 
-  const toc = booleanValue(data.toc);
+  const toc = booleanValue(exportData?.toc ?? data.toc);
   if (toc !== undefined) frontMatter.toc = toc;
 
   return Object.keys(frontMatter).length > 0 ? frontMatter : null;
