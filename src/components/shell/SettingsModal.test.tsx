@@ -5,8 +5,23 @@ import { DEFAULT_SETTINGS } from '../../domains/settings/types';
 import { useSettingsStore } from '../../domains/settings/store';
 import { SettingsModal } from './SettingsModal';
 
+const openThemesDirectoryMock = vi.hoisted(() => vi.fn(async () => '/Users/Alex/Library/Application Support/com.prism.editor.v1/themes'));
+const emitAppEventMock = vi.hoisted(() => vi.fn());
+
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   open: vi.fn(),
+}));
+
+vi.mock('../../domains/themes', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../domains/themes')>();
+  return {
+    ...actual,
+    openThemesDirectory: openThemesDirectoryMock,
+  };
+});
+
+vi.mock('../../platform/events/appEvents', () => ({
+  emitAppEvent: emitAppEventMock,
 }));
 
 vi.mock('../../domains/settings/fontService', () => ({
@@ -20,6 +35,7 @@ describe('SettingsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(open).mockResolvedValue(null);
+    openThemesDirectoryMock.mockResolvedValue('/Users/Alex/Library/Application Support/com.prism.editor.v1/themes');
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
       themeRegistry: [],
@@ -97,6 +113,40 @@ describe('SettingsModal', () => {
     expect(screen.getByRole('button', { name: '打开主题目录' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '重新加载用户主题' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '删除当前用户主题' })).not.toBeInTheDocument();
+  });
+
+  it('opens the user themes directory with visible success feedback', async () => {
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+    fireEvent.click(screen.getByRole('button', { name: '打开主题目录' }));
+
+    await waitFor(() => {
+      expect(openThemesDirectoryMock).toHaveBeenCalledTimes(1);
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('toast.show', expect.objectContaining({
+      tone: 'success',
+      title: '主题',
+      message: expect.stringContaining('已打开主题目录'),
+    }));
+  });
+
+  it('shows an error toast when opening the user themes directory fails', async () => {
+    openThemesDirectoryMock.mockRejectedValueOnce(new Error('permission denied'));
+
+    render(<SettingsModal visible onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /外观/ }));
+    fireEvent.click(screen.getByRole('button', { name: '打开主题目录' }));
+
+    await waitFor(() => {
+      expect(openThemesDirectoryMock).toHaveBeenCalledTimes(1);
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('toast.show', expect.objectContaining({
+      tone: 'error',
+      title: '主题',
+      message: expect.stringContaining('无法打开主题目录'),
+    }));
   });
 
   it('uses an in-app Prism prompt before opening the theme package picker', async () => {

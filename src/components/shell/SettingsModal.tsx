@@ -284,6 +284,27 @@ export function SettingsModal({ initialSection = 'general', visible, onClose }: 
     }
   };
 
+  const openThemeDirectory = async () => {
+    if (themeBusy) return;
+    setThemeBusy(true);
+    try {
+      const directory = await openThemesDirectory();
+      showSettingsToast({
+        tone: 'success',
+        title: t('settings.theme.title'),
+        message: t('settings.themeDirectoryOpened', { directory }),
+      });
+    } catch (error) {
+      showSettingsToast({
+        tone: 'error',
+        title: t('settings.theme.title'),
+        message: t('settings.themeDirectoryOpenFailed', { message: getThemeErrorMessage(error) }),
+      });
+    } finally {
+      setThemeBusy(false);
+    }
+  };
+
   const deleteCurrentTheme = async () => {
     if (themeBusy) return;
     const current = getThemeRegistrySnapshot().find((theme) => theme.id === settings.contentTheme)
@@ -604,7 +625,8 @@ export function SettingsModal({ initialSection = 'general', visible, onClose }: 
                 <button
                   type="button"
                   className="settings-action-button settings-action-button--quiet"
-                  onClick={() => void openThemesDirectory()}
+                  onClick={() => void openThemeDirectory()}
+                  disabled={themeBusy}
                 >
                   {t('settings.openThemesDirectory')}
                 </button>

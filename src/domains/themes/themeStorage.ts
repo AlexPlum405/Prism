@@ -10,12 +10,12 @@ import {
   writeFile,
 } from '../../platform/tauri/fileSystem';
 import { appDataDir } from '../../platform/tauri/path';
+import { openPathWithSystemNative } from '../../platform/tauri/nativeCommands';
 import { openPathWithDefaultApp } from '../../platform/tauri/opener';
 import { isNativeCommandUnavailableError } from '../../platform/tauri/result';
 import {
   deleteUserThemeNative,
   getThemesDirectoryNative,
-  openThemesDirectoryNative,
   readThemePackageSourceNative,
   scanInstalledThemesNative,
   type NativeThemePackageSourceDto,
@@ -308,14 +308,18 @@ export async function removeThemeDirectory(themeId: string) {
 }
 
 export async function openThemesDirectory() {
+  const themesDir = await ensureThemesDirectory();
   try {
-    await openThemesDirectoryNative();
-    return;
+    await openPathWithSystemNative(themesDir);
+    return themesDir;
   } catch (error) {
-    if (!shouldFallbackToTypeScript(error)) throw error;
+    try {
+      await openPathWithDefaultApp(themesDir);
+      return themesDir;
+    } catch {
+      throw error;
+    }
   }
-
-  await openPathWithDefaultApp(await ensureThemesDirectory());
 }
 
 export function getThemeDirectoryNameFromPath(path: string) {
