@@ -8043,17 +8043,19 @@
       "steps": "执行窗口命令",
       "expected": "状态同步，菜单 checked 正确",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "通过 AXMinimized、真实交通灯/快捷键、原生 Window > Minimize、全屏按钮 zoom secondary action 尝试窗口操作，最小化和缩放均未产生预期窗口状态变化。",
+      "status": "Pass",
+      "actual": "真实 /Applications/Prism.app 安装版复测通过：Cmd+M 后 AXMinimized=true；open -a 恢复后窗口数为 1 且 AXMinimized=false；Window > 最小化 后 AXMinimized=true；Window > 缩放 将窗口从 1100x760 改为 1496x852。",
       "issueRef": "P1-WINDOW-001",
-      "notes": "日志：logs/computer-use-real-app/window-lifecycle-20260630.log、logs/computer-use-real-app/window-lifecycle-native-menu-20260630.log",
+      "notes": "依据 2026-06-30 安装版 PRISM-CU-261..265 post-fix 证据同步；旧 PRISM-CU-231..233 作为 pre-fix 失败证据保留在 issues.md。",
       "plannedScreenshot": "screenshots/03-shell-status/PRISM-FF-140-case-140.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-232-window-restored-after-native-minimize-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png"
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-261-window-open-before-minimize.png",
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-262-window-after-cmd-m.png",
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-263-window-restored-after-cmd-m.png",
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-264-window-after-menu-minimize.png",
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-265-window-after-menu-zoom.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-231-window-restored-after-minimize-window.png"
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-265-window-after-menu-zoom.png"
     },
     {
       "id": "PRISM-FF-141",
@@ -8065,15 +8067,16 @@
       "steps": "关闭主窗口、Dock reopen、打开文件事件",
       "expected": "关闭隐藏而非退出；reopen 显示主窗口",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "执行原生 Window > Close Window 后 on-screen Prism 窗口数从 3 降到 2；open -a Prism 后仍为 2，没有恢复到关闭前窗口数。主窗口仍可用，但 close/reopen 生命周期状态不完整。",
+      "status": "Pass",
+      "actual": "真实 /Applications/Prism.app 安装版复测通过：红色关闭按钮后 Prism 进程仍在且 AX 窗口数变为 0；随后 open -a /Applications/Prism.app 恢复为 1 个未最小化窗口。",
       "issueRef": "P1-WINDOW-002",
-      "notes": "日志：logs/computer-use-real-app/window-close-reopen-20260630.log",
+      "notes": "依据 2026-06-30 安装版 PRISM-CU-266/267 post-fix 证据同步；旧 PRISM-CU-234 作为 pre-fix 失败证据保留在 issues.md。",
       "plannedScreenshot": "screenshots/03-shell-status/PRISM-FF-141-macos-close-hide-reopen-macos-close-hide-reopen.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png"
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-266-window-after-red-close.png",
+        "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-267-window-restored-after-close-reopen.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-234-window-reopened-after-close-window.png"
+      "screenshot": "screenshots/25-installed-window-lifecycle-smoke/PRISM-CU-267-window-restored-after-close-reopen.png"
     },
     {
       "id": "PRISM-FF-142",
@@ -8570,11 +8573,11 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T12:13:00+08:00",
+  "generatedAt": "2026-07-01T12:22:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 133,
-    "Fail": 5,
+    "Pass": 135,
+    "Fail": 3,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 428,

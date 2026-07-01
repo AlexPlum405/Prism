@@ -55,6 +55,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 同步 `PRISM-FF-110 / P1-EDITOR-006` 安装版复测状态：既有证据 `PRISM-CU-256/257` 显示选中两行正文后，右键菜单剪切/复制/链接可用，继续执行 `块级源码操作 > 选区转警告提示块` 后，选区原地变为 warning callout，保存后的磁盘文件只有一个 warning callout，未在文末追加空块。manifest 已从历史 Fail 改为 Pass。
 
+2026-07-01 同步 `PRISM-FF-140/141` 安装版复测状态：既有证据 `PRISM-CU-261..267` 显示 `Cmd+M` 和 `Window > 最小化` 均可让窗口进入 `AXMinimized=true`，`open -a` 可恢复为单窗口且未最小化，`Window > 缩放` 可改变窗口尺寸，红色关闭按钮后窗口数变为 0，再次打开恢复为 1 个窗口。两项从历史 Fail 改为 Pass。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -110,12 +112,12 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：133
-- Fail：5
+- Pass：135
+- Fail：3
 - Blocked：30
 - Not Run：0
 - P0 执行：Pass 87 / Fail 0 / Blocked 1 / Not Run 0
-- P1 执行：Pass 39 / Fail 4 / Blocked 13 / Not Run 0
+- P1 执行：Pass 41 / Fail 2 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
 - 当前截图文件总数：428
@@ -127,7 +129,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 单元/集成测试断言通过：760
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
-- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期仍按 `PRISM-FF-140/141` 保持 Fail，待后续按 manifest 当前证据闭环
+- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已按 `PRISM-CU-261..267` 安装版证据闭环为 Pass
 - 浏览器 mock 补充截图：已执行，用于保留前端视觉证据和宣传素材初筛
 - Windows/Linux 真机验证：未执行，保持 Blocked，不伪造结果
 
@@ -207,9 +209,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 1. `PRISM-FF-091 / P1-MENU-002`：菜单打开已有文档时新窗口策略仍需按最新产品口径复核。
 2. `PRISM-FF-136 / P1-I18N-001`：三语 i18n 完整性仍需专项核对。
-3. `PRISM-FF-140 / P1-WINDOW-001`：窗口最小化/全屏/置顶仍需按 manifest 当前证据闭环。
-4. `PRISM-FF-141 / P1-WINDOW-002`：macOS close/hide/reopen 仍需按 manifest 当前证据闭环。
-5. `PRISM-FF-166 / P1-SETTINGS-002`：无障碍基础仍待补测。
+3. `PRISM-FF-166 / P1-SETTINGS-002`：无障碍基础仍待补测。
 
 ## 本轮新增有效截图覆盖
 
