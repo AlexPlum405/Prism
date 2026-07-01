@@ -1,0 +1,56 @@
+[app-smoke] pass launch opens .markdown fixture with Chinese space path: .codex-smoke/app-smoke/workspace/中文 路径.markdown
+[app-smoke] pass launch opens JSON fixture without blank screen: .codex-smoke/app-smoke/workspace/data.json
+[app-smoke] pass launch opens SQL fixture without blank screen: .codex-smoke/app-smoke/workspace/query.sql
+[app-smoke] pass launch opens TXT fixture without blank screen: .codex-smoke/app-smoke/workspace/plain.txt
+[app-smoke] pass launch opens markdown fixture: .codex-smoke/app-smoke/workspace/app-smoke.md
+[app-smoke] pass startup launch matrix completed: .markdown Chinese/space path and .md explicit launch both opened
+
+[app-smoke-report] launch lastSession matrix
+{
+  "generatedAt": "2026-07-01T18:01:20.765Z",
+  "scope": "startup",
+  "appPath": "/Applications/Prism.app",
+  "workspaceDir": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+  "launches": [
+    {
+      "name": "launch opens .markdown fixture with Chinese space path",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/中文 路径.markdown",
+      "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/中文 路径.markdown",
+      "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+      "viewMode": "edit"
+    },
+    {
+      "name": "launch opens JSON fixture without blank screen",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/data.json",
+      "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/data.json",
+      "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+      "viewMode": "edit"
+    },
+    {
+      "name": "launch opens SQL fixture without blank screen",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/query.sql",
+      "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/query.sql",
+      "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+      "viewMode": "edit"
+    },
+    {
+      "name": "launch opens TXT fixture without blank screen",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/plain.txt",
+      "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/plain.txt",
+      "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+      "viewMode": "edit"
+    },
+    {
+      "name": "launch opens markdown fixture",
+      "status": "pass",
+      "summary": ".codex-smoke/app-smoke/workspace/app-smoke.md",
+      "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace/app-smoke.md",
+      "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/app-smoke/workspace",
+      "viewMode": "edit"
+    }
+  ]
+}

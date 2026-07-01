@@ -85,6 +85,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-02 降噪 `PRISM-FF-165`：补齐超大工作区代码级 benchmark 证据。`workspaceIndex.performance.test.ts` 使用内存 fixture 验证 1501 个文档 / 1500 条链接的索引构建，中位数 `18.7ms`；同时把全文搜索基准提升到 1200 个文档，连续 5 个 query 的中位数为 `5.9ms`，搜索结果非空。本轮不创建真实用户工作区，不污染磁盘目录。该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/workspace-large-index-benchmark-20260702.log`。
 
+2026-07-02 降噪 `PRISM-FF-147`：补齐 macOS 安装版文件打开矩阵。通过真实 `/Applications/Prism.app` 和 LaunchServices `open -n -a` 分别打开 `.markdown`（中文与空格路径）、`.md`、`.json`、`.sql`、`.txt` 临时 fixture；每次都能出现 Prism 窗口并写入对应 `lastSession`，JSON/SQL/TXT 未白屏。本轮未修改系统默认打开方式。该项从 Blocked 改为 Pass/installed-app-verified。证据见 `logs/unit-tests/macos-file-association-startup-smoke-20260702.log`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近；当时 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画，因此临时标记为 Blocked。该项已在 2026-07-02 用可控代码级专项验证闭环为 Pass/code-verified。
@@ -140,13 +142,13 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：154
+- Pass：155
 - Fail：0
-- Blocked：14
+- Blocked：13
 - Not Run：0
 - P0 执行：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
 - P1 执行：Pass 56 / Fail 0 / Blocked 0 / Not Run 0
-- P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
+- P2 执行：Pass 6 / Fail 0 / Blocked 10 / Not Run 0
 - P3 执行：Pass 5 / Fail 0 / Blocked 3 / Not Run 0
 - 当前截图文件总数：434
 - Manifest 真实 Computer Use 截图引用：245
@@ -248,7 +250,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 ## 当前剩余 Fail
 
-- 当前 manifest 中 Fail 已清零。P0/P1 Blocked 已清零。剩余非通过项均为 Blocked，主要是 macOS 原生集成、真实 Windows/Linux、断网、高 DPI、内存释放和导出大图压力，不伪造结果。
+- 当前 manifest 中 Fail 已清零。P0/P1 Blocked 已清零。剩余非通过项均为 Blocked，主要是 macOS 沙盒授权、真实 Windows/Linux、断网、高 DPI、内存释放和导出大图压力，不伪造结果。
 
 ## 本轮新增有效截图覆盖
 
@@ -293,4 +295,4 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
 - 当前 manifest 中登记了 232 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；专项索引见 `export-fidelity-special.md`。仍未覆盖用户指南级长文档分页和连续超长 PNG 内存压力。
-- `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应 macOS 文件关联/沙盒授权、断网、高 DPI、真实 Windows/Linux、内存释放和导出大图压力。
+- `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应 macOS 沙盒授权、断网、高 DPI、真实 Windows/Linux、内存释放和导出大图压力。

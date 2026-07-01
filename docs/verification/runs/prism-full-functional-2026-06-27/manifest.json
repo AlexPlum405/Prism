@@ -8370,12 +8370,17 @@
       "preconditions": "",
       "steps": "双击 `.md/.markdown/.txt/.json/.sql`",
       "expected": "支持类型由 Prism 打开；若系统只注册 Markdown，Text Document 通过 Open With 验证",
-      "automationHint": "",
-      "status": "Blocked",
-      "actual": "原生 Prism 窗口不可见，无法执行该 macOS 原生集成用例。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "待原生窗口恢复后复测。",
-      "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-147-macos.png"
+      "automationHint": "macOS installed app startup smoke via LaunchServices open -a",
+      "status": "Pass",
+      "actual": "通过真实 macOS 安装版 startup smoke 验证：使用 /Applications/Prism.app 分别启动 .markdown（含中文和空格路径）、.md、.json、.sql、.txt 临时 fixture；每次启动均出现 Prism 窗口并写入对应 lastSession，JSON/SQL/TXT 未白屏。",
+      "issueRef": "",
+      "notes": "Pass/installed-app-verified；Text Document 按 Open With / open -a Prism 路径验证，未修改系统默认打开方式。证据见 logs/unit-tests/macos-file-association-startup-smoke-20260702.log。",
+      "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-147-macos.png",
+      "unitTestEvidence": [
+        "logs/unit-tests/macos-file-association-startup-smoke-20260702.log"
+      ],
+      "automationResult": "Installed App Smoke Pass",
+      "automationActual": "macos-file-association-startup-smoke 覆盖 .markdown/.md/.json/.sql/.txt 五类启动路径，全部 pass。"
     },
     {
       "id": "PRISM-FF-148",
@@ -8765,9 +8770,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 154,
+    "Pass": 155,
     "Fail": 0,
-    "Blocked": 14,
+    "Blocked": 13,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,
