@@ -241,9 +241,9 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 ```json
 {
   "total": 168,
-  "Pass": 153,
+  "Pass": 154,
   "Fail": 0,
-  "Blocked": 15,
+  "Blocked": 14,
   "Not Run": 0,
   "screenshotFiles": 434,
   "manifestScreenshots": 1016,
@@ -257,8 +257,8 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Windows/Linux 真机：无真实 Windows/Linux 设备，不伪造导出和文件关联验证。
 - macOS 原生集成：文件关联与沙盒授权需要真实 Finder/系统授权流程复测，不用推测替代。
 - 断网/高 DPI：需要专门断网或网络拦截环境，以及 1x/2x/4x 与跨显示器缩放矩阵。
-- 性能与压力：性能日志、内存释放、导出大图内存、超大工作区需要专用脚本和时间窗口，本轮不把未执行项改 Pass。
+- 性能与压力：性能日志、内存释放、导出大图内存需要专用脚本和时间窗口，本轮不把未执行项改 Pass。
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass；`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135`、`PRISM-FF-138`、`PRISM-FF-162`、`PRISM-FF-118`、`PRISM-FF-116`、配置资源类与破坏性文件操作 Blocked 已通过自动化补证据降噪；P0/P1 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass；`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135`、`PRISM-FF-138`、`PRISM-FF-162`、`PRISM-FF-118`、`PRISM-FF-116`、`PRISM-FF-165`、配置资源类与破坏性文件操作 Blocked 已通过自动化补证据降噪；P0/P1 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。

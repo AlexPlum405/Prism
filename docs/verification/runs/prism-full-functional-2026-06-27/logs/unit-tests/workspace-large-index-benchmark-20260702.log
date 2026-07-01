@@ -1,0 +1,43 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/workspace/services/workspaceIndex.performance.test.ts --reporter verbose
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+stdout | src/domains/workspace/services/workspaceIndex.performance.test.ts > workspace index performance benchmark > records index build time for a document with many backlinks
+┌─────────┬─────────┐
+│ (index) │ buildMs │
+├─────────┼─────────┤
+│ 0       │ 20.8    │
+│ 1       │ 18      │
+│ 2       │ 18.7    │
+└─────────┴─────────┘
+[Prism workspace index benchmark] {
+  "buildMs": 18.7,
+  "documentCount": 1501,
+  "linkCount": 1500
+}
+
+stdout | src/domains/workspace/services/workspaceIndex.performance.test.ts > workspace index performance benchmark > records repeated full-text search time on a large workspace index
+┌─────────┬──────────────────┐
+│ (index) │ repeatedSearchMs │
+├─────────┼──────────────────┤
+│ 0       │ 5.9              │
+│ 1       │ 5.8              │
+│ 2       │ 6.5              │
+└─────────┴──────────────────┘
+[Prism workspace search benchmark] {
+  "documentCount": 1200,
+  "queryCount": 5,
+  "repeatedSearchMs": 5.9
+}
+
+ ✓ src/domains/workspace/services/workspaceIndex.performance.test.ts > workspace index performance benchmark > records index build time for a document with many backlinks 96ms
+ ✓ src/domains/workspace/services/workspaceIndex.performance.test.ts > workspace index performance benchmark > records repeated full-text search time on a large workspace index 45ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  01:57:25
+   Duration  600ms (transform 55ms, setup 34ms, import 55ms, tests 142ms, environment 285ms)
+

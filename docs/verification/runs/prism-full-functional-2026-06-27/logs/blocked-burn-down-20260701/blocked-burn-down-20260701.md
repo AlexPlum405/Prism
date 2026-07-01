@@ -20,11 +20,12 @@
 - `PRISM-FF-096`：Blocked -> Pass/code-verified
 - `PRISM-FF-097`：Blocked -> Pass/code-verified
 - `PRISM-FF-116`：Blocked -> Pass/code-verified
-- 总计：Pass 153 / Fail 0 / Blocked 15 / Not Run 0
+- `PRISM-FF-165`：Blocked -> Pass/code-verified
+- 总计：Pass 154 / Fail 0 / Blocked 14 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
 - P1：Pass 56 / Fail 0 / Blocked 0 / Not Run 0
 - P2：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
-- P3：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
+- P3：Pass 5 / Fail 0 / Blocked 3 / Not Run 0
 
 ## 代码变更
 
@@ -251,14 +252,17 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - 重命名后 workspace fileTree 刷新，并显示重命名完成反馈。
 - `src/domains/editor/runtime/editorScrollRuntime.test.ts`
   - 增加真实 `lineFlashField` 覆盖，验证源码定位 flash 装饰在清理回调触发前保持、触发后移除。
+- `src/domains/workspace/services/workspaceIndex.performance.test.ts`
+  - 将大工作区全文搜索 benchmark 提升到 1200 文档，并与 1501 文档索引构建 benchmark 一起作为超大工作区代码级证据。
 
 证据：
 
 - `logs/unit-tests/destructive-file-actions-sandbox-20260702.log`
 - `logs/unit-tests/preview-source-flash-code-verified-20260702.log`
+- `logs/unit-tests/workspace-large-index-benchmark-20260702.log`
 
 ## 剩余范围
 
-附件计划中的可自动化 Blocked 降噪项已闭环，P0/P1 Blocked 已清零。后续剩余项应按 macOS 原生集成、平台真机矩阵、断网/高 DPI 和压力测试分别推进。
+附件计划中的可自动化 Blocked 降噪项已闭环，P0/P1 Blocked 已清零，超大工作区已用 benchmark 补证据。后续剩余项应按 macOS 原生集成、平台真机矩阵、断网/高 DPI、内存释放和导出大图压力分别推进。
 
 Windows/Linux 继续保持真机回填，不伪造验证；压力和断网类测试需要专门时间窗口与隔离环境。

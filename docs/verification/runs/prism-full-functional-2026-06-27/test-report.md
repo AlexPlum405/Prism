@@ -83,6 +83,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-02 降噪 `PRISM-FF-116`：补齐预览源码 flash 的可控代码级证据。`SplitView` 测试确认预览诊断按钮“跳到源码”会调用编辑器 `jumpToLine(9)` 完成源码定位；`editorScrollRuntime` 测试在真实 `lineFlashField` 上确认 `.cm-line-flash` 装饰被加入，并按 `PREVIEW_SOURCE_FLASH_MS` 注册清理回调，清理触发前保持高亮，触发后移除。本轮不再依赖 Computer Use 截图捕捉短暂动画。复跑 2 个测试文件 / 31 条测试通过。该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/preview-source-flash-code-verified-20260702.log`。
 
+2026-07-02 降噪 `PRISM-FF-165`：补齐超大工作区代码级 benchmark 证据。`workspaceIndex.performance.test.ts` 使用内存 fixture 验证 1501 个文档 / 1500 条链接的索引构建，中位数 `18.7ms`；同时把全文搜索基准提升到 1200 个文档，连续 5 个 query 的中位数为 `5.9ms`，搜索结果非空。本轮不创建真实用户工作区，不污染磁盘目录。该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/workspace-large-index-benchmark-20260702.log`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近；当时 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画，因此临时标记为 Blocked。该项已在 2026-07-02 用可控代码级专项验证闭环为 Pass/code-verified。
@@ -101,7 +103,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-06-30 继续补测启动默认指南、Selection callout、工作区搜索回退、图谱 fallback 可观测性、导出取消/后台状态/成功动作、外部文件打开同步工作区、原生 File 菜单、文件树创建副本和新建文件夹。新增失败项：启动/新窗口未直接打开 `Examples/Prism Markdown 语法指南.md`（`P0-STARTUP-003`）、Selection callout 丢失当前选区（`P1-EDITOR-006`）、选区右键菜单剪切/复制/链接 disabled（`P1-EDITOR-007`）、工作区全文搜索入口不可达（`P1-SEARCH-001`）、原生 File 菜单缺少 Prism 核心文件入口（`P1-MENU-002`）。新增通过项：外部 Markdown 打开会同步工作区、文件树创建副本、工作区菜单新建文件夹、导出取消和后台导出状态。
 
-2026-06-30 收尾补测剩余可安全执行项：新增文件 `real-index-incremental-20260630.md` 后，不重启 App 重新激活可在文件树看到新文件，`PRISM-FF-117` 标记 Pass，但即时刷新仍需后续关注；真实导出 `real-links-click.pdf` 成功，平台 PDF capture 可用；Finder 中 `.md` 文件显示 Markdown 文档图标，`PRISM-FF-146` 标记 Pass；macOS 最小化、缩放和 close/reopen 生命周期未按标准行为变化，`PRISM-FF-140/141` 标记 Fail。删除、重命名父文件夹、用户主题包、字体导入、设置错误、断网、Worker/内存/超大工作区等需要破坏性操作、真实平台或注入故障的项目均标记 Blocked，并写明原因。
+2026-06-30 收尾补测剩余可安全执行项：新增文件 `real-index-incremental-20260630.md` 后，不重启 App 重新激活可在文件树看到新文件，`PRISM-FF-117` 标记 Pass，但即时刷新仍需后续关注；真实导出 `real-links-click.pdf` 成功，平台 PDF capture 可用；Finder 中 `.md` 文件显示 Markdown 文档图标，`PRISM-FF-146` 标记 Pass；macOS 最小化、缩放和 close/reopen 生命周期未按标准行为变化，`PRISM-FF-140/141` 标记 Fail。当时删除、重命名父文件夹、用户主题包、字体导入、设置错误、断网、Worker/内存/超大工作区等需要破坏性操作、真实平台或注入故障的项目均标记 Blocked；其中可自动化项目已在 2026-07-02 陆续补证据闭环，剩余项继续保持 Blocked。
 
 2026-07-01 修正 `PRISM-FF-122 / P1-EXPORT-007` PDF 链接注释验收：原 `strings` 检查没有发现 `/URI`、`/Annots`、`/Link`，但该方式会漏掉压缩或间接对象。改用 `pdf-lib` 解析真实导出产物 `real-links-click.pdf` 后，确认第 1 页有 1 个 `/Subtype /Link` 注释，URI 为 `https://github.com/AlexPlum405/Prism`；外链注释实际存在，wiki link 和相对 Markdown link 按当前安全策略不生成外部 URI。已补 native WebKit PDF + 页眉页脚保留 URI annotation 单测，`PRISM-FF-122` 改为 Pass。证据见 `logs/computer-use-real-app/pdf-link-annotations-pdf-lib-20260701.log` 和 `logs/unit-tests/export-pdf-link-annotations-20260701.log`。
 
@@ -138,14 +140,14 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：153
+- Pass：154
 - Fail：0
-- Blocked：15
+- Blocked：14
 - Not Run：0
 - P0 执行：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
 - P1 执行：Pass 56 / Fail 0 / Blocked 0 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
-- P3 执行：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
+- P3 执行：Pass 5 / Fail 0 / Blocked 3 / Not Run 0
 - 当前截图文件总数：434
 - Manifest 真实 Computer Use 截图引用：245
 - Pipeline/环境证据截图：9
@@ -246,7 +248,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 ## 当前剩余 Fail
 
-- 当前 manifest 中 Fail 已清零。P0/P1 Blocked 已清零。剩余非通过项均为 Blocked，主要是 macOS 原生集成、真实 Windows/Linux、断网、高 DPI 和压力测试，不伪造结果。
+- 当前 manifest 中 Fail 已清零。P0/P1 Blocked 已清零。剩余非通过项均为 Blocked，主要是 macOS 原生集成、真实 Windows/Linux、断网、高 DPI、内存释放和导出大图压力，不伪造结果。
 
 ## 本轮新增有效截图覆盖
 
@@ -291,4 +293,4 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
 - 当前 manifest 中登记了 232 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
 - 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；专项索引见 `export-fidelity-special.md`。仍未覆盖用户指南级长文档分页和连续超长 PNG 内存压力。
-- `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应 macOS 文件关联/沙盒授权、断网、高 DPI、真实 Windows/Linux 和压力测试。
+- `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应 macOS 文件关联/沙盒授权、断网、高 DPI、真实 Windows/Linux、内存释放和导出大图压力。

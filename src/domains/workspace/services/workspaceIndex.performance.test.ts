@@ -50,7 +50,7 @@ function buildWorkspaceIndexFixture(linkCount = 1500) {
   return { documents, fileTree, linkCount };
 }
 
-function buildWorkspaceSearchFixture(documentCount = 600) {
+function buildWorkspaceSearchFixture(documentCount = 1200) {
   const fileTree: FileNode[] = [
     {
       children: Array.from({ length: documentCount }, (_, index) => ({

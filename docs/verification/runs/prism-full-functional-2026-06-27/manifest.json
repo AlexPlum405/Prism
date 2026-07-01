@@ -8680,13 +8680,18 @@
       "preconditions": "",
       "steps": "1000+ 文档工作区",
       "expected": "索引进度、取消、搜索响应可接受",
-      "automationHint": "",
-      "status": "Blocked",
-      "actual": "超大工作区需要 1000+ 文档 fixture；本轮未生成大规模工作区，未执行。",
+      "automationHint": "PRISM_WORKSPACE_INDEX_BENCH=1 Vitest in-memory 1000+ workspace benchmark",
+      "status": "Pass",
+      "actual": "通过 workspace index benchmark 的内存大工作区 fixture 验证：1501 个文档 / 1500 条链接的索引构建中位数为 18.7ms；1200 个文档的全文搜索连续 5 个 query 中位数为 5.9ms，搜索结果非空。该验证不创建真实用户工作区。",
       "issueRef": "",
-      "notes": "需要专用临时目录和索引性能脚本。",
+      "notes": "Pass/code-verified；覆盖 1000+ 文档索引构建与 1000+ 文档搜索响应。仍建议后续做真实磁盘目录与 UI 进度条长跑专项，但不再作为本轮 Blocked。",
       "plannedScreenshot": "screenshots/13-quality/PRISM-FF-165-case-165.png",
-      "screenshots": []
+      "screenshots": [],
+      "unitTestEvidence": [
+        "logs/unit-tests/workspace-large-index-benchmark-20260702.log"
+      ],
+      "automationResult": "Benchmark Pass",
+      "automationActual": "workspace-large-index-benchmark 批次 1 个测试文件 / 2 条 benchmark 测试通过；1501 docs buildMs 18.7ms，1200 docs repeatedSearchMs 5.9ms。"
     },
     {
       "id": "PRISM-FF-166",
@@ -8760,9 +8765,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 153,
+    "Pass": 154,
     "Fail": 0,
-    "Blocked": 15,
+    "Blocked": 14,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,
