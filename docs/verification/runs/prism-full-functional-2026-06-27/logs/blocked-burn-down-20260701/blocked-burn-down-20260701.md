@@ -13,9 +13,13 @@
 - `PRISM-FF-138`：Blocked -> Pass/code-verified
 - `PRISM-FF-162`：Blocked -> Pass/code-verified
 - `PRISM-FF-118`：Blocked -> Pass/code-verified
-- 总计：Pass 146 / Fail 0 / Blocked 22 / Not Run 0
+- `PRISM-FF-134`：Blocked -> Pass/code-verified
+- `PRISM-FF-103`：Blocked -> Pass/code-verified
+- `PRISM-FF-105`：Blocked -> Pass/code-verified
+- `PRISM-FF-120`：Blocked -> Pass/code-verified
+- 总计：Pass 150 / Fail 0 / Blocked 18 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1：Pass 49 / Fail 0 / Blocked 7 / Not Run 0
+- P1：Pass 53 / Fail 0 / Blocked 3 / Not Run 0
 - P3：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
 
 ## 代码变更
@@ -88,6 +92,9 @@ npm test -- --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAp
 npm test -- --run src/lib/markdownRenderService.test.ts
 npm test -- --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/services/workspaceIndex.test.ts
 cargo test workspace_index --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/settings/pathPersistence.test.ts src/domains/settings/normalize.test.ts
+npm test -- --run src/domains/themes/themePackage.test.ts src/domains/themes/themeRegistry.test.ts src/domains/themes/themeStorage.test.ts src/domains/themes/themeInstaller.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/fontService.test.ts src/domains/workspace/components/RelationGraphPanel.test.tsx
+cargo test theme_store --manifest-path src-tauri/Cargo.toml
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -103,6 +110,9 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Markdown Worker fallback Vitest：1 个测试文件 / 14 条测试通过。
 - Workspace index cancellation Vitest：3 个测试文件 / 21 条测试通过。
 - Workspace index Rust：17 条测试通过。
+- Settings migration Vitest：2 个测试文件 / 15 条测试通过。
+- Theme/font/graph fallback Vitest：7 个测试文件 / 39 条测试通过。
+- Theme store Rust：1 条测试通过。
 - Build：通过。
 - App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`、`logs/app-smoke-folder-authorization-failure-20260702/report.json` 与 `logs/app-smoke-settings-persistence-failure-20260702/report.json`。
 
@@ -204,6 +214,23 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 - `logs/unit-tests/workspace-index-cancellation-20260702.log`
 - `logs/unit-tests/workspace-index-cancellation-rust-20260702.log`
+
+## PRISM-FF-134 / PRISM-FF-103 / PRISM-FF-105 / PRISM-FF-120 Config Resource Checks
+
+本轮不写入真实 App Support 配置、themes 或 fonts 目录；通过 mock appData、native DTO、临时目录和组件测试覆盖配置资源类路径。
+
+验证：
+
+- 设置迁移：legacy config 可读取并写回 appData，旧 schema 与临时 PDF 页眉页脚字段可升级，非法持久化值会回退默认值。
+- 用户主题包扫描：native scan 的 valid theme 进入可用主题，invalid theme 保留错误原因；Rust `theme_store` 可在临时 themes 目录扫描有效/无效包，并删除用户主题。
+- 自托管字体：导入字体复制到 appData/fonts，FontFace 从本地 `readFile` bytes 注册；已保存 customFonts 重新注册时也只读本地文件。
+- 图谱 native fallback：native relation graph 查询失败时记录 warning 并回退 TypeScript graph，节点仍可见。
+
+证据：
+
+- `logs/unit-tests/settings-migration-legacy-config-20260702.log`
+- `logs/unit-tests/theme-font-graph-fallback-20260702.log`
+- `logs/unit-tests/theme-store-rust-20260702.log`
 
 ## 剩余范围
 

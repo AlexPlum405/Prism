@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileNode } from '../types';
 import { buildWorkspaceIndex } from '../services';
 import { RelationGraphPanel } from './RelationGraphPanel';
@@ -29,6 +29,10 @@ function createIndex() {
 }
 
 describe('RelationGraphPanel', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel.mockReset();
     nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel.mockResolvedValue(null);
@@ -117,5 +121,31 @@ describe('RelationGraphPanel', () => {
       query: '',
       limit: 80,
     });
+  });
+
+  it('falls back to the TypeScript graph when native relation graph query fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    nativeWorkspaceIndexMock.queryWorkspaceRelationGraphNativeModel
+      .mockRejectedValueOnce(new Error('native graph unavailable'));
+
+    render(
+      <RelationGraphPanel
+        visible
+        index={createIndex()}
+        workspaceIndexJobId="workspace-index-1"
+        currentPath="/repo/b.md"
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    expect((await screen.findAllByText('Beta')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Gamma').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Native Node')).not.toBeInTheDocument();
+    expect(console.warn).toHaveBeenCalledWith(
+      '[RelationGraphPanel] Native relation graph query unavailable, using TypeScript fallback:',
+      expect.any(Error),
+    );
   });
 });

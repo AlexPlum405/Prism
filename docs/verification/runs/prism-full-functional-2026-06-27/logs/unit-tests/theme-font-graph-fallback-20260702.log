@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/themes/themePackage.test.ts src/domains/themes/themeRegistry.test.ts src/domains/themes/themeStorage.test.ts src/domains/themes/themeInstaller.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/fontService.test.ts src/domains/workspace/components/RelationGraphPanel.test.tsx
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  7 passed (7)
+      Tests  39 passed (39)
+   Start at  01:42:59
+   Duration  1.29s (transform 928ms, setup 324ms, import 1.24s, tests 653ms, environment 2.63s)
+

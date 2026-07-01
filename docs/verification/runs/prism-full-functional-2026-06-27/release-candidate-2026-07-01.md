@@ -7,7 +7,7 @@ Bundle ID：`com.prism.editor.v1`
 
 ## 本轮目标
 
-继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard`、`PRISM-FF-094 文件夹授权失败`、`PRISM-FF-135 设置持久化错误`、`PRISM-FF-138 Error Boundary`、`PRISM-FF-162 Worker 降级` 与 `PRISM-FF-118 索引任务取消` 自动化证据。
+继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard`、`PRISM-FF-094 文件夹授权失败`、`PRISM-FF-135 设置持久化错误`、`PRISM-FF-138 Error Boundary`、`PRISM-FF-162 Worker 降级`、`PRISM-FF-118 索引任务取消` 以及配置资源类 Blocked 自动化证据。
 
 ## 代码改动
 
@@ -31,6 +31,9 @@ npm test -- --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAp
 npm test -- --run src/lib/markdownRenderService.test.ts
 npm test -- --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/services/workspaceIndex.test.ts
 cargo test workspace_index --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/domains/settings/pathPersistence.test.ts src/domains/settings/normalize.test.ts
+npm test -- --run src/domains/themes/themePackage.test.ts src/domains/themes/themeRegistry.test.ts src/domains/themes/themeStorage.test.ts src/domains/themes/themeInstaller.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/fontService.test.ts src/domains/workspace/components/RelationGraphPanel.test.tsx
+cargo test theme_store --manifest-path src-tauri/Cargo.toml
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -47,6 +50,9 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Markdown Worker 降级回归 Vitest：1 个测试文件 / 14 条测试通过。
 - Workspace index cancellation 回归 Vitest：3 个测试文件 / 21 条测试通过。
 - Workspace index Rust 回归：17 条测试通过。
+- Settings migration 回归 Vitest：2 个测试文件 / 15 条测试通过。
+- Theme/font/graph fallback 回归 Vitest：7 个测试文件 / 39 条测试通过。
+- Theme store Rust 回归：1 条测试通过。
 - `npm run build`：通过。
 - `npm run tauri:build:app-smoke`：通过，完成 app bundle 构建、Markdown 文档图标 patch、本地 bundle smoke。
 - `/Applications/Prism.app` 安装版 smoke：通过，覆盖 `.markdown` 中文/空格路径、JSON/SQL/TXT、Markdown、ERROR 诊断、Quick Open、编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
@@ -196,14 +202,31 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/workspace-index-cancellation-20260702.log`
 - `logs/unit-tests/workspace-index-cancellation-rust-20260702.log`
 
+## PRISM-FF-134 / 103 / 105 / 120 复测结果
+
+状态：Pass/code-verified
+
+说明：本组验证配置迁移、用户主题包扫描、自托管字体和图谱 native fallback。为避免污染真实 App Support 配置、themes 或 fonts 目录，本轮使用 mock appData、native DTO、临时目录和组件测试覆盖：
+
+- 旧设置可迁移并写回 appData，旧 schema 和旧 PDF 字段可升级，非法值回退默认。
+- native theme scan 的 valid/invalid 结果可进入可用/异常主题列表；Rust 临时 themes 目录可扫描有效/无效包。
+- 导入字体复制到 appData/fonts，FontFace 从本地 bytes 注册，已保存字体也从本地文件重新注册。
+- native relation graph 查询失败时回退 TypeScript graph，节点仍可见。
+
+证据：
+
+- `logs/unit-tests/settings-migration-legacy-config-20260702.log`
+- `logs/unit-tests/theme-font-graph-fallback-20260702.log`
+- `logs/unit-tests/theme-store-rust-20260702.log`
+
 ## 当前统计
 
 ```json
 {
   "total": 168,
-  "Pass": 146,
+  "Pass": 150,
   "Fail": 0,
-  "Blocked": 22,
+  "Blocked": 18,
   "Not Run": 0,
   "screenshotFiles": 434,
   "manifestScreenshots": 1016,
@@ -221,4 +244,4 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135`、`PRISM-FF-138`、`PRISM-FF-162` 与 `PRISM-FF-118` 已通过自动化补证据降噪，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass；`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135`、`PRISM-FF-138`、`PRISM-FF-162`、`PRISM-FF-118` 以及配置资源类 Blocked 已通过自动化补证据降噪；P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
