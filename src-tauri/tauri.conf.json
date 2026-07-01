@@ -56,7 +56,7 @@
     ],
     "resources": {
       "resources/Initial": "Initial",
-      "icons/document-markdown.icns": "PrismMarkdownNotebookDocument.icns"
+      "icons/document-markdown.icns": "PrismMarkdownSignatureDocument.icns"
     },
     "fileAssociations": [
       {
