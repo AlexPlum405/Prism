@@ -62,6 +62,7 @@ export function createFileTreeContextMenuItems({
       { type: 'separator' },
       { label: t('workspace.fileTree.copyFilePath'), action: `copyPath:${node.path}` },
       { label: showInFileManagerLabel, action: `openLocation:${node.path}` },
+      { label: t('file.properties'), action: `properties:${node.path}` },
     ];
   }
 
@@ -76,5 +77,6 @@ export function createFileTreeContextMenuItems({
     { type: 'separator' },
     { label: t('workspace.fileTree.copyFolderPath'), action: `copyPath:${node.path}` },
     { label: showInFileManagerLabel, action: `openLocation:${node.path}` },
+    { label: t('file.properties'), action: `properties:${node.path}` },
   ];
 }

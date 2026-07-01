@@ -27,6 +27,7 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   templateWhitePaper: 'command.templateWhitePaper',
   print: 'command.print',
   openCurrentLocation: 'command.openCurrentLocation',
+  fileProperties: 'command.fileProperties',
   closeDocument: 'command.closeDocument',
   exportHtml: 'command.exportHtml',
   exportPdf: 'command.exportPdf',

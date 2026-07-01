@@ -224,6 +224,23 @@ async function handleOpenCurrentLocation(context: CommandContext): Promise<void>
   context.showToast?.(t('command.noLocationToReveal'));
 }
 
+async function handleFileProperties(context: CommandContext): Promise<void> {
+  const docPath = context.documentStore.currentDocument?.path;
+  if (!docPath) {
+    context.showToast?.(t('file.missingPropertiesPath'));
+    return;
+  }
+
+  await executeFileAction({
+    action: 'properties',
+    path: docPath,
+  }, {
+    documentStore: context.documentStore,
+    showToast: context.showToast,
+    workspaceStore: context.workspaceStore,
+  });
+}
+
 async function handleCloseDocument(context: CommandContext): Promise<void> {
   const doc = context.documentStore.currentDocument;
   if (!doc) return;
@@ -380,6 +397,13 @@ export function createFileCommands(): CommandDefinition[] {
       category: 'file',
       enabled: (context) => hasSavedDocumentPath(context) || Boolean(context.workspaceStore.rootPath),
       run: handleOpenCurrentLocation,
+    },
+    {
+      id: 'fileProperties',
+      category: 'file',
+      keywords: ['file', 'properties', 'info', 'metadata', '简介', '属性'],
+      enabled: hasSavedDocumentPath,
+      run: handleFileProperties,
     },
     {
       id: 'closeDocument',

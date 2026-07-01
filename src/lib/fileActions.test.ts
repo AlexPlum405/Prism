@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
-import { ask } from '@tauri-apps/plugin-dialog';
+import { ask, message } from '@tauri-apps/plugin-dialog';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
@@ -173,6 +173,34 @@ describe('deletePathWithTrashFallback', () => {
 });
 
 describe('executeFileAction openFile workspace sync', () => {
+  it('shows file system properties for a selected path', async () => {
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      atime: new Date('2026-06-20T10:00:00Z'),
+      birthtime: new Date('2026-06-18T08:30:00Z'),
+      isDirectory: false,
+      isFile: true,
+      mtime: new Date('2026-06-19T09:15:00Z'),
+      readonly: false,
+      size: 2048,
+    });
+
+    await executeFileAction(
+      { action: 'properties', path: '/repo/docs/report.md' },
+      fileActionContext(),
+    );
+
+    expect(message).toHaveBeenCalledWith(
+      expect.stringContaining('名称: report.md'),
+      expect.objectContaining({ kind: 'info', title: '属性' }),
+    );
+    const details = (message as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
+    expect(details).toContain('路径: /repo/docs/report.md');
+    expect(details).toContain('类型: 文件');
+    expect(details).toContain('大小: 2.00 KB');
+    expect(details).toContain('创建时间:');
+    expect(details).toContain('修改时间:');
+  });
+
   it('switches the left file tree when a Finder-opened file is outside the current workspace', async () => {
     useWorkspaceStore.setState({
       fileTree: [{ kind: 'file', name: 'old.md', path: '/old/workspace/old.md' }],

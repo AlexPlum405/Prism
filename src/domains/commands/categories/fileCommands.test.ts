@@ -64,7 +64,7 @@ function createContext(overrides: Partial<CommandContext> = {}): CommandContext 
   };
 }
 
-function getFileCommand(id: 'new' | 'newWindow' | 'open') {
+function getFileCommand(id: 'new' | 'newWindow' | 'open' | 'fileProperties') {
   const command = createFileCommands().find((entry) => entry.id === id);
   if (!command) throw new Error(`Missing command: ${id}`);
   return command;
@@ -154,5 +154,36 @@ describe('file commands', () => {
     await getFileCommand('open').run(createContext());
 
     expect(openSelectedDocumentMock).not.toHaveBeenCalled();
+  });
+
+  it('shows file properties for the current saved document', async () => {
+    const context = createContext({
+      documentStore: {
+        ...createContext().documentStore,
+        currentDocument: {
+          path: '/repo/report.md',
+          name: 'report.md',
+          content: '# Report',
+          isDirty: false,
+          lastSavedAt: 1,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          saveStatus: 'saved',
+          saveError: null,
+          viewMode: 'split',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+        },
+      },
+    });
+
+    await getFileCommand('fileProperties').run(context);
+
+    expect(executeFileActionMock).toHaveBeenCalledWith(
+      { action: 'properties', path: '/repo/report.md' },
+      expect.objectContaining({
+        documentStore: context.documentStore,
+        workspaceStore: context.workspaceStore,
+      }),
+    );
   });
 });

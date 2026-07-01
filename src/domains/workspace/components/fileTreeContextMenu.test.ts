@@ -75,6 +75,7 @@ describe('file tree context menu actions', () => {
       'delete:/notes/draft.md',
       'copyPath:/notes/draft.md',
       'openLocation:/notes/draft.md',
+      'properties:/notes/draft.md',
       'openNewWindow:/notes/projects',
       'newFile:/notes/projects',
       'newFolder:/notes/projects',
@@ -82,6 +83,7 @@ describe('file tree context menu actions', () => {
       'delete:/notes/projects',
       'copyPath:/notes/projects',
       'openLocation:/notes/projects',
+      'properties:/notes/projects',
     ]));
     expect(actions.filter((action) => !isSupportedFileActionCommand(action))).toEqual([]);
   });

@@ -39,6 +39,7 @@ export type CommandId =
   | 'templateWhitePaper'
   | 'print'
   | 'openCurrentLocation'
+  | 'fileProperties'
   | 'closeDocument'
   | 'exportHtml'
   | 'exportPdf'
