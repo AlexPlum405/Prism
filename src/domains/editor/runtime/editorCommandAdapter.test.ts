@@ -33,19 +33,51 @@ beforeAll(() => {
 });
 
 describe('editorCommandAdapter', () => {
-  it('writes the CodeMirror selection to the system clipboard for copy', async () => {
+  it('writes Markdown source and rendered HTML to the system clipboard for copy', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    class TestClipboardItem {
+      constructor(public readonly items: Record<string, Blob>) {}
+    }
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { write },
+    });
+    Object.defineProperty(globalThis, 'ClipboardItem', {
+      configurable: true,
+      value: TestClipboardItem,
+    });
+    const view = createView('**hello** [Prism](https://example.com)');
+    view.dispatch({ selection: EditorSelection.range(0, view.state.doc.length) });
+
+    expect(runBasicEditorCommand('copy', view, { handleTablePasteText: vi.fn() })).toBe(true);
+    await vi.waitFor(() => {
+      expect(write).toHaveBeenCalledTimes(1);
+    });
+    const item = write.mock.calls[0]?.[0]?.[0] as unknown as TestClipboardItem;
+    expect(await item.items['text/plain'].text()).toBe('**hello** [Prism](https://example.com)');
+    const html = await item.items['text/html'].text();
+    expect(html).toContain('<strong>hello</strong>');
+    expect(html).toContain('href="https://example.com"');
+
+    view.destroy();
+  });
+
+  it('keeps copyPlain and copyMd as plain Markdown text', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText },
     });
-    const view = createView('hello world');
-    view.dispatch({ selection: EditorSelection.range(0, 5) });
+    const view = createView('**hello**');
+    view.dispatch({ selection: EditorSelection.range(0, view.state.doc.length) });
 
-    expect(runBasicEditorCommand('copy', view, { handleTablePasteText: vi.fn() })).toBe(true);
+    expect(runBasicEditorCommand('copyPlain', view, { handleTablePasteText: vi.fn() })).toBe(true);
+    expect(runBasicEditorCommand('copyMd', view, { handleTablePasteText: vi.fn() })).toBe(true);
     await vi.waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith('hello');
+      expect(writeText).toHaveBeenCalledTimes(2);
     });
+    expect(writeText).toHaveBeenNthCalledWith(1, '**hello**');
+    expect(writeText).toHaveBeenNthCalledWith(2, '**hello**');
 
     view.destroy();
   });

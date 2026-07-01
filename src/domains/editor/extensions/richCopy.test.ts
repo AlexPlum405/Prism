@@ -42,7 +42,7 @@ describe('rich clipboard copy', () => {
     expect(await item.items['text/plain'].text()).toBe('标题');
   });
 
-  it('falls back to writing html text when rich clipboard APIs are unavailable', async () => {
+  it('falls back to plain text when rich clipboard APIs are unavailable', async () => {
     const writeText = vi.fn(async () => undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -54,6 +54,22 @@ describe('rich clipboard copy', () => {
     });
 
     await writeRichClipboard(previewHtmlToRichClipboardInput('<p>Body</p>', 'Body'));
+
+    expect(writeText).toHaveBeenCalledWith('Body');
+  });
+
+  it('can fall back to html source for explicit HTML copy', async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    Object.defineProperty(globalThis, 'ClipboardItem', {
+      configurable: true,
+      value: undefined,
+    });
+
+    await writeRichClipboard(previewHtmlToRichClipboardInput('<p>Body</p>', 'Body'), { fallback: 'html' });
 
     expect(writeText).toHaveBeenCalledWith('<p>Body</p>');
   });

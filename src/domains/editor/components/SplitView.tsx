@@ -825,7 +825,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           await writeRichClipboard(previewHtmlToRichClipboardInput(
             html,
             selectedText || preview?.innerText || contentRef.current,
-          ));
+          ), { fallback: 'html' });
           break;
         }
         case 'locateSource': {

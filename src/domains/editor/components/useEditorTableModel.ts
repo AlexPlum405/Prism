@@ -93,7 +93,7 @@ export function useEditorTableModel({
       await writeRichClipboard({
         html: serialization.html,
         text: serialization.markdown,
-      });
+      }, { fallback: 'html' });
       return true;
     }
 

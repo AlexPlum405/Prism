@@ -336,6 +336,7 @@ Bundle ID：com.prism.editor.v1
 - 备注：日志只记录“剪贴板是否包含预期 Alpha 行”的布尔结果，没有保存用户原剪贴板内容。
 - 修复进展：2026-06-30 源码已把 `copy/cut/paste/pastePlain` 改为直接读取 CodeMirror selection 并写入/读取系统剪贴板；`cut` 写剪贴板后删除选区，`paste` 在光标处插入文本并更新光标。`editorCommandAdapter` 与 `EditorPane.integration` 回归测试通过。
 - 安装版复测：2026-06-30 已重新打包并替换 `/Applications/Prism.app`。`PRISM-CU-252` 确认 `Cmd+C` 后系统 `pbpaste` 精确返回选中的 Alpha 行；`PRISM-CU-253` 确认 `Cmd+V` 在光标处插入第二条 Alpha 行并可保存到磁盘；`PRISM-CU-254` 确认 `Cmd+X` 后系统 `pbpaste` 精确返回 Beta 行，编辑器和保存后的磁盘文件均已移除 Beta 行。复测过程中未出现文件冲突误报。
+- 多格式复制闭环：2026-07-01 继续修复 `PRISM-FF-026`，普通 `copy` 现在同时写入 Markdown 源文本 `text/plain` 与渲染后的 `text/html`。真实安装版 Swift `NSPasteboard` 复测确认剪贴板包含 `public.utf8-plain-text` 和 `public.html`，HTML 保留 `<strong>`、`href`、`<table>` 结构。证据见 `screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png` 和 `logs/blocked-burn-down-20260701/prism-ff-026-copy-installed-app.log`。
 
 ### P0-EDITOR-005 图片剪贴板粘贴未进入资产管线
 

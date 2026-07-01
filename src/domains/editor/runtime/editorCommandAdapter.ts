@@ -81,18 +81,24 @@ export function runBasicEditorCommand(
       }
       return true;
     }
-    case 'copy':
     case 'copyMd':
     case 'copyPlain': {
       const text = getSelectionText(view);
       if (text) void writePlainTextClipboard(text);
       return true;
     }
+    case 'copy': {
+      const text = getSelectionText(view);
+      if (text) {
+        void markdownSelectionToRichClipboardInput(text).then(writeRichClipboard);
+      }
+      return true;
+    }
     case 'copyHtml': {
       const selection = view.state.selection.main;
       const text = view.state.doc.sliceString(selection.from, selection.to);
       if (text) {
-        void markdownSelectionToRichClipboardInput(text).then(writeRichClipboard);
+        void markdownSelectionToRichClipboardInput(text).then((input) => writeRichClipboard(input, { fallback: 'html' }));
       }
       return true;
     }

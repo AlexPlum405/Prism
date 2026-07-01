@@ -5613,22 +5613,24 @@
       "steps": "执行复制为 Plain/Markdown/HTML",
       "expected": "剪贴板内容与选区语义一致",
       "automationHint": "单元 + 手工",
-      "status": "Blocked",
-      "actual": "未继续执行 Plain/Markdown/HTML 逐项复制。真实 UI 中基础选区复制已经失败：Cmd+C 后系统剪贴板不包含选中文本，Cmd+V 未能粘贴回文档；多格式复制依赖同一选区/剪贴板链路，当前被 P0-EDITOR-004 阻塞。",
-      "issueRef": "P0-EDITOR-004",
-      "notes": "证据复用 PRISM-CU-167 与 logs/computer-use-real-app/editing-copy-clipboard-check.log；代码层自动化仍通过，但不替代真实 UI 剪贴板验收。",
+      "status": "Pass",
+      "actual": "2026-07-01 源码修复后重新打包并替换 /Applications/Prism.app，真实安装版打开 rich-copy-multi-format.md，执行 Cmd+A / Cmd+C 后用 Swift 直接读取 NSPasteboard：types 包含 public.html、Apple HTML pasteboard type、public.utf8-plain-text、NSStringPboardType；plain text 保留 Markdown 源文本，HTML 长度 2989，包含 <strong>、href 和 <table> 结构。copyPlain/copyMd 单元测试确认保持纯 Markdown 文本，显式 copyHtml 保留 HTML fallback 语义。",
+      "issueRef": "",
+      "notes": "旧 P0-EDITOR-004 阻塞理由已过期：基础剪贴板链路已恢复，本轮补齐普通复制富文本写入并用真实安装版 pasteboard 证据闭环。macOS 前台进程名随当前 CFBundleExecutable 显示为 app，bundle id 和 app 名仍为 com.prism.editor.v1 / Prism。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-026-case-26.png",
       "unitTestEvidence": [
-        "logs/unit-tests/core-editor-files.log"
+        "logs/unit-tests/rich-copy-multi-format-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "core-editor-files 批次 11 个测试文件 / 99 条测试通过。",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-167-editing-selection-toolbar-copy-state-window.png",
+      "automationResult": "Installed App Pass",
+      "automationActual": "真实 /Applications/Prism.app 复制 Markdown 选区后，系统剪贴板同时包含 public.utf8-plain-text 和 public.html，HTML 保留 strong/link/table 语义结构。",
+      "screenshot": "screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-167-editing-selection-toolbar-copy-state-window.png"
+        "screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png"
       ],
       "logEvidence": [
-        "logs/computer-use-real-app/editing-copy-clipboard-check.log"
+        "logs/blocked-burn-down-20260701/prism-ff-026-copy-installed-app.log",
+        "logs/unit-tests/rich-copy-multi-format-20260701.log",
+        "logs/app-smoke-blocked-burn-down-20260701/report.json"
       ]
     },
     {
@@ -8728,13 +8730,13 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 139,
+    "Pass": 140,
     "Fail": 0,
-    "Blocked": 29,
+    "Blocked": 28,
     "Not Run": 0,
-    "screenshotFiles": 433,
-    "manifestScreenshots": 1015,
-    "uniqueManifestScreenshots": 454,
+    "screenshotFiles": 434,
+    "manifestScreenshots": 1016,
+    "uniqueManifestScreenshots": 455,
     "computerUseRealAppEvidence": 245
   },
   "execution": {
@@ -10116,6 +10118,10 @@
     {
       "file": "screenshots/35-installed-export-open-actions-retest/04-reveal-action-finder-location.png",
       "testCaseId": "PRISM-CU-309"
+    },
+    {
+      "file": "screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png",
+      "testCaseId": "PRISM-FF-026"
     }
   ],
   "unitTestRuns": [
@@ -10335,6 +10341,20 @@
         "logs/unit-tests/export-open-actions-toast-20260701.log"
       ],
       "notes": "Covers export success toast actions staying visible, 15s export action toast duration, native open fallback path, reveal action, and command export success toast metadata."
+    },
+    {
+      "id": "rich-copy-multi-format-20260701",
+      "status": "Pass",
+      "testFiles": 4,
+      "testsPassed": 53,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx"
+      ],
+      "logs": [
+        "logs/unit-tests/rich-copy-multi-format-20260701.log"
+      ],
+      "notes": "Covers editor copy writing Markdown source as text/plain plus rendered text/html, plain/Markdown copy preserving source text, explicit HTML fallback, and context-menu command integration."
     }
   ],
   "sourceFixBatches": [
@@ -10872,6 +10892,29 @@
         "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX",
         "PRISM-FF-132 installed-app HTML export open/reveal actions verified"
       ]
+    },
+    {
+      "id": "installed-app-smoke-blocked-burn-down-20260701",
+      "status": "Pass",
+      "date": "2026-07-01",
+      "appPath": "/Applications/Prism.app",
+      "command": "npm run tauri:build:app-smoke; copy built Prism.app to /Applications/Prism.app",
+      "report": "logs/app-smoke-blocked-burn-down-20260701/report.json",
+      "screenshots": "screenshots/36-blocked-burn-down/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+Shift+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes fixture file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX",
+        "PRISM-FF-026 installed-app pasteboard contains public.utf8-plain-text and public.html"
+      ]
     }
   ],
   "regressionRuns": [
@@ -10911,6 +10954,26 @@
         "npm run tauri:build -- --bundles app"
       ],
       "notes": "PlantUML now stays offline through plantuml-little, repairs omitted entity labels such as rectangle Prism, and uses the same normalized SVG/raster path for preview and PNG export evidence. All P0 main test cases are now Pass except one Blocked item that requires external conditions."
+    },
+    {
+      "id": "blocked-burn-down-prism-ff-026-20260701",
+      "date": "2026-07-01",
+      "issueRefs": [
+        "PRISM-FF-026"
+      ],
+      "evidence": [
+        "screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png",
+        "logs/blocked-burn-down-20260701/prism-ff-026-copy-installed-app.log",
+        "logs/unit-tests/rich-copy-multi-format-20260701.log",
+        "logs/app-smoke-blocked-burn-down-20260701/report.json"
+      ],
+      "tests": [
+        "npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx",
+        "npm run build",
+        "npm run tauri:build:app-smoke",
+        "installed app pasteboard verification via Swift NSPasteboard"
+      ],
+      "notes": "普通编辑区复制现在写入 Markdown source text/plain 和 rendered text/html；真实安装版剪贴板含 public.utf8-plain-text 与 public.html，HTML 结构保留 strong/link/table。P0 Blocked 清零。"
     }
   ]
 }

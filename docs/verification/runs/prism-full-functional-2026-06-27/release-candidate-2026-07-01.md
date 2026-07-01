@@ -7,19 +7,21 @@ Bundle ID：`com.prism.editor.v1`
 
 ## 本轮目标
 
-继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；优先闭环剩余 Blocked 中对真实用户体验影响最高的 `PRISM-FF-132 导出打开产物动作`。
+继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`。
 
 ## 代码改动
 
 - 导出成功 toast 的 `打开` 与 `显示位置` action 增加 `dismissOnClick: false`，点击任一动作后 toast 不再立即关闭。
 - 导出成功且带动作的 toast 使用 `EXPORT_ACTION_TOAST_DURATION_MS = 15000`，给用户和自动化复测足够时间点击后续动作。
 - `scripts/run-app-smoke.mjs` 增强窗口/截图稳定性：Quick Open 重试、截图尺寸变化按重叠区域比较、退出时清理所有 Prism app 实例。
+- 编辑区普通 `copy` 写入 Markdown 源文本 `text/plain` 与渲染后的 `text/html`；`copyPlain` / `copyMd` 保持纯文本语义，显式 `copyHtml` 使用 HTML fallback。
 
 ## 验证命令
 
 ```bash
 git status --short --branch
 npm test -- --run src/hooks/useExportTaskUi.test.tsx src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts
+npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -28,6 +30,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 当前结果：
 
 - Vitest：3 个测试文件 / 39 条断言通过。
+- 富复制回归 Vitest：4 个测试文件 / 53 条测试通过。
 - `npm run build`：通过。
 - `npm run tauri:build:app-smoke`：通过，完成 app bundle 构建、Markdown 文档图标 patch、本地 bundle smoke。
 - `/Applications/Prism.app` 安装版 smoke：通过，覆盖 `.markdown` 中文/空格路径、JSON/SQL/TXT、Markdown、ERROR 诊断、Quick Open、编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
@@ -56,18 +59,41 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/app-smoke-installed-ff132-20260701/open-action-evidence.txt`
 - `logs/app-smoke-installed-ff132-20260701/reveal-action-evidence.txt`
 
+## PRISM-FF-026 复测结果
+
+状态：Pass
+
+真实安装版步骤：
+
+1. 用 `/Applications/Prism.app` 打开 `docs/verification/runs/prism-full-functional-2026-06-27/fixtures/blocked-burn-down/rich-copy-multi-format.md`。
+2. 执行 `Cmd+A` / `Cmd+C`。
+3. 用 Swift 直接读取 `NSPasteboard.general.types`、plain text 和 HTML 内容摘要。
+
+结果：
+
+- 剪贴板类型包含 `public.html`、`Apple HTML pasteboard type`、`public.utf8-plain-text`、`NSStringPboardType`。
+- plain text 保留 Markdown 源文本。
+- HTML 长度为 2989，包含 `<strong>`、`href` 和 `<table>`。
+
+证据：
+
+- `screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png`
+- `logs/blocked-burn-down-20260701/prism-ff-026-copy-installed-app.log`
+- `logs/unit-tests/rich-copy-multi-format-20260701.log`
+- `logs/app-smoke-blocked-burn-down-20260701/report.json`
+
 ## 当前统计
 
 ```json
 {
   "total": 168,
-  "Pass": 139,
+  "Pass": 140,
   "Fail": 0,
-  "Blocked": 29,
+  "Blocked": 28,
   "Not Run": 0,
-  "screenshotFiles": 433,
-  "manifestScreenshots": 1015,
-  "uniqueManifestScreenshots": 454,
+  "screenshotFiles": 434,
+  "manifestScreenshots": 1016,
+  "uniqueManifestScreenshots": 455,
   "computerUseRealAppEvidence": 245
 }
 ```
@@ -81,4 +107,4 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 已真实闭环为 Pass，剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。

@@ -3,6 +3,10 @@ export interface RichClipboardInput {
   text: string;
 }
 
+interface RichClipboardOptions {
+  fallback?: 'text' | 'html';
+}
+
 type ClipboardWithRichWrite = Clipboard & {
   write?: (items: ClipboardItem[]) => Promise<void>;
 };
@@ -13,7 +17,7 @@ function normalizeHtmlFragment(html: string) {
     : '<p></p>';
 }
 
-export async function writeRichClipboard(input: RichClipboardInput) {
+export async function writeRichClipboard(input: RichClipboardInput, options: RichClipboardOptions = {}) {
   const clipboard = navigator.clipboard as ClipboardWithRichWrite | undefined;
   const clipboardItemCtor = globalThis.ClipboardItem;
 
@@ -27,7 +31,10 @@ export async function writeRichClipboard(input: RichClipboardInput) {
     return;
   }
 
-  await navigator.clipboard.writeText(input.html || input.text);
+  const fallbackText = options.fallback === 'html'
+    ? input.html || input.text
+    : input.text || input.html;
+  await navigator.clipboard.writeText(fallbackText);
 }
 
 export async function markdownSelectionToRichClipboardInput(markdown: string): Promise<RichClipboardInput> {
