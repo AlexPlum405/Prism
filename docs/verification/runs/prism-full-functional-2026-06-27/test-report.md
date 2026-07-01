@@ -177,6 +177,15 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-07-01 i18n 与无障碍基础安装版复测截图：screenshots/34-installed-i18n-a11y-retest/
 - 2026-07-01 i18n 与无障碍基础安装版复测日志：logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md、logs/unit-tests/i18n-a11y-shell-20260701.log
 
+## 导出保真专项
+
+- 专项索引：export-fidelity-special.md
+- 当前结论：HTML、PDF、PNG、DOCX 基础导出和复杂导出主链路均为 Pass；Mermaid、PlantUML、Markmap、本地 SVG、表格、数学公式已纳入复杂 fixture 验收。
+- PDF 分页避切：`PRISM-FF-125` 已通过真实安装版复测，证据见 `screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-1.png`、`screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-2.png` 和 `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`。
+- PlantUML 离线渲染与 PNG 裁切：`PRISM-FF-043` 已通过 `plantuml-little` 回归和安装版截图复核，证据见 `screenshots/31-plantuml-regression/` 和 `logs/plantuml-regression/plantuml-png-regression-20260701.log`。
+- DOCX 表格/公式/图表：`PRISM-FF-126/127/128` 已通过 WPS 视觉打开和 OOXML 检查，证据见 `screenshots/15-computer-use-real-app/PRISM-CU-208-docx-wps-diagrams-page-window.png`、`PRISM-CU-209-docx-wps-table-math-page-window.png` 和 `logs/computer-use-real-app/docx-complex-inspection.log`。
+- 剩余导出风险：`PRISM-FF-132` 导出打开产物动作、`PRISM-FF-153/156` Windows/Linux 导出、`PRISM-FF-164` 导出大图内存仍为 Blocked，不伪造验证。
+
 ## 2026-06-30 修复批次状态
 
 - 已重新打包并替换 `/Applications/Prism.app`，Info.plist 身份为 `com.prism.editor.v1`，版本 `1.4.1`，Markdown 文档图标资源和 `Resources/Initial` 均在安装包内。
@@ -257,5 +266,5 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - Windows/Linux 用例未执行，已标记 Blocked；需要真机或真实平台环境回填。
 - 浏览器 mock 只验证前端渲染与部分交互，不能证明 Tauri command、文件授权、导出、系统菜单和原生窗口生命周期正确。
 - 当前 manifest 中登记了 232 条真实 Prism/导出产物/Finder/安装版复测证据；`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/` 可作为真实 app 证据。其他 browser-mock 截图可用于前端视觉参考和宣传动图素材筛选，但不应作为“真实 app 已通过”的发布证据。
-- 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；仍未覆盖用户指南级长文档分页和超长 PNG 分片压力。
+- 导出类用例已完成错误文档 preflight、干净 Markdown fixture 四格式导出、复杂图表 fixture 四格式导出、复杂 DOCX WPS 视觉打开；专项索引见 `export-fidelity-special.md`。仍未覆盖用户指南级长文档分页和连续超长 PNG 内存压力。
 - `manifest.json` 中 Not Run 已清零；Blocked 项不是通过，主要对应删除/重命名、权限拒绝、断网、真实 Windows/Linux、注入故障和压力测试。
