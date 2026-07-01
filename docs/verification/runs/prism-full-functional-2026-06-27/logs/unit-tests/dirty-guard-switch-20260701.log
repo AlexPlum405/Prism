@@ -1,0 +1,24 @@
+# Dirty guard switch regression - 2026-07-01
+
+Command:
+
+```bash
+npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
+```
+
+Result:
+
+```text
+Test Files  4 passed (4)
+Tests       32 passed (32)
+```
+
+Coverage:
+
+- Workspace navigation uses the current-window policy with `dirtyGuard: true`.
+- Dirty switch prompt exposes save, save as, discard, and cancel actions.
+- Cancel keeps the dirty current document and does not read the target file.
+- Discard opens the target file without saving dirty edits.
+- Save writes the current document before opening the target file.
+- Save as requests a new path, writes dirty edits there, then opens the target file.
+- External disk changes during save-before-switch keep the current document in conflict state.

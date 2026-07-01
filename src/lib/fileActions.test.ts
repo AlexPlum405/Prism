@@ -368,6 +368,26 @@ describe('executeFileAction openFile workspace sync', () => {
     expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/current.md');
   });
 
+  it('discards dirty edits before opening a different file when requested', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('discard');
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValueOnce('# Next file');
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction }),
+    );
+
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(readTextFile).toHaveBeenCalledWith('/repo/next.md');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Next file',
+      isDirty: false,
+      path: '/repo/next.md',
+    });
+  });
+
   it('saves the dirty current document before opening a different file', async () => {
     const requestDirtyDocumentAction = vi.fn().mockResolvedValue('save');
     useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
@@ -381,6 +401,31 @@ describe('executeFileAction openFile workspace sync', () => {
     );
 
     expect(writeTextFile).toHaveBeenCalledWith('/repo/current.md', '# Unsaved edit');
+    expect(readTextFile).toHaveBeenCalledWith('/repo/next.md');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Next file',
+      isDirty: false,
+      path: '/repo/next.md',
+    });
+  });
+
+  it('saves dirty edits to a new path before opening a different file when save as is requested', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('saveAs');
+    const requestSavePath = vi.fn().mockResolvedValue('/repo/current-copy.md');
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValueOnce('# Next file');
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction, requestSavePath }),
+    );
+
+    expect(requestSavePath).toHaveBeenCalledWith({
+      documentPath: '/repo/current.md',
+      filename: 'current.md',
+    });
+    expect(writeTextFile).toHaveBeenCalledWith('/repo/current-copy.md', '# Unsaved edit');
     expect(readTextFile).toHaveBeenCalledWith('/repo/next.md');
     expect(useDocumentStore.getState().currentDocument).toMatchObject({
       content: '# Next file',

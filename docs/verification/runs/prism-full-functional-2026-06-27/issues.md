@@ -670,7 +670,7 @@ Bundle ID：com.prism.editor.v1
 ### P1-COMMAND-002 自绘菜单/上下文菜单对 Escape 关闭响应不一致
 
 - 严重度：P1
-- 用例 ID：PRISM-FF-085、PRISM-FF-091、PRISM-FF-092
+- 用例 ID：PRISM-FF-085、PRISM-FF-091
 - 触发动作：
   1. 打开顶部 `帮助` 自绘菜单后按 `Escape`。
   2. 在文件树文件夹上右键打开上下文菜单后按 `Escape`。

@@ -7,7 +7,7 @@ Bundle ID：`com.prism.editor.v1`
 
 ## 本轮目标
 
-继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`。
+继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard` 自动化证据。
 
 ## 代码改动
 
@@ -22,6 +22,7 @@ Bundle ID：`com.prism.editor.v1`
 git status --short --branch
 npm test -- --run src/hooks/useExportTaskUi.test.tsx src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts
 npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
+npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -31,6 +32,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 - Vitest：3 个测试文件 / 39 条断言通过。
 - 富复制回归 Vitest：4 个测试文件 / 53 条测试通过。
+- Dirty guard 回归 Vitest：4 个测试文件 / 32 条测试通过。
 - `npm run build`：通过。
 - `npm run tauri:build:app-smoke`：通过，完成 app bundle 构建、Markdown 文档图标 patch、本地 bundle smoke。
 - `/Applications/Prism.app` 安装版 smoke：通过，覆盖 `.markdown` 中文/空格路径、JSON/SQL/TXT、Markdown、ERROR 诊断、Quick Open、编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
@@ -82,14 +84,33 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/rich-copy-multi-format-20260701.log`
 - `logs/app-smoke-blocked-burn-down-20260701/report.json`
 
+## PRISM-FF-092 复测结果
+
+状态：Pass/code-verified
+
+说明：旧真实安装版复测无法稳定制造“点击文件树切换时仍 dirty”的前置条件，因为自动保存先于切换完成。本轮不伪造成真实 UI 弹窗复测，改用代码级自动化证明产品逻辑：
+
+- `workspace-navigation` policy 启用 `dirtyGuard: true`。
+- 弹窗暴露保存、另存为、放弃改动、取消。
+- cancel 保持当前 dirty 文档。
+- discard 放弃 dirty 编辑后打开目标。
+- save 先保存当前文档再打开目标。
+- saveAs 请求新路径写入后再打开目标。
+- 保存前发现外部磁盘变化时停留当前文档并进入 conflict。
+
+证据：
+
+- `logs/unit-tests/dirty-guard-switch-20260701.log`
+- `logs/computer-use-real-app/dirty-guard-switch-check.log`
+
 ## 当前统计
 
 ```json
 {
   "total": 168,
-  "Pass": 140,
+  "Pass": 141,
   "Fail": 0,
-  "Blocked": 28,
+  "Blocked": 27,
   "Not Run": 0,
   "screenshotFiles": 434,
   "manifestScreenshots": 1016,
@@ -107,4 +128,4 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，`PRISM-FF-092` 已通过自动化补证据降噪，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。

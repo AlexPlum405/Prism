@@ -65,6 +65,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 闭环 `PRISM-FF-026`：编辑区普通复制不再只写纯文本，而是写入 Markdown 源文本 `text/plain` 和渲染后的 `text/html`；`copyPlain` / `copyMd` 继续保持纯 Markdown 文本语义，显式 `copyHtml` 在缺少 rich clipboard API 时回退 HTML 源码。复跑富复制/编辑命令/右键命令集成测试通过 4 个测试文件 / 53 条测试；`npm run build`、`npm run tauri:build:app-smoke` 均通过，并已替换 `/Applications/Prism.app`。真实安装版打开 `rich-copy-multi-format.md` 后执行 `Cmd+A` / `Cmd+C`，Swift 读取 `NSPasteboard` 直接确认存在 `public.html`、`Apple HTML pasteboard type`、`public.utf8-plain-text` 和 `NSStringPboardType`；plain text 保留 Markdown 源文本，HTML 包含 `<strong>`、`href` 和 `<table>`。该项从 Blocked 改为 Pass，P0 Blocked 清零。证据见 `screenshots/36-blocked-burn-down/PRISM-FF-026-copy-installed-app.png`、`logs/blocked-burn-down-20260701/prism-ff-026-copy-installed-app.log`、`logs/unit-tests/rich-copy-multi-format-20260701.log` 和 `logs/app-smoke-blocked-burn-down-20260701/report.json`。
 
+2026-07-01 降噪 `PRISM-FF-092`：旧真实安装版复测无法稳定制造“点击文件树切换时仍 dirty”的前置条件，因为自动保存先于切换完成。本轮不伪造成真实 UI 弹窗复测，改用代码级自动化补证据：`workspace-navigation` 策略明确启用 `dirtyGuard`，`DirtyDocumentSwitchModal` 暴露保存、另存为、放弃改动、取消四个动作，文件动作 contract 覆盖 cancel/discard/save/saveAs 以及保存前发现外部磁盘变化进入 conflict。复跑 4 个测试文件 / 32 条测试通过，该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/dirty-guard-switch-20260701.log`，旧真实时序阻塞日志仍保留为 `logs/computer-use-real-app/dirty-guard-switch-check.log`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -120,21 +122,21 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：140
+- Pass：141
 - Fail：0
-- Blocked：28
+- Blocked：27
 - Not Run：0
 - P0 执行：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1 执行：Pass 44 / Fail 0 / Blocked 12 / Not Run 0
+- P1 执行：Pass 45 / Fail 0 / Blocked 11 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 3 / Fail 0 / Blocked 5 / Not Run 0
 - 当前截图文件总数：434
 - Manifest 真实 Computer Use 截图引用：245
 - Pipeline/环境证据截图：9
 - 真实 Computer Use/安装版 UI 截图：246（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`、`screenshots/33-installed-print-help-retest/`、`screenshots/34-installed-i18n-a11y-retest/`、`screenshots/35-installed-export-open-actions-retest/`、`screenshots/36-blocked-burn-down/`）
-- 单元/集成测试批次：17
-- 单元/集成测试文件通过：88
-- 单元/集成测试断言通过：1130
+- 单元/集成测试批次：18
+- 单元/集成测试文件通过：92
+- 单元/集成测试断言通过：1162
 - 单元/集成测试失败执行：0
 - 唯一单元失败：0
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已按 `PRISM-CU-261..267` 安装版证据闭环为 Pass
