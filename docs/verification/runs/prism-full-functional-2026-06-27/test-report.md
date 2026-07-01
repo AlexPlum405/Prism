@@ -79,6 +79,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-02 降噪 `PRISM-FF-134/103/105/120`：补齐配置资源类专项证据。设置迁移测试覆盖 legacy config 读取、旧 schema 升级、非法值丢弃和旧 PDF 字段迁移；主题测试覆盖 native scan 有效/无效包、前端 registry 异常主题 disabled、Rust 临时 themes 目录扫描和用户主题删除；字体测试覆盖导入字体复制到 appData/fonts、从本地 bytes 注册 FontFace、已保存 customFonts 重新本地注册；图谱测试覆盖 native relation graph 查询失败后回退 TypeScript 图谱，节点仍可见。复跑 Vitest 9 个测试文件 / 54 条测试通过，Cargo theme_store 1 条测试通过。四项均从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/settings-migration-legacy-config-20260702.log`、`logs/unit-tests/theme-font-graph-fallback-20260702.log` 和 `logs/unit-tests/theme-store-rust-20260702.log`。
 
+2026-07-02 降噪 `PRISM-FF-096/097`：补齐破坏性文件操作的沙盒化模型证据。删除当前打开文件测试覆盖系统废纸篓优先、永久删除未触发、当前文档关闭、工作区文件树刷新和成功反馈；重命名当前父文件夹测试覆盖目录 rename、当前打开文档路径前缀替换、工作区刷新和成功反馈。本轮未对真实用户文件执行 GUI 删除或重命名。复跑 4 个测试文件 / 31 条测试通过。两项均从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/destructive-file-actions-sandbox-20260702.log`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -134,21 +136,21 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：150
+- Pass：152
 - Fail：0
-- Blocked：18
+- Blocked：16
 - Not Run：0
 - P0 执行：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1 执行：Pass 53 / Fail 0 / Blocked 3 / Not Run 0
+- P1 执行：Pass 55 / Fail 0 / Blocked 1 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
 - 当前截图文件总数：434
 - Manifest 真实 Computer Use 截图引用：245
 - Pipeline/环境证据截图：9
 - 真实 Computer Use/安装版 UI 截图：246（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`、`screenshots/33-installed-print-help-retest/`、`screenshots/34-installed-i18n-a11y-retest/`、`screenshots/35-installed-export-open-actions-retest/`、`screenshots/36-blocked-burn-down/`）
-- 单元/集成测试批次：27
-- 单元/集成测试文件通过：116
-- 单元/集成测试断言通过：1353
+- 单元/集成测试批次：28
+- 单元/集成测试文件通过：120
+- 单元/集成测试断言通过：1384
 - 单元/集成测试失败执行：0
 - 唯一单元失败：0
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已按 `PRISM-CU-261..267` 安装版证据闭环为 Pass

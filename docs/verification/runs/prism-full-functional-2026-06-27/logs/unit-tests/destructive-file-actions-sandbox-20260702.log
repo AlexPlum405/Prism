@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/lib/fileActions.test.ts src/domains/workspace/components/fileTreeContextMenu.test.ts src/domains/workspace/components/FileTree.test.tsx src/app/useAppWorkspaceContextMenu.test.tsx
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  4 passed (4)
+      Tests  31 passed (31)
+   Start at  01:48:04
+   Duration  766ms (transform 612ms, setup 159ms, import 800ms, tests 112ms, environment 1.31s)
+

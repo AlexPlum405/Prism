@@ -7,7 +7,7 @@ Bundle ID：`com.prism.editor.v1`
 
 ## 本轮目标
 
-继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard`、`PRISM-FF-094 文件夹授权失败`、`PRISM-FF-135 设置持久化错误`、`PRISM-FF-138 Error Boundary`、`PRISM-FF-162 Worker 降级`、`PRISM-FF-118 索引任务取消` 以及配置资源类 Blocked 自动化证据。
+继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard`、`PRISM-FF-094 文件夹授权失败`、`PRISM-FF-135 设置持久化错误`、`PRISM-FF-138 Error Boundary`、`PRISM-FF-162 Worker 降级`、`PRISM-FF-118 索引任务取消`、配置资源类与破坏性文件操作 Blocked 自动化证据。
 
 ## 代码改动
 
@@ -34,6 +34,7 @@ cargo test workspace_index --manifest-path src-tauri/Cargo.toml
 npm test -- --run src/domains/settings/pathPersistence.test.ts src/domains/settings/normalize.test.ts
 npm test -- --run src/domains/themes/themePackage.test.ts src/domains/themes/themeRegistry.test.ts src/domains/themes/themeStorage.test.ts src/domains/themes/themeInstaller.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/fontService.test.ts src/domains/workspace/components/RelationGraphPanel.test.tsx
 cargo test theme_store --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/lib/fileActions.test.ts src/domains/workspace/components/fileTreeContextMenu.test.ts src/domains/workspace/components/FileTree.test.tsx src/app/useAppWorkspaceContextMenu.test.tsx
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -53,6 +54,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Settings migration 回归 Vitest：2 个测试文件 / 15 条测试通过。
 - Theme/font/graph fallback 回归 Vitest：7 个测试文件 / 39 条测试通过。
 - Theme store Rust 回归：1 条测试通过。
+- Destructive file actions sandbox 回归 Vitest：4 个测试文件 / 31 条测试通过。
 - `npm run build`：通过。
 - `npm run tauri:build:app-smoke`：通过，完成 app bundle 构建、Markdown 文档图标 patch、本地 bundle smoke。
 - `/Applications/Prism.app` 安装版 smoke：通过，覆盖 `.markdown` 中文/空格路径、JSON/SQL/TXT、Markdown、ERROR 诊断、Quick Open、编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
@@ -219,14 +221,29 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/theme-font-graph-fallback-20260702.log`
 - `logs/unit-tests/theme-store-rust-20260702.log`
 
+## PRISM-FF-096 / 097 复测结果
+
+状态：Pass/code-verified
+
+说明：本组验证删除当前打开文件和重命名当前父文件夹。为避免误伤真实文档，本轮使用 mock 文件系统、native trash 和 throwaway 路径覆盖：
+
+- 删除当前打开文件优先调用系统废纸篓，不触发永久删除。
+- 删除成功后当前文档关闭，工作区文件树刷新，并显示成功反馈。
+- 重命名当前父文件夹时更新当前打开文档路径前缀。
+- 重命名后工作区文件树刷新，并显示成功反馈。
+
+证据：
+
+- `logs/unit-tests/destructive-file-actions-sandbox-20260702.log`
+
 ## 当前统计
 
 ```json
 {
   "total": 168,
-  "Pass": 150,
+  "Pass": 152,
   "Fail": 0,
-  "Blocked": 18,
+  "Blocked": 16,
   "Not Run": 0,
   "screenshotFiles": 434,
   "manifestScreenshots": 1016,
@@ -244,4 +261,4 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass；`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135`、`PRISM-FF-138`、`PRISM-FF-162`、`PRISM-FF-118` 以及配置资源类 Blocked 已通过自动化补证据降噪；P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass；`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135`、`PRISM-FF-138`、`PRISM-FF-162`、`PRISM-FF-118`、配置资源类与破坏性文件操作 Blocked 已通过自动化补证据降噪；P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。

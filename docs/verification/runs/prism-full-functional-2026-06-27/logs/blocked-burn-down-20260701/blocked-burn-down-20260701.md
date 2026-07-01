@@ -17,9 +17,11 @@
 - `PRISM-FF-103`：Blocked -> Pass/code-verified
 - `PRISM-FF-105`：Blocked -> Pass/code-verified
 - `PRISM-FF-120`：Blocked -> Pass/code-verified
-- 总计：Pass 150 / Fail 0 / Blocked 18 / Not Run 0
+- `PRISM-FF-096`：Blocked -> Pass/code-verified
+- `PRISM-FF-097`：Blocked -> Pass/code-verified
+- 总计：Pass 152 / Fail 0 / Blocked 16 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1：Pass 53 / Fail 0 / Blocked 3 / Not Run 0
+- P1：Pass 55 / Fail 0 / Blocked 1 / Not Run 0
 - P3：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
 
 ## 代码变更
@@ -95,6 +97,7 @@ cargo test workspace_index --manifest-path src-tauri/Cargo.toml
 npm test -- --run src/domains/settings/pathPersistence.test.ts src/domains/settings/normalize.test.ts
 npm test -- --run src/domains/themes/themePackage.test.ts src/domains/themes/themeRegistry.test.ts src/domains/themes/themeStorage.test.ts src/domains/themes/themeInstaller.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/fontService.test.ts src/domains/workspace/components/RelationGraphPanel.test.tsx
 cargo test theme_store --manifest-path src-tauri/Cargo.toml
+npm test -- --run src/lib/fileActions.test.ts src/domains/workspace/components/fileTreeContextMenu.test.ts src/domains/workspace/components/FileTree.test.tsx src/app/useAppWorkspaceContextMenu.test.tsx
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -113,6 +116,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Settings migration Vitest：2 个测试文件 / 15 条测试通过。
 - Theme/font/graph fallback Vitest：7 个测试文件 / 39 条测试通过。
 - Theme store Rust：1 条测试通过。
+- Destructive file actions sandbox Vitest：4 个测试文件 / 31 条测试通过。
 - Build：通过。
 - App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`、`logs/app-smoke-folder-authorization-failure-20260702/report.json` 与 `logs/app-smoke-settings-persistence-failure-20260702/report.json`。
 
@@ -231,6 +235,22 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/settings-migration-legacy-config-20260702.log`
 - `logs/unit-tests/theme-font-graph-fallback-20260702.log`
 - `logs/unit-tests/theme-store-rust-20260702.log`
+
+## PRISM-FF-096 / PRISM-FF-097 Destructive File Actions Sandbox
+
+本轮不对真实用户文件执行 GUI 删除或重命名；通过 mock 文件系统、native trash 和 throwaway 路径覆盖高风险逻辑。
+
+验证：
+
+- 删除当前打开文件优先调用 `move_path_to_trash`，不触发永久 `remove`。
+- 删除成功后当前文档关闭，workspace fileTree 刷新，并显示移到废纸篓反馈。
+- 重命名当前打开文档的父文件夹时调用 `rename(oldDir, newDir)`。
+- 当前打开文档路径从旧目录前缀替换为新目录前缀。
+- 重命名后 workspace fileTree 刷新，并显示重命名完成反馈。
+
+证据：
+
+- `logs/unit-tests/destructive-file-actions-sandbox-20260702.log`
 
 ## 剩余范围
 

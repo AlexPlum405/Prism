@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
-import { ask, message } from '@tauri-apps/plugin-dialog';
+import { exists, readTextFile, remove, rename, stat, writeTextFile } from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
+import { ask, confirm, message } from '@tauri-apps/plugin-dialog';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
@@ -479,6 +480,89 @@ describe('executeFileAction openFile workspace sync', () => {
       saveStatus: 'conflict',
       saveIssue: 'missing',
     });
+  });
+
+  it('moves the currently open file to trash, closes it, and refreshes the workspace', async () => {
+    const showToast = vi.fn();
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current', { mtimeMs: 1000, size: 10 });
+    useWorkspaceStore.setState({
+      fileTree: [{ kind: 'file', name: 'current.md', path: '/repo/current.md' }],
+      mode: 'folder',
+      rootPath: '/repo',
+    });
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      isDirectory: false,
+      isFile: true,
+      size: 10,
+      mtime: new Date(1000),
+    });
+    (confirm as ReturnType<typeof vi.fn>).mockResolvedValueOnce(true);
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { kind: 'file', name: 'other.md', path: '/repo/other.md' },
+    ]);
+
+    await executeFileAction('delete:/repo/current.md', fileActionContext({ showToast }));
+
+    expect(invoke).toHaveBeenCalledWith('move_path_to_trash', { path: '/repo/current.md' });
+    expect(remove).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toBeNull();
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo');
+    expect(useWorkspaceStore.getState().fileTree).toEqual([
+      { kind: 'file', name: 'other.md', path: '/repo/other.md' },
+    ]);
+    expect(showToast).toHaveBeenCalledWith('已移到系统废纸篓');
+  });
+
+  it('renames the current document parent folder and updates the open document path', async () => {
+    const showToast = vi.fn();
+    useDocumentStore.getState().openDocument('/repo/docs/current.md', 'current.md', '# Current', { mtimeMs: 1000, size: 10 });
+    useWorkspaceStore.setState({
+      fileTree: [{
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'current.md', path: '/repo/docs/current.md' }],
+      }],
+      mode: 'folder',
+      rootPath: '/repo',
+    });
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      isDirectory: true,
+      isFile: false,
+      size: 10,
+      mtime: new Date(1000),
+    });
+    (exists as ReturnType<typeof vi.fn>).mockResolvedValueOnce(false);
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      {
+        kind: 'directory',
+        name: 'renamed',
+        path: '/repo/renamed',
+        children: [{ kind: 'file', name: 'current.md', path: '/repo/renamed/current.md' }],
+      },
+    ]);
+
+    await executeFileAction(
+      { action: 'commitRename', path: '/repo/docs', name: 'renamed' },
+      fileActionContext({ showToast }),
+    );
+
+    expect(rename).toHaveBeenCalledWith('/repo/docs', '/repo/renamed');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      name: 'current.md',
+      path: '/repo/renamed/current.md',
+    });
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo');
+    expect(useWorkspaceStore.getState().fileTree).toEqual([
+      {
+        kind: 'directory',
+        name: 'renamed',
+        path: '/repo/renamed',
+        children: [{ kind: 'file', name: 'current.md', path: '/repo/renamed/current.md' }],
+      },
+    ]);
+    expect(showToast).toHaveBeenCalledWith('重命名完成');
   });
 });
 

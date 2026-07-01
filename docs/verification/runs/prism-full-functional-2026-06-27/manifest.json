@@ -7184,17 +7184,17 @@
       "preconditions": "当前文档在工作区",
       "steps": "从文件树删除该文件",
       "expected": "删除后当前文档关闭，文件树刷新",
-      "automationHint": "单元 + 手工",
-      "status": "Blocked",
-      "actual": "删除当前打开文件需要通过 GUI 删除本地文件，属于高风险破坏性操作；本轮未获得逐次确认，未执行。",
+      "automationHint": "Vitest mocked trash deletion for current document",
+      "status": "Pass",
+      "actual": "通过 fileActions 沙盒化模型测试验证：删除当前打开文件时先走系统废纸篓 move_path_to_trash，不调用永久 remove；删除成功后关闭当前文档、刷新 workspace fileTree，并显示“已移到系统废纸篓”反馈。",
       "issueRef": "",
-      "notes": "后续应使用 throwaway fixture 并在执行前获得确认，或改用单元/集成测试覆盖。",
+      "notes": "Pass/code-verified；未对真实用户文件执行 GUI 删除，使用 mock 文件系统/native trash 覆盖高风险路径。证据见 logs/unit-tests/destructive-file-actions-sandbox-20260702.log。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-096-case-96.png",
       "unitTestEvidence": [
-        "logs/unit-tests/diagnostics-workspace-editor.log"
+        "logs/unit-tests/destructive-file-actions-sandbox-20260702.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "automationResult": "Code Verified Pass",
+      "automationActual": "destructive-file-actions-sandbox 批次 4 个测试文件 / 31 条测试通过。",
       "screenshots": []
     },
     {
@@ -7206,17 +7206,17 @@
       "preconditions": "当前文档在被重命名目录下",
       "steps": "重命名父文件夹",
       "expected": "当前文档路径同步更新，保存仍写到新位置",
-      "automationHint": "单元 + 手工",
-      "status": "Blocked",
-      "actual": "重命名当前父文件夹会改变测试工作区路径并影响后续证据归档；本轮未执行。",
+      "automationHint": "Vitest mocked parent-folder rename for open document",
+      "status": "Pass",
+      "actual": "通过 fileActions 沙盒化模型测试验证：重命名当前文档父文件夹时调用 rename(oldDir,newDir)，当前打开文档路径从 /repo/docs/current.md 更新为 /repo/renamed/current.md，随后刷新 workspace fileTree 并显示“重命名完成”。",
       "issueRef": "",
-      "notes": "需要独立临时 workspace 并自动恢复路径后专项验证。",
+      "notes": "Pass/code-verified；未重命名真实工作区目录，使用 mock 文件系统和 throwaway 路径覆盖路径替换逻辑。证据见 logs/unit-tests/destructive-file-actions-sandbox-20260702.log。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-097-case-97.png",
       "unitTestEvidence": [
-        "logs/unit-tests/diagnostics-workspace-editor.log"
+        "logs/unit-tests/destructive-file-actions-sandbox-20260702.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "diagnostics-workspace-editor 批次 12 个测试文件 / 90 条测试通过。",
+      "automationResult": "Code Verified Pass",
+      "automationActual": "destructive-file-actions-sandbox 批次 4 个测试文件 / 31 条测试通过。",
       "screenshots": []
     },
     {
@@ -8755,9 +8755,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 150,
+    "Pass": 152,
     "Fail": 0,
-    "Blocked": 18,
+    "Blocked": 16,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,
