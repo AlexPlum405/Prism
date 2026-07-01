@@ -1022,6 +1022,7 @@ Bundle ID：com.prism.editor.v1
 - 验收标准：系统菜单栏 `File` 可见新建文稿、打开文件、打开文件夹、最近打开、保存、另存为、关闭文稿等入口；各入口行为与窗口内菜单一致。
 - 修复进展：2026-06-30 源码已在 Tauri setup 注册原生 app menu，File/Edit/View/Window/Help 暴露 Prism 核心入口；自定义菜单项通过 Tauri event 桥接到现有前端 `command.run` 逻辑。`useAppCommandContext` 已补 native menu event 回归测试，`cargo check` 通过。
 - 安装版复测：2026-06-30 已在替换后的 `/Applications/Prism.app` 真实复测通过。macOS 系统菜单栏 `File` 显示 `新建文稿`、`新建窗口`、`打开文件...`、`打开文件夹...`、`快速打开...`、`保存`、`另存为...`、`在访达中显示`、`关闭文稿`，不再只有 `Close Window / Close All`。证据见 `screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png`。
+- 策略自动化复测：2026-07-01 复跑 `src/lib/openDocumentFlow.test.ts` 与 `src/lib/fileActions.test.ts` 通过 2 个测试文件 / 24 条测试，其中 `opens menu selections in a new window when a document is already active` 覆盖当前窗口已有文档时菜单打开新文件进入新窗口、当前窗口不丢内容的策略。日志见 `logs/unit-tests/open-document-flow-menu-policy-20260701.log`。`PRISM-FF-091` 已改为 Pass。
 
 ### P1-PRINT-001 打印入口未暴露，快捷键无反应
 

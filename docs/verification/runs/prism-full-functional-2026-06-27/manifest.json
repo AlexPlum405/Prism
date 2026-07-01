@@ -6920,16 +6920,20 @@
       "steps": "`文件 > 打开` 选择另一个文件",
       "expected": "因 entry prefers new window，新文件进新窗口，当前窗口不丢内容",
       "automationHint": "单元 + 手工",
-      "status": "Fail",
-      "actual": "原生 macOS File 菜单只有 Close Window / Close All，未暴露打开文件、打开文件夹或新建文稿入口；无法通过主菜单验证“打开已有文档时新窗口策略”。",
+      "status": "Pass",
+      "actual": "真实安装版复测确认 macOS File 菜单已暴露打开文件、打开文件夹、快速打开、保存等核心入口；自动化 openDocumentFlow 回归确认当前窗口已有文档时，菜单选择的新文件会通过 openPrismWindow 进入新窗口，当前窗口不丢内容。",
       "issueRef": "P1-MENU-002",
-      "notes": "窗口内自绘“文件”文字不是原生可操作菜单；该用例按真实菜单路径判定失败。",
+      "notes": "旧 PRISM-CU-226/227 作为 pre-fix 失败证据保留；修复后菜单入口见 PRISM-CU-260，打开策略见 open-document-flow-menu-policy-20260701 单测日志。",
       "plannedScreenshot": "screenshots/11-menu-help/PRISM-FF-091-case-91.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-227-native-file-menu-only-close-window.png"
+        "screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-226-native-file-menu-missing-open-entry-window.png"
+      "screenshot": "screenshots/24-installed-workspace-search-menu-smoke/03-native-file-menu-core-actions.png",
+      "unitTestEvidence": [
+        "logs/unit-tests/open-document-flow-menu-policy-20260701.log"
+      ],
+      "automationResult": "Unit Pass + Installed App Pass",
+      "automationActual": "src/lib/openDocumentFlow.test.ts 与 src/lib/fileActions.test.ts 通过 2 个测试文件 / 24 条测试；PRISM-CU-260 证明安装版原生 File 菜单入口已恢复。"
     },
     {
       "id": "PRISM-FF-092",
@@ -8573,11 +8577,11 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T12:22:00+08:00",
+  "generatedAt": "2026-07-01T12:28:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 135,
-    "Fail": 3,
+    "Pass": 136,
+    "Fail": 2,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 428,
@@ -10121,6 +10125,20 @@
         "logs/plantuml-regression/plantuml-png-regression-20260701.log"
       ],
       "notes": "Covers explicit ?file/?folder startup URLs, PlantUML missing entity label repair for rectangle Prism, export PlantUML normalization/rasterization, and installed-app replacement. tauri build produced Prism.app and then failed only at updater signing because TAURI_SIGNING_PRIVATE_KEY is not configured; the produced app bundle was installed for real UI retest."
+    },
+    {
+      "id": "open-document-flow-menu-policy-20260701",
+      "status": "Pass",
+      "testFiles": 2,
+      "testsPassed": 24,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/lib/openDocumentFlow.test.ts src/lib/fileActions.test.ts"
+      ],
+      "logs": [
+        "logs/unit-tests/open-document-flow-menu-policy-20260701.log"
+      ],
+      "notes": "Covers menu-open policy: when the current window already has an active document, file menu selections prefer a new Prism window; also covers shared file action flow."
     }
   ],
   "sourceFixBatches": [

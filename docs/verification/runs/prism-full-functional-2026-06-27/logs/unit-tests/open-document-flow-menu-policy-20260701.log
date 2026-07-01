@@ -1,0 +1,15 @@
+
+> prism@1.4.1 test
+> vitest --run src/lib/openDocumentFlow.test.ts src/lib/fileActions.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+(node:51440) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  2 passed (2)
+      Tests  24 passed (24)
+   Start at  12:12:54
+   Duration  727ms (transform 403ms, setup 78ms, import 499ms, tests 29ms, environment 628ms)
+
