@@ -7,7 +7,7 @@ Bundle ID：`com.prism.editor.v1`
 
 ## 本轮目标
 
-继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard`、`PRISM-FF-094 文件夹授权失败` 与 `PRISM-FF-135 设置持久化错误` 自动化证据。
+继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard`、`PRISM-FF-094 文件夹授权失败`、`PRISM-FF-135 设置持久化错误` 与 `PRISM-FF-138 Error Boundary` 自动化证据。
 
 ## 代码改动
 
@@ -27,6 +27,7 @@ npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/do
 npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
 npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
 npm test -- --run src/domains/settings/pathPersistence.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts src/domains/settings/normalize.test.ts
+npm test -- --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAppToast.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/app/useAppCommandWiringModel.test.tsx
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -39,6 +40,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Dirty guard 回归 Vitest：4 个测试文件 / 32 条测试通过。
 - 文件夹授权失败回归 Vitest：3 个测试文件 / 41 条测试通过。
 - 设置持久化失败回归 Vitest：4 个测试文件 / 35 条测试通过。
+- Error Boundary 注入异常回归 Vitest：4 个测试文件 / 8 条测试通过。
 - `npm run build`：通过。
 - `npm run tauri:build:app-smoke`：通过，完成 app bundle 构建、Markdown 文档图标 patch、本地 bundle smoke。
 - `/Applications/Prism.app` 安装版 smoke：通过，覆盖 `.markdown` 中文/空格路径、JSON/SQL/TXT、Markdown、ERROR 诊断、Quick Open、编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
@@ -142,14 +144,28 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/settings-persistence-failure-20260702.log`
 - `logs/app-smoke-settings-persistence-failure-20260702/report.json`
 
+## PRISM-FF-138 复测结果
+
+状态：Pass/code-verified
+
+说明：本项验证 React render 异常时不白屏。为避免在真实 App 暴露崩溃开关，本轮使用测试组件安全注入 render 阶段异常：
+
+- 子组件抛出 `Injected render failure`。
+- `AppErrorBoundary` 捕获后显示 `role=alert` fallback。
+- fallback 包含 `Prism 渲染失败` 标题、说明文本、错误消息和 component stack。
+
+证据：
+
+- `logs/unit-tests/error-boundary-injected-render-20260702.log`
+
 ## 当前统计
 
 ```json
 {
   "total": 168,
-  "Pass": 143,
+  "Pass": 144,
   "Fail": 0,
-  "Blocked": 25,
+  "Blocked": 24,
   "Not Run": 0,
   "screenshotFiles": 434,
   "manifestScreenshots": 1016,
@@ -167,4 +183,4 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，`PRISM-FF-092`、`PRISM-FF-094` 与 `PRISM-FF-135` 已通过自动化补证据降噪，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，`PRISM-FF-092`、`PRISM-FF-094`、`PRISM-FF-135` 与 `PRISM-FF-138` 已通过自动化补证据降噪，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。

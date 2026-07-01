@@ -10,9 +10,10 @@
 - `PRISM-FF-092`：Blocked -> Pass/code-verified
 - `PRISM-FF-094`：Blocked -> Pass/code-verified
 - `PRISM-FF-135`：Blocked -> Pass/code-verified
-- 总计：Pass 143 / Fail 0 / Blocked 25 / Not Run 0
+- `PRISM-FF-138`：Blocked -> Pass/code-verified
+- 总计：Pass 144 / Fail 0 / Blocked 24 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1：Pass 47 / Fail 0 / Blocked 9 / Not Run 0
+- P1：Pass 48 / Fail 0 / Blocked 8 / Not Run 0
 
 ## 代码变更
 
@@ -80,6 +81,7 @@ npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/do
 npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
 npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
 npm test -- --run src/domains/settings/pathPersistence.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts src/domains/settings/normalize.test.ts
+npm test -- --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAppToast.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/app/useAppCommandWiringModel.test.tsx
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -91,6 +93,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Dirty guard Vitest：4 个测试文件 / 32 条测试通过。
 - Folder authorization Vitest：3 个测试文件 / 41 条测试通过。
 - Settings persistence failure Vitest：4 个测试文件 / 35 条测试通过。
+- Error Boundary injected render Vitest：4 个测试文件 / 8 条测试通过。
 - Build：通过。
 - App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`、`logs/app-smoke-folder-authorization-failure-20260702/report.json` 与 `logs/app-smoke-settings-persistence-failure-20260702/report.json`。
 
@@ -145,11 +148,25 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/settings-persistence-failure-20260702.log`
 - `logs/app-smoke-settings-persistence-failure-20260702/report.json`
 
+## PRISM-FF-138 Error Boundary
+
+本轮不在真实 App 暴露崩溃开关；通过测试组件安全注入 render 阶段异常。
+
+验证：
+
+- 子组件 render 抛出 `Injected render failure`。
+- `AppErrorBoundary` 显示 `role=alert` fallback。
+- fallback 包含 `Prism 渲染失败` 标题、说明文本、错误消息和 component stack。
+- 页面不白屏，异常不会穿透导致测试进程失败。
+
+证据：
+
+- `logs/unit-tests/error-boundary-injected-render-20260702.log`
+
 ## 剩余范围
 
 下一阶段按附件计划进入可自动化 Blocked 降噪，优先：
 
-- `PRISM-FF-138` Error Boundary
 - `PRISM-FF-162` Worker 降级
 - `PRISM-FF-118` 索引任务取消
 

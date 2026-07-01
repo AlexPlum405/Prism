@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAppToast.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/app/useAppCommandWiringModel.test.tsx
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  4 passed (4)
+      Tests  8 passed (8)
+   Start at  01:31:05
+   Duration  645ms (transform 141ms, setup 158ms, import 310ms, tests 123ms, environment 1.33s)
+
