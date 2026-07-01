@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/lib/markdownRenderService.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  01:33:27
+   Duration  759ms (transform 152ms, setup 34ms, import 299ms, tests 51ms, environment 293ms)
+

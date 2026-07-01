@@ -11,9 +11,11 @@
 - `PRISM-FF-094`：Blocked -> Pass/code-verified
 - `PRISM-FF-135`：Blocked -> Pass/code-verified
 - `PRISM-FF-138`：Blocked -> Pass/code-verified
-- 总计：Pass 144 / Fail 0 / Blocked 24 / Not Run 0
+- `PRISM-FF-162`：Blocked -> Pass/code-verified
+- 总计：Pass 145 / Fail 0 / Blocked 23 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
 - P1：Pass 48 / Fail 0 / Blocked 8 / Not Run 0
+- P3：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
 
 ## 代码变更
 
@@ -82,6 +84,7 @@ npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts s
 npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
 npm test -- --run src/domains/settings/pathPersistence.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts src/domains/settings/normalize.test.ts
 npm test -- --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAppToast.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/app/useAppCommandWiringModel.test.tsx
+npm test -- --run src/lib/markdownRenderService.test.ts
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -94,6 +97,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Folder authorization Vitest：3 个测试文件 / 41 条测试通过。
 - Settings persistence failure Vitest：4 个测试文件 / 35 条测试通过。
 - Error Boundary injected render Vitest：4 个测试文件 / 8 条测试通过。
+- Markdown Worker fallback Vitest：1 个测试文件 / 14 条测试通过。
 - Build：通过。
 - App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`、`logs/app-smoke-folder-authorization-failure-20260702/report.json` 与 `logs/app-smoke-settings-persistence-failure-20260702/report.json`。
 
@@ -163,11 +167,26 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 - `logs/unit-tests/error-boundary-injected-render-20260702.log`
 
+## PRISM-FF-162 Worker Fallback
+
+本轮不在真实 App 暴露禁用 Worker 开关；通过 `WorkerFactory` mock 安全覆盖预览渲染 Worker 降级路径。
+
+验证：
+
+- 无 Worker 环境返回与 `markdownToHtml` 字节一致的主线程 HTML。
+- 主线程降级路径正确渲染表格、代码、KaTeX 和 callout。
+- Worker 运行期失败时 terminate worker、释放首个 pending 请求并降级主线程渲染。
+- Worker 回包 error 时使用原请求内容主线程重渲染。
+- Worker 路径下三语 front matter 文案保持正确。
+
+证据：
+
+- `logs/unit-tests/markdown-worker-fallback-20260702.log`
+
 ## 剩余范围
 
 下一阶段按附件计划进入可自动化 Blocked 降噪，优先：
 
-- `PRISM-FF-162` Worker 降级
 - `PRISM-FF-118` 索引任务取消
 
 破坏性/权限类测试仍需独立沙盒；Windows/Linux 继续保持真机回填，不伪造验证。

@@ -8610,17 +8610,17 @@
       "preconditions": "",
       "steps": "禁用 Worker 或模拟 Worker error",
       "expected": "主线程 fallback 正确，结果一致",
-      "automationHint": "",
-      "status": "Blocked",
-      "actual": "Worker 降级需要禁用 Worker 或模拟 Worker error；真实 App 无安全触发入口，本轮未执行。",
+      "automationHint": "Vitest WorkerFactory fallback/error injection",
+      "status": "Pass",
+      "actual": "通过 markdownRenderService 专项测试验证：无 Worker 环境返回与 markdownToHtml 字节一致的主线程 HTML；Worker 运行期失败会 terminate 并释放 pending 请求，降级到主线程渲染；Worker 回包 error 会用原请求内容主线程重渲染；富内容和三语 front matter 文案保持一致。",
       "issueRef": "",
-      "notes": "代码层自动化已有通过证据，不替代真实 UI。",
+      "notes": "Pass/code-verified；不在真实 App 暴露禁用 Worker 开关，使用 WorkerFactory mock 安全覆盖降级路径。证据见 logs/unit-tests/markdown-worker-fallback-20260702.log。",
       "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-162-worker-worker.png",
       "unitTestEvidence": [
-        "logs/unit-tests/workspace-i18n-shell.log"
+        "logs/unit-tests/markdown-worker-fallback-20260702.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "automationResult": "Code Verified Pass",
+      "automationActual": "markdownRenderService 专项 1 个测试文件 / 14 条测试通过。",
       "screenshots": []
     },
     {
@@ -8746,9 +8746,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 144,
+    "Pass": 145,
     "Fail": 0,
-    "Blocked": 24,
+    "Blocked": 23,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,
