@@ -11,7 +11,7 @@ Bundle ID：com.prism.editor.v1
 
 测试继续推进，并在 2026-06-29 恢复了真实 `/Applications/Prism.app` + Computer Use 验证。旧结论“Computer Use 不可用、真实 App 完全不可测”不再成立：本轮真实窗口中已验证编辑/预览/分栏、快速打开、全文搜索、替换、设置六个分区、完整主菜单、文件树菜单、帮助弹窗、知识面板、图表预览、任务列表与脚注等功能。
 
-截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 235 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续安装版专项截图目录。
+截图落盘权限也已恢复，本轮统一保存真实 Prism 窗口/屏幕状态，避免再次误抓其他显示器。当前 manifest 中登记了 245 条真实 Prism/导出产物/Finder/安装版复测证据，覆盖 `screenshots/15-computer-use-real-app/` 以及后续安装版专项截图目录。
 
 2026-06-29 继续补测文件类型与导出：Markdown fixture 可正常打开；但真实 App 通过系统路径打开 JSON/SQL/TXT 会进入空白白屏窗口，`PRISM-FF-008` 已从 browser mock Pass 改为真实 App Fail。错误文档 preflight 已真实阻断 HTML 导出；干净 Markdown fixture 的 HTML/PDF/PNG/DOCX 四种真实导出已完成基础验收，PNG 保持 `极致 4x` 输出为 `4160x4800`，DOCX 通过 zip 结构和 `textutil` 正文提取校验。
 
@@ -60,6 +60,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 2026-07-01 闭环 `PRISM-FF-091 / P1-MENU-002`：`PRISM-CU-260` 已证明安装版 macOS `File` 菜单暴露新建、打开文件、打开文件夹、快速打开、保存、另存为、在访达中显示和关闭文稿等核心入口；复跑 `src/lib/openDocumentFlow.test.ts` 与 `src/lib/fileActions.test.ts` 通过 2 个测试文件 / 24 条测试，覆盖当前窗口已有文档时菜单打开新文件会进入新窗口的策略。该项改为 Pass。
 
 2026-07-01 闭环 `PRISM-FF-136/166`：真实安装版复测确认中文 locale 下 Prism 自绘菜单、侧栏、状态栏与设置中心均显示中文；设置中心 AX 树可读容器、关闭按钮、设置分类、六个分区按钮、heading、文本标签和 pop up button。复跑 i18n/Settings/CommandPalette/ShortcutPanel 批次通过 3 个测试文件 / 25 条测试，覆盖三语 translation key 完整性、auto locale fallback、document lang 更新和设置基础 aria 状态。两项均改为 Pass。证据见 `screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png`、`logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md` 和 `logs/unit-tests/i18n-a11y-shell-20260701.log`。
+
+2026-07-01 闭环 `PRISM-FF-132`：导出成功 toast 的“打开”和“显示位置”动作点击后不再自动关闭，且导出成功动作 toast 显示时间延长至 15 秒。复跑导出 toast/命令注册/导出命令集成测试通过 3 个测试文件 / 39 条断言；`npm run build`、`npm run tauri:build:app-smoke` 和安装版 smoke 均通过。真实 `/Applications/Prism.app` 复测确认 HTML 导出成功 toast 显示两个动作；点击“打开”后 Google Chrome 打开本地 HTML 产物；再次导出后点击“显示位置”，Finder 打开 `Examples` 并选中 `Prism Markdown 语法指南.html`。该项从 Blocked 改为 Pass。证据见 `screenshots/35-installed-export-open-actions-retest/`、`logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md` 和 `logs/unit-tests/export-open-actions-toast-20260701.log`。
 
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
@@ -116,21 +118,21 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：138
+- Pass：139
 - Fail：0
-- Blocked：30
+- Blocked：29
 - Not Run：0
 - P0 执行：Pass 87 / Fail 0 / Blocked 1 / Not Run 0
-- P1 执行：Pass 43 / Fail 0 / Blocked 13 / Not Run 0
+- P1 执行：Pass 44 / Fail 0 / Blocked 12 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 3 / Fail 0 / Blocked 5 / Not Run 0
-- 当前截图文件总数：429
-- Manifest 真实 Computer Use 截图引用：241
+- 当前截图文件总数：433
+- Manifest 真实 Computer Use 截图引用：245
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：241（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`、`screenshots/33-installed-print-help-retest/`、`screenshots/34-installed-i18n-a11y-retest/`）
-- 单元/集成测试批次：15
-- 单元/集成测试文件通过：81
-- 单元/集成测试断言通过：1038
+- 真实 Computer Use/安装版 UI 截图：245（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`、`screenshots/33-installed-print-help-retest/`、`screenshots/34-installed-i18n-a11y-retest/`、`screenshots/35-installed-export-open-actions-retest/`）
+- 单元/集成测试批次：16
+- 单元/集成测试文件通过：84
+- 单元/集成测试断言通过：1077
 - 单元/集成测试失败执行：0
 - 唯一单元失败：0
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已按 `PRISM-CU-261..267` 安装版证据闭环为 Pass
@@ -176,6 +178,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-07-01 打印与帮助外链修复后安装版复测日志：logs/computer-use-real-app/print-help-installed-retest-20260701.md
 - 2026-07-01 i18n 与无障碍基础安装版复测截图：screenshots/34-installed-i18n-a11y-retest/
 - 2026-07-01 i18n 与无障碍基础安装版复测日志：logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md、logs/unit-tests/i18n-a11y-shell-20260701.log
+- 2026-07-01 导出打开产物动作安装版复测截图：screenshots/35-installed-export-open-actions-retest/
+- 2026-07-01 导出打开产物动作安装版复测日志：logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md、logs/unit-tests/export-open-actions-toast-20260701.log、logs/app-smoke-installed-ff132-20260701/report.json
 
 ## 导出保真专项
 
@@ -184,7 +188,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - PDF 分页避切：`PRISM-FF-125` 已通过真实安装版复测，证据见 `screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-1.png`、`screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-2.png` 和 `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`。
 - PlantUML 离线渲染与 PNG 裁切：`PRISM-FF-043` 已通过 `plantuml-little` 回归和安装版截图复核，证据见 `screenshots/31-plantuml-regression/` 和 `logs/plantuml-regression/plantuml-png-regression-20260701.log`。
 - DOCX 表格/公式/图表：`PRISM-FF-126/127/128` 已通过 WPS 视觉打开和 OOXML 检查，证据见 `screenshots/15-computer-use-real-app/PRISM-CU-208-docx-wps-diagrams-page-window.png`、`PRISM-CU-209-docx-wps-table-math-page-window.png` 和 `logs/computer-use-real-app/docx-complex-inspection.log`。
-- 剩余导出风险：`PRISM-FF-132` 导出打开产物动作、`PRISM-FF-153/156` Windows/Linux 导出、`PRISM-FF-164` 导出大图内存仍为 Blocked，不伪造验证。
+- 剩余导出风险：`PRISM-FF-153/156` Windows/Linux 导出、`PRISM-FF-164` 导出大图内存仍为 Blocked，不伪造验证。
 
 ## 2026-06-30 修复批次状态
 

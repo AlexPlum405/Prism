@@ -20,6 +20,7 @@ import { emitAppEvent } from '../../../platform/events/appEvents';
 import { openPathWithSystemNative } from '../../../platform/tauri/nativeCommands';
 import { openPathWithDefaultApp, revealPathInFileManager } from '../../../platform/tauri/opener';
 import type { PrismCommandError } from '../../../platform/tauri/result';
+import { EXPORT_ACTION_TOAST_DURATION_MS } from '../../../lib/feedbackTiming';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -355,9 +356,10 @@ async function handleExport(
         tone: 'success',
         title: t('export.completedTitle', { format: formatLabel }),
         message: basename(completedOutputPath),
-        durationMs: 7200,
+        durationMs: EXPORT_ACTION_TOAST_DURATION_MS,
         actions: [
           {
+            dismissOnClick: false,
             label: t('export.openAction'),
             onClick: async () => {
               try {
@@ -368,6 +370,7 @@ async function handleExport(
             },
           },
           {
+            dismissOnClick: false,
             label: t('export.revealAction'),
             onClick: async () => {
               try {

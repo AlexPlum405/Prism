@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ToastInput } from '../lib/toast';
-import { EXPORT_TRANSIENT_FEEDBACK_MS } from '../lib/feedbackTiming';
+import {
+  EXPORT_ACTION_TOAST_DURATION_MS,
+  EXPORT_TRANSIENT_FEEDBACK_MS,
+} from '../lib/feedbackTiming';
 import { t } from '../domains/i18n';
 import { onAppEvent } from '../platform/events/appEvents';
 import {
@@ -88,6 +91,7 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
           actions: outputPath
             ? [
                 {
+                  dismissOnClick: false,
                   label: t('export.openAction'),
                   onClick: async () => {
                     try {
@@ -102,6 +106,7 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
                   },
                 },
                 {
+                  dismissOnClick: false,
                   label: t('export.revealAction'),
                   onClick: async () => {
                     try {
@@ -116,6 +121,7 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
           message: detail.message,
           title,
           tone: 'success',
+          durationMs: EXPORT_ACTION_TOAST_DURATION_MS,
         });
       }
       scheduleTransientFeedbackClear();

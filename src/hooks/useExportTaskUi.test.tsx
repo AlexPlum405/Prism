@@ -93,12 +93,13 @@ describe('useExportTaskUi', () => {
     });
     expect(showToast).toHaveBeenCalledWith(expect.objectContaining({
       actions: expect.arrayContaining([
-        expect.objectContaining({ label: '打开' }),
-        expect.objectContaining({ label: '显示位置' }),
+        expect.objectContaining({ dismissOnClick: false, label: '打开' }),
+        expect.objectContaining({ dismissOnClick: false, label: '显示位置' }),
       ]),
       message: 'report.pdf',
       title: 'PDF 导出完成',
       tone: 'success',
+      durationMs: 15000,
     }));
 
     const successToast = showToast.mock.calls.find(([toast]) => (

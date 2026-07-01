@@ -11,7 +11,7 @@ Bundle ID：`com.prism.editor.v1`
 
 本专项不把历史 pre-fix 失败截图删除。旧截图用于证明曾经的问题，当前状态以 `manifest.json` 中对应用例的最新 `actual`、`screenshots` 和 `logEvidence` 为准。
 
-仍未通过真实环境证明的导出项保持 Blocked：导出成功 toast 的“打开产物”动作、Windows 导出、Linux 导出、连续大图内存压力。Blocked 不等同于 Pass。
+仍未通过真实环境证明的导出项保持 Blocked：Windows 导出、Linux 导出、连续大图内存压力。Blocked 不等同于 Pass。
 
 ## 验收矩阵
 
@@ -32,6 +32,7 @@ Bundle ID：`com.prism.editor.v1`
 | HTML 自包含 | `PRISM-FF-129` | Pass | `screenshots/15-computer-use-real-app/PRISM-CU-203-html-export-self-contained-chrome-window.png`，`remoteAssets=0` |
 | 导出失败诊断 | `PRISM-FF-130` | Pass | `screenshots/06-diagnostics/PRISM-FF-130-case-130.png` |
 | 导出取消 | `PRISM-FF-131` | Pass | `screenshots/15-computer-use-real-app/PRISM-CU-222-export-cancel-dialog-window.png`、`PRISM-CU-223-export-cancel-status-restored-window.png` |
+| 导出打开产物动作 | `PRISM-FF-132` | Pass | `screenshots/35-installed-export-open-actions-retest/01-html-export-success-toast.png`、`02-open-action-external-app.png`、`04-reveal-action-finder-location.png` |
 | 后台导出状态 | `PRISM-FF-133` | Pass | `screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png` |
 | macOS PDF capture | `PRISM-FF-149` | Pass | `screenshots/15-computer-use-real-app/PRISM-CU-238-pdf-link-export-complete-window.png` |
 
@@ -69,7 +70,6 @@ Bundle ID：`com.prism.editor.v1`
 
 | 用例 | 状态 | 原因 | 建议复测方式 |
 |---|---|---|---|
-| `PRISM-FF-132` 导出打开产物动作 | Blocked | toast 中“打开”和“显示位置”入口可见，但点击后 toast 消失过快，未稳定证明外部应用打开产物 | 增加更稳定的 toast 保持时间或用窗口列表监控专项验证 |
 | `PRISM-FF-153` Windows 导出 | Blocked | 无 Windows 真机 | 在真实 Windows 环境回填 HTML/PDF/PNG/DOCX 产物和截图 |
 | `PRISM-FF-156` Linux 导出 | Blocked | 无 Linux 真机 | 在真实 Linux 环境回填 HTML/PDF/PNG/DOCX 产物和截图 |
 | `PRISM-FF-164` 导出大图内存 | Blocked | 未执行连续 4x PNG 压力导出 | 使用专用长文档和进程内存采样脚本执行压力测试 |

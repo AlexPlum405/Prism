@@ -4924,6 +4924,114 @@
         "logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md",
         "logs/unit-tests/i18n-a11y-shell-20260701.log"
       ]
+    },
+    {
+      "date": "2026-07-01",
+      "area": "导出打开产物动作",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "status": "Pass",
+      "issueRef": "PRISM-FF-132",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md",
+        "logs/unit-tests/export-open-actions-toast-20260701.log",
+        "logs/app-smoke-installed-ff132-20260701/open-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/reveal-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/report.json"
+      ],
+      "id": "PRISM-CU-306",
+      "feature": "HTML 导出成功 toast 保持打开/显示位置动作",
+      "steps": [
+        "打开真实安装版 Prism 默认指南",
+        "导出为 HTML 并确认替换导出",
+        "截图成功 toast"
+      ],
+      "expected": "成功 toast 显示产物名称，并提供“打开”和“显示位置”动作。",
+      "actual": "成功 toast 显示“HTML 导出完成”、Prism Markdown 语法指南.html、“打开”和“显示位置”。",
+      "screenshot": "screenshots/35-installed-export-open-actions-retest/01-html-export-success-toast.png",
+      "notes": "新构建中动作 toast 时长为 15 秒。"
+    },
+    {
+      "date": "2026-07-01",
+      "area": "导出打开产物动作",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "status": "Pass",
+      "issueRef": "PRISM-FF-132",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md",
+        "logs/unit-tests/export-open-actions-toast-20260701.log",
+        "logs/app-smoke-installed-ff132-20260701/open-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/reveal-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/report.json"
+      ],
+      "id": "PRISM-CU-307",
+      "feature": "导出成功 toast 打开动作触发外部应用",
+      "steps": [
+        "在成功 toast 中点击“打开”",
+        "等待系统默认 HTML 应用响应",
+        "记录前台应用并截图"
+      ],
+      "expected": "系统默认应用打开导出产物。",
+      "actual": "前台应用变为 Google Chrome，并打开 file 本地 HTML 产物。",
+      "screenshot": "screenshots/35-installed-export-open-actions-retest/02-open-action-external-app.png",
+      "notes": "证据文本记录 frontmost=Google Chrome，产物修改时间为 Jul 1 14:38:47 2026。"
+    },
+    {
+      "date": "2026-07-01",
+      "area": "导出打开产物动作",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "status": "Pass",
+      "issueRef": "PRISM-FF-132",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md",
+        "logs/unit-tests/export-open-actions-toast-20260701.log",
+        "logs/app-smoke-installed-ff132-20260701/open-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/reveal-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/report.json"
+      ],
+      "id": "PRISM-CU-308",
+      "feature": "HTML 导出成功 toast 再次保留显示位置动作",
+      "steps": [
+        "回到 Prism",
+        "再次导出 HTML 并确认替换导出",
+        "截图成功 toast"
+      ],
+      "expected": "再次导出后 toast 仍显示“打开”和“显示位置”。",
+      "actual": "成功 toast 再次显示“HTML 导出完成”、产物文件名和两个动作。",
+      "screenshot": "screenshots/35-installed-export-open-actions-retest/03-html-export-success-toast-for-reveal.png",
+      "notes": "用于独立验证“显示位置”，避免外部应用切换影响同一 toast。"
+    },
+    {
+      "date": "2026-07-01",
+      "area": "导出打开产物动作",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md",
+      "status": "Pass",
+      "issueRef": "PRISM-FF-132",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md",
+        "logs/unit-tests/export-open-actions-toast-20260701.log",
+        "logs/app-smoke-installed-ff132-20260701/open-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/reveal-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/report.json"
+      ],
+      "id": "PRISM-CU-309",
+      "feature": "导出成功 toast 显示位置动作触发 Finder 定位",
+      "steps": [
+        "在成功 toast 中点击“显示位置”",
+        "等待 Finder 响应",
+        "记录前台应用并截图"
+      ],
+      "expected": "Finder 打开产物所在目录并定位到导出文件。",
+      "actual": "前台应用变为 Finder，Finder 打开 Examples 目录并选中 Prism Markdown 语法指南.html。",
+      "screenshot": "screenshots/35-installed-export-open-actions-retest/04-reveal-action-finder-location.png",
+      "notes": "证据文本记录 frontmost=Finder，产物修改时间为 Jul 1 14:44:24 2026。"
     }
   ],
   "testCases": [
@@ -7894,20 +8002,32 @@
       "steps": "点击打开/显示位置",
       "expected": "优先系统 native 打开，失败回退 opener，失败有 toast",
       "automationHint": "单元",
-      "status": "Blocked",
-      "actual": "导出成功 toast 显示“打开”和“显示位置”动作，但点击“打开”时 toast 消失过快，本轮未能证明外部应用成功打开产物。",
+      "status": "Pass",
+      "actual": "2026-07-01 使用 /Applications/Prism.app 真实安装版复测通过：HTML 导出成功 toast 显示“打开”和“显示位置”；点击“打开”后 Google Chrome 打开本地 HTML 产物；再次导出后点击“显示位置”，Finder 打开 Examples 目录并选中 Prism Markdown 语法指南.html。",
       "issueRef": "",
-      "notes": "动作入口可见；外部打开结果需用更稳定的 toast 保持或窗口列表监控专项复测。",
+      "notes": "导出成功 toast 的两个 action 均设置 dismissOnClick=false，且成功动作 toast 显示时间延长到 15 秒；本轮已用真实外部应用/Finder 前台状态和截图证明动作结果。Windows/Linux 与压力/权限类 Blocked 不在本项内伪造。",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-132-case-132.png",
       "unitTestEvidence": [
-        "logs/unit-tests/export-settings-theme-commands.log"
+        "logs/unit-tests/export-settings-theme-commands.log",
+        "logs/unit-tests/export-open-actions-toast-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "export-settings-theme-commands 批次除 registry.test.ts 1 条失败外，其余 18 个测试文件通过；该批合计 188 条通过。",
+      "automationResult": "Unit + Installed App Pass",
+      "automationActual": "Vitest 3 个测试文件 / 39 条断言通过；npm run build、npm run tauri:build:app-smoke、PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs 均通过；真实安装版点击“打开”和“显示位置”均触发外部响应。",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png",
+        "screenshots/35-installed-export-open-actions-retest/01-html-export-success-toast.png",
+        "screenshots/35-installed-export-open-actions-retest/02-open-action-external-app.png",
+        "screenshots/35-installed-export-open-actions-retest/03-html-export-success-toast-for-reveal.png",
+        "screenshots/35-installed-export-open-actions-retest/04-reveal-action-finder-location.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-224-export-success-open-actions-window.png"
+      "screenshot": "screenshots/35-installed-export-open-actions-retest/01-html-export-success-toast.png",
+      "logEvidence": [
+        "logs/computer-use-real-app/export-open-actions-installed-retest-20260701.md",
+        "logs/unit-tests/export-open-actions-toast-20260701.log",
+        "logs/app-smoke-installed-ff132-20260701/open-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/reveal-action-evidence.txt",
+        "logs/app-smoke-installed-ff132-20260701/report.json"
+      ]
     },
     {
       "id": "PRISM-FF-133",
@@ -8605,17 +8725,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T12:37:00+08:00",
+  "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 138,
+    "Pass": 139,
     "Fail": 0,
-    "Blocked": 30,
+    "Blocked": 29,
     "Not Run": 0,
-    "screenshotFiles": 429,
-    "manifestScreenshots": 1003,
-    "uniqueManifestScreenshots": 450,
-    "computerUseRealAppEvidence": 241
+    "screenshotFiles": 433,
+    "manifestScreenshots": 1015,
+    "uniqueManifestScreenshots": 454,
+    "computerUseRealAppEvidence": 245
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9980,6 +10100,22 @@
     {
       "file": "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png",
       "testCaseId": "PRISM-CU-305"
+    },
+    {
+      "file": "screenshots/35-installed-export-open-actions-retest/01-html-export-success-toast.png",
+      "testCaseId": "PRISM-CU-306"
+    },
+    {
+      "file": "screenshots/35-installed-export-open-actions-retest/02-open-action-external-app.png",
+      "testCaseId": "PRISM-CU-307"
+    },
+    {
+      "file": "screenshots/35-installed-export-open-actions-retest/03-html-export-success-toast-for-reveal.png",
+      "testCaseId": "PRISM-CU-308"
+    },
+    {
+      "file": "screenshots/35-installed-export-open-actions-retest/04-reveal-action-finder-location.png",
+      "testCaseId": "PRISM-CU-309"
     }
   ],
   "unitTestRuns": [
@@ -10185,6 +10321,20 @@
         "logs/unit-tests/i18n-a11y-shell-20260701.log"
       ],
       "notes": "Covers translation key completeness across zh-CN/en-US/ja-JP, auto locale fallback, document lang update, SettingsModal basic aria state, CommandPalette, and ShortcutPanel."
+    },
+    {
+      "id": "export-open-actions-toast-20260701",
+      "status": "Pass",
+      "testFiles": 3,
+      "testsPassed": 39,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/hooks/useExportTaskUi.test.tsx src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts"
+      ],
+      "logs": [
+        "logs/unit-tests/export-open-actions-toast-20260701.log"
+      ],
+      "notes": "Covers export success toast actions staying visible, 15s export action toast duration, native open fallback path, reveal action, and command export success toast metadata."
     }
   ],
   "sourceFixBatches": [
@@ -10698,6 +10848,29 @@
         "export menu opens from status bar",
         "settings opens with Cmd+,",
         "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
+    },
+    {
+      "id": "installed-app-smoke-ff132-20260701",
+      "status": "Pass",
+      "date": "2026-07-01",
+      "appPath": "/Applications/Prism.app",
+      "command": "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-installed-ff132-20260701/report.json",
+      "screenshots": "screenshots/35-installed-export-open-actions-retest/",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+Shift+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX",
+        "PRISM-FF-132 installed-app HTML export open/reveal actions verified"
       ]
     }
   ],

@@ -1070,6 +1070,8 @@ describe('command registry', () => {
     }));
     const successToast = showToast.mock.calls.find(([toast]) => typeof toast !== 'string' && toast.title === 'PDF 导出完成')?.[0] as any;
     expect(successToast.actions.map((action: any) => action.label)).toEqual(['打开', '显示位置']);
+    expect(successToast.actions.map((action: any) => action.dismissOnClick)).toEqual([false, false]);
+    expect(successToast.durationMs).toBe(15000);
 
     await successToast.actions[0].onClick();
 

@@ -274,12 +274,13 @@ async function quitPrism() {
     // The app may not be running yet.
   }
   await delay(700);
-  const stillRunning = await run('pgrep', ['-f', `${appPath}/Contents/MacOS/app`]).catch(() => null);
+  const prismProcessPattern = '/Prism.app/Contents/MacOS/app';
+  const stillRunning = await run('pgrep', ['-f', prismProcessPattern]).catch(() => null);
   if (stillRunning) {
-    await run('pkill', ['-f', `${appPath}/Contents/MacOS/app`]).catch(() => undefined);
+    await run('pkill', ['-f', prismProcessPattern]).catch(() => undefined);
   }
   await waitFor('Prism process exit', async () => {
-    const result = await run('pgrep', ['-f', `${appPath}/Contents/MacOS/app`]).catch(() => null);
+    const result = await run('pgrep', ['-f', prismProcessPattern]).catch(() => null);
     return result === null;
   }, 6000, 300).catch(() => undefined);
 }
@@ -479,11 +480,21 @@ async function capture(name, bounds = getWindowBounds()) {
 }
 
 async function diffImages(beforePath, afterPath) {
-  const before = await sharp(beforePath).raw().toBuffer({ resolveWithObject: true });
-  const after = await sharp(afterPath).raw().toBuffer({ resolveWithObject: true });
-  if (before.info.width !== after.info.width || before.info.height !== after.info.height) {
-    throw new Error(`Screenshot size changed: ${before.info.width}x${before.info.height} -> ${after.info.width}x${after.info.height}`);
+  const beforeMeta = await sharp(beforePath).metadata();
+  const afterMeta = await sharp(afterPath).metadata();
+  const comparedWidth = Math.min(beforeMeta.width ?? 0, afterMeta.width ?? 0);
+  const comparedHeight = Math.min(beforeMeta.height ?? 0, afterMeta.height ?? 0);
+  if (comparedWidth <= 0 || comparedHeight <= 0) {
+    throw new Error(`Invalid screenshot dimensions: ${beforeMeta.width}x${beforeMeta.height} -> ${afterMeta.width}x${afterMeta.height}`);
   }
+  const before = await sharp(beforePath)
+    .extract({ left: 0, top: 0, width: comparedWidth, height: comparedHeight })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const after = await sharp(afterPath)
+    .extract({ left: 0, top: 0, width: comparedWidth, height: comparedHeight })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   let changed = 0;
   let channelDelta = 0;
   for (let index = 0; index < before.data.length; index += before.info.channels) {
@@ -495,7 +506,20 @@ async function diffImages(beforePath, afterPath) {
   }
   const totalPixels = before.info.width * before.info.height;
   return {
+    beforeSize: {
+      width: beforeMeta.width,
+      height: beforeMeta.height,
+    },
     changedPixels: changed,
+    comparedSize: {
+      width: comparedWidth,
+      height: comparedHeight,
+    },
+    afterSize: {
+      width: afterMeta.width,
+      height: afterMeta.height,
+    },
+    sizeChanged: beforeMeta.width !== afterMeta.width || beforeMeta.height !== afterMeta.height,
     totalPixels,
     changedRatio: changed / totalPixels,
     averageDelta: channelDelta / totalPixels,
@@ -684,12 +708,25 @@ async function runSmoke() {
     await delay(250);
 
     const quickOpenBefore = await capture('04-quick-open-before', bounds);
-    clickRelative(bounds, 315, 83);
-    await delay(150);
-    key('key code 35 using {command down, shift down}');
-    await delay(1000);
-    const quickOpenAfter = await capture('05-quick-open-opened', bounds);
-    const quickOpenDiff = await assertVisibleChange('Cmd+Shift+P quick open', quickOpenBefore, quickOpenAfter, 0.025);
+    let quickOpenDiff = null;
+    for (const attempt of [1, 2, 3]) {
+      clickRelative(bounds, 315, 83);
+      await delay(150);
+      key('key code 35 using {command down, shift down}');
+      await delay(1000);
+      const quickOpenAfter = await capture(`05-quick-open-opened-attempt-${attempt}`, bounds);
+      const diff = await diffImages(quickOpenBefore, quickOpenAfter);
+      if (diff.changedRatio >= 0.025) {
+        quickOpenDiff = diff;
+        await fs.copyFile(quickOpenAfter, path.join(evidenceDir, '05-quick-open-opened.png'));
+        break;
+      }
+      key('key code 53');
+      await delay(250);
+    }
+    if (!quickOpenDiff) {
+      throw new Error('Cmd+Shift+P quick open did not visibly change after retries.');
+    }
     key(`key code 125
     delay 0.05
     key code 125

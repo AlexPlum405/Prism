@@ -1,0 +1,17 @@
+
+> prism@1.4.1 test
+> vitest --run src/hooks/useExportTaskUi.test.tsx src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+(node:14523) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14522) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  3 passed (3)
+      Tests  39 passed (39)
+   Start at  15:14:41
+   Duration  1.64s (transform 886ms, setup 119ms, import 919ms, tests 982ms, environment 1.00s)
+
