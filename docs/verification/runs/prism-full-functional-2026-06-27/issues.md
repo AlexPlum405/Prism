@@ -878,6 +878,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-056-settings-files-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-093-settings-theme-dropdown-window.png`
 - 备注：旧的 `P0-SETTINGS-001 设置弹窗右侧内容区域空白` 只适用于 browser mock，不代表真实 App 当前状态。
+- 修复/复测进展：2026-07-01 真实 `/Applications/Prism.app` 复测通过。打开设置中心后，Computer Use AX 树可读 `container 设置中心`、`button 关闭`、`container 设置分类`、六个设置分区按钮、`heading 通用`、`text 界面语言`、`pop up button 简体中文`、`text 默认视图`、`pop up button 编辑`、`text 快捷键显示`、`pop up button 跟随系统`。复跑 SettingsModal/CommandPalette/ShortcutPanel 相关批次通过。证据见 `screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png`、`logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md` 和 `logs/unit-tests/i18n-a11y-shell-20260701.log`。`PRISM-FF-166` 已改为 Pass。
 
 ### P1-SETTINGS-003 打开主题目录按钮无可见结果
 
@@ -952,7 +953,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-053-settings-export-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-055-settings-citations-pandoc-window.png`
   - `screenshots/15-computer-use-real-app/PRISM-CU-056-settings-files-window.png`
-- 备注：仍存在 `P1-SETTINGS-002` 的可访问性问题。
+- 备注：`P1-SETTINGS-002` 已在 2026-07-01 通过真实安装版 AX 复测闭环；旧 browser mock 和早期 AX 缺失截图保留为 pre-fix 记录。
 
 ### P0-SETTINGS-001 设置弹窗右侧内容区域空白
 
@@ -998,6 +999,7 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/04-editor/PRISM-FF-109-callout-callout.png`
   - `screenshots/06-diagnostics/PRISM-FF-113-action-action.png`
   - `screenshots/10-settings-themes/PRISM-FF-081-writing-settings.png`
+- 修复/复测进展：2026-07-01 真实 `/Applications/Prism.app` 复测通过。中文 locale 下 Prism 自绘菜单显示 `文件/编辑/插入/格式/导航/视图/导出/窗口/帮助`，侧栏显示 `文件/大纲`，状态栏和设置中心均显示中文。复跑 i18n/Settings/CommandPalette/ShortcutPanel 批次通过 3 个测试文件 / 25 条测试，覆盖 zh-CN/en-US/ja-JP translation key 完整性、auto locale fallback、document lang 更新和基础设置 aria 状态。证据见 `screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png`、`logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md` 和 `logs/unit-tests/i18n-a11y-shell-20260701.log`。`PRISM-FF-136` 已改为 Pass。
   - `logs/click-skip.log`
 - 备注：该问题也导致中文文本定位的自动化步骤失败，例如“显示行号”“查看源码”“简体中文”等选择器找不到。
 

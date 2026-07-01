@@ -4899,6 +4899,31 @@
       "logEvidence": [
         "logs/computer-use-real-app/print-help-installed-retest-20260701.md"
       ]
+    },
+    {
+      "id": "PRISM-CU-305",
+      "date": "2026-07-01",
+      "area": "i18n / 无障碍基础",
+      "feature": "安装版中文 UI 与设置 AX 语义复测",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-complex-diagrams-export.md",
+      "steps": [
+        "打开真实安装版 Prism 和 real-complex-diagrams-export.md",
+        "读取主窗口 AX 树，确认自绘菜单、侧栏、状态栏按钮中文文案",
+        "按 Cmd+, 打开设置中心",
+        "读取设置弹窗 AX 树并截图"
+      ],
+      "expected": "中文 locale 下 Prism 自绘 UI 不出现早期 browser mock 的英文漏翻；设置弹窗基础控件可由 AX 读取。",
+      "actual": "主窗口显示 文件/编辑/插入/格式/导航/视图/导出/窗口/帮助，侧栏显示 文件/大纲；设置中心 AX 树可读 设置分类、通用/写作/外观/导出/引用/文件、界面语言、默认视图、快捷键显示和 pop up button。",
+      "status": "Pass",
+      "screenshot": "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png",
+      "issueRef": "P1-I18N-001; P1-SETTINGS-002",
+      "notes": "真实安装版 post-fix 复测；macOS 原生菜单栏 File/Edit/View/Window/Help 属系统菜单标题，不作为 Prism 自绘中文 UI 漏翻。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/i18n-a11y-installed-retest-20260701.md",
+        "logs/unit-tests/i18n-a11y-shell-20260701.log"
+      ]
     }
   ],
   "testCases": [
@@ -7958,19 +7983,19 @@
       "steps": "遍历主菜单、设置、导出、诊断",
       "expected": "无 missing key，布局不溢出",
       "automationHint": "单元 + 截图",
-      "screenshot": "screenshots/04-editor/PRISM-FF-109-callout-callout.png",
-      "status": "Fail",
-      "actual": "默认设置 locale=zh-CN，但主菜单、侧栏、设置弹窗、Callout picker、渲染错误 action 等多处仍显示英文。",
+      "screenshot": "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png",
+      "status": "Pass",
+      "actual": "真实 /Applications/Prism.app 安装版复测通过：中文 locale 下主窗口自绘菜单、侧栏、状态栏和设置中心均显示中文；i18n runtime 自动化确认 zh-CN/en-US/ja-JP translation key 完整，auto locale fallback 与 document lang 更新正常。",
       "issueRef": "P1-I18N-001",
-      "notes": "browser mock 复现；截图中 Insert Callout/Choose a callout style/Files/Outline 等英文文案可见。 代码层自动化通过，证据：logs/unit-tests/workspace-i18n-shell.log。不替代真实 UI/原生产物截图验收。",
+      "notes": "旧 browser mock 英文漏翻截图保留为 pre-fix 证据；当前安装版证据见 PRISM-CU-305。macOS 原生菜单栏 File/Edit/View/Window/Help 属系统菜单标题。",
       "screenshots": [
-        "screenshots/04-editor/PRISM-FF-109-callout-callout.png"
+        "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png"
       ],
       "unitTestEvidence": [
-        "logs/unit-tests/workspace-i18n-shell.log"
+        "logs/unit-tests/i18n-a11y-shell-20260701.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。"
+      "automationResult": "Unit Pass + Installed App Pass",
+      "automationActual": "i18n/Settings/CommandPalette/ShortcutPanel 批次 3 个测试文件 / 25 条测试通过；安装版 PRISM-CU-305 确认中文 UI 和设置中心可见。"
     },
     {
       "id": "PRISM-FF-137",
@@ -8521,17 +8546,20 @@
       "steps": "键盘访问菜单、弹窗、表格 popover、设置",
       "expected": "焦点顺序、Esc、aria label 基本可用",
       "automationHint": "",
-      "status": "Fail",
-      "actual": "本轮多处真实 App AX 树暴露不足：设置弹窗控件未语义化，菜单/窗口操作状态不稳定，部分菜单项只能通过坐标或视觉判断。",
+      "status": "Pass",
+      "actual": "真实 /Applications/Prism.app 安装版复测通过：设置中心 AX 树可读容器、关闭按钮、设置分类、六个分区按钮、heading、文本标签和 pop up button；早期只能坐标/视觉判断的设置弹窗问题已不再复现。",
       "issueRef": "P1-SETTINGS-002",
-      "notes": "复用设置 AX 问题和窗口操作问题作为无障碍基础失败证据。",
+      "notes": "本项为基础无障碍验收，不等同完整 WCAG 审计；当前按 manifest 的键盘访问/弹窗/设置基础语义口径改为 Pass。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-166-case-166.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-050-settings-general-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-052-settings-appearance-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-233-window-zoom-action-no-size-change-window.png"
+        "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-050-settings-general-window.png"
+      "screenshot": "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png",
+      "unitTestEvidence": [
+        "logs/unit-tests/i18n-a11y-shell-20260701.log"
+      ],
+      "automationResult": "Unit Pass + Installed App Pass",
+      "automationActual": "SettingsModal/CommandPalette/ShortcutPanel 相关测试随 i18n-a11y-shell 批次通过；安装版 PRISM-CU-305 确认设置 AX 基础语义。"
     },
     {
       "id": "PRISM-FF-167",
@@ -8577,17 +8605,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T12:28:00+08:00",
+  "generatedAt": "2026-07-01T12:37:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 136,
-    "Fail": 2,
+    "Pass": 138,
+    "Fail": 0,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 428,
-    "manifestScreenshots": 1002,
-    "uniqueManifestScreenshots": 449,
-    "computerUseRealAppEvidence": 240
+    "screenshotFiles": 429,
+    "manifestScreenshots": 1003,
+    "uniqueManifestScreenshots": 450,
+    "computerUseRealAppEvidence": 241
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9948,6 +9976,10 @@
     {
       "file": "screenshots/33-installed-print-help-retest/03-migration-guide-github-page.png",
       "testCaseId": "PRISM-CU-304"
+    },
+    {
+      "file": "screenshots/34-installed-i18n-a11y-retest/01-settings-zh-cn-ax-visible.png",
+      "testCaseId": "PRISM-CU-305"
     }
   ],
   "unitTestRuns": [
@@ -10139,6 +10171,20 @@
         "logs/unit-tests/open-document-flow-menu-policy-20260701.log"
       ],
       "notes": "Covers menu-open policy: when the current window already has an active document, file menu selections prefer a new Prism window; also covers shared file action flow."
+    },
+    {
+      "id": "i18n-a11y-shell-20260701",
+      "status": "Pass",
+      "testFiles": 3,
+      "testsPassed": 25,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/i18n/i18n.test.ts src/components/shell/SettingsModal.test.tsx src/components/shell/CommandPalette.test.tsx src/components/shell/ShortcutPanel.test.tsx"
+      ],
+      "logs": [
+        "logs/unit-tests/i18n-a11y-shell-20260701.log"
+      ],
+      "notes": "Covers translation key completeness across zh-CN/en-US/ja-JP, auto locale fallback, document lang update, SettingsModal basic aria state, CommandPalette, and ShortcutPanel."
     }
   ],
   "sourceFixBatches": [

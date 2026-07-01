@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/i18n/i18n.test.ts src/components/shell/SettingsModal.test.tsx src/components/shell/CommandPalette.test.tsx src/components/shell/ShortcutPanel.test.tsx
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  3 passed (3)
+      Tests  25 passed (25)
+   Start at  12:17:31
+   Duration  1.25s (transform 447ms, setup 135ms, import 623ms, tests 569ms, environment 1.06s)
+
