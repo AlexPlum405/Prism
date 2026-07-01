@@ -7133,13 +7133,22 @@
       "preconditions": "模拟授权拒绝",
       "steps": "打开文件夹",
       "expected": "有错误提示，不留下半加载状态",
-      "automationHint": "手工",
-      "status": "Blocked",
-      "actual": "文件夹授权失败需要拒绝 macOS 授权或构造不可读目录；本轮不改系统安全设置、不污染真实目录，未执行。",
+      "automationHint": "单元 + app smoke",
+      "status": "Pass",
+      "actual": "2026-07-02 修复并自动化验证：空状态“打开文件夹”按钮在 grantWorkspaceDirectoryScope 授权失败时会发出全局 error toast（操作失败: permission denied），不会继续调用 loadFolderTree，不会打开新窗口，workspace.rootPath 保持 null，fileTree 保持空数组，因此不会留下半加载工作区状态。命令面板/菜单 openFolder 路径继续由 workspaceCommands/registry 测试覆盖，runCommand 仍有命令级失败 toast fallback。本轮不真实拒绝 macOS 用户目录权限，不污染真实目录。",
       "issueRef": "",
-      "notes": "需要专用权限沙箱或人工授权拒绝场景。",
+      "notes": "从 Blocked 改为 Pass/code-verified：通过 mock 授权失败覆盖拒绝路径，并用 build、tauri:build:app-smoke、替换后的 /Applications/Prism.app smoke 证明主流程未破坏。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-094-case-94.png",
-      "screenshots": []
+      "screenshots": [],
+      "automationResult": "Code Verified Pass",
+      "automationActual": "Vitest 3 个文件 / 41 条测试通过；npm run build、npm run tauri:build:app-smoke、安装版 app smoke 均通过。",
+      "unitTestEvidence": [
+        "logs/unit-tests/folder-authorization-failure-20260702.log"
+      ],
+      "logEvidence": [
+        "logs/unit-tests/folder-authorization-failure-20260702.log",
+        "logs/app-smoke-folder-authorization-failure-20260702/report.json"
+      ]
     },
     {
       "id": "PRISM-FF-095",
@@ -8736,9 +8745,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 141,
+    "Pass": 142,
     "Fail": 0,
-    "Blocked": 27,
+    "Blocked": 26,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,
@@ -10375,6 +10384,20 @@
         "logs/unit-tests/dirty-guard-switch-20260701.log"
       ],
       "notes": "Covers workspace dirty guard policy, dirty switch modal save/saveAs/discard/cancel actions, and file action branch behavior for cancel, discard, save, saveAs, plus conflict while saving before switch."
+    },
+    {
+      "id": "folder-authorization-failure-20260702",
+      "status": "Pass",
+      "testFiles": 3,
+      "testsPassed": 41,
+      "testsFailed": 0,
+      "commands": [
+        "npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts"
+      ],
+      "logs": [
+        "logs/unit-tests/folder-authorization-failure-20260702.log"
+      ],
+      "notes": "Covers empty-state folder authorization failure toast and no half-loaded workspace; also covers openFolder command path and command registry failure fallback."
     }
   ],
   "sourceFixBatches": [
@@ -10935,6 +10958,28 @@
         "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX",
         "PRISM-FF-026 installed-app pasteboard contains public.utf8-plain-text and public.html"
       ]
+    },
+    {
+      "id": "installed-app-smoke-folder-authorization-failure-20260702",
+      "status": "Pass",
+      "date": "2026-07-02",
+      "appPath": "/Applications/Prism.app",
+      "command": "npm run tauri:build:app-smoke; copy built Prism.app to /Applications/Prism.app; PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs",
+      "report": "logs/app-smoke-folder-authorization-failure-20260702/report.json",
+      "screenshots": "",
+      "coverage": [
+        ".markdown launch with Chinese and space path",
+        "JSON launch without blank screen",
+        "SQL launch without blank screen",
+        "TXT launch without blank screen",
+        "Markdown launch",
+        "ERROR diagnostics opens from status bar",
+        "Cmd+Shift+P Quick Open opens target file",
+        "basic edit and Cmd+S save writes fixture file",
+        "export menu opens from status bar",
+        "settings opens with Cmd+,",
+        "complex export artifacts generated and validated for HTML/PDF/PNG/DOCX"
+      ]
     }
   ],
   "regressionRuns": [
@@ -11009,6 +11054,24 @@
         "npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx"
       ],
       "notes": "Real UI remained hard to time because autosave can complete before file-tree navigation. Code-level automation now proves the dirty guard and all save/saveAs/discard/cancel branches, so PRISM-FF-092 is Pass/code-verified rather than unverified."
+    },
+    {
+      "id": "blocked-burn-down-prism-ff-094-20260702",
+      "date": "2026-07-02",
+      "issueRefs": [
+        "PRISM-FF-094"
+      ],
+      "evidence": [
+        "logs/unit-tests/folder-authorization-failure-20260702.log",
+        "logs/app-smoke-folder-authorization-failure-20260702/report.json"
+      ],
+      "tests": [
+        "npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts",
+        "npm run build",
+        "npm run tauri:build:app-smoke",
+        "PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs"
+      ],
+      "notes": "Folder authorization failure is handled without system permission changes: empty-state open-folder now shows an error toast and does not leave a half-loaded workspace when scope authorization rejects."
     }
   ]
 }

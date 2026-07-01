@@ -4,7 +4,13 @@ import { useWorkspaceStore } from '../store';
 import { loadFolderTree } from '../lib/loadFolderTree';
 import { openPrismWindow } from '../../../lib/openWindow';
 import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
+import { emitAppEvent } from '../../../platform/events/appEvents';
 import { useI18n } from '../../i18n';
+
+function formatError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
 
 export function OpenFolderButton() {
   const { t } = useI18n();
@@ -30,6 +36,10 @@ export function OpenFolderButton() {
       }
     } catch (err) {
       console.error('[OpenFolderButton] Failed:', err);
+      emitAppEvent('toast.show', {
+        tone: 'error',
+        title: t('command.operationFailed', { message: formatError(err) }),
+      });
     }
   };
 

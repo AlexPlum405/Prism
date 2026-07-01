@@ -1,0 +1,33 @@
+# Folder authorization failure regression - 2026-07-02
+
+Command:
+
+```bash
+npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
+```
+
+Result:
+
+```text
+Test Files  3 passed (3)
+Tests       41 passed (41)
+```
+
+Coverage:
+
+- Empty-state `OpenFolderButton` loads an authorized folder into the current window.
+- When `grantWorkspaceDirectoryScope` rejects with `permission denied`, Prism emits a global error toast.
+- Authorization failure does not call `loadFolderTree`.
+- Authorization failure does not open a new Prism window.
+- Authorization failure leaves `workspace.rootPath` null and `fileTree` empty, avoiding a half-loaded workspace state.
+- Command palette/menu `openFolder` path remains covered by workspace command and registry tests; `runCommand` still provides the command-level failure toast fallback.
+
+Additional verification:
+
+```bash
+npm run build
+npm run tauri:build:app-smoke
+PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
+```
+
+All build and app-smoke steps passed.

@@ -8,9 +8,10 @@
 
 - `PRISM-FF-026`：Blocked -> Pass
 - `PRISM-FF-092`：Blocked -> Pass/code-verified
-- 总计：Pass 141 / Fail 0 / Blocked 27 / Not Run 0
+- `PRISM-FF-094`：Blocked -> Pass/code-verified
+- 总计：Pass 142 / Fail 0 / Blocked 26 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1：Pass 45 / Fail 0 / Blocked 11 / Not Run 0
+- P1：Pass 46 / Fail 0 / Blocked 10 / Not Run 0
 
 ## 代码变更
 
@@ -72,16 +73,19 @@ html-has-table: true
 ```bash
 npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
 npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
+npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
 npm run build
 npm run tauri:build:app-smoke
+PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 ```
 
 结果：
 
 - Vitest：4 个测试文件 / 53 条测试通过。
 - Dirty guard Vitest：4 个测试文件 / 32 条测试通过。
+- Folder authorization Vitest：3 个测试文件 / 41 条测试通过。
 - Build：通过。
-- App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`。
+- App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json` 与 `logs/app-smoke-folder-authorization-failure-20260702/report.json`。
 
 ## PRISM-FF-092 Dirty Guard
 
@@ -100,11 +104,27 @@ npm run tauri:build:app-smoke
 - `logs/unit-tests/dirty-guard-switch-20260701.log`
 - `logs/computer-use-real-app/dirty-guard-switch-check.log`（旧真实 UI 时序阻塞日志，作为 precondition 风险说明保留）
 
+## PRISM-FF-094 Folder Authorization Failure
+
+本轮不真实拒绝 macOS 用户目录权限，不修改系统安全设置；通过 mock 授权失败覆盖可控拒绝路径。
+
+修复：
+
+- 空状态 `OpenFolderButton` 捕获 `grantWorkspaceDirectoryScope` 失败后发出全局 error toast。
+- 失败后不调用 `loadFolderTree`。
+- 失败后不打开新窗口。
+- 失败后 `workspace.rootPath` 保持 `null`，`fileTree` 保持空数组，避免半加载状态。
+- 命令面板/菜单 `openFolder` 路径继续由 workspace command 与 registry 测试覆盖；`runCommand` 仍有命令级失败 toast fallback。
+
+证据：
+
+- `logs/unit-tests/folder-authorization-failure-20260702.log`
+- `logs/app-smoke-folder-authorization-failure-20260702/report.json`
+
 ## 剩余范围
 
 下一阶段按附件计划进入可自动化 Blocked 降噪，优先：
 
-- `PRISM-FF-094` 文件夹授权失败
 - `PRISM-FF-135` 设置持久化错误
 - `PRISM-FF-138` Error Boundary
 - `PRISM-FF-162` Worker 降级

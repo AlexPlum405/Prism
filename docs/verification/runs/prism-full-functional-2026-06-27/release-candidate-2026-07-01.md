@@ -7,7 +7,7 @@ Bundle ID：`com.prism.editor.v1`
 
 ## 本轮目标
 
-继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard` 自动化证据。
+继承 `prism-full-functional-2026-06-27` 已有全功能证据，不从头重跑全量测试；先闭环 `PRISM-FF-132 导出打开产物动作`，随后按 Blocked burn-down 计划闭环唯一 P0 Blocked：`PRISM-FF-026 复制为多格式`，并补齐 `PRISM-FF-092 dirty guard` 与 `PRISM-FF-094 文件夹授权失败` 自动化证据。
 
 ## 代码改动
 
@@ -15,6 +15,7 @@ Bundle ID：`com.prism.editor.v1`
 - 导出成功且带动作的 toast 使用 `EXPORT_ACTION_TOAST_DURATION_MS = 15000`，给用户和自动化复测足够时间点击后续动作。
 - `scripts/run-app-smoke.mjs` 增强窗口/截图稳定性：Quick Open 重试、截图尺寸变化按重叠区域比较、退出时清理所有 Prism app 实例。
 - 编辑区普通 `copy` 写入 Markdown 源文本 `text/plain` 与渲染后的 `text/html`；`copyPlain` / `copyMd` 保持纯文本语义，显式 `copyHtml` 使用 HTML fallback。
+- 空状态“打开文件夹”按钮的授权失败路径改为显示全局 error toast，并阻止继续加载文件树或打开新窗口，避免半加载工作区状态。
 
 ## 验证命令
 
@@ -23,6 +24,7 @@ git status --short --branch
 npm test -- --run src/hooks/useExportTaskUi.test.tsx src/domains/commands/registry.test.ts src/domains/commands/exportCommand.integration.test.ts
 npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
 npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
+npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -33,6 +35,7 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Vitest：3 个测试文件 / 39 条断言通过。
 - 富复制回归 Vitest：4 个测试文件 / 53 条测试通过。
 - Dirty guard 回归 Vitest：4 个测试文件 / 32 条测试通过。
+- 文件夹授权失败回归 Vitest：3 个测试文件 / 41 条测试通过。
 - `npm run build`：通过。
 - `npm run tauri:build:app-smoke`：通过，完成 app bundle 构建、Markdown 文档图标 patch、本地 bundle smoke。
 - `/Applications/Prism.app` 安装版 smoke：通过，覆盖 `.markdown` 中文/空格路径、JSON/SQL/TXT、Markdown、ERROR 诊断、Quick Open、编辑保存、导出菜单、设置中心、HTML/PDF/PNG/DOCX 复杂导出产物。
@@ -103,14 +106,31 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/dirty-guard-switch-20260701.log`
 - `logs/computer-use-real-app/dirty-guard-switch-check.log`
 
+## PRISM-FF-094 复测结果
+
+状态：Pass/code-verified
+
+说明：本项验证“打开文件夹”时授权失败的用户反馈和状态回滚。为避免真实拒绝 macOS 用户目录权限、污染系统授权状态，本轮使用 mock 授权拒绝做代码级自动化覆盖：
+
+- `grantWorkspaceDirectoryScope` 抛出 `permission denied` 后显示全局 error toast。
+- 不继续调用 `loadFolderTree`。
+- 不打开新 Prism 窗口。
+- `workspace.rootPath` 保持 `null`。
+- 文件树保持空数组，避免半加载 workspace。
+
+证据：
+
+- `logs/unit-tests/folder-authorization-failure-20260702.log`
+- `logs/app-smoke-folder-authorization-failure-20260702/report.json`
+
 ## 当前统计
 
 ```json
 {
   "total": 168,
-  "Pass": 141,
+  "Pass": 142,
   "Fail": 0,
-  "Blocked": 27,
+  "Blocked": 26,
   "Not Run": 0,
   "screenshotFiles": 434,
   "manifestScreenshots": 1016,
@@ -128,4 +148,4 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 ## 结论
 
-本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，`PRISM-FF-092` 已通过自动化补证据降噪，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
+本轮已形成可发布候选检查点：Fail 仍为 0，`PRISM-FF-132` 与 `PRISM-FF-026` 已真实闭环为 Pass，`PRISM-FF-092` 与 `PRISM-FF-094` 已通过自动化补证据降噪，P0 Blocked 已清零；剩余非通过项均保持 Blocked 且不伪造验证。
