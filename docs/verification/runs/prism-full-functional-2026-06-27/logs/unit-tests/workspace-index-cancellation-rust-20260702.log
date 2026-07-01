@@ -1,0 +1,27 @@
+
+running 17 tests
+test domain::workspace_index::tests::build_workspace_index_aborts_when_cancel_requested ... ok
+test domain::workspace_index::tests::current_document_override_does_not_poison_metadata_cache ... ok
+test domain::workspace_index::tests::builds_index_with_current_document_override_and_backlinks ... ok
+test domain::workspace_index::tests::workspace_query_uses_current_document_override ... ok
+test domain::workspace_index_job::tests::job_queries_reject_running_jobs ... ok
+test domain::workspace_index::tests::build_workspace_index_reports_fine_grained_progress ... ok
+test domain::workspace_index::tests::resolves_url_encoded_markdown_links_in_relation_graph ... ok
+test domain::workspace_index_job::tests::starting_new_workspace_index_job_cancels_previous_running_job_for_root ... ok
+test domain::workspace_index::tests::queries_workspace_index_for_quick_open_and_full_text ... ok
+test domain::workspace_index::tests::queries_workspace_link_targets_for_markdown_and_wiki_completion ... ok
+test domain::workspace_index_job::tests::cancelling_completed_workspace_index_job_is_noop ... ok
+test domain::workspace_index::tests::reuses_base_index_snapshot_until_manifest_changes ... ok
+test domain::workspace_index::tests::queries_backlinks_and_relation_graph_from_index ... ok
+test domain::workspace_index_job::tests::queries_backlinks_and_relation_graph_from_completed_job ... ok
+test domain::workspace_index_job::tests::queries_link_targets_from_completed_job ... ok
+test domain::workspace_index::tests::indexes_supported_documents_inside_dot_and_tool_directories ... ok
+test domain::workspace_index_job::tests::workspace_index_job_completes_with_index ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.02s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

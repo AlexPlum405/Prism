@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/services/workspaceIndex.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+   Start at  01:37:12
+   Duration  1.11s (transform 311ms, setup 117ms, import 373ms, tests 440ms, environment 944ms)
+

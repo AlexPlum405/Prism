@@ -352,4 +352,97 @@ describe('useWorkspaceIndexModel', () => {
     expect(result.current.workspaceIndex?.documents[0].title).toBe('Native Current');
     expect(result.current.workspaceIndexJobId).toBe('workspace-index-running');
   });
+
+  it('cancels the previous native index job when the workspace root changes', async () => {
+    const firstTree = [
+      { path: '/workspace-a/a.md', name: 'a.md', kind: 'file' as const, modifiedAt: 1, size: 10 },
+    ];
+    const secondTree = [
+      { path: '/workspace-b/b.md', name: 'b.md', kind: 'file' as const, modifiedAt: 2, size: 20 },
+    ];
+    const secondIndex = buildWorkspaceIndex({
+      fileTree: secondTree,
+      workspaceRoot: '/workspace-b',
+      documents: [{ path: '/workspace-b/b.md', content: '# Workspace B' }],
+    });
+    nativeIndexMock.startWorkspaceIndexJobNativeModel.mockImplementation(async (input: { rootPath: string }) => {
+      if (input.rootPath === '/workspace-a') {
+        return {
+          id: 'workspace-index-a',
+          rootPath: '/workspace-a',
+          status: 'running',
+          stage: 'build',
+          message: 'building workspace A',
+          progress: 0.2,
+          createdAt: 1,
+          updatedAt: 1,
+          completedAt: null,
+          index: null,
+          error: null,
+          cancelRequested: false,
+        };
+      }
+      return {
+        id: 'workspace-index-b',
+        rootPath: '/workspace-b',
+        status: 'completed',
+        stage: 'completed',
+        message: 'ready',
+        progress: 1,
+        createdAt: 2,
+        updatedAt: 3,
+        completedAt: 3,
+        index: secondIndex,
+        error: null,
+        cancelRequested: false,
+      };
+    });
+    nativeIndexMock.getWorkspaceIndexJobNativeModel.mockResolvedValue({
+      id: 'workspace-index-a',
+      rootPath: '/workspace-a',
+      status: 'cancelled',
+      stage: 'cancel_requested',
+      message: 'cancelled',
+      progress: 1,
+      createdAt: 1,
+      updatedAt: 2,
+      completedAt: 2,
+      index: null,
+      error: null,
+      cancelRequested: true,
+    });
+
+    const { result, rerender } = renderHook((props: {
+      fileTree: typeof firstTree;
+      rootPath: string;
+    }) => useWorkspaceIndexModel({
+      currentDocument: null,
+      rootPath: props.rootPath,
+      fileTree: props.fileTree,
+      recentFiles: [],
+    }), {
+      initialProps: {
+        rootPath: '/workspace-a',
+        fileTree: firstTree,
+      },
+    });
+
+    await waitFor(() => expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenCalledTimes(1));
+
+    rerender({
+      rootPath: '/workspace-b',
+      fileTree: secondTree,
+    });
+
+    await waitFor(() => expect(nativeIndexMock.cancelWorkspaceIndexJobNativeModel)
+      .toHaveBeenCalledWith('workspace-index-a'));
+    await waitFor(() => expect(result.current.workspaceIndexing).toBe(false));
+
+    expect(nativeIndexMock.startWorkspaceIndexJobNativeModel).toHaveBeenCalledTimes(2);
+    expect(result.current.workspaceIndexJobId).toBe('workspace-index-b');
+    expect(result.current.workspaceIndex?.rootPath).toBe('/workspace-b');
+    expect(result.current.workspaceIndex?.documentByPath.has('/workspace-a/a.md')).toBe(false);
+    expect(result.current.workspaceIndex?.documentByPath.get('/workspace-b/b.md')?.title)
+      .toBe('Workspace B');
+  });
 });

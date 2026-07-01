@@ -7677,17 +7677,18 @@
       "preconditions": "大工作区",
       "steps": "快速切换工作区",
       "expected": "旧任务取消，新任务完成，不读错 root",
-      "automationHint": "Rust",
-      "status": "Blocked",
-      "actual": "索引任务取消需要快速切换工作区或注入慢索引任务；本轮为避免污染真实工作区且缺少可见索引任务状态，未执行。",
+      "automationHint": "Vitest root switch + Rust workspace_index cancellation",
+      "status": "Pass",
+      "actual": "通过前端 hook 与 Rust 域测试验证索引任务取消：快速从 root A 切到 root B 时，旧 native job workspace-index-a 会调用 cancelWorkspaceIndexJobNativeModel，新 root B 的 job 完成后 workspaceIndex.rootPath 为 /workspace-b，旧 root 文档不会进入当前索引；Rust 层确认 cancel flag 会中断 build，新同 root job 会取消旧 running job。",
       "issueRef": "",
-      "notes": "需要专用大工作区 fixture 或测试钩子验证取消旧任务、新任务完成。",
+      "notes": "Pass/code-verified；使用临时 fixture 与 mock running native job，不污染真实工作区。证据见 logs/unit-tests/workspace-index-cancellation-20260702.log 和 logs/unit-tests/workspace-index-cancellation-rust-20260702.log。",
       "plannedScreenshot": "screenshots/07-knowledge/PRISM-FF-118-case-118.png",
       "unitTestEvidence": [
-        "logs/unit-tests/workspace-i18n-shell.log"
+        "logs/unit-tests/workspace-index-cancellation-20260702.log",
+        "logs/unit-tests/workspace-index-cancellation-rust-20260702.log"
       ],
-      "automationResult": "Unit Pass",
-      "automationActual": "workspace-i18n-shell 批次 12 个测试文件 / 73 条测试通过。",
+      "automationResult": "Code Verified Pass",
+      "automationActual": "workspace index cancellation 批次：Vitest 3 个测试文件 / 21 条测试通过；Cargo workspace_index 17 条测试通过。",
       "screenshots": []
     },
     {
@@ -8746,9 +8747,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 145,
+    "Pass": 146,
     "Fail": 0,
-    "Blocked": 23,
+    "Blocked": 22,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,

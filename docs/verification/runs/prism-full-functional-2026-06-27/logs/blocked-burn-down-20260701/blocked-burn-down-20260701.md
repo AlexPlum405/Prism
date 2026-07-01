@@ -12,9 +12,10 @@
 - `PRISM-FF-135`：Blocked -> Pass/code-verified
 - `PRISM-FF-138`：Blocked -> Pass/code-verified
 - `PRISM-FF-162`：Blocked -> Pass/code-verified
-- 总计：Pass 145 / Fail 0 / Blocked 23 / Not Run 0
+- `PRISM-FF-118`：Blocked -> Pass/code-verified
+- 总计：Pass 146 / Fail 0 / Blocked 22 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1：Pass 48 / Fail 0 / Blocked 8 / Not Run 0
+- P1：Pass 49 / Fail 0 / Blocked 7 / Not Run 0
 - P3：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
 
 ## 代码变更
@@ -85,6 +86,8 @@ npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src
 npm test -- --run src/domains/settings/pathPersistence.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts src/domains/settings/normalize.test.ts
 npm test -- --run src/components/shell/AppErrorBoundary.test.tsx src/hooks/useAppToast.test.tsx src/app/useAppAuxiliaryModalsModel.test.tsx src/app/useAppCommandWiringModel.test.tsx
 npm test -- --run src/lib/markdownRenderService.test.ts
+npm test -- --run src/domains/workspace/hooks/useWorkspaceIndexModel.test.tsx src/domains/workspace/services/workspaceIndexNative.test.ts src/domains/workspace/services/workspaceIndex.test.ts
+cargo test workspace_index --manifest-path src-tauri/Cargo.toml
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -98,6 +101,8 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Settings persistence failure Vitest：4 个测试文件 / 35 条测试通过。
 - Error Boundary injected render Vitest：4 个测试文件 / 8 条测试通过。
 - Markdown Worker fallback Vitest：1 个测试文件 / 14 条测试通过。
+- Workspace index cancellation Vitest：3 个测试文件 / 21 条测试通过。
+- Workspace index Rust：17 条测试通过。
 - Build：通过。
 - App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`、`logs/app-smoke-folder-authorization-failure-20260702/report.json` 与 `logs/app-smoke-settings-persistence-failure-20260702/report.json`。
 
@@ -183,10 +188,25 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 
 - `logs/unit-tests/markdown-worker-fallback-20260702.log`
 
+## PRISM-FF-118 Workspace Index Cancellation
+
+本轮不使用真实大工作区反复切换；通过临时 fixture、mock running native job 和 Rust 域测试覆盖取消语义。
+
+验证：
+
+- 前端 hook 从 root A 快速切换到 root B 时，会调用 `cancelWorkspaceIndexJobNativeModel('workspace-index-a')`。
+- 新 root B 的 native job 完成后，当前 `workspaceIndex.rootPath` 为 `/workspace-b`。
+- 旧 root A 的文档不会进入当前索引。
+- Rust `workspace_index` 确认 cancel flag 会中断 build。
+- Rust `workspace_index_job` 确认启动同 root 新 job 会取消旧 running job，已完成 job 的 cancel 是 no-op。
+
+证据：
+
+- `logs/unit-tests/workspace-index-cancellation-20260702.log`
+- `logs/unit-tests/workspace-index-cancellation-rust-20260702.log`
+
 ## 剩余范围
 
-下一阶段按附件计划进入可自动化 Blocked 降噪，优先：
-
-- `PRISM-FF-118` 索引任务取消
+附件计划中的可自动化 Blocked 降噪项已闭环。后续剩余项应按破坏性/权限类沙盒、平台真机矩阵和压力测试分别推进。
 
 破坏性/权限类测试仍需独立沙盒；Windows/Linux 继续保持真机回填，不伪造验证。

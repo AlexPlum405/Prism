@@ -75,6 +75,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-02 降噪 `PRISM-FF-162`：用 `WorkerFactory` mock 补充 Markdown 预览 Worker 降级专项证据。测试覆盖无 Worker 环境主线程渲染、Worker runtime error 后释放 pending 并降级、Worker 回包 error 后用原请求主线程重渲染，同时确认富内容和三语 front matter 文案一致。本轮不在真实 App 暴露禁用 Worker 开关。复跑 1 个测试文件 / 14 条测试通过。该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/markdown-worker-fallback-20260702.log`。
 
+2026-07-02 降噪 `PRISM-FF-118`：补齐索引任务取消专项证据。前端 hook 测试模拟 root A 的 running native index job 后快速切到 root B，确认旧 job 调用 `cancelWorkspaceIndexJobNativeModel('workspace-index-a')`，新 job 完成后当前 `workspaceIndex.rootPath` 为 `/workspace-b`，旧 root 文档不会进入当前索引；Rust 域测试确认 cancel flag 会中断 build，启动同 root 新 job 会取消旧 running job。复跑 Vitest 3 个测试文件 / 21 条测试通过，Cargo workspace_index 17 条测试通过。该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/workspace-index-cancellation-20260702.log` 和 `logs/unit-tests/workspace-index-cancellation-rust-20260702.log`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -130,21 +132,21 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：145
+- Pass：146
 - Fail：0
-- Blocked：23
+- Blocked：22
 - Not Run：0
 - P0 执行：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1 执行：Pass 48 / Fail 0 / Blocked 8 / Not Run 0
+- P1 执行：Pass 49 / Fail 0 / Blocked 7 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 4 / Fail 0 / Blocked 4 / Not Run 0
 - 当前截图文件总数：434
 - Manifest 真实 Computer Use 截图引用：245
 - Pipeline/环境证据截图：9
 - 真实 Computer Use/安装版 UI 截图：246（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`、`screenshots/33-installed-print-help-retest/`、`screenshots/34-installed-i18n-a11y-retest/`、`screenshots/35-installed-export-open-actions-retest/`、`screenshots/36-blocked-burn-down/`）
-- 单元/集成测试批次：22
-- 单元/集成测试文件通过：104
-- 单元/集成测试断言通过：1260
+- 单元/集成测试批次：24
+- 单元/集成测试文件通过：107
+- 单元/集成测试断言通过：1298
 - 单元/集成测试失败执行：0
 - 唯一单元失败：0
 - 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已按 `PRISM-CU-261..267` 安装版证据闭环为 Pass
