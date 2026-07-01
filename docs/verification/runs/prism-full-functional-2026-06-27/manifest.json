@@ -7467,15 +7467,20 @@
       "steps": "搜索文件/正文",
       "expected": "回退 TypeScript 查询，UI 标明状态，不崩溃",
       "automationHint": "单元",
-      "status": "Fail",
-      "actual": "Cmd+Shift+F 打开文档内查找，不是工作区全文搜索；Cmd+P 只显示快速打开文件和原生索引状态，未看到全文搜索模式或结果列表。",
+      "status": "Pass",
+      "actual": "2026-06-30 安装版复测通过：Cmd+Shift+F 打开“全文搜索 工作区”面板，不再打开文档内查找；搜索 NeedleWorkspaceTerm 显示根文件和子目录文件两个命中，回车可打开 notes/secondary-search-target.md。",
       "issueRef": "P1-SEARCH-001",
-      "notes": "真实 App 复测，原生 Edit 菜单也没有工作区全文搜索入口。",
+      "notes": "原截图保留为 pre-fix 失败证据；修复后证据见 screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png 和 02-workspace-search-result-opened.png。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-119-native-native.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png",
+        "screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png",
+        "screenshots/24-installed-workspace-search-menu-smoke/02-workspace-search-result-opened.png"
       ],
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-220-workspace-search-shortcut-opens-document-find-window.png"
+      "screenshot": "screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png",
+      "logEvidence": [
+        "docs/verification/runs/prism-full-functional-2026-06-27/test-report.md:88"
+      ]
     },
     {
       "id": "PRISM-FF-120",
@@ -8480,8 +8485,8 @@
   "generatedAt": "2026-07-01T03:02:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 126,
-    "Fail": 12,
+    "Pass": 127,
+    "Fail": 11,
     "Blocked": 30,
     "Not Run": 0,
     "screenshotFiles": 421,
