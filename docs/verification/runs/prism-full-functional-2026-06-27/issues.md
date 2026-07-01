@@ -197,6 +197,7 @@ Bundle ID：com.prism.editor.v1
 
 - 严重度：P1
 - 用例 ID：PRISM-FF-095
+- 当前状态：已修复，2026-07-01 安装版复测通过。
 - 触发动作：
   1. 在真实 `/Applications/Prism.app` 中打开测试工作区文件 `real-wiki-target.md`。
   2. 在文件树当前文件上打开右键菜单。
@@ -212,6 +213,10 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-211-file-menu-no-properties-action-window.png`
 - 建议修复方向：在文件树右键菜单或“文件”菜单加入“显示简介/文件信息”，复用已有文件元数据读取能力；如果仅保留系统 Finder 信息，也应在 Prism 中明确入口和反馈。
 - 验收标准：从文件树或主菜单能打开属性面板，显示名称、完整路径、类型、大小、创建时间、修改时间；关闭面板后不改变当前文档。
+- 修复后验证：重新打包并替换 `/Applications/Prism.app` 后，主“文件”菜单显示“文件属性”；点击后弹出属性信息对话框，包含名称、完整路径、类型、大小、创建时间、修改时间、访问时间和只读状态。
+- 修复后证据：
+  - `screenshots/32-installed-p1-fix-retest/01-file-properties-dialog.png`
+  - `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`
 
 ## 标题栏、状态栏与窗口壳
 
@@ -797,6 +802,7 @@ Bundle ID：com.prism.editor.v1
 
 - 严重度：P2
 - 用例 ID：PRISM-FF-072
+- 当前状态：已修复，2026-07-01 安装版复测通过；manifest 对应用例为 `PRISM-FF-125`。
 - 触发动作：
   1. 在真实 Prism 中打开 `real-complex-diagrams-export.md`。
   2. 选择 `导出 > 导出为 PDF`，保持默认 A4 和极致 4x。
@@ -809,6 +815,13 @@ Bundle ID：com.prism.editor.v1
   - `screenshots/15-computer-use-real-app/PRISM-CU-139-complex-export-pdf-page-2.png`
   - `fixtures/computer-use-real-app/real-complex-diagrams-export.pdf`
 - 备注：该问题不影响文件生成，但会降低导出 PDF 的阅读质量和宣传素材可用性。
+- 修复后验证：重新打包并替换 `/Applications/Prism.app` 后，用真实安装版覆盖导出 `real-complex-diagrams-export.pdf`。新产物为 2 页 A4；第 1 页 Mermaid 和 PlantUML 完整，`PlantUML Relationship` 标题未孤立在页底；第 2 页 `Markmap Mind Map` 标题与图表同页，Local Resource、表格和数学公式完整可见，没有文字被分页切半。
+- 修复后证据：
+  - `screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-1.png`
+  - `screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-2.png`
+  - `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`
+  - `logs/computer-use-real-app/real-complex-pdf-postfix-pdfinfo-20260701.log`
+  - `logs/computer-use-real-app/real-complex-pdf-postfix-stat-20260701.log`
 
 ### P1-EXPORT-007 PDF 链接注释验收误判已修正
 
@@ -870,6 +883,7 @@ Bundle ID：com.prism.editor.v1
 
 - 严重度：P1
 - 用例 ID：PRISM-FF-104
+- 当前状态：已修复，2026-07-01 安装版复测通过。
 - 触发动作：
   1. 在真实 `/Applications/Prism.app` 中打开 `文件 > 设置`。
   2. 切换到“外观”分区。
@@ -887,6 +901,10 @@ Bundle ID：com.prism.editor.v1
   - `logs/computer-use-real-app/open-theme-directory-window-list.log`
 - 建议修复方向：检查“打开主题目录”按钮绑定的 Tauri command 是否执行，失败时捕获并 toast；成功时确保通过系统 opener/Finder 打开目录并把目录路径写入日志。
 - 验收标准：点击按钮后 Finder 前台或后台出现用户主题目录窗口；窗口列表能看到 Finder；失败路径显示 toast，不静默。
+- 修复后验证：重新打包并替换 `/Applications/Prism.app` 后，设置 > 外观 > 打开主题目录点击后显示成功 toast “已打开主题目录”，路径为 `/Users/Alex/Library/Application Support/com.prism.editor.v1/themes`；System Events 查询 Finder 窗口包含 `themes`。
+- 修复后证据：
+  - `screenshots/32-installed-p1-fix-retest/02-theme-directory-toast.png`
+  - `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`
 
 ### P1-THEME-001 切换内容主题后滚动位置可能跳变
 

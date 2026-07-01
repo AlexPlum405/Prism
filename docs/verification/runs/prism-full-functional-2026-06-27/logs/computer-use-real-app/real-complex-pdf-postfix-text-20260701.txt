@@ -1,0 +1,102 @@
+Real Complex Diagrams Export
+This file verifies that Prism preview and export reuse the same rendered diagram output.
+
+
+
+Mermaid Flowchart
+
+
+
+                                                                                  Draft
+
+
+
+
+                                                                              Review
+
+
+
+
+                                                          Pass                    Revise
+
+
+
+
+                                                          Export                           Edit
+
+
+
+
+           HTML                            PDF                             PNG                    DOCX
+
+
+
+
+PlantUML Relationship
+
+
+                                                           Prism
+
+
+
+                                     preview and export   edit markdown    save
+
+
+
+                                                 Writer                      Workspace
+
+
+
+
+Markmap Mind Map
+
+
+                                                                 Mermaid
+Markmap Mind Map
+
+
+                                                               Mermaid
+                                         Preview parity        PlantUML
+                                                               Markmap
+                Prism Export                                   HTML
+                                                               PDF
+                                         Output formats
+                                                               PNG 4x
+                                                               DOCX
+
+
+
+
+Local Resource
+
+
+
+
+                     Prism Local Resource
+                     This SVG should appear in preview and exported files.
+
+
+
+
+Table And Math
+
+          Format                                                        Expected
+
+ HTML                          self-contained preview output
+
+ PDF                           no missing diagram nodes
+
+ PNG                           keeps selected 4x scale
+
+ DOCX                          readable in office suites
+
+
+Inline math: a2 + b2 = c2 .
+
+
+Block math:
+
+                                                               RenderedN odes
+                                           ExportQuality =
+                                                               P reviewN odes
+

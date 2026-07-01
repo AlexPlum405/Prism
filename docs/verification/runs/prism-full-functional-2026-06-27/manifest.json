@@ -6934,15 +6934,19 @@
       "steps": "执行属性/信息动作（如菜单暴露）",
       "expected": "显示名称、路径、类型、大小、时间",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "当前文件的文件树右键菜单只提供打开、新窗口、重命名、创建副本、删除、复制路径、在访达中显示；主“文件”菜单只提供新建、打开、保存、另存为、在访达中显示、设置、关闭文稿。未发现属性/信息入口，无法在 Prism 内查看名称、路径、类型、大小、时间。",
+      "status": "Pass",
+      "actual": "2026-07-01 安装版复测通过：主“文件”菜单显示“文件属性”；点击后弹出属性信息对话框，包含名称、完整路径、类型、大小、创建时间、修改时间、访问时间和只读状态。",
       "issueRef": "P1-FILE-004",
-      "notes": "真实 App + Computer Use 复测，入口缺失。",
+      "notes": "原截图保留为 pre-fix 失败证据；修复后证据见 screenshots/32-installed-p1-fix-retest/01-file-properties-dialog.png。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-095-case-95.png",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-211-file-menu-no-properties-action-window.png",
+      "screenshot": "screenshots/32-installed-p1-fix-retest/01-file-properties-dialog.png",
       "screenshots": [
         "screenshots/15-computer-use-real-app/PRISM-CU-210-file-tree-context-menu-no-properties-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-211-file-menu-no-properties-action-window.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-211-file-menu-no-properties-action-window.png",
+        "screenshots/32-installed-p1-fix-retest/01-file-properties-dialog.png"
+      ],
+      "logEvidence": [
+        "logs/computer-use-real-app/p1-fix-installed-retest-20260701.md"
       ]
     },
     {
@@ -7126,18 +7130,20 @@
       "steps": "点击打开主题目录",
       "expected": "系统文件管理器打开主题目录",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "设置 > 外观中可见“打开主题目录”按钮；通过可访问性按钮和坐标各点击一次后，仍停留在设置弹窗，没有 Finder 窗口、没有 toast 或错误反馈。窗口列表日志未出现 Finder。",
+      "status": "Pass",
+      "actual": "2026-07-01 安装版复测通过：设置 > 外观 > 打开主题目录点击后显示成功 toast “已打开主题目录”，路径为 /Users/Alex/Library/Application Support/com.prism.editor.v1/themes；System Events 查询 Finder 窗口包含 themes。",
       "issueRef": "P1-SETTINGS-003",
-      "notes": "真实 App 复测，入口存在但动作无可见结果。",
+      "notes": "原截图和窗口列表保留为 pre-fix 失败证据；修复后证据见 screenshots/32-installed-p1-fix-retest/02-theme-directory-toast.png。",
       "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-104-case-104.png",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-213-settings-open-theme-directory-no-finder-window.png",
+      "screenshot": "screenshots/32-installed-p1-fix-retest/02-theme-directory-toast.png",
       "screenshots": [
         "screenshots/15-computer-use-real-app/PRISM-CU-212-settings-appearance-open-theme-directory-entry-window.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-213-settings-open-theme-directory-no-finder-window.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-213-settings-open-theme-directory-no-finder-window.png",
+        "screenshots/32-installed-p1-fix-retest/02-theme-directory-toast.png"
       ],
       "logEvidence": [
-        "logs/computer-use-real-app/open-theme-directory-window-list.log"
+        "logs/computer-use-real-app/open-theme-directory-window-list.log",
+        "logs/computer-use-real-app/p1-fix-installed-retest-20260701.md"
       ]
     },
     {
@@ -7622,15 +7628,23 @@
       "steps": "导出 PDF",
       "expected": "文字不被上下两页切半；图表尽量整体分页",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "真实 Prism 复杂 PDF 导出为 2 页 A4；第 1 页页底出现孤立的 Markmap Mind Map 标题，实际 Markmap 图表从第 2 页开始，标题与图表分页分离。",
+      "status": "Pass",
+      "actual": "2026-07-01 安装版复测通过：真实 /Applications/Prism.app 覆盖导出 real-complex-diagrams-export.pdf，产物为 2 页 A4；第 1 页 Mermaid 和 PlantUML 完整，PlantUML Relationship 标题未孤立在页底；第 2 页 Markmap Mind Map 标题与图表同页，Local Resource、表格和数学公式完整可见，未见文字被分页切半。",
       "issueRef": "P2-EXPORT-002",
-      "notes": "复杂图表导出补测覆盖 PDF 分页避切，证据另见 PRISM-CU-139-P1/P2 与 export-artifact-validation.log。",
+      "notes": "原 PRISM-CU-139-P1/P2 保留为 pre-fix 失败证据；修复后证据见 screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-1.png 和 05-real-complex-pdf-page-2.png。",
       "plannedScreenshot": "screenshots/09-export/PRISM-FF-125-pdf-pdf.png",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-139-complex-export-pdf-page-1.png",
+      "screenshot": "screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-1.png",
       "screenshots": [
         "screenshots/15-computer-use-real-app/PRISM-CU-139-complex-export-pdf-page-1.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-139-complex-export-pdf-page-2.png"
+        "screenshots/15-computer-use-real-app/PRISM-CU-139-complex-export-pdf-page-2.png",
+        "screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-1.png",
+        "screenshots/32-installed-p1-fix-retest/05-real-complex-pdf-page-2.png"
+      ],
+      "logEvidence": [
+        "logs/computer-use-real-app/p1-fix-installed-retest-20260701.md",
+        "logs/computer-use-real-app/real-complex-pdf-postfix-pdfinfo-20260701.log",
+        "logs/computer-use-real-app/real-complex-pdf-postfix-stat-20260701.log",
+        "logs/computer-use-real-app/real-complex-pdf-postfix-text-20260701.txt"
       ]
     },
     {
@@ -8482,17 +8496,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T03:02:00+08:00",
+  "generatedAt": "2026-07-01T11:25:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 127,
-    "Fail": 11,
+    "Pass": 130,
+    "Fail": 8,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 421,
-    "manifestScreenshots": 995,
-    "uniqueManifestScreenshots": 442,
-    "computerUseRealAppEvidence": 237
+    "screenshotFiles": 425,
+    "manifestScreenshots": 999,
+    "uniqueManifestScreenshots": 446,
+    "computerUseRealAppEvidence": 241
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",

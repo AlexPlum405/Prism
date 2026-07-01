@@ -49,6 +49,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 同步 `PRISM-FF-119 / P1-SEARCH-001` 工作区搜索安装版复测状态：既有证据显示 `Cmd+Shift+F` 直接打开“全文搜索 工作区”面板，搜索 `NeedleWorkspaceTerm` 返回根目录和子目录两个命中，回车可打开 `notes/secondary-search-target.md`；manifest 已由历史 Fail 改为 Pass。证据见 `screenshots/24-installed-workspace-search-menu-smoke/01-workspace-search-results.png`、`screenshots/24-installed-workspace-search-menu-smoke/02-workspace-search-result-opened.png` 和 `PRISM-CU-258/259/260`。
 
+2026-07-01 复验 `PRISM-FF-095/104/125`：重新执行 `npm run tauri:build:app-smoke`，备份并替换 `/Applications/Prism.app`，再用真实安装版完成文件属性、打开主题目录和复杂 PDF 分页避切复测。`文件 > 文件属性` 已弹出名称/路径/类型/大小/时间信息；设置 > 外观 > 打开主题目录已显示成功 toast 且 Finder 窗口包含 `themes`；真实覆盖导出的 `real-complex-diagrams-export.pdf` 为 2 页 A4，第 1 页 Mermaid/PlantUML 完整，第 2 页 Markmap 标题与图表同页，表格和数学公式未被分页切半。三项均改为 Pass。证据见 `screenshots/32-installed-p1-fix-retest/` 和 `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -104,18 +106,18 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：127
-- Fail：11
+- Pass：130
+- Fail：8
 - Blocked：30
 - Not Run：0
 - P0 执行：Pass 87 / Fail 0 / Blocked 1 / Not Run 0
-- P1 执行：Pass 33 / Fail 10 / Blocked 13 / Not Run 0
+- P1 执行：Pass 36 / Fail 7 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：421
-- Manifest 真实 Computer Use 截图引用：237
+- 当前截图文件总数：425
+- Manifest 真实 Computer Use 截图引用：241
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：237（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`）
+- 真实 Computer Use/安装版 UI 截图：241（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`）
 - 单元/集成测试批次：10
 - 单元/集成测试文件通过：65
 - 单元/集成测试断言通过：760
@@ -158,6 +160,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-07-01 预览链接单击修复后安装版复测截图：screenshots/30-installed-preview-link-click-single/
 - 2026-07-01 预览链接单击修复后安装版复测日志：logs/computer-use-real-app/preview-link-single-click-postfix-20260701.log
 - 2026-07-01 预览链接 pointerup 单测日志：logs/unit-tests/preview-link-pointerup-20260701.log
+- 2026-07-01 P1 修复复测截图：screenshots/32-installed-p1-fix-retest/
+- 2026-07-01 P1 修复复测日志：logs/computer-use-real-app/p1-fix-installed-retest-20260701.md、logs/computer-use-real-app/real-complex-pdf-postfix-pdfinfo-20260701.log、logs/computer-use-real-app/real-complex-pdf-postfix-stat-20260701.log
 
 ## 2026-06-30 修复批次状态
 
@@ -193,18 +197,16 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 安装版复测 `PRISM-CU-247` 保留了修复前静默合并失败证据；重新打包替换后 `PRISM-CU-249` 确认冲突弹窗和三个处理入口可见。
 - 已通过 `npm test -- --run src/domains/document/hooks/useExternalFileChangeMonitor.test.tsx src/domains/document/hooks/useAutoSave.test.tsx src/domains/document/store.test.ts`、`npm run build`、`npm run tauri:build:app-smoke` 和替换后的 `PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs`；最新安装版剪贴板复测过程中未再出现自保存误报冲突。
 
-## 最高优先级问题
+## 当前剩余 Fail
 
-1. P0-FILE-001：默认指南文档打开后自带 `ERROR 1`，目录链接 `#文本格式` 缺失 heading。2026-06-30 已重新打包替换安装版，`PRISM-CU-239` 真实 UI 复测确认默认指南无 `ERROR`。
-2. P0-FILE-002：真实 App 通过系统打开 JSON/SQL/TXT 会进入空白白屏窗口。2026-06-30 安装版 smoke 和正式截图复测已覆盖 JSON/SQL/TXT 不白屏，证据见 `PRISM-CU-268/269/270`。
-3. P0-KNOWLEDGE-001：反链面板未显示测试工作区中存在的反链。2026-06-30 安装版真实复测 `PRISM-CU-273` 已确认反链来源、片段和行列号可见。
-4. P0-KNOWLEDGE-002：关系图谱入口在当前文档下禁用/未能打开图谱面板。2026-06-30 安装版真实复测 `PRISM-CU-274` 已确认状态栏图谱入口可点击并打开 3 节点图谱；`PRISM-CU-214` 到 `PRISM-CU-217` 覆盖图谱交互。
-5. P0-STARTUP-003：启动/新窗口没有直接打开默认 Prism 指南，而是显示空正文和“未命名”。2026-06-30 安装版真实复测 `PRISM-CU-271/272` 已覆盖冷启动和 `File > 新建窗口` 直接打开默认指南。
-6. P0-FILE-003：dirty 状态下外部修改未弹出冲突处理入口，直接静默合并为已保存。2026-06-30 已重新打包替换安装版，`PRISM-CU-249` 真实 UI 复测确认冲突弹窗和处理入口可见。
-7. P0-DIAGNOSTICS-002：Typography 排版诊断入口未渲染，用户无法打开排版提示面板。2026-06-30 安装版真实复测 `PRISM-CU-250/251` 确认入口可见且面板可打开。
-8. P0-EDITOR-004：真实编辑区复制/粘贴链路未把选区写入系统剪贴板，阻塞多格式复制验收。2026-06-30 已重新打包替换安装版，`PRISM-CU-252/253/254` 确认复制、粘贴、剪切均与系统剪贴板和磁盘保存一致。
-9. P0-EDITOR-005：图片剪贴板粘贴未进入资产管线，无法从剪贴板直接插入图片。2026-06-30 已重新打包替换安装版，`PRISM-CU-255` 确认系统 PNG 剪贴板粘贴会插入 Markdown 图片语法，并在当前文档目录生成 assets 图片文件。
-10. P1-MENU-002：原生 macOS File 菜单缺少 Prism 核心文件入口。2026-06-30 安装版真实复测 `PRISM-CU-260` 确认 File 菜单已显示新建、打开、保存、另存为等核心入口。
+1. `PRISM-FF-091 / P1-MENU-002`：菜单打开已有文档时新窗口策略仍需按最新产品口径复核。
+2. `PRISM-FF-110 / P1-EDITOR-006`：Selection callout 历史 Fail 仍需同步或补充最终安装版证据。
+3. `PRISM-FF-136 / P1-I18N-001`：三语 i18n 完整性仍需专项核对。
+4. `PRISM-FF-140 / P1-WINDOW-001`：窗口最小化/全屏/置顶仍需按 manifest 当前证据闭环。
+5. `PRISM-FF-141 / P1-WINDOW-002`：macOS close/hide/reopen 仍需按 manifest 当前证据闭环。
+6. `PRISM-FF-142 / P1-PRINT-001`：打印入口仍待修复或重新验证。
+7. `PRISM-FF-143 / P1-HELP-002`：迁移帮助外链仍指向不可用页面。
+8. `PRISM-FF-166 / P1-SETTINGS-002`：无障碍基础仍待补测。
 
 ## 本轮新增有效截图覆盖
 
