@@ -1,7 +1,7 @@
 import type { I18nKey } from '../domains/i18n';
 
 export const PRISM_MIGRATION_GUIDE_URL =
-  'https://github.com/AlexPlum405/Prism/blob/main/docs/help/prism-migration-guide.md';
+  'https://github.com/AlexPlum405/Prism/blob/codex/prism-full-optimization/docs/help/prism-migration-guide.md';
 
 export const PRISM_BRAND_PILLARS = [
   {

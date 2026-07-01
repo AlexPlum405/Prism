@@ -51,6 +51,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-01 复验 `PRISM-FF-095/104/125`：重新执行 `npm run tauri:build:app-smoke`，备份并替换 `/Applications/Prism.app`，再用真实安装版完成文件属性、打开主题目录和复杂 PDF 分页避切复测。`文件 > 文件属性` 已弹出名称/路径/类型/大小/时间信息；设置 > 外观 > 打开主题目录已显示成功 toast 且 Finder 窗口包含 `themes`；真实覆盖导出的 `real-complex-diagrams-export.pdf` 为 2 页 A4，第 1 页 Mermaid/PlantUML 完整，第 2 页 Markmap 标题与图表同页，表格和数学公式未被分页切半。三项均改为 Pass。证据见 `screenshots/32-installed-p1-fix-retest/` 和 `logs/computer-use-real-app/p1-fix-installed-retest-20260701.md`。
 
+2026-07-01 闭环 `PRISM-FF-142/143`：修复打印快捷键和帮助迁移指南外链。`Cmd+P` 现在保留给系统打印，快速打开迁移到 `Cmd+Shift+P`，默认 Tauri capability 增加 `core:webview:allow-print`；真实安装版复测确认文件菜单显示 `打印 ⌘P`，按 `Cmd+P` 打开 macOS 系统打印 sheet，截图后已取消未打印。迁移指南短期改指当前已存在的 `codex/prism-full-optimization` 分支页面，Chrome 标题不再是 File not found。两项均改为 Pass。证据见 `screenshots/33-installed-print-help-retest/` 和 `logs/computer-use-real-app/print-help-installed-retest-20260701.md`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近，但 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画。`PRISM-FF-116` 标记为 Blocked，后续需用录屏或可控动画时长专项复测。
@@ -106,24 +108,24 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：130
-- Fail：8
+- Pass：132
+- Fail：6
 - Blocked：30
 - Not Run：0
 - P0 执行：Pass 87 / Fail 0 / Blocked 1 / Not Run 0
-- P1 执行：Pass 36 / Fail 7 / Blocked 13 / Not Run 0
+- P1 执行：Pass 38 / Fail 5 / Blocked 13 / Not Run 0
 - P2 执行：Pass 5 / Fail 0 / Blocked 11 / Not Run 0
 - P3 执行：Pass 2 / Fail 1 / Blocked 5 / Not Run 0
-- 当前截图文件总数：425
-- Manifest 真实 Computer Use 截图引用：241
+- 当前截图文件总数：428
+- Manifest 真实 Computer Use 截图引用：240
 - Pipeline/环境证据截图：9
-- 真实 Computer Use/安装版 UI 截图：241（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`）
+- 真实 Computer Use/安装版 UI 截图：240（`screenshots/15-computer-use-real-app/`、`screenshots/17-installed-anchor-search-smoke/`、`screenshots/18-installed-conflict-smoke/`、`screenshots/19-installed-typography-smoke/`、`screenshots/20-installed-editor-clipboard-smoke/`、`screenshots/22-installed-image-paste-smoke/`、`screenshots/23-installed-selection-context-smoke/`、`screenshots/24-installed-workspace-search-menu-smoke/`、`screenshots/25-installed-window-lifecycle-smoke/`、`screenshots/26-installed-file-types-smoke/`、`screenshots/27-installed-startup-guide-smoke/`、`screenshots/28-installed-backlinks-graph-smoke/`、`screenshots/29-installed-frontmatter-export-toc-smoke/`、`screenshots/30-installed-preview-link-click-single/`、`screenshots/32-installed-p1-fix-retest/`、`screenshots/33-installed-print-help-retest/`）
 - 单元/集成测试批次：10
 - 单元/集成测试文件通过：65
 - 单元/集成测试断言通过：760
 - 单元/集成测试失败执行：2（同一条失败在批量与单独复跑中各出现一次）
 - 唯一单元失败：1
-- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期已重新打包后安装版真实复测通过，历史失败证据保留为 pre-fix 记录
+- 原生 macOS app 窗口验证：当前恢复可测；最小化、缩放、close/reopen 生命周期仍按 `PRISM-FF-140/141` 保持 Fail，待后续按 manifest 当前证据闭环
 - 浏览器 mock 补充截图：已执行，用于保留前端视觉证据和宣传素材初筛
 - Windows/Linux 真机验证：未执行，保持 Blocked，不伪造结果
 
@@ -162,6 +164,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 2026-07-01 预览链接 pointerup 单测日志：logs/unit-tests/preview-link-pointerup-20260701.log
 - 2026-07-01 P1 修复复测截图：screenshots/32-installed-p1-fix-retest/
 - 2026-07-01 P1 修复复测日志：logs/computer-use-real-app/p1-fix-installed-retest-20260701.md、logs/computer-use-real-app/real-complex-pdf-postfix-pdfinfo-20260701.log、logs/computer-use-real-app/real-complex-pdf-postfix-stat-20260701.log
+- 2026-07-01 打印与帮助外链修复后安装版复测截图：screenshots/33-installed-print-help-retest/
+- 2026-07-01 打印与帮助外链修复后安装版复测日志：logs/computer-use-real-app/print-help-installed-retest-20260701.md
 
 ## 2026-06-30 修复批次状态
 
@@ -204,9 +208,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 3. `PRISM-FF-136 / P1-I18N-001`：三语 i18n 完整性仍需专项核对。
 4. `PRISM-FF-140 / P1-WINDOW-001`：窗口最小化/全屏/置顶仍需按 manifest 当前证据闭环。
 5. `PRISM-FF-141 / P1-WINDOW-002`：macOS close/hide/reopen 仍需按 manifest 当前证据闭环。
-6. `PRISM-FF-142 / P1-PRINT-001`：打印入口仍待修复或重新验证。
-7. `PRISM-FF-143 / P1-HELP-002`：迁移帮助外链仍指向不可用页面。
-8. `PRISM-FF-166 / P1-SETTINGS-002`：无障碍基础仍待补测。
+6. `PRISM-FF-166 / P1-SETTINGS-002`：无障碍基础仍待补测。
 
 ## 本轮新增有效截图覆盖
 
@@ -216,6 +218,7 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - 知识与诊断：属性、链接、反链、图谱失败态、当前文档关系图谱交互、大纲、broken-links 错误态。
 - 设置与主题：通用、写作、外观、字体、文件、导出、引用/Pandoc、MiaoYan/Inkstone/Slate/Mono/Nocturne/Carbon。
 - 2026-06-29/30 补充截图：CodeMirror 编辑态主题、Callout picker、Markdown 列表编辑、渲染错误 action、toast、导出失败诊断 UI、真实 App DevTools、打印入口缺失、帮助 Markdown 参考/GitHub/反馈外链、迁移帮助 404、帮助/更新入口、reduced motion。
+- 2026-07-01 修复后补充截图：文件菜单 `打印 ⌘P`、macOS 系统打印 sheet、迁移指南 GitHub 可读页面。
 - 2026-06-29 真实 Computer Use 补测：编辑/预览/分栏切换、Quick Open、全文搜索、预览态触发替换自动切分栏、文档属性、当前文档链接、反向链接、文件树展开、文件/文件夹右键菜单、快捷键、关于、检查更新、预览态任务列表勾选。
 - 2026-06-29 16:50 以后追加真实窗口级截图：PlantUML/Markmap、引用/任务列表/脚注、File/Edit/Insert/Format/Navigation/View/Export/Window/Help 九组菜单、设置六分区、快捷键、关于、检查更新 loading/6 秒后状态、文档属性、当前链接、反链空状态、大纲与大纲搜索、文件树与上下文菜单。
 - 2026-06-29 追加真实响应式与主题截图：1024x768、窄窗口、低高度窗口，以及 `MiaoYan / Inkstone Light / Slate Manual / Mono Lab / Nocturne Dark / Carbon Black` 六个内容主题的真实分栏窗口证据。

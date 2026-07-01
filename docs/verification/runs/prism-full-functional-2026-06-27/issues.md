@@ -1040,6 +1040,8 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-144-print-file-menu-no-print-window.png`
 - 备注：本轮没有点击任何系统打印确认按钮，不会实际打印。
+- 修复进展：2026-07-01 已修复。`Cmd+P` 从 Quick Open 改为系统打印，Quick Open 改为 `Cmd+Shift+P`；文件菜单补 `打印`；默认 Tauri capability 补 `core:webview:allow-print`，避免 `Command plugin:webview|print not allowed by ACL`。
+- 安装版复测：2026-07-01 重新执行 `npm run tauri:build:app-smoke`、替换 `/Applications/Prism.app` 后真实复测通过。窗口内“文件”菜单显示 `打印 ⌘P`；按 `Cmd+P` 出现 macOS 系统打印 sheet，包含 Page 1 of 1、Printer、Presets、Copies、Pages、PDF、Cancel 和禁用的 Print 按钮；截图后点击 Cancel 关闭，未执行打印。证据见 `screenshots/33-installed-print-help-retest/01-file-menu-print-entry.png`、`screenshots/33-installed-print-help-retest/02-native-print-dialog.png` 和 `logs/computer-use-real-app/print-help-installed-retest-20260701.md`。`PRISM-FF-142` 已改为 Pass。
 
 ### P1-HELP-001 检查更新缺少可见最终态
 
@@ -1075,6 +1077,8 @@ Bundle ID：com.prism.editor.v1
 - 截图/证据：
   - `screenshots/15-computer-use-real-app/PRISM-CU-147-help-link-migration-file-not-found-chrome.png`
 - 备注：同一轮复测中 `Markdown 参考`、`GitHub`、`反馈` 分别可打开 Markdown Guide、Prism 仓库和 GitHub Issues。
+- 修复进展：2026-07-01 已修复。迁移指南 URL 短期改为当前已存在的 `codex/prism-full-optimization` 分支文档，避免 `main` 尚未包含该文件时打开 404；后续合并到 `main` 后可再切回 main URL。
+- 安装版复测：2026-07-01 重新打包替换 `/Applications/Prism.app` 后真实复测通过。帮助菜单含 `Prism 迁移帮助`，点击后 Chrome 当前标签 URL 为 `https://github.com/AlexPlum405/Prism/blob/codex/prism-full-optimization/docs/help/prism-migration-guide.md`，标题为 `Prism/docs/help/prism-migration-guide.md at codex/prism-full-optimization · AlexPlum405/Prism`，不再是 File not found。证据见 `screenshots/33-installed-print-help-retest/03-migration-guide-github-page.png` 和 `logs/computer-use-real-app/print-help-installed-retest-20260701.md`。`PRISM-FF-143` 已改为 Pass。
 
 ## macOS 平台集成
 

@@ -337,7 +337,7 @@ describe('command registry', () => {
     await runCommand('migrationGuide', createCommandContext());
 
     expect(openerMock.openUrl).toHaveBeenCalledWith(
-      'https://github.com/AlexPlum405/Prism/blob/main/docs/help/prism-migration-guide.md',
+      'https://github.com/AlexPlum405/Prism/blob/codex/prism-full-optimization/docs/help/prism-migration-guide.md',
     );
   });
 
@@ -494,8 +494,8 @@ describe('command registry', () => {
     await runCommand('quickOpen', context);
 
     expect(openQuickOpen).toHaveBeenCalledTimes(1);
-    expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyP', mod: true }]);
-    expect(commandRegistryById.get('print')?.shortcuts).toBeUndefined();
+    expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyP', mod: true, shift: true }]);
+    expect(commandRegistryById.get('print')?.shortcuts).toEqual([{ code: 'KeyP', mod: true }]);
   });
 
   it('opens workspace full-text search with Cmd+Shift+F when a workspace is available', async () => {

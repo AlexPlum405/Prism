@@ -107,6 +107,8 @@ const menuModel: MenuModel = {
     { command: 'openCurrentLocation' },
     { command: 'fileProperties' },
     { type: 'separator' },
+    { command: 'print' },
+    { type: 'separator' },
     { command: 'preferences' },
     { type: 'separator' },
     { command: 'closeDocument' },

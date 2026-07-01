@@ -316,7 +316,7 @@ async function prepareFixtures() {
     '[missing](./missing.md)',
     '',
   ].join('\n'), 'utf8');
-  await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+P、编辑和保存。\n', 'utf8');
+  await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+Shift+P、编辑和保存。\n', 'utf8');
   await fs.writeFile(startupMarkdownFile, '# 中文 路径\n\n用于验证 .markdown、中文和空格路径启动。\n', 'utf8');
   await fs.writeFile(jsonFile, JSON.stringify({ prism: true, smoke: 'json launch' }, null, 2), 'utf8');
   await fs.writeFile(sqlFile, 'select id, title from notes where archived = false;\n', 'utf8');
@@ -686,10 +686,10 @@ async function runSmoke() {
     const quickOpenBefore = await capture('04-quick-open-before', bounds);
     clickRelative(bounds, 315, 83);
     await delay(150);
-    key('key code 35 using command down');
+    key('key code 35 using {command down, shift down}');
     await delay(1000);
     const quickOpenAfter = await capture('05-quick-open-opened', bounds);
-    const quickOpenDiff = await assertVisibleChange('Cmd+P quick open', quickOpenBefore, quickOpenAfter, 0.025);
+    const quickOpenDiff = await assertVisibleChange('Cmd+Shift+P quick open', quickOpenBefore, quickOpenAfter, 0.025);
     key(`key code 125
     delay 0.05
     key code 125
@@ -704,7 +704,7 @@ async function runSmoke() {
     await delay(900);
     await capture('05a-quick-open-target-opened', bounds);
     const targetConfig = await waitForLastSession(targetFile);
-    record('Cmd+P opens workspace target file', 'pass', {
+    record('Cmd+Shift+P opens workspace target file', 'pass', {
       diff: quickOpenDiff,
       lastSession: targetConfig.lastSession,
     });

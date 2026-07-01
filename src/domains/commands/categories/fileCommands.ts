@@ -390,6 +390,7 @@ export function createFileCommands(): CommandDefinition[] {
       id: 'print',
       category: 'file',
       keywords: ['print'],
+      shortcuts: [{ code: 'KeyP', mod: true }],
       run: () => window.print(),
     },
     {

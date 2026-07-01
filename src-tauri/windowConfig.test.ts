@@ -26,3 +26,11 @@ describe('macOS window hit testing configuration', () => {
     }
   });
 });
+
+describe('default Tauri capability', () => {
+  it('allows the document webview to open the native print dialog', () => {
+    const capability = JSON.parse(readFileSync('src-tauri/capabilities/default.json', 'utf8'));
+
+    expect(capability.permissions).toContain('core:webview:allow-print');
+  });
+});

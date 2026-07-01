@@ -4827,6 +4827,78 @@
         "logs/unit-tests/url-plantuml-export-20260701.log",
         "logs/plantuml-regression/plantuml-png-regression-20260701.log"
       ]
+    },
+    {
+      "id": "PRISM-CU-302",
+      "date": "2026-07-01",
+      "area": "打印",
+      "feature": "文件菜单打印入口",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-complex-diagrams-export.md",
+      "steps": [
+        "替换 /Applications/Prism.app 为修复后构建产物",
+        "打开 real-complex-diagrams-export.md",
+        "点击窗口内“文件”菜单",
+        "读取菜单项并截图"
+      ],
+      "expected": "文件菜单暴露“打印”，并显示 Cmd+P 快捷键。",
+      "actual": "文件菜单包含“打印 ⌘P”，入口位于文件属性之后、设置之前。",
+      "status": "Pass",
+      "screenshot": "screenshots/33-installed-print-help-retest/01-file-menu-print-entry.png",
+      "issueRef": "P1-PRINT-001",
+      "notes": "真实安装版 post-fix 复测；菜单 AX 树显示打印入口。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/print-help-installed-retest-20260701.md"
+      ]
+    },
+    {
+      "id": "PRISM-CU-303",
+      "date": "2026-07-01",
+      "area": "打印",
+      "feature": "Cmd+P 打开系统打印面板",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-complex-diagrams-export.md",
+      "steps": [
+        "确认 Prism 前台打开 Markdown 文档",
+        "按 Cmd+P",
+        "确认系统打印 sheet 出现",
+        "截图后点击 Cancel 关闭，不执行打印"
+      ],
+      "expected": "Cmd+P 调出系统打印面板，不改变文档内容。",
+      "actual": "系统打印 sheet 出现，显示 Page 1 of 1、Printer、Presets、Copies、Pages、PDF、Cancel 和禁用的 Print 按钮；取消后回到文档。",
+      "status": "Pass",
+      "screenshot": "screenshots/33-installed-print-help-retest/02-native-print-dialog.png",
+      "issueRef": "P1-PRINT-001",
+      "notes": "补充 core:webview:allow-print 后复测通过；未点击最终 Print。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/print-help-installed-retest-20260701.md"
+      ]
+    },
+    {
+      "id": "PRISM-CU-304",
+      "date": "2026-07-01",
+      "area": "帮助外链",
+      "feature": "Prism 迁移帮助打开可读 GitHub 页面",
+      "app": "/Applications/Prism.app",
+      "path": "/Users/Alex/AI/project/Prism/docs/verification/runs/prism-full-functional-2026-06-27/fixtures/computer-use-real-app/real-complex-diagrams-export.md",
+      "steps": [
+        "打开 Prism 帮助菜单",
+        "点击 Prism 迁移帮助",
+        "读取 Chrome 当前标签 URL 和标题",
+        "将 Chrome 带到前台截图"
+      ],
+      "expected": "迁移帮助入口打开可读迁移指南，不是 GitHub File not found。",
+      "actual": "Chrome 打开 https://github.com/AlexPlum405/Prism/blob/codex/prism-full-optimization/docs/help/prism-migration-guide.md，页面标题为 Prism/docs/help/prism-migration-guide.md at codex/prism-full-optimization · AlexPlum405/Prism。",
+      "status": "Pass",
+      "screenshot": "screenshots/33-installed-print-help-retest/03-migration-guide-github-page.png",
+      "issueRef": "P1-HELP-002",
+      "notes": "短期指向当前已存在的 codex/prism-full-optimization 分支；合并 main 后可切回 main。",
+      "windowSize": "full-screen capture 2992x1934 pixels",
+      "logEvidence": [
+        "logs/computer-use-real-app/print-help-installed-retest-20260701.md"
+      ]
     }
   ],
   "testCases": [
@@ -8012,14 +8084,15 @@
       "steps": "执行打印",
       "expected": "调出系统打印，不改变文档",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "真实 /Applications/Prism.app 中按 Cmd+P 未调出系统打印面板；检查窗口内“文件”菜单只显示新建文稿、打开文件、打开文件夹、最近打开、保存、另存为、在访达中显示、设置、关闭文稿，未暴露“打印”。",
+      "status": "Pass",
+      "actual": "真实 /Applications/Prism.app post-fix 复测通过：文件菜单显示“打印 ⌘P”；按 Cmd+P 调出系统打印 sheet，截图后点击 Cancel 关闭，未执行打印。",
       "issueRef": "P1-PRINT-001",
-      "notes": "未点击任何系统打印确认按钮；仅验证快捷键和菜单入口。",
+      "notes": "2026-07-01 修复：Cmd+P 从快速打开改为打印；快速打开改 Cmd+Shift+P；默认 Tauri capability 补 core:webview:allow-print。",
       "plannedScreenshot": "screenshots/04-editor/PRISM-FF-142-case-142.png",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-144-print-file-menu-no-print-window.png",
+      "screenshot": "screenshots/33-installed-print-help-retest/02-native-print-dialog.png",
       "screenshots": [
-        "screenshots/15-computer-use-real-app/PRISM-CU-144-print-file-menu-no-print-window.png"
+        "screenshots/33-installed-print-help-retest/01-file-menu-print-entry.png",
+        "screenshots/33-installed-print-help-retest/02-native-print-dialog.png"
       ]
     },
     {
@@ -8032,18 +8105,18 @@
       "steps": "Markdown 参考、迁移指南、GitHub、反馈",
       "expected": "在线打开对应 URL；离线失败不影响 app",
       "automationHint": "手工",
-      "status": "Fail",
-      "actual": "真实 App 帮助外链复测：Markdown 参考打开 markdown-guide Basic Syntax；GitHub 打开 Prism 仓库；反馈打开 Prism Issues；Prism 迁移帮助打开 GitHub File not found。",
+      "status": "Pass",
+      "actual": "真实 /Applications/Prism.app 帮助外链复测通过：Markdown 参考、GitHub、反馈仍可打开；Prism 迁移帮助打开当前分支上的可读迁移指南，不再是 GitHub File not found。",
       "issueRef": "P1-HELP-002",
-      "notes": "不在任何网页中提交内容；迁移帮助链接目标缺失导致该综合用例失败。",
+      "notes": "2026-07-01 短期将迁移指南 URL 指向 codex/prism-full-optimization 分支，避免 main 分支文档尚未合并导致 404。",
       "screenshots": [
         "screenshots/15-computer-use-real-app/PRISM-CU-146-help-link-markdown-reference-chrome.png",
-        "screenshots/15-computer-use-real-app/PRISM-CU-147-help-link-migration-file-not-found-chrome.png",
+        "screenshots/33-installed-print-help-retest/03-migration-guide-github-page.png",
         "screenshots/15-computer-use-real-app/PRISM-CU-148-help-link-github-repo-chrome.png",
         "screenshots/15-computer-use-real-app/PRISM-CU-149-help-link-feedback-issues-chrome.png"
       ],
       "plannedScreenshot": "screenshots/11-menu-help/PRISM-FF-143-case-143.png",
-      "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-147-help-link-migration-file-not-found-chrome.png"
+      "screenshot": "screenshots/33-installed-print-help-retest/03-migration-guide-github-page.png"
     },
     {
       "id": "PRISM-FF-144",
@@ -8496,17 +8569,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-07-01T11:25:00+08:00",
+  "generatedAt": "2026-07-01T12:05:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 130,
-    "Fail": 8,
+    "Pass": 132,
+    "Fail": 6,
     "Blocked": 30,
     "Not Run": 0,
-    "screenshotFiles": 425,
-    "manifestScreenshots": 999,
-    "uniqueManifestScreenshots": 446,
-    "computerUseRealAppEvidence": 241
+    "screenshotFiles": 428,
+    "manifestScreenshots": 1002,
+    "uniqueManifestScreenshots": 449,
+    "computerUseRealAppEvidence": 240
   },
   "execution": {
     "mode": "真实 /Applications/Prism.app + Computer Use 补测 + Playwright browser mock 补充",
@@ -9855,6 +9928,18 @@
     {
       "file": "screenshots/31-plantuml-regression/PRISM-CU-301-installed-plantuml-prism-label-pass.png",
       "testCaseId": "PRISM-CU-301"
+    },
+    {
+      "file": "screenshots/33-installed-print-help-retest/01-file-menu-print-entry.png",
+      "testCaseId": "PRISM-CU-302"
+    },
+    {
+      "file": "screenshots/33-installed-print-help-retest/02-native-print-dialog.png",
+      "testCaseId": "PRISM-CU-303"
+    },
+    {
+      "file": "screenshots/33-installed-print-help-retest/03-migration-guide-github-page.png",
+      "testCaseId": "PRISM-CU-304"
     }
   ],
   "unitTestRuns": [
