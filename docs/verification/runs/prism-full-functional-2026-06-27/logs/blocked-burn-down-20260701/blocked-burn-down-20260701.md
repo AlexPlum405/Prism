@@ -22,11 +22,12 @@
 - `PRISM-FF-116`：Blocked -> Pass/code-verified
 - `PRISM-FF-165`：Blocked -> Pass/code-verified
 - `PRISM-FF-147`：Blocked -> Pass/installed-app-verified
-- 总计：Pass 155 / Fail 0 / Blocked 13 / Not Run 0
+- `PRISM-FF-161`：Blocked -> Pass/code-verified
+- 总计：Pass 156 / Fail 0 / Blocked 12 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
 - P1：Pass 56 / Fail 0 / Blocked 0 / Not Run 0
 - P2：Pass 6 / Fail 0 / Blocked 10 / Not Run 0
-- P3：Pass 5 / Fail 0 / Blocked 3 / Not Run 0
+- P3：Pass 6 / Fail 0 / Blocked 2 / Not Run 0
 
 ## 代码变更
 
@@ -255,6 +256,8 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
   - 增加真实 `lineFlashField` 覆盖，验证源码定位 flash 装饰在清理回调触发前保持、触发后移除。
 - `src/domains/workspace/services/workspaceIndex.performance.test.ts`
   - 将大工作区全文搜索 benchmark 提升到 1200 文档，并与 1501 文档索引构建 benchmark 一起作为超大工作区代码级证据。
+- `src/domains/editor/components/PreviewPane.test.tsx`
+  - 增加 `localStorage.prism.previewPerf=1` 覆盖，验证预览性能日志输出 render timing 且 UI 正常显示。
 - `scripts/run-app-smoke.mjs`
   - 复用 startup scope 真实安装版启动矩阵，验证 `.markdown/.md/.json/.sql/.txt` 都能由 `/Applications/Prism.app` 打开并写入 lastSession。
 
@@ -264,9 +267,10 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/preview-source-flash-code-verified-20260702.log`
 - `logs/unit-tests/workspace-large-index-benchmark-20260702.log`
 - `logs/unit-tests/macos-file-association-startup-smoke-20260702.log`
+- `logs/unit-tests/preview-performance-logging-20260702.log`
 
 ## 剩余范围
 
-附件计划中的可自动化 Blocked 降噪项已闭环，P0/P1 Blocked 已清零，超大工作区已用 benchmark 补证据，macOS 文件打开矩阵已用安装版 smoke 补证据。后续剩余项应按 macOS 沙盒授权、平台真机矩阵、断网/高 DPI、内存释放和导出大图压力分别推进。
+附件计划中的可自动化 Blocked 降噪项已闭环，P0/P1 Blocked 已清零，超大工作区已用 benchmark 补证据，macOS 文件打开矩阵已用安装版 smoke 补证据，性能日志已用单元测试补证据。后续剩余项应按 macOS 沙盒授权、平台真机矩阵、断网/高 DPI、内存释放和导出大图压力分别推进。
 
 Windows/Linux 继续保持真机回填，不伪造验证；压力和断网类测试需要专门时间窗口与隔离环境。

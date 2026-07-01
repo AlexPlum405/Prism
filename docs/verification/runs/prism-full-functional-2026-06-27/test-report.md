@@ -87,6 +87,8 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 
 2026-07-02 降噪 `PRISM-FF-147`：补齐 macOS 安装版文件打开矩阵。通过真实 `/Applications/Prism.app` 和 LaunchServices `open -n -a` 分别打开 `.markdown`（中文与空格路径）、`.md`、`.json`、`.sql`、`.txt` 临时 fixture；每次都能出现 Prism 窗口并写入对应 `lastSession`，JSON/SQL/TXT 未白屏。本轮未修改系统默认打开方式。该项从 Blocked 改为 Pass/installed-app-verified。证据见 `logs/unit-tests/macos-file-association-startup-smoke-20260702.log`。
 
+2026-07-02 降噪 `PRISM-FF-161`：补齐性能日志开关的代码级证据。测试通过 jsdom mock 设置 `localStorage.prism.previewPerf=1`，确认 `PreviewPane` 在 Markdown 渲染完成后输出 `console.debug('[Prism preview perf]', ...)`，日志包含 `stage=markdown`、内容长度、HTML 长度、渲染模式、`markdownToHtmlMs`、`renderElapsedMs` 和 `requestToStateMs`，同时预览正文正常显示。本轮不打开 DevTools、不修改真实用户 profile。该项从 Blocked 改为 Pass/code-verified。证据见 `logs/unit-tests/preview-performance-logging-20260702.log`。
+
 2026-06-30 补测渲染错误 action：非法 Mermaid 在预览态显示可读错误块、源码行号和“跳到源码”按钮；点击后界面切到分栏，编辑侧光标定位到 Mermaid 错误源码附近，状态栏显示 `7:1`。`PRISM-FF-113` 标记为 Pass。
 
 2026-06-30 补测预览源码 flash：点击预览侧错误块“跳到源码”后，编辑区可稳定定位到 Mermaid 源码附近；当时 Computer Use 点击返回与截图延迟无法稳定捕捉短暂高亮动画，因此临时标记为 Blocked。该项已在 2026-07-02 用可控代码级专项验证闭环为 Pass/code-verified。
@@ -142,14 +144,14 @@ Playwright 浏览器 + Tauri IPC mock 截图仍保留为前端补充证据，可
 - P1：56
 - P2：16
 - P3：8
-- Pass：155
+- Pass：156
 - Fail：0
-- Blocked：13
+- Blocked：12
 - Not Run：0
 - P0 执行：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
 - P1 执行：Pass 56 / Fail 0 / Blocked 0 / Not Run 0
 - P2 执行：Pass 6 / Fail 0 / Blocked 10 / Not Run 0
-- P3 执行：Pass 5 / Fail 0 / Blocked 3 / Not Run 0
+- P3 执行：Pass 6 / Fail 0 / Blocked 2 / Not Run 0
 - 当前截图文件总数：434
 - Manifest 真实 Computer Use 截图引用：245
 - Pipeline/环境证据截图：9

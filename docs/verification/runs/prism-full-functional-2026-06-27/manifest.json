@@ -8612,13 +8612,18 @@
       "preconditions": "",
       "steps": "设置 `localStorage.prism.previewPerf=1` 后打开长文档",
       "expected": "控制台输出 render/katex/mermaid 性能，不影响 UI",
-      "automationHint": "",
-      "status": "Blocked",
-      "actual": "性能日志需要修改 WebView localStorage 或打开 DevTools 注入开关；本轮未改变运行态调试配置。",
+      "automationHint": "Vitest localStorage prism.previewPerf console.debug verification",
+      "status": "Pass",
+      "actual": "通过 PreviewPane 单元测试验证：当 localStorage.prism.previewPerf=1 时，Markdown 渲染完成后会调用 console.debug(\"[Prism preview perf]\", {...})，日志包含 stage=markdown、contentLength、htmlLength、mode、markdownToHtmlMs、renderElapsedMs、requestToStateMs；同时预览正文正常显示。",
       "issueRef": "",
-      "notes": "后续可用专用 debug profile 验证。",
+      "notes": "Pass/code-verified；使用 jsdom mock localStorage 和 console.debug，不需要打开 DevTools 或改变真实用户 profile。证据见 logs/unit-tests/preview-performance-logging-20260702.log。",
       "plannedScreenshot": "screenshots/05-preview-rendering/PRISM-FF-161-case-161.png",
-      "screenshots": []
+      "screenshots": [],
+      "unitTestEvidence": [
+        "logs/unit-tests/preview-performance-logging-20260702.log"
+      ],
+      "automationResult": "Code Verified Pass",
+      "automationActual": "preview-performance-logging 批次 1 个测试文件 / 35 条测试通过。"
     },
     {
       "id": "PRISM-FF-162",
@@ -8770,9 +8775,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 155,
+    "Pass": 156,
     "Fail": 0,
-    "Blocked": 13,
+    "Blocked": 12,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,

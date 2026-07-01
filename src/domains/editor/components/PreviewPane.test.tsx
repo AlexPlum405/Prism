@@ -250,6 +250,39 @@ describe('PreviewPane theme switching', () => {
     expect(markdownToHtml).toHaveBeenLastCalledWith('# Third', { frontMatterMode: 'metadata' });
   });
 
+  it('logs markdown preview render timings when the preview perf flag is enabled', async () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    const originalLocalStorage = window.localStorage;
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: vi.fn((key: string) => (key === 'prism.previewPerf' ? '1' : null)),
+      },
+    });
+
+    try {
+      render(<PreviewPane content="# Perf" />);
+      await flushPreviewRender();
+
+      expect(debug).toHaveBeenCalledWith('[Prism preview perf]', expect.objectContaining({
+        contentLength: '# Perf'.length,
+        htmlLength: '<p>Hello preview</p>'.length,
+        markdownToHtmlMs: 1,
+        mode: 'main',
+        renderElapsedMs: 1,
+        requestToStateMs: expect.any(Number),
+        stage: 'markdown',
+      }));
+      expect(screen.getByText('Hello preview')).toBeInTheDocument();
+    } finally {
+      Object.defineProperty(window, 'localStorage', {
+        configurable: true,
+        value: originalLocalStorage,
+      });
+      debug.mockRestore();
+    }
+  });
+
   it('uses size-aware preview render scheduling for medium and large documents', () => {
     expect(__previewPaneTesting.getPreviewRenderDebounceMs(8 * 1024)).toBe(120);
     expect(__previewPaneTesting.getPreviewRenderDebounceMs(80 * 1024)).toBe(220);
