@@ -47,6 +47,7 @@ import { appDataDir } from '../../platform/tauri/path';
 import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 import { isNativeCommandUnavailableError } from '../../platform/tauri/result';
 import { readSettingsFileNative, writeSettingsFileNative } from '../../platform/tauri/settingsStorage';
+import { emitAppEvent } from '../../platform/events/appEvents';
 import { joinPath } from '../workspace/services/path';
 
 const CONFIG_FILENAME = 'config.json';
@@ -140,6 +141,21 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   if (typeof error === 'string' && error.trim()) return error;
   return t('settings.pandocDetectionFailed');
+}
+
+function getPersistenceErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
+  return t('common.unknownEventError');
+}
+
+function showSettingsSaveFailed(error: unknown) {
+  if (typeof window === 'undefined') return;
+  emitAppEvent('toast.show', {
+    tone: 'error',
+    title: t('settings.saveFailed'),
+    message: getPersistenceErrorMessage(error),
+  });
 }
 
 async function registerLoadedCustomFonts(customFonts: CustomFont[]) {
@@ -731,6 +747,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       await writeSettingsFile(data);
     } catch (err) {
       console.error('[Settings] Save failed:', err);
+      showSettingsSaveFailed(err);
     }
   },
 }));

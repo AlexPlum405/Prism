@@ -9,9 +9,10 @@
 - `PRISM-FF-026`：Blocked -> Pass
 - `PRISM-FF-092`：Blocked -> Pass/code-verified
 - `PRISM-FF-094`：Blocked -> Pass/code-verified
-- 总计：Pass 142 / Fail 0 / Blocked 26 / Not Run 0
+- `PRISM-FF-135`：Blocked -> Pass/code-verified
+- 总计：Pass 143 / Fail 0 / Blocked 25 / Not Run 0
 - P0：Pass 88 / Fail 0 / Blocked 0 / Not Run 0
-- P1：Pass 46 / Fail 0 / Blocked 10 / Not Run 0
+- P1：Pass 47 / Fail 0 / Blocked 9 / Not Run 0
 
 ## 代码变更
 
@@ -25,6 +26,10 @@
   - 预览态 `copyHtml` 使用 HTML fallback。
 - `src/domains/editor/components/useEditorTableModel.ts`
   - 表格 HTML 复制使用 HTML fallback。
+- `src/domains/settings/store.ts`
+  - 设置保存失败时发出全局 error toast，并保留错误原因；异常不继续向上抛出，避免设置 UI 崩溃。
+- `src/domains/i18n/resources.ts`
+  - 补充设置保存失败的中英日文案。
 
 ## 真实安装版证据
 
@@ -74,6 +79,7 @@ html-has-table: true
 npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
 npm test -- --run src/lib/fileActions.test.ts src/lib/openDocumentFlow.test.ts src/app/useAppFileActionsModel.test.tsx src/domains/document/components/DirtyDocumentSwitchModal.test.tsx
 npm test -- --run src/domains/workspace/components/OpenFolderButton.test.tsx src/domains/commands/categories/workspaceCommands.test.ts src/domains/commands/registry.test.ts
+npm test -- --run src/domains/settings/pathPersistence.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts src/domains/settings/normalize.test.ts
 npm run build
 npm run tauri:build:app-smoke
 PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
@@ -84,8 +90,9 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - Vitest：4 个测试文件 / 53 条测试通过。
 - Dirty guard Vitest：4 个测试文件 / 32 条测试通过。
 - Folder authorization Vitest：3 个测试文件 / 41 条测试通过。
+- Settings persistence failure Vitest：4 个测试文件 / 35 条测试通过。
 - Build：通过。
-- App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json` 与 `logs/app-smoke-folder-authorization-failure-20260702/report.json`。
+- App smoke：12 个步骤全部 pass，报告见 `logs/app-smoke-blocked-burn-down-20260701/report.json`、`logs/app-smoke-folder-authorization-failure-20260702/report.json` 与 `logs/app-smoke-settings-persistence-failure-20260702/report.json`。
 
 ## PRISM-FF-092 Dirty Guard
 
@@ -121,11 +128,27 @@ PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
 - `logs/unit-tests/folder-authorization-failure-20260702.log`
 - `logs/app-smoke-folder-authorization-failure-20260702/report.json`
 
+## PRISM-FF-135 Settings Persistence Failure
+
+本轮不修改真实 app data 权限，不污染用户配置；通过 mock native `settings_write_failed` 覆盖配置写入失败路径。
+
+修复：
+
+- `saveSettings` 捕获设置持久化异常后发出全局 error toast。
+- toast 标题使用本地化的设置保存失败文案，正文保留 native 错误原因。
+- 异常不向上抛出，设置中心和调用方不会崩溃。
+- 非 native-unavailable 的真实写入失败不会误走 legacy `writeTextFile` fallback。
+- 内存中的设置变更保留，用户可继续操作并在权限恢复后再次保存。
+
+证据：
+
+- `logs/unit-tests/settings-persistence-failure-20260702.log`
+- `logs/app-smoke-settings-persistence-failure-20260702/report.json`
+
 ## 剩余范围
 
 下一阶段按附件计划进入可自动化 Blocked 降噪，优先：
 
-- `PRISM-FF-135` 设置持久化错误
 - `PRISM-FF-138` Error Boundary
 - `PRISM-FF-162` Worker 降级
 - `PRISM-FF-118` 索引任务取消

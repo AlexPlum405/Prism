@@ -1,0 +1,13 @@
+
+> prism@1.4.1 test
+> vitest --run src/domains/settings/pathPersistence.test.ts src/components/shell/SettingsModal.test.tsx src/domains/settings/citationSettings.test.ts src/domains/settings/normalize.test.ts
+
+
+ RUN  v4.1.5 /Users/Alex/AI/project/Prism
+
+
+ Test Files  4 passed (4)
+      Tests  35 passed (35)
+   Start at  01:25:13
+   Duration  1.20s (transform 544ms, setup 162ms, import 696ms, tests 512ms, environment 1.34s)
+

@@ -8102,13 +8102,14 @@
       "preconditions": "模拟 app data 不可写",
       "steps": "修改设置",
       "expected": "错误可见，不导致 UI 崩溃",
-      "automationHint": "手工",
-      "status": "Blocked",
-      "actual": "设置持久化错误需要制造不可写配置目录或 I/O 失败；本轮不改系统权限，未执行。",
+      "automationHint": "Vitest mock native settings_write_failed",
+      "status": "Pass",
+      "actual": "通过 mock native settings_write_failed 模拟配置写入失败：saveSettings 不抛出、不导致 UI 崩溃，内存中的设置变更保留；失败不会继续误走 legacy writeTextFile fallback，并发出全局 error toast，title 为 Settings save failed，message 为 permission denied。",
       "issueRef": "",
-      "notes": "需要测试钩子或临时 app data dir。",
+      "notes": "Pass/code-verified；未修改真实 app data 目录权限，避免污染系统授权或用户配置。证据见 logs/unit-tests/settings-persistence-failure-20260702.log；构建与 app smoke 见 logs/app-smoke-settings-persistence-failure-20260702/report.json。",
       "plannedScreenshot": "screenshots/10-settings-themes/PRISM-FF-135-case-135.png",
-      "screenshots": []
+      "screenshots": [],
+      "automationResult": "Code Verified Pass"
     },
     {
       "id": "PRISM-FF-136",
@@ -8745,9 +8746,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 142,
+    "Pass": 143,
     "Fail": 0,
-    "Blocked": 26,
+    "Blocked": 25,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,

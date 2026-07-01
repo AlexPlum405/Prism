@@ -4,6 +4,9 @@ import { appDataDir } from '@tauri-apps/api/path';
 import { exists, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { __fontServiceTesting } from './fontService';
 import { __settingsStoreTesting, useSettingsStore } from './store';
+import { DEFAULT_SETTINGS } from './types';
+
+const emitAppEventMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@tauri-apps/api/path', () => ({
   appDataDir: vi.fn(),
@@ -24,9 +27,18 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   writeTextFile: vi.fn(),
 }));
 
+vi.mock('../../platform/events/appEvents', () => ({
+  emitAppEvent: emitAppEventMock,
+}));
+
 describe('settings app data paths', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      themeRegistry: [],
+      themeRegistryVersion: 0,
+    });
   });
 
   it('keeps config.json inside appData when appDataDir has no trailing slash', async () => {
@@ -80,5 +92,31 @@ describe('settings app data paths', () => {
       '/Users/Alex/Library/Application Support/com.prism.editor.v1/config.json',
       expect.stringContaining('legacy.md'),
     );
+  });
+
+  it('surfaces settings write failures without crashing or falling through to the legacy writer', async () => {
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(async (command: string) => {
+      if (command === 'write_settings_file') {
+        throw {
+          code: 'settings_write_failed',
+          message: 'permission denied',
+          stage: 'settings_store',
+          path: '/Users/Alex/Library/Application Support/com.prism.editor.v1/config.json',
+        };
+      }
+      return null;
+    });
+
+    useSettingsStore.setState({ theme: 'dark' });
+
+    await expect(useSettingsStore.getState().saveSettings()).resolves.toBeUndefined();
+
+    expect(useSettingsStore.getState().theme).toBe('dark');
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(emitAppEventMock).toHaveBeenCalledWith('toast.show', {
+      tone: 'error',
+      title: 'Settings save failed',
+      message: 'permission denied',
+    });
   });
 });
