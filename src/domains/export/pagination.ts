@@ -26,6 +26,8 @@ export const EXPORT_ATOMIC_BLOCK_SELECTOR = [
   'table',
   'pre',
   '.mermaid-placeholder',
+  '.markmap-placeholder',
+  '.plantuml-placeholder',
   '.katex-display',
   '.prism-export-toc',
   '.prism-html-block',
@@ -47,7 +49,7 @@ function isStyledVisualBlock(element: Element) {
 }
 
 function isScalableAtomicBlock(element: HTMLElement) {
-  return element.matches('img, svg, canvas, figure, .mermaid-placeholder, .katex-display, .prism-html-block, [data-prism-export-atomic="true"]')
+  return element.matches('img, svg, canvas, figure, .mermaid-placeholder, .markmap-placeholder, .plantuml-placeholder, .katex-display, .prism-html-block, [data-prism-export-atomic="true"]')
     || isStyledVisualBlock(element);
 }
 

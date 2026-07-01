@@ -15,6 +15,17 @@ describe('exportCss', () => {
     expect(css).toContain('.prism-export-page-spacer');
   });
 
+  it('keeps all diagram placeholders inside print atomic rules', async () => {
+    const css = await collectExportCss({ pdfPaper: 'a4', pdfMargin: 'standard' });
+
+    const printRuleStart = css.indexOf('@media print');
+    expect(printRuleStart).toBeGreaterThanOrEqual(0);
+    const printCss = css.slice(printRuleStart);
+    expect(printCss).toContain('.mermaid-placeholder');
+    expect(printCss).toContain('.markmap-placeholder');
+    expect(printCss).toContain('.plantuml-placeholder');
+  });
+
   it('inlines external css urls and leaves safe local urls untouched', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(
       new Blob(['font'], { type: 'font/woff2' }),

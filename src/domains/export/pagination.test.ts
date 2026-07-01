@@ -222,6 +222,105 @@ describe('export pagination', () => {
     }
   });
 
+  it.each([
+    ['Markmap', 'markmap-placeholder'],
+    ['PlantUML', 'plantuml-placeholder'],
+  ])('keeps headings attached to following %s placeholders during pagination', async (_label, placeholderClass) => {
+    const root = document.createElement('div');
+    const heading = document.createElement('h2');
+    const block = document.createElement('div');
+    heading.textContent = `${_label} Mind Map`;
+    block.className = placeholderClass;
+    block.textContent = `${_label} diagram`;
+    root.append(heading, block);
+    document.body.appendChild(root);
+
+    const getBoundingClientRectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingClientRect(this: HTMLElement) {
+        if (this === root) {
+          return {
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: 980,
+            bottom: 300,
+            width: 980,
+            height: 300,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.classList.contains(EXPORT_ATOMIC_GROUP_CLASS)) {
+          const hasSpacer = Boolean(root.querySelector(`.${EXPORT_ATOMIC_SPACER_CLASS}`));
+          const top = hasSpacer ? 100 : 80;
+          return {
+            x: 0,
+            y: top,
+            top,
+            left: 0,
+            right: 640,
+            bottom: top + 60,
+            width: 640,
+            height: 60,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this === heading) {
+          return {
+            x: 0,
+            y: 80,
+            top: 80,
+            left: 0,
+            right: 640,
+            bottom: 100,
+            width: 640,
+            height: 20,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this === block) {
+          return {
+            x: 0,
+            y: 100,
+            top: 100,
+            left: 0,
+            right: 640,
+            bottom: 140,
+            width: 640,
+            height: 40,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+
+    try {
+      await prepareExportAtomicPagination(root, 100);
+
+      const group = root.querySelector<HTMLElement>(`.${EXPORT_ATOMIC_GROUP_CLASS}`);
+      const spacer = root.querySelector<HTMLElement>(`.${EXPORT_ATOMIC_SPACER_CLASS}`);
+      expect(block.classList.contains(EXPORT_ATOMIC_BLOCK_CLASS)).toBe(true);
+      expect(group).toBeTruthy();
+      expect(group?.contains(heading)).toBe(true);
+      expect(group?.contains(block)).toBe(true);
+      expect(spacer).toBeTruthy();
+      expect(spacer?.style.height).toBe('20px');
+      expect(spacer?.nextSibling).toBe(group);
+    } finally {
+      getBoundingClientRectSpy.mockRestore();
+    }
+  });
+
   it('scales very tall atomic blocks below 0.2 instead of letting one image split across pages', async () => {
     const root = document.createElement('div');
     const image = document.createElement('img');
