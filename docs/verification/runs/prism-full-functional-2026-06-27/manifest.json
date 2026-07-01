@@ -8391,11 +8391,11 @@
       "preconditions": "",
       "steps": "首次打开工作区和外部文件",
       "expected": "授权流程出现一次，后续同目录可读写",
-      "automationHint": "",
+      "automationHint": "Requires real macOS sandbox permission reset / first-run authorization flow",
       "status": "Blocked",
-      "actual": "原生 Prism 窗口不可见，无法执行该 macOS 原生集成用例。",
-      "issueRef": "P0-STARTUP-001",
-      "notes": "待原生窗口恢复后复测。",
+      "actual": "真实安装版窗口和文件打开矩阵已恢复可测，但沙盒授权用例需要重置 macOS/Tauri 文件访问授权状态，并观察首次打开工作区/外部文件时的系统授权与后续同目录读写行为；本轮未重置系统权限，不能伪造通过。",
+      "issueRef": "",
+      "notes": "仍 Blocked；需要独立 macOS 权限 profile 或明确的权限重置步骤后复测。",
       "plannedScreenshot": "screenshots/02-files-workspace/PRISM-FF-148-macos.png"
     },
     {
