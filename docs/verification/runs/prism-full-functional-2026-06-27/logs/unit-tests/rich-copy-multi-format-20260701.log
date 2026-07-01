@@ -1,0 +1,21 @@
+# Rich copy multi-format regression - 2026-07-01
+
+Command:
+
+```bash
+npm test -- --run src/domains/editor/runtime/editorCommandAdapter.test.ts src/domains/editor/extensions/richCopy.test.ts src/domains/editor/components/useEditorCommandEventModel.test.tsx src/domains/editor/components/EditorPane.integration.test.tsx
+```
+
+Result:
+
+```text
+Test Files  4 passed (4)
+Tests       53 passed (53)
+```
+
+Coverage:
+
+- 普通编辑区 `copy` 会把 Markdown 源文本写入 `text/plain`，同时写入渲染后的 `text/html`。
+- `copyPlain` 与 `copyMd` 保持纯 Markdown 文本语义。
+- 显式 `copyHtml` 在缺少 rich clipboard API 时回退复制 HTML 源码。
+- 编辑器右键菜单复制命令链路保持可用。
