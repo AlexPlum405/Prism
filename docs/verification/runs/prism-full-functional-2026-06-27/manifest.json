@@ -7642,16 +7642,21 @@
       "preconditions": "分栏模式",
       "steps": "点击预览块定位源码",
       "expected": "编辑区跳转并短暂高亮源码区域",
-      "automationHint": "手工",
+      "automationHint": "Vitest code-verified flash lifecycle + SplitView source jump",
       "screenshot": "screenshots/15-computer-use-real-app/PRISM-CU-199-preview-source-flash-locate-window.png",
-      "status": "Blocked",
-      "actual": "点击预览错误块“跳到源码”后可稳定证明编辑区定位到 Mermaid 源码附近，状态栏为 7:1；但 Computer Use 返回与截图延迟无法稳定捕捉短暂源码高亮动画。",
+      "status": "Pass",
+      "actual": "通过代码级专项验证闭环：SplitView 诊断按钮“跳到源码”会调用编辑器 jumpToLine(9) 完成源码定位；editorScrollRuntime 在真实 lineFlashField 上添加 cm-line-flash 装饰，并按 PREVIEW_SOURCE_FLASH_MS 注册清理回调，清理触发前高亮保持，触发后高亮移除。",
       "issueRef": "",
-      "notes": "不计产品失败；需要后续用录屏或可控动画时长复测 flash 视觉状态。",
+      "notes": "Pass/code-verified；不再依赖 Computer Use 截图捕捉短暂动画。旧截图仍证明定位结果，新日志证明 flash 生命周期。",
       "screenshots": [
         "screenshots/05-preview-rendering/PRISM-FF-116-flash-flash.png",
         "screenshots/15-computer-use-real-app/PRISM-CU-199-preview-source-flash-locate-window.png"
-      ]
+      ],
+      "unitTestEvidence": [
+        "logs/unit-tests/preview-source-flash-code-verified-20260702.log"
+      ],
+      "automationResult": "Code Verified Pass",
+      "automationActual": "preview-source-flash-code-verified 批次 2 个测试文件 / 31 条测试通过。"
     },
     {
       "id": "PRISM-FF-117",
@@ -8755,9 +8760,9 @@
   "generatedAt": "2026-07-01T14:50:00+08:00",
   "counts": {
     "total": 168,
-    "Pass": 152,
+    "Pass": 153,
     "Fail": 0,
-    "Blocked": 16,
+    "Blocked": 15,
     "Not Run": 0,
     "screenshotFiles": 434,
     "manifestScreenshots": 1016,
