@@ -74,14 +74,32 @@ Install:
 - Final installed-app smoke: Pass
 - Preferred RC DMG SHA256: `ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993`
 
-## Optional `gh` Command
+## Current Draft
 
-Run with the preserved upload copy:
+The GitHub Draft Release has already been created:
+
+```text
+tag=v1.0.0
+title=Prism 1.0.0 for macOS
+asset=Prism_1.0.0_aarch64.dmg
+target=2f89d3c001dc77785514c2a2b3515a4a0dbd7351
+isDraft=true
+```
+
+Evidence:
+
+```text
+docs/releases/prism-macos-1.0.0-confidence-pack/evidence/github-draft-release.md
+```
+
+Review before publishing:
 
 ```bash
-gh release create v1.0.0 \
-  /Users/Alex/Downloads/Prism_1.0.0_aarch64.dmg \
-  --title "Prism 1.0.0 for macOS" \
-  --notes-file docs/releases/prism-macos-1.0.0-confidence-pack/github-release-draft.md \
-  --draft
+gh release view v1.0.0 --web
+```
+
+Publish only after explicit approval:
+
+```bash
+gh release edit v1.0.0 --draft=false
 ```

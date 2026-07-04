@@ -27,13 +27,15 @@ Current recommendation: **Go** for the macOS 1.0.0 manual DMG release.
 | Release narrative materials | Pass | `copy-and-positioning.md`, `promo-page/index.html` |
 | Release screenshots / GIF / video source | Pass for launch | Still screenshots are captured; GIF/video is deferred from the 1.0.0 release bar in `screenshots.md` |
 | Known limitations clearly documented | Pass | `known-limitations.md` |
+| Previous GitHub Releases removed | Pass | `evidence/github-draft-release.md` |
+| GitHub Draft Release created | Pass | `evidence/github-draft-release.md` |
 
 ## Required Before Publishing
 
-1. Create the GitHub Release draft for `v1.0.0`.
-2. Attach the preferred patched DMG from a fresh local build or the preserved local artifact if it has not been cleaned.
-3. Include the DMG SHA256 in the release body.
-4. State clearly that Windows/Linux releases are staged and that auto-updater signing is not included unless the signing private key is provided.
+1. Manually review the GitHub Draft Release body and uploaded asset.
+2. Confirm `Prism_1.0.0_aarch64.dmg` is the intended public download.
+3. Confirm the release body still includes the DMG SHA256, Windows/Linux staged note, and auto-updater signing limitation.
+4. Publish the draft only after explicit human approval.
 
 ## Non-Blocking For macOS 1.0.0
 
@@ -74,4 +76,6 @@ Final RC DMG: src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg
 Final RC DMG SHA256: ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
 Final installed-app smoke: PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed
 Updater signing: not included; TAURI_SIGNING_PRIVATE_KEY unavailable
+Old GitHub Releases: removed
+GitHub Draft Release: v1.0.0 created, isDraft=true, asset uploaded
 ```
