@@ -22,6 +22,7 @@ The answer must be based on reproducible artifacts, not intent or optimism. Ever
 - Final RC build and installed-app smoke: `evidence/final-rc-build-and-smoke.md`
 - GitHub Draft Release: `evidence/github-draft-release.md`
 - GitHub Published Release: `evidence/github-published-release.md`
+- Post-release download smoke: `evidence/post-release-download-smoke.md`
 
 Current manifest counts:
 
@@ -68,11 +69,13 @@ Why Go:
 - Remaining Blocked items are either non-macOS staged-platform items or explicit specialty validation windows.
 - Final RC build produced a patched local DMG, and the installed `/Applications/Prism.app` passed the app smoke suite.
 - Previous GitHub Releases were removed, and `v1.0.0` is now published as the first stable GitHub Release with the macOS DMG asset uploaded.
+- The public GitHub DMG download passes checksum and mounted-app identity smoke.
+- English, Chinese, and Japanese README files, promo page, and motion assets now present the 1.0.0 release.
 
 Explicit caveats:
 
 - This Go does not include auto-updater signing because `TAURI_SIGNING_PRIVATE_KEY` was unavailable.
-- GIF/video promotional assets are deferred from the 1.0.0 release bar; still screenshots and the promotional page prototype are enough for launch.
+- Promotional GIF/video assets are generated from real Prism screenshots. Future real-app reshoots can still improve them, but 1.0.0 no longer depends on missing motion assets.
 
 See: `go-no-go.md`.
 
@@ -86,7 +89,10 @@ See: `go-no-go.md`.
 - `screenshots.md` - release screenshot and animation shot list
 - `known-limitations.md` - remaining Blocked items and why they do or do not block macOS 1.0.0
 - `go-no-go.md` - final release recommendation
+- `github-release-notes.md` - public GitHub Release body used by `gh release edit --notes-file`
 - `github-release-draft.md` - GitHub Release title, public notes, asset path, checksum, and published state
+- `launch-copy.md` - release copy and reusable product positioning
+- `social-posts.md` - launch posts for X/Twitter, 小红书, Product Hunt-style, and technical communities
 - `promo-page/index.html` - static promotional page prototype
 
 ## Evidence Rules

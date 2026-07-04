@@ -6,28 +6,46 @@
 
 Prism is not launching as "a complete Typora/MiaoYan replacement." Prism launches as an open-source, local-first Markdown editor for writers who need stronger preview, export, diagrams, and diagnostics.
 
-## One-Line Pitch
+## Core Line
 
-Prism is an open-source Markdown editor for local-first long-form and technical writing, built around trustworthy preview, trustworthy export, and actionable diagnostics.
+把 Markdown 写成漂亮的文稿。
+
+English:
+
+```text
+Turn Markdown into polished documents.
+```
+
+Japanese:
+
+```text
+Markdown を、美しい文書に。
+```
 
 ## Short Pitch
 
-Prism gives Markdown writers a focused local writing surface with rich preview support for diagrams, formulas, tables, and long documents. It keeps files on disk, makes export behavior visible, and turns broken links, missing images, and render failures into fixable diagnostics instead of silent surprises.
+Prism is a free, open-source Markdown editor for local writing. It keeps files on disk, gives Markdown a refined editor and preview surface, and helps writers carry the same document quality into export.
+
+Japanese:
+
+```text
+Prism は、ローカルファイルをそのまま扱える無料・オープンソースの Markdown エディタです。編集、プレビュー、書き出しまで文書としてのまとまりを保ちながら、テーマ、3 言語 UI、ナレッジグラフ、書き出し診断をひとつのデスクトップ体験にまとめています。
+```
 
 ## README Hero Draft
 
 # Prism
 
-Open-source Markdown writing for local documents, trustworthy preview, and dependable export.
+Turn Markdown into polished documents.
 
-Prism is a local-first Markdown editor for long-form and technical writing. It focuses on a calm writing surface, complete preview rendering, diagram and formula support, and export diagnostics that tell you what went wrong and how to fix it.
+Prism is a free, open-source Markdown editor for local writing. It keeps your files on disk, gives Markdown a refined editor and preview surface, and helps you export documents without losing the page.
 
 **macOS 1.0.0 is the first official release. Windows and Linux builds will be released after real-device validation.**
 
 ## Key Messages
 
-- Local-first Markdown writing
-- Edit, split, and preview modes for focused writing
+- Local Markdown writing
+- Edit, split, and preview modes for document-like writing
 - Mermaid, PlantUML, Markmap, KaTeX, tables, images, callouts, and long documents
 - HTML, PDF, PNG, and DOCX export paths designed to follow the preview result
 - Diagnostics for broken links, missing images, render failures, and export risks
@@ -62,6 +80,7 @@ Prism 1.0.0 focuses on local Markdown writing, reliable preview, and export work
 - Diagnostic panel for broken links, missing images, render failures, and export risks
 - Finder document icons for Markdown and selected text/source documents
 - Chinese, English, and Japanese UI
+- Root README coverage in English, Simplified Chinese, and Japanese
 - Open-source and free
 
 ### Platform Notes

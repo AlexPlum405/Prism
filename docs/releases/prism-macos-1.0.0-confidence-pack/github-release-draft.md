@@ -39,27 +39,7 @@ shasum -a 256 src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg
 
 ## Release Notes
 
-Prism 1.0.0 is the first official macOS release.
-
-Prism is an open-source, local-first Markdown editor for long-form and technical writing. It focuses on a calm writing surface, trustworthy preview, dependable export, and diagnostics that make document problems visible instead of silent.
-
-Highlights:
-
-- Local-first Markdown and text document editing
-- Edit, split, and preview writing modes
-- Rich preview for Mermaid, PlantUML, Markmap, KaTeX, tables, images, and long documents
-- Export to HTML, PDF, PNG, and DOCX
-- Diagnostics for broken links, missing images, render failures, and export risks
-- First-run Prism documents with examples and guides
-- Finder document icons for Markdown and selected text/source documents
-- Chinese, English, and Japanese UI
-- Open-source and free
-
-Install:
-
-1. Download `Prism_1.0.0_aarch64.dmg`.
-2. Open the DMG.
-3. Drag Prism to Applications.
+Public release notes are maintained in `github-release-notes.md` and are used as the source for `gh release edit --notes-file`.
 
 ## Known Limitations
 

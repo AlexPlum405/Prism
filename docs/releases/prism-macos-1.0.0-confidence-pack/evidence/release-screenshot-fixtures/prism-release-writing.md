@@ -2,7 +2,7 @@
 
 Prism is a local-first Markdown editor for long-form writing, technical notes, and reliable export.
 
-## A quiet writing surface
+## A polished writing surface
 
 - Work directly with ordinary Markdown files.
 - Keep source and preview side by side when precision matters.

@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-07-04T14:25:33.570Z",
+  "outputRoot": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets",
+  "videos": [
+    {
+      "name": "prism-hero-writing",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-hero-writing.mp4",
+      "gif": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-hero-writing.gif",
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-hero-writing.png",
+      "sourceSlides": [
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-032-guide-split-toc-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-034-split-table-code-rendering-window.png",
+        "docs/releases/prism-macos-1.0.0-confidence-pack/screenshots/03-diagrams-formulas-preview.png"
+      ]
+    },
+    {
+      "name": "prism-themes",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-themes.mp4",
+      "gif": null,
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-themes.png",
+      "sourceSlides": [
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-099-theme-miaoyan-restored-bottom-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-094-theme-inkstone-light-split-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-095-theme-slate-manual-split-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-096-theme-mono-lab-split-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-097-theme-nocturne-dark-split-window.png"
+      ]
+    },
+    {
+      "name": "prism-languages",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-languages.mp4",
+      "gif": null,
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-languages.png",
+      "sourceSlides": [
+        "docs/releases/prism-macos-1.0.0-confidence-pack/screenshots/i18n/zh-01-main-window.png",
+        "docs/releases/prism-macos-1.0.0-confidence-pack/screenshots/i18n/en-01-main-window.png",
+        "docs/releases/prism-macos-1.0.0-confidence-pack/screenshots/i18n/ja-01-main-window.png"
+      ]
+    },
+    {
+      "name": "prism-knowledge-graph",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-knowledge-graph.mp4",
+      "gif": null,
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-knowledge-graph.png",
+      "sourceSlides": [
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-214-relation-graph-current-document-baseline-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-071-knowledge-current-links-window.png"
+      ]
+    },
+    {
+      "name": "prism-diagrams-formulas",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-diagrams-formulas.mp4",
+      "gif": null,
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-diagrams-formulas.png",
+      "sourceSlides": [
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-123-complex-diagrams-preview-mermaid-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-124-complex-diagrams-preview-plantuml-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-125-complex-diagrams-preview-markmap-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-127-complex-diagrams-preview-math-window.png"
+      ]
+    },
+    {
+      "name": "prism-export",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-export.mp4",
+      "gif": null,
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-export.png",
+      "sourceSlides": [
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-108-export-menu-real-markdown-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-112-export-pdf-dialog-preflight-pass-window.png",
+        "docs/verification/runs/prism-full-functional-2026-06-27/screenshots/15-computer-use-real-app/PRISM-CU-118-export-complete-returned-to-editor-window.png"
+      ]
+    },
+    {
+      "name": "prism-local-file",
+      "mp4": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-local-file.mp4",
+      "gif": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-local-file.gif",
+      "poster": "docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-local-file.png",
+      "sourceSlides": [
+        "docs/releases/prism-macos-1.0.0-confidence-pack/screenshots/finder-icons/03-finder-large-icon-view.png",
+        "docs/releases/prism-macos-1.0.0-confidence-pack/screenshots/10-first-run-documents.png"
+      ]
+    }
+  ]
+}

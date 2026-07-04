@@ -2,44 +2,36 @@
 
 # Prism
 
-**A quiet, native-feeling Markdown editor for writers who care about typography.**
+**Turn Markdown into polished documents.**
+
+Prism is a free, open-source Markdown editor for local writing. It keeps your files on disk, gives Markdown a refined editor and preview surface, and helps you export documents without losing the page.
 
 <p>
   <a href="README.md">English</a>
   ·
   <a href="README.zh-CN.md">简体中文</a>
+  ·
+  <a href="README.ja-JP.md">日本語</a>
 </p>
 
 <p>
-  <a href="https://github.com/AlexPlum405/Prism/releases/latest">
-    <img src="https://img.shields.io/github/v/release/AlexPlum405/Prism?style=flat-square&color=315f43" alt="Latest release">
+  <a href="https://github.com/AlexPlum405/Prism/releases/tag/v1.0.0">
+    <img src="https://img.shields.io/badge/Download-Prism%201.0.0-7A3DAD?style=for-the-badge" alt="Download Prism 1.0.0">
   </a>
-  <img src="https://img.shields.io/github/downloads/AlexPlum405/Prism/total?style=flat-square&color=315f43" alt="Downloads">
-  <img src="https://img.shields.io/github/stars/AlexPlum405/Prism?style=flat-square&color=315f43" alt="Stars">
-  <img src="https://img.shields.io/badge/Tauri-2.x-24C8DB?style=flat-square&logo=tauri&logoColor=white" alt="Tauri">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=111" alt="React">
-  <img src="https://img.shields.io/badge/CodeMirror-6-1f2937?style=flat-square" alt="CodeMirror 6">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License">
+  <a href="https://github.com/AlexPlum405/Prism/releases/latest">
+    <img src="https://img.shields.io/github/v/release/AlexPlum405/Prism?style=for-the-badge&color=315f43" alt="Latest release">
+  </a>
+  <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-242321?style=for-the-badge" alt="macOS Apple Silicon">
+  <img src="https://img.shields.io/badge/License-MIT-1C5D33?style=for-the-badge" alt="MIT License">
 </p>
 
-<p>
-  <a href="#download">Download</a>
-  ·
-  <a href="#why-prism">Why Prism</a>
-  ·
-  <a href="#screenshots">Screenshots</a>
-  ·
-  <a href="#development">Development</a>
-</p>
-
-<a href="https://cdn.jsdelivr.net/gh/AlexPlum405/Prism@v1.4.1/docs/prism-promo-video/prism-promo-showcase-final.mp4">
-  <img src="docs/archive/dirty-data-2026-05-30/prism-promo-video/prism-promo-showcase-poster.png" alt="Prism product video poster" width="920">
-</a>
+<img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-hero-writing.gif" alt="Prism split writing and preview" width="920">
 
 <sub>
-  Click the poster to play the MP4 video in browser.
-  ·
-  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.4.1/prism-promo-showcase-hq-1440p-120fps.mp4">Download the 1440p / 120fps release video</a>
+  Prism 1.0.0 for macOS Apple Silicon ·
+  <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_aarch64.dmg">Download DMG</a>
+  · SHA256:
+  <code>ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993</code>
 </sub>
 
 </div>
@@ -48,109 +40,90 @@
 
 ## Why Prism
 
-Most Markdown editors can render Markdown. Prism focuses on how writing feels.
+Markdown is easy to write, but the result often still looks like a draft. Prism is built for the part after typing: the layout, the preview, the relationships between files, and the moment a document needs to leave the editor.
 
-Prism is a desktop Markdown editor built with Tauri, React, TypeScript, and CodeMirror 6. It is designed for calm long-form writing, polished preview typography, Chinese and mixed-language documents, and export workflows that preserve the visual quality of the page.
+Prism 1.0.0 focuses on five things:
 
-It is currently best suited for:
+- **A document-like writing surface**: edit, split, and preview modes for notes, essays, and technical documents.
+- **Themes with real personality**: MiaoYan, Inkstone, Slate, Mono, and Nocturne Dark each tune typography, tables, code, and blocks.
+- **Knowledge structure**: links, backlinks, and a graph view for local Markdown workspaces.
+- **Three languages**: Chinese, English, and Japanese UI are part of the product, not a post-release note.
+- **Export that respects the preview**: HTML, PDF, PNG, and DOCX export with diagnostics for broken resources and render risks.
 
-- Long-form Chinese writing
-- Technical notes and product documents
-- README and documentation drafts
-- Markdown documents with code, tables, diagrams, and formulas
-- Exporting themed documents to HTML, PDF, Word, or PNG
+## See It
 
-## Highlights
-
-| What you get | Why it matters |
+| Themes | Languages |
 | --- | --- |
-| Edit / Split / Preview modes | Switch between focused writing, live comparison, and clean reading. |
-| Chinese-first typography | Comfortable spacing, centered preview, and themes tuned for mixed Chinese and technical content. |
-| CodeMirror 6 editor core | Reliable editing, selection, search, replace, and keyboard-driven workflows. |
-| Markdown power features | GFM, syntax highlighting, Mermaid, KaTeX, tables, task lists, blockquotes, and more. |
-| Five content themes | MiaoYan, Inkstone, Slate, Mono, and Nocturne Dark, each with its own visual tokens. |
-| Product-grade export | Export HTML, PDF, Word (`.docx`), and PNG with themed rendering and Prism-native save dialogs. |
-| Desktop workspace | Sidebar, file tree, outline, context menu, status bar, and auto-save. |
+| <a href="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-themes.mp4"><img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-themes.png" alt="Prism themes" width="460"></a> | <a href="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-languages.mp4"><img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-languages.png" alt="Prism Chinese English Japanese interface" width="460"></a> |
+
+| Knowledge graph | Diagrams and formulas |
+| --- | --- |
+| <a href="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-knowledge-graph.mp4"><img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-knowledge-graph.png" alt="Prism knowledge graph" width="460"></a> | <a href="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-diagrams-formulas.mp4"><img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-diagrams-formulas.png" alt="Prism diagrams and formulas" width="460"></a> |
+
+| Export | Local files |
+| --- | --- |
+| <a href="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-export.mp4"><img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/posters/prism-export.png" alt="Prism export" width="460"></a> | <img src="docs/releases/prism-macos-1.0.0-confidence-pack/promo-page/assets/prism-local-file.gif" alt="Open local Markdown files with Prism" width="460"> |
 
 ## Download
 
-Current source version: **v1.4.1**
+| Platform | Status | Download |
+| --- | --- | --- |
+| macOS Apple Silicon | Released | [Prism_1.0.0_aarch64.dmg](https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_aarch64.dmg) |
+| Windows | Staged | Real-device validation pending |
+| Linux | Staged | Real-device validation pending |
 
-Stable builds are published through [GitHub Releases](https://github.com/AlexPlum405/Prism/releases/latest). Release asset names can vary by platform and signing status, so use the latest release page as the source of truth.
-
-| Platform | Download |
-| --- | --- |
-| macOS Apple Silicon | [Latest release](https://github.com/AlexPlum405/Prism/releases/latest) |
-| Windows installer | [Latest release](https://github.com/AlexPlum405/Prism/releases/latest) |
-| Windows portable | [Latest release](https://github.com/AlexPlum405/Prism/releases/latest) |
-
-Some development builds may be unsigned. Signed and notarized macOS builds should be treated as the target for stable releases.
-
-## Screenshots
-
-### Split writing
-
-<img src="docs/screenshot/prism-intro/assets/split.png" alt="Prism split mode with editor and preview" width="920">
-
-### Focused editing
-
-<img src="docs/screenshot/prism-intro/assets/edit.png" alt="Prism edit mode" width="920">
-
-### Preview typography
-
-<img src="docs/screenshot/prism-intro/assets/preview-typography.png" alt="Prism preview typography" width="920">
-
-### Code and diagrams
-
-<p>
-  <img src="docs/screenshot/prism-intro/assets/preview-code.png" alt="Prism code preview" width="456">
-  <img src="docs/screenshot/prism-intro/assets/preview-diagram.png" alt="Prism Mermaid diagram preview" width="456">
-</p>
-
-### Export menu
-
-<img src="docs/screenshot/prism-intro/assets/export.png" alt="Prism export menu with HTML, PDF, Word, PNG" width="920">
+Prism 1.0.0 is the first official public release. It is currently published for macOS Apple Silicon first. Windows and Linux builds will be released after real-device validation.
 
 ## Features
 
-### Editing
+### Writing
 
-- CodeMirror 6 editor with Markdown-friendly behavior
-- Document search, replacement, current-hit highlighting, and navigation
+- Local Markdown and text document editing
 - Edit, split, and preview modes
 - Auto-save and dirty-state tracking
-- Floating formatting toolbar for common Markdown actions
-- Sidebar file tree, outline, and context menu
+- Search, replace, selection, and keyboard-driven editing
+- Sidebar file tree, outline, context menus, and status bar
 
 ### Preview
 
 - GitHub Flavored Markdown
-- Syntax-highlighted code blocks
-- Mermaid diagrams
-- KaTeX inline and block math
+- Code highlighting
 - Tables, task lists, blockquotes, links, marks, and horizontal rules
-- Centered long-form preview layout
+- KaTeX math
+- Mermaid diagrams
+- PlantUML diagrams
+- Markmap mind maps
 
-### Themes
+### Knowledge
 
-Prism themes are not just color filters. Each theme owns its own font, background, border, code, blockquote, table, search, and export-dialog treatment.
-
-- **MiaoYan**: quiet Chinese writing, warm paper, refined spacing
-- **Inkstone**: ink-and-paper editorial tone
-- **Slate**: cool blue-gray technical writing
-- **Mono**: black-and-white lab notebook feeling
-- **Nocturne Dark**: calm dark theme for night writing
+- Wiki-style links
+- Current links and backlinks
+- Document properties
+- Relation graph for local Markdown workspaces
 
 ### Export
 
-Prism currently supports:
+- HTML
+- PDF
+- PNG
+- Word `.docx`
+- Export diagnostics for missing images, broken links, render failures, and export risks
 
-- **HTML**: standalone themed document
-- **PDF**: rendered from the preview result
-- **Word `.docx`**: structured document export
-- **PNG**: full-page visual export
+## Themes
 
-The export flow uses Prism's own save and overwrite UI instead of native replacement prompts, so the product feels consistent across the writing and delivery flow.
+Prism themes are not simple color filters. Each theme owns its own font, background, code, table, blockquote, and preview treatment.
+
+- **MiaoYan**: polished long-form writing
+- **Inkstone**: paper-and-ink editorial tone
+- **Slate**: structured technical documents
+- **Mono**: black-and-white notes and drafts
+- **Nocturne Dark**: a true dark writing surface
+
+## Known Limits
+
+- Auto-updater delivery is not included in 1.0.0 because the updater signing private key was not available for this release.
+- Windows and Linux are not official 1.0.0 platforms yet.
+- Full offline network-blocked rendering proof, HiDPI matrix validation, and long-running memory pressure runs remain post-1.0 hardening work.
 
 ## Tech Stack
 
@@ -163,7 +136,7 @@ The export flow uses Prism's own save and overwrite UI instead of native replace
 | Build | Vite |
 | Markdown | unified, remark, rehype |
 | Math | KaTeX |
-| Diagrams | Mermaid |
+| Diagrams | Mermaid, PlantUML, Markmap |
 | Export | docx, pdf-lib, html2canvas |
 | Tests | Vitest + Testing Library |
 
@@ -175,7 +148,7 @@ The export flow uses Prism's own save and overwrite UI instead of native replace
 - Rust 1.77+
 - Tauri 2 prerequisites for your platform
 
-### Run locally
+### Run Locally
 
 ```bash
 git clone https://github.com/AlexPlum405/Prism.git
@@ -204,34 +177,15 @@ npm test
 npm run build
 ```
 
-## Roadmap
-
-- Code signing and smoother macOS first-launch experience
-- Linux release build
-- More export fidelity for complex Word documents
-- Theme gallery and theme authoring docs
-- Spell checking
-- More keyboard-first writing workflows
-
 ## Contributing
 
-Issues and pull requests are welcome. If you are reporting a visual bug, please include:
+Issues and pull requests are welcome. For visual bugs, include:
 
 - OS and app version
 - View mode: edit, split, or preview
 - Current theme
-- A screenshot or a minimal Markdown sample
+- A screenshot or minimal Markdown sample
 
 ## License
 
 [MIT](LICENSE)
-
----
-
-<div align="center">
-
-Made with Tauri, React, CodeMirror, and a stubborn affection for good typography.
-
-If Prism feels useful, a star helps more people find it.
-
-</div>

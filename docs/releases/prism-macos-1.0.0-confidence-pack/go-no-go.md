@@ -30,7 +30,7 @@ It does not claim:
 
 - Auto-updater delivery, because `TAURI_SIGNING_PRIVATE_KEY` was unavailable during final RC build.
 - Windows/Linux official release readiness, because those platforms still require real-device validation.
-- Day-one GIF/video marketing assets, because still screenshots are sufficient for the 1.0.0 release bar and motion assets are deferred.
+- Additional production-quality reshoots, because generated GIF/video assets now cover the 1.0.0 README and promo page while future real-app reshoots can still improve the launch materials.
 
 ## No-Go Triggers
 

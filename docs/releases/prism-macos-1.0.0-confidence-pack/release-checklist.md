@@ -25,11 +25,16 @@ Current recommendation: **Go** for the macOS 1.0.0 manual DMG release.
 | Version metadata matches 1.0.0 | Pass | Source config and installed app report `1.0.0` |
 | First-run Prism documents and guide | Pass | `evidence/first-run-documents-validation.md`, `screenshots/10-first-run-documents.png` |
 | Release narrative materials | Pass | `copy-and-positioning.md`, `promo-page/index.html` |
-| Release screenshots / GIF / video source | Pass for launch | Still screenshots are captured; GIF/video is deferred from the 1.0.0 release bar in `screenshots.md` |
+| Release screenshots / GIF / video source | Pass | Still screenshots and generated promo MP4/GIF assets are recorded in `screenshots.md` |
 | Known limitations clearly documented | Pass | `known-limitations.md` |
 | Previous GitHub Releases removed | Pass | `evidence/github-draft-release.md` |
 | GitHub Draft Release created | Pass | `evidence/github-draft-release.md` |
 | GitHub Release published | Pass | `evidence/github-published-release.md` |
+| Public DMG download smoke | Pass | `evidence/post-release-download-smoke.md` |
+| README release presentation | Pass | Root `README.md`, `README.zh-CN.md`, `README.ja-JP.md` |
+| Promo motion assets | Pass | `promo-page/assets/`, `promo-page/assets/promo-assets-manifest.json` |
+| Promo page presentation | Pass | `promo-page/index.html` |
+| Launch copy and social posts | Pass | `launch-copy.md`, `social-posts.md` |
 
 ## Publishing Verification
 
@@ -83,4 +88,6 @@ Updater signing: not included; TAURI_SIGNING_PRIVATE_KEY unavailable
 Old GitHub Releases: removed
 GitHub Draft Release: v1.0.0 created, asset uploaded
 GitHub Published Release: v1.0.0 published, isDraft=false, Latest, asset digest verified
+Public DMG smoke: downloaded from GitHub, checksum matched, DMG mounted, bundled app reports 1.0.0
+Promo assets: MP4/GIF/posters generated from real Prism screenshots
 ```

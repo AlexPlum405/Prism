@@ -1,35 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Prism - Local-first Markdown writing</title>
+  <title>Prism 1.0.0 - 把 Markdown 写成漂亮的文稿</title>
   <style>
     :root {
       color-scheme: light;
-      --paper: #f7f6f2;
-      --surface: #fffefa;
+      --paper: #f6f1e8;
+      --page: #fffefa;
       --ink: #242321;
-      --muted: #6e6a62;
-      --hair: #ded8cd;
-      --accent: #7a3dad;
-      --link: #0c6ada;
+      --muted: #6d665d;
+      --soft: #e5dccd;
+      --purple: #7a3dad;
+      --blue: #0c6ada;
       --green: #1c5d33;
-      --shadow: rgba(56, 44, 32, 0.18);
-      font-family: ui-serif, "New York", "Iowan Old Style", Georgia, "Times New Roman", serif;
+      --shadow: rgba(60, 48, 36, 0.22);
+      font-family: "Iowan Old Style", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
     }
 
     * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       background: var(--paper);
       color: var(--ink);
-      line-height: 1.55;
+      line-height: 1.62;
+      letter-spacing: 0;
+      overflow-x: hidden;
     }
 
     a { color: inherit; }
 
+    video,
     img {
       display: block;
       width: 100%;
@@ -39,34 +44,31 @@
     .hero {
       position: relative;
       min-height: 92vh;
+      overflow: hidden;
       display: flex;
       align-items: flex-end;
-      overflow: hidden;
-      background: #15130f;
+      background:
+        linear-gradient(90deg, rgba(14, 11, 8, 0.82), rgba(14, 11, 8, 0.2)),
+        url("assets/posters/prism-hero-writing.png") center / cover;
+    }
+
+    .hero-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.88;
+      filter: saturate(0.94) contrast(0.92);
     }
 
     .hero::after {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(
-        90deg,
-        rgba(12, 10, 8, 0.78) 0%,
-        rgba(12, 10, 8, 0.58) 36%,
-        rgba(12, 10, 8, 0.12) 100%
-      );
-    }
-
-    .hero-media {
-      position: absolute;
-      inset: 0;
-    }
-
-    .hero-media img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: 58% center;
+      background:
+        linear-gradient(90deg, rgba(14, 11, 8, 0.76) 0%, rgba(14, 11, 8, 0.52) 38%, rgba(14, 11, 8, 0.10) 100%),
+        linear-gradient(0deg, rgba(14, 11, 8, 0.55) 0%, rgba(14, 11, 8, 0) 42%);
     }
 
     .topbar {
@@ -76,50 +78,59 @@
       left: 0;
       right: 0;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 22px 34px;
-      color: rgba(255, 254, 250, 0.84);
+      justify-content: space-between;
+      padding: 24px 34px;
+      color: rgba(255, 254, 250, 0.82);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
       font-size: 14px;
     }
 
     .brand {
       color: #fffefa;
-      font-weight: 650;
-      letter-spacing: 0;
+      font-size: 17px;
+      font-weight: 700;
     }
 
     .nav {
       display: flex;
-      gap: 20px;
+      gap: 22px;
     }
 
     .nav a {
       text-decoration: none;
-      color: inherit;
     }
 
     .hero-copy {
       position: relative;
       z-index: 2;
-      width: min(760px, calc(100% - 48px));
+      width: min(900px, calc(100% - 48px));
       margin: 0 0 8vh 34px;
       color: #fffefa;
     }
 
+    .eyebrow {
+      margin: 0 0 12px;
+      color: rgba(255, 254, 250, 0.72);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 13px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
     h1 {
-      margin: 0 0 18px;
-      max-width: 760px;
-      font-size: 72px;
-      line-height: 0.98;
-      font-weight: 820;
+      margin: 0;
+      max-width: 900px;
+      font-size: 64px;
+      line-height: 1.02;
+      font-weight: 850;
       letter-spacing: 0;
     }
 
     .lead {
-      max-width: 660px;
-      margin: 0;
+      max-width: 680px;
+      margin: 24px 0 0;
       color: rgba(255, 254, 250, 0.86);
       font-size: 22px;
     }
@@ -135,259 +146,272 @@
     .button {
       display: inline-flex;
       align-items: center;
-      min-height: 42px;
-      padding: 0 16px;
-      border: 1px solid rgba(255, 254, 250, 0.38);
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid rgba(255, 254, 250, 0.44);
       border-radius: 7px;
-      color: #fffefa;
       text-decoration: none;
-      font-weight: 620;
-      background: rgba(255, 254, 250, 0.08);
-      backdrop-filter: blur(12px);
+      font-weight: 700;
+      background: rgba(255, 254, 250, 0.09);
+      backdrop-filter: blur(14px);
     }
 
     .button.primary {
       border-color: #fffefa;
       background: #fffefa;
-      color: var(--accent);
+      color: var(--purple);
     }
 
     .shell {
-      max-width: 1160px;
+      max-width: 1180px;
       margin: 0 auto;
-      padding: 58px 24px 76px;
+      padding: 56px 24px 80px;
     }
 
-    .section {
-      padding: 42px 0;
+    .intro {
+      max-width: 920px;
+      margin: 0 auto 28px;
+      text-align: center;
     }
 
-    .section-header {
-      display: grid;
-      grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.55fr);
-      gap: 32px;
-      align-items: end;
-      margin-bottom: 22px;
-    }
-
-    h2 {
+    .intro h2 {
       margin: 0;
-      color: var(--accent);
-      font-size: 36px;
+      color: var(--purple);
+      font-size: 42px;
+      line-height: 1.14;
+      overflow-wrap: anywhere;
+    }
+
+    .intro p {
+      max-width: 760px;
+      margin: 18px auto 0;
+      color: var(--muted);
+      font-size: 18px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.24fr);
+      gap: 40px;
+      align-items: center;
+      padding: 52px 0;
+      border-top: 1px solid rgba(90, 76, 58, 0.18);
+    }
+
+    .feature:nth-child(odd) {
+      grid-template-columns: minmax(360px, 1.24fr) minmax(0, 0.9fr);
+    }
+
+    .feature:nth-child(odd) .feature-copy {
+      order: 2;
+    }
+
+    .feature h3 {
+      margin: 0 0 14px;
+      color: var(--purple);
+      font-size: 34px;
       line-height: 1.12;
-      letter-spacing: 0;
+      overflow-wrap: anywhere;
     }
 
-    .section-header p {
+    .feature p {
       margin: 0;
       color: var(--muted);
+      font-size: 17px;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      font-size: 16px;
     }
 
-    .evidence-image {
+    .media {
       overflow: hidden;
-      border: 1px solid var(--hair);
+      border: 1px solid var(--soft);
       border-radius: 10px;
-      background: var(--surface);
-      box-shadow: 0 18px 54px var(--shadow);
+      background: var(--page);
+      box-shadow: 0 22px 60px var(--shadow);
     }
 
-    .image-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+    .media video,
+    .media img {
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
     }
 
-    .image-grid.three {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .download {
+      margin-top: 42px;
+      padding: 42px;
+      border-top: 1px solid rgba(90, 76, 58, 0.18);
+      border-bottom: 1px solid rgba(90, 76, 58, 0.18);
+      text-align: center;
+      background: rgba(255, 254, 250, 0.48);
     }
 
-    .caption {
-      margin: 9px 2px 0;
-      color: var(--muted);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      font-size: 13px;
-    }
-
-    .proof-list {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .proof {
-      min-height: 150px;
-      border: 1px solid var(--hair);
-      border-radius: 8px;
-      background: rgba(255, 254, 250, 0.78);
-      padding: 18px;
-    }
-
-    .proof h3 {
-      margin: 0 0 8px;
-      color: var(--green);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      font-size: 16px;
-      line-height: 1.25;
-    }
-
-    .proof p {
+    .download h2 {
       margin: 0;
+      color: var(--purple);
+      font-size: 38px;
+    }
+
+    .download p {
+      margin: 14px auto 0;
+      max-width: 680px;
       color: var(--muted);
-      font-size: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .checksum {
+      display: block;
+      margin-top: 16px;
+      color: #756b5e;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
     footer {
-      margin-top: 42px;
-      border-top: 1px solid var(--hair);
-      padding-top: 24px;
+      padding-top: 28px;
       color: var(--muted);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
       font-size: 14px;
     }
 
-    @media (max-width: 920px) {
+    @media (max-width: 880px) {
       .topbar { padding: 18px 22px; }
       .nav { display: none; }
       .hero { min-height: 86vh; }
-      .hero::after {
-        background: linear-gradient(
-          90deg,
-          rgba(12, 10, 8, 0.9) 0%,
-          rgba(12, 10, 8, 0.74) 54%,
-          rgba(12, 10, 8, 0.38) 100%
-        );
-      }
-      .hero-media img { object-position: 64% center; }
       .hero-copy {
         width: calc(100% - 44px);
         margin-left: 22px;
         margin-bottom: 7vh;
       }
-      h1 { font-size: 48px; }
+      h1 { font-size: 47px; }
       .lead { font-size: 19px; }
-      .section-header,
-      .image-grid,
-      .image-grid.three,
-      .proof-list {
+      .shell { padding: 44px 22px 64px; }
+      .intro h2 { font-size: 32px; }
+      .feature h3 { font-size: 29px; }
+      .feature,
+      .feature:nth-child(odd) {
         grid-template-columns: 1fr;
       }
+      .feature:nth-child(odd) .feature-copy {
+        order: 0;
+      }
+      .download { padding: 32px 20px; }
     }
   </style>
 </head>
 <body>
   <section class="hero">
-    <div class="hero-media" aria-hidden="true">
-      <img src="../screenshots/02-split-preview-longform.png" alt="">
-    </div>
+    <video class="hero-video" autoplay muted loop playsinline poster="assets/posters/prism-hero-writing.png">
+      <source src="assets/prism-hero-writing.mp4" type="video/mp4">
+    </video>
     <header class="topbar">
       <div class="brand">Prism</div>
       <nav class="nav" aria-label="Sections">
-        <a href="#preview">Preview</a>
-        <a href="#export">Export</a>
-        <a href="#confidence">Confidence</a>
+        <a href="#themes">主题</a>
+        <a href="#graph">图谱</a>
+        <a href="#export">导出</a>
+        <a href="#download">下载</a>
       </nav>
     </header>
     <div class="hero-copy">
-      <h1>Local Markdown writing, with preview you can trust.</h1>
-      <p class="lead">Prism is an open-source Markdown editor for long-form and technical writing, focused on local files, faithful preview, dependable export, and diagnostics that help you fix what matters.</p>
+      <p class="eyebrow">Prism 1.0.0 for macOS</p>
+      <h1>把 Markdown 写成<br>漂亮的文稿。</h1>
+      <p class="lead">从本地文件开始写作，在预览里看到接近成稿的版面，再把它导出成 PDF、HTML、PNG 或 DOCX。</p>
       <div class="actions">
-        <a class="button primary" href="../copy-and-positioning.md">Read release notes</a>
-        <a class="button" href="../go-no-go.md">View confidence pack</a>
+        <a class="button primary" href="https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_aarch64.dmg">下载 macOS 版</a>
+        <a class="button" href="https://github.com/AlexPlum405/Prism">查看源码</a>
       </div>
     </div>
   </section>
 
   <main class="shell">
-    <section id="preview" class="section">
-      <div class="section-header">
-        <h2>A writing surface for real Markdown documents.</h2>
-        <p>These screenshots are captured from the current macOS release build, not static mockups.</p>
+    <section class="intro">
+      <h2>不只是能写 Markdown，还要写得有版面。</h2>
+      <p>Prism 把编辑、预览、主题、知识图谱、三语界面和导出放在一起。它面向本地文档，也面向认真完成一篇文稿的过程。</p>
+    </section>
+
+    <section id="themes" class="feature">
+      <div class="feature-copy">
+        <h3>主题不是皮肤，是文稿气质。</h3>
+        <p>同一篇文档切换到 MiaoYan、Inkstone、Slate、Mono 或 Nocturne Dark 时，变化的不只是颜色。标题、正文、代码、表格和引用都会跟着重新组织。</p>
       </div>
-      <div class="image-grid">
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/01-local-markdown-writing.png" alt="Prism editing a Markdown document">
-          </div>
-          <figcaption class="caption">Focused local writing with the Prism document workspace.</figcaption>
-        </figure>
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/03-diagrams-formulas-preview.png" alt="Prism previewing diagrams and formulas">
-          </div>
-          <figcaption class="caption">Mermaid, PlantUML, Markmap, and KaTeX inside the preview loop.</figcaption>
-        </figure>
+      <div class="media">
+        <video controls muted loop playsinline poster="assets/posters/prism-themes.png">
+          <source src="assets/prism-themes.mp4" type="video/mp4">
+        </video>
       </div>
     </section>
 
-    <section id="export" class="section">
-      <div class="section-header">
-        <h2>Preview, diagnostics, export, and first-run docs are backed by evidence.</h2>
-        <p>The release pack keeps the proof visible so 1.0.0 does not depend on undocumented assumptions.</p>
+    <section class="feature">
+      <div class="feature-copy">
+        <h3>中文、English、日本語，都能直接开始写。</h3>
+        <p>Prism 1.0.0 不是只面向单一语言的本地工具。主界面、设置和核心写作流程都覆盖中文、英文和日文。</p>
       </div>
-      <div class="image-grid">
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/04-export-diagnostics.png" alt="Prism export diagnostics">
-          </div>
-          <figcaption class="caption">Export diagnostics surface broken resources and render risks.</figcaption>
-        </figure>
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/10-first-run-documents.png" alt="Prism first-run documents workspace">
-          </div>
-          <figcaption class="caption">Cold start opens the bundled Prism workspace and Markdown guide after macOS authorization.</figcaption>
-        </figure>
+      <div class="media">
+        <video controls muted loop playsinline poster="assets/posters/prism-languages.png">
+          <source src="assets/prism-languages.mp4" type="video/mp4">
+        </video>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-header">
-        <h2>Finder icons and three-language UI are part of the release bar.</h2>
-        <p>macOS ships first. Windows and Linux stay staged until real-device validation is complete.</p>
+    <section id="graph" class="feature">
+      <div class="feature-copy">
+        <h3>不只写一篇，也整理一组文档。</h3>
+        <p>链接、反链和知识图谱让本地 Markdown 之间的关系变得可见。写作计划、阅读摘录和技术笔记可以组成一个可以浏览的文档空间。</p>
       </div>
-      <div class="image-grid three">
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/finder-icons/03-finder-large-icon-view.png" alt="Finder showing Prism document icons">
-          </div>
-          <figcaption class="caption">Markdown and text document icons verified in Finder.</figcaption>
-        </figure>
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/i18n/en-01-main-window.png" alt="Prism English UI screenshot">
-          </div>
-          <figcaption class="caption">English core writing UI.</figcaption>
-        </figure>
-        <figure>
-          <div class="evidence-image">
-            <img src="../screenshots/i18n/ja-01-main-window.png" alt="Prism Japanese UI screenshot">
-          </div>
-          <figcaption class="caption">Japanese core writing UI.</figcaption>
-        </figure>
+      <div class="media">
+        <video controls muted loop playsinline poster="assets/posters/prism-knowledge-graph.png">
+          <source src="assets/prism-knowledge-graph.mp4" type="video/mp4">
+        </video>
       </div>
     </section>
 
-    <section id="confidence" class="section">
-      <div class="proof-list">
-        <article class="proof">
-          <h3>Local-first</h3>
-          <p>Prism opens and edits local Markdown/text files directly, with a first-run Documents workspace seeded into the user folder.</p>
-        </article>
-        <article class="proof">
-          <h3>Trustworthy export</h3>
-          <p>HTML, PDF, PNG, and DOCX smoke checks pass in the installed macOS app, with diagnostics available when export risks appear.</p>
-        </article>
-        <article class="proof">
-          <h3>Transparent limits</h3>
-          <p>Known validation gaps remain documented: Windows/Linux real-device release, full offline proof, high-DPI matrix, and memory pressure runs.</p>
-        </article>
+    <section class="feature">
+      <div class="feature-copy">
+        <h3>公式、图表、思维导图，也要排得体面。</h3>
+        <p>Mermaid、PlantUML、Markmap 和 KaTeX 不该只是藏在代码块里的语法。Prism 让这些复杂内容进入预览版面。</p>
       </div>
+      <div class="media">
+        <video controls muted loop playsinline poster="assets/posters/prism-diagrams-formulas.png">
+          <source src="assets/prism-diagrams-formulas.mp4" type="video/mp4">
+        </video>
+      </div>
+    </section>
+
+    <section id="export" class="feature">
+      <div class="feature-copy">
+        <h3>写完之后，版面也别散掉。</h3>
+        <p>HTML、PDF、PNG 和 DOCX 都从同一篇文稿出发。导出前，Prism 会把缺图、坏链和渲染风险摆出来。</p>
+      </div>
+      <div class="media">
+        <video controls muted loop playsinline poster="assets/posters/prism-export.png">
+          <source src="assets/prism-export.mp4" type="video/mp4">
+        </video>
+      </div>
+    </section>
+
+    <section class="feature">
+      <div class="feature-copy">
+        <h3>从一个本地 .md 文件开始。</h3>
+        <p>Prism 尊重本地文件和 Finder 里的工作方式。Markdown 和文本文件可以有自己的图标，也可以直接打开进入写作。</p>
+      </div>
+      <div class="media">
+        <img src="assets/prism-local-file.gif" alt="Finder 中的 Prism 文档图标与本地文件打开">
+      </div>
+    </section>
+
+    <section id="download" class="download">
+      <h2>Prism 1.0.0 已发布。</h2>
+      <p>macOS Apple Silicon 首发。Windows 和 Linux 会在真机验证后推出。</p>
+      <div class="actions" style="justify-content:center;">
+        <a class="button primary" href="https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_aarch64.dmg">下载 Prism_1.0.0_aarch64.dmg</a>
+        <a class="button" style="color:var(--purple); border-color:var(--purple); background:transparent;" href="https://github.com/AlexPlum405/Prism/releases/tag/v1.0.0">查看 Release</a>
+      </div>
+      <code class="checksum">SHA256 ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993</code>
     </section>
 
     <footer>
-      Prism is free and open-source. This page is a local promotional prototype for the macOS 1.0.0 release confidence pack.
+      This promotional page is part of the Prism macOS 1.0.0 release pack. Visual assets are generated from real Prism screenshots.
     </footer>
   </main>
 </body>
