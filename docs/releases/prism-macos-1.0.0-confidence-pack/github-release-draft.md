@@ -16,6 +16,12 @@ Preferred DMG:
 src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg
 ```
 
+Preserved upload copy after workspace cleanup:
+
+```text
+/Users/Alex/Downloads/Prism_1.0.0_aarch64.dmg
+```
+
 SHA256:
 
 ```text
@@ -70,11 +76,11 @@ Install:
 
 ## Optional `gh` Command
 
-Run only after the DMG has been rebuilt or preserved locally:
+Run with the preserved upload copy:
 
 ```bash
 gh release create v1.0.0 \
-  src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg \
+  /Users/Alex/Downloads/Prism_1.0.0_aarch64.dmg \
   --title "Prism 1.0.0 for macOS" \
   --notes-file docs/releases/prism-macos-1.0.0-confidence-pack/github-release-draft.md \
   --draft
