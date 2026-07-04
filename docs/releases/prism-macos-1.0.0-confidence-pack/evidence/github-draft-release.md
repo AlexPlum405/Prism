@@ -90,14 +90,12 @@ sha256=ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
 size=29M
 ```
 
-## Publish Status
+## Publish Status At Capture Time
 
-The GitHub Release is still a draft. It has not been publicly published.
+At the time this draft evidence was captured, the GitHub Release was still a draft and had not been publicly published.
 
-Publishing remains a manual approval step:
+It was later published after explicit human approval. See:
 
-```bash
-gh release edit v1.0.0 --draft=false
+```text
+docs/releases/prism-macos-1.0.0-confidence-pack/evidence/github-published-release.md
 ```
-
-Do not run the publish command until the release notes and asset are manually reviewed.

@@ -1,8 +1,9 @@
-# GitHub Release Draft
+# GitHub Release
 
 > Target tag: `v1.0.0`
 > Target platform: macOS Apple Silicon
 > Release decision: Go for manual DMG
+> Public status: Published
 
 ## Title
 
@@ -28,7 +29,7 @@ SHA256:
 ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
 ```
 
-If generated artifacts have been cleaned, rebuild before publishing:
+If the public DMG asset needs to be replaced later and generated artifacts have been cleaned, rebuild and re-check the checksum first:
 
 ```bash
 npm run tauri:build
@@ -74,32 +75,30 @@ Install:
 - Final installed-app smoke: Pass
 - Preferred RC DMG SHA256: `ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993`
 
-## Current Draft
+## Published Release
 
-The GitHub Draft Release has already been created:
+The GitHub Release has been published:
 
 ```text
 tag=v1.0.0
 title=Prism 1.0.0 for macOS
 asset=Prism_1.0.0_aarch64.dmg
 target=2f89d3c001dc77785514c2a2b3515a4a0dbd7351
-isDraft=true
+isDraft=false
+isPrerelease=false
+publishedAt=2026-07-04T03:26:28Z
+url=https://github.com/AlexPlum405/Prism/releases/tag/v1.0.0
 ```
 
 Evidence:
 
 ```text
 docs/releases/prism-macos-1.0.0-confidence-pack/evidence/github-draft-release.md
+docs/releases/prism-macos-1.0.0-confidence-pack/evidence/github-published-release.md
 ```
 
-Review before publishing:
+Review the public page:
 
 ```bash
 gh release view v1.0.0 --web
-```
-
-Publish only after explicit approval:
-
-```bash
-gh release edit v1.0.0 --draft=false
 ```

@@ -21,6 +21,7 @@ The answer must be based on reproducible artifacts, not intent or optimism. Ever
 - Blocked burn-down: `docs/verification/runs/prism-full-functional-2026-06-27/logs/blocked-burn-down-20260701/blocked-burn-down-20260701.md`
 - Final RC build and installed-app smoke: `evidence/final-rc-build-and-smoke.md`
 - GitHub Draft Release: `evidence/github-draft-release.md`
+- GitHub Published Release: `evidence/github-published-release.md`
 
 Current manifest counts:
 
@@ -66,7 +67,7 @@ Why Go:
 - First-run Prism documents are verified after macOS Documents authorization: the installed app cold-starts into `/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md`.
 - Remaining Blocked items are either non-macOS staged-platform items or explicit specialty validation windows.
 - Final RC build produced a patched local DMG, and the installed `/Applications/Prism.app` passed the app smoke suite.
-- Previous GitHub Releases were removed, and a new `v1.0.0` Draft Release was created with the macOS DMG asset uploaded.
+- Previous GitHub Releases were removed, and `v1.0.0` is now published as the first stable GitHub Release with the macOS DMG asset uploaded.
 
 Explicit caveats:
 
@@ -85,7 +86,7 @@ See: `go-no-go.md`.
 - `screenshots.md` - release screenshot and animation shot list
 - `known-limitations.md` - remaining Blocked items and why they do or do not block macOS 1.0.0
 - `go-no-go.md` - final release recommendation
-- `github-release-draft.md` - GitHub Release title, public notes, asset path, and checksum
+- `github-release-draft.md` - GitHub Release title, public notes, asset path, checksum, and published state
 - `promo-page/index.html` - static promotional page prototype
 
 ## Evidence Rules

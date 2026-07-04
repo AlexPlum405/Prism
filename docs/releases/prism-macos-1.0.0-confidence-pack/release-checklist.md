@@ -29,13 +29,17 @@ Current recommendation: **Go** for the macOS 1.0.0 manual DMG release.
 | Known limitations clearly documented | Pass | `known-limitations.md` |
 | Previous GitHub Releases removed | Pass | `evidence/github-draft-release.md` |
 | GitHub Draft Release created | Pass | `evidence/github-draft-release.md` |
+| GitHub Release published | Pass | `evidence/github-published-release.md` |
 
-## Required Before Publishing
+## Publishing Verification
 
-1. Manually review the GitHub Draft Release body and uploaded asset.
-2. Confirm `Prism_1.0.0_aarch64.dmg` is the intended public download.
-3. Confirm the release body still includes the DMG SHA256, Windows/Linux staged note, and auto-updater signing limitation.
-4. Publish the draft only after explicit human approval.
+Completed on 2026-07-04:
+
+1. Manually reviewed the GitHub Draft Release body and uploaded asset.
+2. Confirmed `Prism_1.0.0_aarch64.dmg` is the intended public download.
+3. Confirmed the release body includes the DMG SHA256, Windows/Linux staged note, and auto-updater signing limitation.
+4. Published the draft after explicit human approval.
+5. Verified the public Release is `Latest`, `isDraft=false`, and the uploaded asset digest matches the local DMG checksum.
 
 ## Non-Blocking For macOS 1.0.0
 
@@ -77,5 +81,6 @@ Final RC DMG SHA256: ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f999
 Final installed-app smoke: PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed
 Updater signing: not included; TAURI_SIGNING_PRIVATE_KEY unavailable
 Old GitHub Releases: removed
-GitHub Draft Release: v1.0.0 created, isDraft=true, asset uploaded
+GitHub Draft Release: v1.0.0 created, asset uploaded
+GitHub Published Release: v1.0.0 published, isDraft=false, Latest, asset digest verified
 ```
