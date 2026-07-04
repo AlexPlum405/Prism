@@ -1,10 +1,10 @@
 # macOS 1.0.0 Release Checklist
 
-> Status: Draft v0
+> Status: Go for macOS DMG v1
 
 ## Summary
 
-Current recommendation: **Conditional Go**.
+Current recommendation: **Go** for the macOS 1.0.0 manual DMG release.
 
 | Gate | Status | Evidence |
 |---|---|---|
@@ -14,6 +14,7 @@ Current recommendation: **Conditional Go**.
 | macOS app launches and opens supported files | Pass | `logs/unit-tests/macos-file-association-startup-smoke-20260702.log` |
 | Core edit / preview / export workflow | Pass | `test-report.md`, `release-candidate-2026-07-01.md` |
 | Build gate | Pass | `evidence/build-and-test-validation.md` |
+| Final RC build and installed-app smoke | Pass | `evidence/final-rc-build-and-smoke.md` |
 | Focused regression tests | Pass | `evidence/build-and-test-validation.md` |
 | Rich copy P0 closed | Pass | `logs/blocked-burn-down-20260701/prism-ff-026-copy-installed-app.log` |
 | Export success actions and diagnostics | Pass | `release-candidate-2026-07-01.md` |
@@ -23,16 +24,16 @@ Current recommendation: **Conditional Go**.
 | Chinese/English/Japanese contextual UI review | Pass | `i18n-review.md`, `screenshots/i18n/` |
 | Version metadata matches 1.0.0 | Pass | Source config and installed app report `1.0.0` |
 | First-run Prism documents and guide | Pass | `evidence/first-run-documents-validation.md`, `screenshots/10-first-run-documents.png` |
-| Release narrative materials | Draft | `copy-and-positioning.md`, `promo-page/index.html` |
-| Release screenshots / GIF / video source | Partial | Still screenshots captured; GIF/video source pending in `screenshots.md` |
-| Known limitations clearly documented | Draft | `known-limitations.md` |
+| Release narrative materials | Pass | `copy-and-positioning.md`, `promo-page/index.html` |
+| Release screenshots / GIF / video source | Pass for launch | Still screenshots are captured; GIF/video is deferred from the 1.0.0 release bar in `screenshots.md` |
+| Known limitations clearly documented | Pass | `known-limitations.md` |
 
-## Required Before Go
+## Required Before Publishing
 
-1. Finish README first-screen copy and macOS 1.0.0 Release Notes.
-2. Decide whether the first public page requires GIF/video on day one. If yes, capture the motion assets listed in `screenshots.md`.
-3. Review the promotional page with the accepted still screenshots now wired into `promo-page/index.html`.
-4. Update `go-no-go.md` from Conditional Go to Go only if all required evidence is present.
+1. Create the GitHub Release draft for `v1.0.0`.
+2. Attach the preferred patched DMG from a fresh local build or the preserved local artifact if it has not been cleaned.
+3. Include the DMG SHA256 in the release body.
+4. State clearly that Windows/Linux releases are staged and that auto-updater signing is not included unless the signing private key is provided.
 
 ## Non-Blocking For macOS 1.0.0
 
@@ -69,4 +70,8 @@ Focused regression tests: 3 files / 8 tests passed
 npm run build: passed with non-blocking Vite chunk/externalization warnings
 macOS app smoke: npm run tauri:build:app-smoke passed
 First-run documents: installed app cold start opened /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md after macOS Documents authorization
+Final RC DMG: src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg
+Final RC DMG SHA256: ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
+Final installed-app smoke: PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed
+Updater signing: not included; TAURI_SIGNING_PRIVATE_KEY unavailable
 ```

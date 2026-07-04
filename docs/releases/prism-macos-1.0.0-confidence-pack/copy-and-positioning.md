@@ -1,6 +1,6 @@
 # Copy And Positioning
 
-> Status: Draft v0
+> Status: Release v1
 
 ## Positioning Principle
 

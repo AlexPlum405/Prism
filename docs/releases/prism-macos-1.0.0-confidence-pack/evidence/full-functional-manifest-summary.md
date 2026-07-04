@@ -55,5 +55,5 @@ jq -r '.testCases[] | select(.status=="Blocked") | [.id,.priority,.area,.feature
 
 - macOS P0/P1 release gate is currently satisfied by this manifest.
 - `Fail=0` is satisfied.
-- The remaining Blocked items must stay visible in release notes and the Go / Conditional Go decision.
+- The remaining Blocked items must stay visible in release notes and the Go decision.
 - Windows/Linux items must remain staged until real-device verification is attached.

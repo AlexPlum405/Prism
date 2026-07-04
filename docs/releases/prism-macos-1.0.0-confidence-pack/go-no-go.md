@@ -1,12 +1,12 @@
 # Go / Conditional Go / No-Go
 
-> Status: Conditional Go draft
+> Status: Go for macOS DMG v1
 
 ## Current Recommendation
 
-**Conditional Go** for macOS 1.0.0.
+**Go** for the macOS 1.0.0 manual DMG release.
 
-## Why Conditional Go
+## Why Go
 
 The core release evidence is strong:
 
@@ -19,18 +19,18 @@ The core release evidence is strong:
 - Chinese, English, and Japanese now have complete i18n key coverage.
 - Real Finder screenshots prove Markdown document icons render in Finder after LaunchServices refresh.
 - First-run documents have real installed-app evidence after macOS Documents authorization.
+- Final RC build produced the patched local DMG and installed `/Applications/Prism.app` passed smoke.
+- Release copy, known limitations, and promotional page prototype are present in this confidence pack.
 
-But release confidence is not complete:
+## Explicit Release Scope
 
-- Core still screenshots are captured, but promotional motion assets are not captured.
-- Release copy is still draft.
+This Go applies to a manual macOS DMG release.
 
-## Conditions To Move To Go
+It does not claim:
 
-1. `copy-and-positioning.md` has final README hero and Release Notes copy.
-2. `known-limitations.md` is linked from release notes or README.
-3. `promo-page/index.html` passes visual review with the accepted real screenshots now wired in.
-4. Day-one GIF/video requirement is either completed or explicitly deferred from the 1.0.0 release bar.
+- Auto-updater delivery, because `TAURI_SIGNING_PRIVATE_KEY` was unavailable during final RC build.
+- Windows/Linux official release readiness, because those platforms still require real-device validation.
+- Day-one GIF/video marketing assets, because still screenshots are sufficient for the 1.0.0 release bar and motion assets are deferred.
 
 ## No-Go Triggers
 

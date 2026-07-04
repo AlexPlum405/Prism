@@ -1,6 +1,6 @@
 # Known Limitations
 
-> Status: Draft v0
+> Status: Release v1
 
 These items remain Blocked in the full-feature manifest. They must be transparent in release decision-making, but they do not automatically block the macOS first release.
 
@@ -28,6 +28,7 @@ macOS 1.0.0 can still ship if:
 - The macOS sandbox authorization risk is described accurately: current release-pack evidence covers the Allow path, while repeatable permission-reset automation remains pending.
 - Windows/Linux are clearly marked as later staged releases.
 - Offline, high-DPI, and memory pressure items are listed as known validation gaps, not hidden failures.
+- Auto-updater signing is not claimed unless `TAURI_SIGNING_PRIVATE_KEY` is provided and a signed updater artifact is generated.
 
 ## Release Pack Findings
 
@@ -40,6 +41,7 @@ These findings came from the 1.0.0 confidence-pack pass, not from the original f
 | Source and installed app version alignment | Closed | Source config and installed app now report `1.0.0`. |
 | English/Japanese key coverage and contextual screenshots | Closed | Key coverage is Pass, and zh-CN/en-US/ja-JP main + settings screenshots are captured. |
 | First-run Prism documents after authorization | Partially Closed | Real macOS Documents authorization was observed; after Allow, cold start opened `/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md`. Full manifest closure still needs repeatable permission reset evidence. |
+| Auto-updater signing | Deferred | Final RC generated local app/DMG artifacts, but updater signing was not completed because `TAURI_SIGNING_PRIVATE_KEY` was unavailable. This does not block a manual DMG release. |
 
 ## Not Allowed
 

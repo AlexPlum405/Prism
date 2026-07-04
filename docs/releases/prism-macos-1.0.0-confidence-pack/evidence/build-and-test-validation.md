@@ -2,6 +2,52 @@
 
 > Captured: 2026-07-04 03:13 CST
 > Supplemental validation: 2026-07-04 05:16 CST
+> Final RC validation: 2026-07-04 10:35 CST
+
+## Final RC Build And Installed-App Smoke
+
+Evidence file:
+
+- `evidence/final-rc-build-and-smoke.md`
+
+Build commands:
+
+```bash
+npm run tauri:build
+npm run release:mac-dmg:skip-finder
+```
+
+Result:
+
+- Frontend build passed.
+- Rust release build passed.
+- `.app`, `.app.tar.gz`, and DMG artifacts were generated.
+- `npm run tauri:build` exited nonzero only at updater signing because `TAURI_SIGNING_PRIVATE_KEY` was not set.
+- The patched local RC DMG was generated at `src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg`.
+
+Preferred local RC DMG:
+
+```text
+sha256=ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
+```
+
+Installed-app smoke command:
+
+```bash
+PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs
+```
+
+Result:
+
+```text
+Pass: startup, file opening, diagnostics, quick open, edit/save, export menu, settings, and HTML/PDF/PNG/DOCX complex export smoke.
+```
+
+Release interpretation:
+
+- macOS 1.0.0 is acceptable as a manual DMG release candidate.
+- Auto-updater signing remains outside this RC because the signing private key was unavailable.
+- Raw build and smoke directories are generated artifacts and can be deleted after this evidence summary is recorded.
 
 ## Targeted Tests
 

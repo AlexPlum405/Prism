@@ -1,6 +1,6 @@
 # Release Screenshots And Motion Plan
 
-> Status: still screenshots partially captured; motion assets still pending
+> Status: still screenshots accepted for 1.0.0; motion assets deferred
 
 Release screenshots must be recaptured from the current app. Full-feature test screenshots can inform angles but should not be reused directly.
 
@@ -45,4 +45,4 @@ The remaining screenshot gaps are promotional rather than P0 release blockers: e
 
 ## Promotion Page Usage
 
-The promotional page prototype now references accepted still screenshots directly. Motion assets remain pending and should be generated only if the 1.0.0 launch page requires video/GIF on day one.
+The promotional page prototype now references accepted still screenshots directly. Motion assets are deferred from the 1.0.0 release bar and should be generated after the first macOS release if the launch page needs video/GIF.
