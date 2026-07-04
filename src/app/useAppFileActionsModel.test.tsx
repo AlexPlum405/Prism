@@ -5,6 +5,7 @@ import { executeFileAction } from '../lib/fileActions';
 import { openSelectedDocument } from '../lib/openDocumentFlow';
 import { useStartupFileOpen } from './useStartupFileOpen';
 import { useAppFileActionsModel } from './useAppFileActionsModel';
+import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 
 vi.mock('../lib/fileActions', () => ({
   executeFileAction: vi.fn(),
@@ -16,6 +17,10 @@ vi.mock('../lib/openDocumentFlow', () => ({
 
 vi.mock('./useStartupFileOpen', () => ({
   useStartupFileOpen: vi.fn(),
+}));
+
+vi.mock('../platform/tauri/nativeCommands', () => ({
+  invokeNativeCommand: vi.fn(async () => undefined),
 }));
 
 describe('useAppFileActionsModel', () => {
@@ -81,12 +86,15 @@ describe('useAppFileActionsModel', () => {
   });
 
   it('opens startup files through the shared system-open document flow', async () => {
+    vi.mocked(openSelectedDocument).mockResolvedValueOnce({ status: 'opened-current-window' });
+
     renderHook(() => useAppFileActionsModel({
       requestMarkdownSavePath,
       showToast,
     }));
 
     const input = vi.mocked(useStartupFileOpen).mock.calls[0][0];
+    expect(input.enabled).toBe(true);
     expect(input.pendingFilePollDelays).toEqual([]);
 
     await act(async () => {
@@ -101,10 +109,25 @@ describe('useAppFileActionsModel', () => {
       }),
       { entryPoint: 'system' },
     );
+    expect(invokeNativeCommand).toHaveBeenCalledWith('reveal_current_window');
+  });
+
+  it('keeps native startup-file listening disabled until the app marks settings ready', () => {
+    renderHook(() => useAppFileActionsModel({
+      requestMarkdownSavePath,
+      showToast,
+      startupFileOpenEnabled: false,
+    }));
+
+    expect(vi.mocked(useStartupFileOpen).mock.calls[0][0]).toMatchObject({
+      enabled: false,
+      pendingFilePollDelays: [],
+    });
   });
 
   it('routes running-app startup files through the system-open policy when a document is already active', async () => {
     useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current');
+    vi.mocked(openSelectedDocument).mockResolvedValueOnce({ status: 'opened-new-window' });
 
     renderHook(() => useAppFileActionsModel({
       requestMarkdownSavePath,
@@ -123,5 +146,6 @@ describe('useAppFileActionsModel', () => {
       { entryPoint: 'system' },
     );
     expect(executeFileAction).not.toHaveBeenCalled();
+    expect(invokeNativeCommand).not.toHaveBeenCalled();
   });
 });

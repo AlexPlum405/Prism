@@ -61,7 +61,9 @@ function App() {
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<'general' | 'writing' | 'appearance' | 'export' | 'citation' | 'files'>('general');
-  useAppLifecycleModel({
+  const {
+    settingsReady,
+  } = useAppLifecycleModel({
     autoSaveEnabled: settings.autoSaveEnabled,
     autoSaveInterval: settings.autoSaveInterval,
     currentDocument,
@@ -138,6 +140,7 @@ function App() {
   } = useAppFileActionsModel({
     requestMarkdownSavePath,
     showToast,
+    startupFileOpenEnabled: settingsReady,
   });
 
   const handleTitlebarRename = useCallback(async (name: string) => {

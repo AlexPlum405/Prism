@@ -11,7 +11,7 @@ import { getRuntimePlatform, joinPath } from '../domains/workspace/services';
 import { grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
 import { openDocumentInCurrentWindow, openDocumentInNewWindow } from '../lib/openDocumentFlow';
 
-const MACOS_PENDING_FILE_POLL_DELAYS = [0] as const;
+const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800, 1600] as const;
 const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
 const DEFAULT_INITIAL_WORKSPACE_NAME = 'Prism';
 const DEFAULT_INITIAL_GUIDE_PARTS = ['Examples', 'Prism Markdown 语法指南.md'] as const;
@@ -130,16 +130,15 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
 
     const openDefaultInitialWorkspace = async () => {
       const target = await getDefaultInitialTarget();
+      const openedWorkspace = await openFolder(target.root).catch((err) => {
+        console.error('[useBootstrap] Failed to load default Prism workspace tree:', err);
+        return false;
+      });
       const openedGuide = await openFile(target.guide, undefined, undefined, {
-        skipFileScopeGrant: true,
+        skipFileScopeGrant: openedWorkspace,
         skipWorkspaceSync: true,
       });
-      if (!openedGuide || cancelled) return openedGuide;
-
-      void openFolder(target.root).catch((err) => {
-        console.error('[useBootstrap] Failed to load default Prism workspace tree:', err);
-      });
-      return true;
+      return openedGuide;
     };
 
     const openPendingStartupFile = async () => {

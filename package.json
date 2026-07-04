@@ -1,6 +1,6 @@
 {
   "name": "prism",
-  "version": "1.4.1",
+  "version": "1.0.0",
   "description": "A local-first Markdown editor for writing, preview typography, and reliable export.",
   "main": "index.js",
   "directories": {
@@ -18,6 +18,8 @@
     "icons:documents": "node scripts/generate-document-icons.mjs",
     "macos:patch-document-icons": "node scripts/patch-macos-document-icons.mjs",
     "macos:register-markdown-default": "node scripts/register-macos-markdown-default.mjs",
+    "macos:register-text-default": "node scripts/register-macos-markdown-default.mjs --text",
+    "macos:register-all-default": "node scripts/register-macos-markdown-default.mjs --text",
     "release:mac-dmg:skip-finder": "bash scripts/package-macos-dmg-skip-finder.sh",
     "release:manifest": "node scripts/generate-updater-manifest.mjs",
     "release:manifest:check": "node scripts/generate-updater-manifest.mjs --check"

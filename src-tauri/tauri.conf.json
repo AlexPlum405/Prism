@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Prism",
-  "version": "1.4.1",
+  "version": "1.0.0",
   "identifier": "com.prism.editor.v1",
   "build": {
     "frontendDist": "../dist",
@@ -56,7 +56,8 @@
     ],
     "resources": {
       "resources/Initial": "Initial",
-      "icons/document-markdown.icns": "PrismMarkdownSignatureDocument.icns"
+      "icons/document-markdown.icns": "PrismMarkdownSignatureDocument.icns",
+      "icons/document-text.icns": "PrismTextDocument.icns"
     },
     "fileAssociations": [
       {
@@ -96,10 +97,27 @@
           "conf",
           "env"
         ],
-        "name": "Text Document",
+        "contentTypes": [
+          "com.prism.editor.text",
+          "public.plain-text",
+          "public.text",
+          "public.source-code",
+          "public.json",
+          "public.yaml",
+          "public.xml",
+          "public.comma-separated-values-text",
+          "public.tab-separated-values-text",
+          "org.iso.sql"
+        ],
+        "name": "Prism Text Document",
         "description": "Text Document",
         "mimeType": "text/plain",
-        "role": "Editor"
+        "role": "Editor",
+        "rank": "Default",
+        "exportedType": {
+          "identifier": "com.prism.editor.text",
+          "conformsTo": ["public.text"]
+        }
       }
     ]
   }

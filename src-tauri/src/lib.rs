@@ -392,9 +392,6 @@ fn handle_macos_window_lifecycle(app: &tauri::AppHandle, event: &tauri::RunEvent
                 show_preferred_window(app);
             }
         }
-        tauri::RunEvent::Opened { .. } => {
-            show_preferred_window(app);
-        }
         _ => {}
     }
 }

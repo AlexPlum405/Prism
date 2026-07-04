@@ -88,9 +88,14 @@ describe('settings app data paths', () => {
 
     expect(useSettingsStore.getState().theme).toBe('dark');
     expect(useSettingsStore.getState().recentFiles[0]?.name).toBe('legacy.md');
+    expect(useSettingsStore.getState().lastSession).toBeNull();
     expect(writeTextFile).toHaveBeenCalledWith(
       '/Users/Alex/Library/Application Support/com.prism.editor.v1/config.json',
       expect.stringContaining('legacy.md'),
+    );
+    expect(writeTextFile).toHaveBeenCalledWith(
+      '/Users/Alex/Library/Application Support/com.prism.editor.v1/config.json',
+      expect.not.stringContaining('"lastSession":{"filePath":"/Users/Alex/notes/legacy.md"'),
     );
   });
 

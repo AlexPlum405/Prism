@@ -43,6 +43,18 @@ describe('useStartupFileOpen', () => {
     expect(onOpenFilePath).toHaveBeenCalledTimes(2);
   });
 
+  it('does not poll or listen while disabled', async () => {
+    renderHook(() => useStartupFileOpen({
+      enabled: false,
+      onOpenFilePath: vi.fn(),
+      pendingFilePollDelays: [0],
+      wait,
+    }));
+
+    expect(listenForStartupFiles).not.toHaveBeenCalled();
+    expect(getPendingStartupFiles).not.toHaveBeenCalled();
+  });
+
   it('opens every file delivered by the native file-opened event', async () => {
     const onOpenFilePath = vi.fn();
 

@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '../domains/workspace/store';
 import { executeFileAction, type DirtyDocumentSwitchAction, type FileActionInput } from '../lib/fileActions';
 import { openSelectedDocument } from '../lib/openDocumentFlow';
 import { useStartupFileOpen } from './useStartupFileOpen';
+import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 
 interface DirtySwitchPromptState {
   currentName: string;
@@ -14,11 +15,13 @@ interface DirtySwitchPromptState {
 interface UseAppFileActionsModelInput {
   requestMarkdownSavePath: (input: { filename: string; documentPath?: string }) => Promise<string | null>;
   showToast: (message: string) => void;
+  startupFileOpenEnabled?: boolean;
 }
 
 export function useAppFileActionsModel({
   requestMarkdownSavePath,
   showToast,
+  startupFileOpenEnabled = true,
 }: UseAppFileActionsModelInput) {
   const [dirtySwitchPrompt, setDirtySwitchPrompt] = useState<DirtySwitchPromptState | null>(null);
 
@@ -54,16 +57,23 @@ export function useAppFileActionsModel({
   }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
 
   const handleStartupFileOpen = useCallback(async (path: string) => {
-    await openSelectedDocument(path, {
+    const result = await openSelectedDocument(path, {
       documentStore: useDocumentStore.getState(),
       requestDirtyDocumentAction,
       requestSavePath: requestMarkdownSavePath,
       workspaceStore: useWorkspaceStore.getState(),
       showToast,
     }, { entryPoint: 'system' });
+    if (
+      result.status === 'opened-current-window'
+      || result.status === 'current-document'
+    ) {
+      await invokeNativeCommand('reveal_current_window').catch(() => undefined);
+    }
   }, [requestDirtyDocumentAction, requestMarkdownSavePath, showToast]);
 
   useStartupFileOpen({
+    enabled: startupFileOpenEnabled,
     onOpenFilePath: handleStartupFileOpen,
     pendingFilePollDelays: [],
   });

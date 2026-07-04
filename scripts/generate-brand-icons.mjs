@@ -103,6 +103,106 @@ async function readSourceMetadata() {
   return metadata;
 }
 
+// Trim whitespace/near-white borders from the source image by detecting
+// the bounding box of non-white content, then cropping to a square that
+// fully contains that content.
+async function getTrimmedSource() {
+  const meta = await sharp(sourceIconPath).metadata();
+  const w = meta.width;
+  const h = meta.height;
+  const c = meta.channels;
+  const pixels = await sharp(sourceIconPath).raw().toBuffer();
+
+  // Find the bounding box of non-white content.
+  // A pixel is "white" if all RGB channels >= 250.
+  // Using 250 (instead of 240) to also exclude near-white borders (RGB 251-254)
+  // that often appear around icons exported from design tools.
+  const whiteThreshold = 250;
+  let minX = w;
+  let minY = h;
+  let maxX = 0;
+  let maxY = 0;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * c;
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      if (r < whiteThreshold || g < whiteThreshold || b < whiteThreshold) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  // Add a small padding so the icon isn't flush against the edge.
+  const padding = Math.round(Math.max(w, h) * 0.02);
+  minX = Math.max(0, minX - padding);
+  minY = Math.max(0, minY - padding);
+  maxX = Math.min(w - 1, maxX + padding);
+  maxY = Math.min(h - 1, maxY + padding);
+
+  const contentW = maxX - minX + 1;
+  const contentH = maxY - minY + 1;
+
+  // Crop to a centered square that fully contains the content.
+  const squareSize = Math.max(contentW, contentH);
+  const squareLeft = Math.max(0, Math.floor(minX + (contentW - squareSize) / 2));
+  const squareTop = Math.max(0, Math.floor(minY + (contentH - squareSize) / 2));
+
+  console.log(
+    `Content bounds: ${contentW}x${contentH} at (${minX},${minY}) -> ` +
+    `square crop ${squareSize}x${squareSize} at (${squareLeft},${squareTop})`,
+  );
+
+  const trimmed = await sharp(sourceIconPath)
+    .extract({
+      left: squareLeft,
+      top: squareTop,
+      width: squareSize,
+      height: squareSize,
+    })
+    .toBuffer();
+
+  // Make near-white pixels transparent so macOS squircle cropping
+  // doesn't show a white border around the icon.
+  const trimmedMeta = await sharp(trimmed).metadata();
+  const tw = trimmedMeta.width;
+  const th = trimmedMeta.height;
+  const tc = trimmedMeta.channels;
+  const trimmedPixels = await sharp(trimmed).raw().toBuffer();
+
+  const rgbaBuffer = Buffer.alloc(tw * th * 4);
+  const transparencyThreshold = 248;
+
+  for (let i = 0; i < tw * th; i++) {
+    const srcIdx = i * tc;
+    const dstIdx = i * 4;
+    const r = trimmedPixels[srcIdx];
+    const g = trimmedPixels[srcIdx + 1];
+    const b = trimmedPixels[srcIdx + 2];
+
+    rgbaBuffer[dstIdx] = r;
+    rgbaBuffer[dstIdx + 1] = g;
+    rgbaBuffer[dstIdx + 2] = b;
+    rgbaBuffer[dstIdx + 3] = (r >= transparencyThreshold && g >= transparencyThreshold && b >= transparencyThreshold) ? 0 : 255;
+  }
+
+  const finalBuffer = await sharp(rgbaBuffer, {
+    raw: { width: tw, height: th, channels: 4 },
+  })
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .toBuffer();
+
+  const finalMeta = await sharp(finalBuffer).metadata();
+  console.log(`Trimmed source: ${finalMeta.width}x${finalMeta.height} (near-white pixels made transparent)`);
+
+  return finalBuffer;
+}
+
 function centeredCrop(metadata, ratio) {
   const sourceSize = metadata.width;
   const cropSize = Math.round(sourceSize * ratio);
@@ -112,8 +212,9 @@ function centeredCrop(metadata, ratio) {
   return { left, top, width: cropSize, height: cropSize };
 }
 
-async function renderStandardIcon(size) {
-  return sharp(sourceIconPath)
+async function renderStandardIcon(size, trimmedSource) {
+  return sharp(trimmedSource)
+    .ensureAlpha()
     .resize(size, size, {
       fit: 'cover',
       kernel: sharp.kernel.lanczos3,
@@ -122,11 +223,12 @@ async function renderStandardIcon(size) {
     .toBuffer();
 }
 
-async function renderWindowsSmallIcon(size, metadata) {
+async function renderWindowsSmallIcon(size, metadata, trimmedSource) {
   const crop = centeredCrop(metadata, windowsCropRatio(size));
 
-  return sharp(sourceIconPath)
+  return sharp(trimmedSource)
     .extract(crop)
+    .ensureAlpha()
     .resize(size, size, {
       fit: 'cover',
       kernel: sharp.kernel.lanczos3,
@@ -138,22 +240,22 @@ async function renderWindowsSmallIcon(size, metadata) {
     .toBuffer();
 }
 
-async function renderIcon(size, mode, metadata) {
+async function renderIcon(size, mode, metadata, trimmedSource) {
   if (mode === 'windows-small') {
-    return renderWindowsSmallIcon(size, metadata);
+    return renderWindowsSmallIcon(size, metadata, trimmedSource);
   }
 
-  return renderStandardIcon(size);
+  return renderStandardIcon(size, trimmedSource);
 }
 
-async function generateIcns(metadata) {
+async function generateIcns(metadata, trimmedSource) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'prism-iconset-'));
   const iconsetDir = path.join(tempRoot, 'icon.iconset');
 
   await fs.mkdir(iconsetDir, { recursive: true });
 
   for (const [filename, size] of icnsIconsetEntries) {
-    const buffer = await renderIcon(size, 'standard', metadata);
+    const buffer = await renderIcon(size, 'standard', metadata, trimmedSource);
     await fs.writeFile(path.join(iconsetDir, filename), buffer);
   }
 
@@ -165,21 +267,21 @@ async function generateIcns(metadata) {
   await fs.rm(tempRoot, { recursive: true, force: true });
 }
 
-async function generateIco(metadata) {
+async function generateIco(metadata, trimmedSource) {
   const pngLayers = [];
 
   for (const size of icoLayerSizes) {
     const mode = size <= 64 ? 'windows-small' : 'standard';
-    const buffer = await renderIcon(size, mode, metadata);
+    const buffer = await renderIcon(size, mode, metadata, trimmedSource);
     pngLayers.push({ size, buffer });
   }
 
   await fs.writeFile(outputIcoPath, buildPngCompressedIco(pngLayers));
 }
 
-async function writePngOutputs(outputs, metadata) {
+async function writePngOutputs(outputs, metadata, trimmedSource) {
   for (const [filename, size, mode] of outputs) {
-    const buffer = await renderIcon(size, mode, metadata);
+    const buffer = await renderIcon(size, mode, metadata, trimmedSource);
     await fs.writeFile(path.join(iconsDir, filename), buffer);
   }
 }
@@ -187,13 +289,17 @@ async function writePngOutputs(outputs, metadata) {
 await fs.mkdir(iconsDir, { recursive: true });
 
 const metadata = await readSourceMetadata();
-const appIconBuffer = await renderIcon(1024, 'standard', metadata);
+const trimmedSource = await getTrimmedSource();
+const trimmedMetadata = await sharp(trimmedSource).metadata();
+// Use trimmed metadata for crop calculations so Windows small icons crop correctly
+const effectiveMetadata = trimmedMetadata;
+const appIconBuffer = await renderIcon(1024, 'standard', effectiveMetadata, trimmedSource);
 
 await fs.writeFile(appIconPath, appIconBuffer);
-await writePngOutputs(genericPngOutputs, metadata);
-await writePngOutputs(windowsLogoOutputs, metadata);
-await generateIcns(metadata);
-await generateIco(metadata);
+await writePngOutputs(genericPngOutputs, effectiveMetadata, trimmedSource);
+await writePngOutputs(windowsLogoOutputs, effectiveMetadata, trimmedSource);
+await generateIcns(effectiveMetadata, trimmedSource);
+await generateIco(effectiveMetadata, trimmedSource);
 
 console.log(`Generated ${appIconPath}`);
 console.log(`Generated ${outputIcnsPath}`);

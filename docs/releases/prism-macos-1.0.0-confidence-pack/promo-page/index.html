@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prism - Local-first Markdown writing</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f7f6f2;
+      --surface: #fffefa;
+      --ink: #242321;
+      --muted: #6e6a62;
+      --hair: #ded8cd;
+      --accent: #7a3dad;
+      --link: #0c6ada;
+      --green: #1c5d33;
+      --shadow: rgba(56, 44, 32, 0.18);
+      font-family: ui-serif, "New York", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; }
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 92vh;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      background: #15130f;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        rgba(12, 10, 8, 0.78) 0%,
+        rgba(12, 10, 8, 0.58) 36%,
+        rgba(12, 10, 8, 0.12) 100%
+      );
+    }
+
+    .hero-media {
+      position: absolute;
+      inset: 0;
+    }
+
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 58% center;
+    }
+
+    .topbar {
+      position: absolute;
+      z-index: 2;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 34px;
+      color: rgba(255, 254, 250, 0.84);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 14px;
+    }
+
+    .brand {
+      color: #fffefa;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .nav {
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      width: min(760px, calc(100% - 48px));
+      margin: 0 0 8vh 34px;
+      color: #fffefa;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      max-width: 760px;
+      font-size: 72px;
+      line-height: 0.98;
+      font-weight: 820;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 660px;
+      margin: 0;
+      color: rgba(255, 254, 250, 0.86);
+      font-size: 22px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid rgba(255, 254, 250, 0.38);
+      border-radius: 7px;
+      color: #fffefa;
+      text-decoration: none;
+      font-weight: 620;
+      background: rgba(255, 254, 250, 0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    .button.primary {
+      border-color: #fffefa;
+      background: #fffefa;
+      color: var(--accent);
+    }
+
+    .shell {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 58px 24px 76px;
+    }
+
+    .section {
+      padding: 42px 0;
+    }
+
+    .section-header {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.55fr);
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--accent);
+      font-size: 36px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .section-header p {
+      margin: 0;
+      color: var(--muted);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 16px;
+    }
+
+    .evidence-image {
+      overflow: hidden;
+      border: 1px solid var(--hair);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: 0 18px 54px var(--shadow);
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .image-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .caption {
+      margin: 9px 2px 0;
+      color: var(--muted);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 13px;
+    }
+
+    .proof-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .proof {
+      min-height: 150px;
+      border: 1px solid var(--hair);
+      border-radius: 8px;
+      background: rgba(255, 254, 250, 0.78);
+      padding: 18px;
+    }
+
+    .proof h3 {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .proof p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    footer {
+      margin-top: 42px;
+      border-top: 1px solid var(--hair);
+      padding-top: 24px;
+      color: var(--muted);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 14px;
+    }
+
+    @media (max-width: 920px) {
+      .topbar { padding: 18px 22px; }
+      .nav { display: none; }
+      .hero { min-height: 86vh; }
+      .hero::after {
+        background: linear-gradient(
+          90deg,
+          rgba(12, 10, 8, 0.9) 0%,
+          rgba(12, 10, 8, 0.74) 54%,
+          rgba(12, 10, 8, 0.38) 100%
+        );
+      }
+      .hero-media img { object-position: 64% center; }
+      .hero-copy {
+        width: calc(100% - 44px);
+        margin-left: 22px;
+        margin-bottom: 7vh;
+      }
+      h1 { font-size: 48px; }
+      .lead { font-size: 19px; }
+      .section-header,
+      .image-grid,
+      .image-grid.three,
+      .proof-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-media" aria-hidden="true">
+      <img src="../screenshots/02-split-preview-longform.png" alt="">
+    </div>
+    <header class="topbar">
+      <div class="brand">Prism</div>
+      <nav class="nav" aria-label="Sections">
+        <a href="#preview">Preview</a>
+        <a href="#export">Export</a>
+        <a href="#confidence">Confidence</a>
+      </nav>
+    </header>
+    <div class="hero-copy">
+      <h1>Local Markdown writing, with preview you can trust.</h1>
+      <p class="lead">Prism is an open-source Markdown editor for long-form and technical writing, focused on local files, faithful preview, dependable export, and diagnostics that help you fix what matters.</p>
+      <div class="actions">
+        <a class="button primary" href="../copy-and-positioning.md">Read release notes</a>
+        <a class="button" href="../go-no-go.md">View confidence pack</a>
+      </div>
+    </div>
+  </section>
+
+  <main class="shell">
+    <section id="preview" class="section">
+      <div class="section-header">
+        <h2>A writing surface for real Markdown documents.</h2>
+        <p>These screenshots are captured from the current macOS release build, not static mockups.</p>
+      </div>
+      <div class="image-grid">
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/01-local-markdown-writing.png" alt="Prism editing a Markdown document">
+          </div>
+          <figcaption class="caption">Focused local writing with the Prism document workspace.</figcaption>
+        </figure>
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/03-diagrams-formulas-preview.png" alt="Prism previewing diagrams and formulas">
+          </div>
+          <figcaption class="caption">Mermaid, PlantUML, Markmap, and KaTeX inside the preview loop.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="export" class="section">
+      <div class="section-header">
+        <h2>Preview, diagnostics, export, and first-run docs are backed by evidence.</h2>
+        <p>The release pack keeps the proof visible so 1.0.0 does not depend on undocumented assumptions.</p>
+      </div>
+      <div class="image-grid">
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/04-export-diagnostics.png" alt="Prism export diagnostics">
+          </div>
+          <figcaption class="caption">Export diagnostics surface broken resources and render risks.</figcaption>
+        </figure>
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/10-first-run-documents.png" alt="Prism first-run documents workspace">
+          </div>
+          <figcaption class="caption">Cold start opens the bundled Prism workspace and Markdown guide after macOS authorization.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Finder icons and three-language UI are part of the release bar.</h2>
+        <p>macOS ships first. Windows and Linux stay staged until real-device validation is complete.</p>
+      </div>
+      <div class="image-grid three">
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/finder-icons/03-finder-large-icon-view.png" alt="Finder showing Prism document icons">
+          </div>
+          <figcaption class="caption">Markdown and text document icons verified in Finder.</figcaption>
+        </figure>
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/i18n/en-01-main-window.png" alt="Prism English UI screenshot">
+          </div>
+          <figcaption class="caption">English core writing UI.</figcaption>
+        </figure>
+        <figure>
+          <div class="evidence-image">
+            <img src="../screenshots/i18n/ja-01-main-window.png" alt="Prism Japanese UI screenshot">
+          </div>
+          <figcaption class="caption">Japanese core writing UI.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="confidence" class="section">
+      <div class="proof-list">
+        <article class="proof">
+          <h3>Local-first</h3>
+          <p>Prism opens and edits local Markdown/text files directly, with a first-run Documents workspace seeded into the user folder.</p>
+        </article>
+        <article class="proof">
+          <h3>Trustworthy export</h3>
+          <p>HTML, PDF, PNG, and DOCX smoke checks pass in the installed macOS app, with diagnostics available when export risks appear.</p>
+        </article>
+        <article class="proof">
+          <h3>Transparent limits</h3>
+          <p>Known validation gaps remain documented: Windows/Linux real-device release, full offline proof, high-DPI matrix, and memory pressure runs.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      Prism is free and open-source. This page is a local promotional prototype for the macOS 1.0.0 release confidence pack.
+    </footer>
+  </main>
+</body>
+</html>

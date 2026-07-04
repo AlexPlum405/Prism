@@ -1,4 +1,4 @@
-import { EditorState } from '@codemirror/state';
+import { EditorState, type Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { describe, expect, it, vi } from 'vitest';
 import { lineFlashField } from '../extensions/selection';
@@ -9,7 +9,7 @@ import {
 } from './editorScrollRuntime';
 import { PREVIEW_SOURCE_FLASH_MS } from '../../../lib/feedbackTiming';
 
-function createView(doc: string, extensions: Parameters<typeof EditorState.create>[0]['extensions'] = []) {
+function createView(doc: string, extensions: Extension[] = []) {
   const parent = document.createElement('div');
   document.body.appendChild(parent);
   const view = new EditorView({
@@ -44,9 +44,9 @@ describe('editorScrollRuntime', () => {
 
   it('keeps the editor source line flash visible until the feedback timer expires', () => {
     const { view, destroy } = createView('one\ntwo\nthree', [lineFlashField]);
-    let clearFlash: (() => void) | null = null;
+    const clearFlash: { current?: () => void } = {};
     const scheduleClear = vi.fn((callback: () => void, delay: number) => {
-      clearFlash = callback;
+      clearFlash.current = callback;
       return delay as unknown as ReturnType<typeof setTimeout>;
     });
 
@@ -55,10 +55,10 @@ describe('editorScrollRuntime', () => {
       expect(scheduleClear).toHaveBeenCalledWith(expect.any(Function), PREVIEW_SOURCE_FLASH_MS);
       expect(view.state.field(lineFlashField).size).toBe(1);
 
-      expect(clearFlash).not.toBeNull();
+      expect(clearFlash.current).toBeDefined();
       expect(view.state.field(lineFlashField).size).toBe(1);
 
-      clearFlash?.();
+      clearFlash.current?.();
       expect(view.state.field(lineFlashField).size).toBe(0);
     } finally {
       destroy();

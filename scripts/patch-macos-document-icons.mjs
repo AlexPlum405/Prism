@@ -30,8 +30,28 @@ const markdownUtiAliases = [
   'net.ia.markdown',
   'com.unknown.md',
 ];
+const textIconFile = 'PrismTextDocument.icns';
+const textIconName = 'PrismTextDocument';
+const prismTextUti = 'com.prism.editor.text';
+const textUtiAliases = [
+  'public.plain-text',
+  'public.text',
+  'public.source-code',
+  'public.json',
+  'public.yaml',
+  'public.xml',
+  'public.comma-separated-values-text',
+  'public.tab-separated-values-text',
+  'org.iso.sql',
+];
+const textExtensions = [
+  'txt', 'text', 'sql', 'json', 'jsonc', 'yaml', 'yml', 'toml',
+  'xml', 'csv', 'tsv', 'log', 'ini', 'conf', 'env',
+];
 const sourceIconPath = path.join(repoRoot, 'src-tauri', 'icons', 'document-markdown.icns');
+const sourceTextIconPath = path.join(repoRoot, 'src-tauri', 'icons', 'document-text.icns');
 const bundledIconPath = path.join(resourcesDir, documentIconFile);
+const bundledTextIconPath = path.join(resourcesDir, textIconFile);
 
 function readPlistJson(plistPath) {
   const json = execFileSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plistPath], {
@@ -46,6 +66,13 @@ function hasMarkdownExtension(documentType) {
 
   return Array.isArray(extensions)
     && extensions.some((extension) => ['md', 'markdown'].includes(String(extension).toLowerCase()));
+}
+
+function hasTextExtension(documentType) {
+  const extensions = documentType?.CFBundleTypeExtensions;
+
+  return Array.isArray(extensions)
+    && extensions.some((extension) => textExtensions.includes(String(extension).toLowerCase()));
 }
 
 function hasMarkdownContentType(documentType) {
@@ -218,17 +245,78 @@ async function ensureReadableFile(filePath, label) {
   }
 }
 
+function ensureTextDocumentType(info) {
+  if (!Array.isArray(info.CFBundleDocumentTypes)) {
+    info.CFBundleDocumentTypes = [];
+  }
+
+  const textTypes = info.CFBundleDocumentTypes.filter((documentType) => (
+    documentType?.CFBundleTypeName === 'Text Document'
+    || documentType?.CFBundleTypeName === 'Prism Text Document'
+    || (hasTextExtension(documentType) && !hasMarkdownExtension(documentType))
+  ));
+
+  const nonTextTypes = info.CFBundleDocumentTypes.filter((documentType) => !textTypes.includes(documentType));
+
+  const prismTextDocumentType = {
+    CFBundleTypeExtensions: textExtensions,
+    CFBundleIconName: textIconName,
+    CFBundleTypeIconFile: textIconName,
+    CFBundleTypeName: 'Prism Text Document',
+    CFBundleTypeRole: 'Editor',
+    LSItemContentTypes: [
+      prismTextUti,
+      ...textUtiAliases,
+    ],
+    LSHandlerRank: 'Default',
+  };
+
+  info.CFBundleDocumentTypes = [...nonTextTypes, prismTextDocumentType];
+}
+
+function ensurePrismTextUtiDeclaration(info) {
+  const declaration = {
+    UTTypeConformsTo: ['public.text'],
+    UTTypeDescription: 'Prism Text Document',
+    UTTypeIconFile: textIconName,
+    UTTypeIdentifier: prismTextUti,
+    UTTypeTagSpecification: {
+      'public.filename-extension': textExtensions,
+      'public.mime-type': ['text/plain'],
+    },
+  };
+
+  if (!Array.isArray(info.UTExportedTypeDeclarations)) {
+    info.UTExportedTypeDeclarations = [];
+  }
+
+  const existingIndex = info.UTExportedTypeDeclarations.findIndex(
+    (candidate) => candidate?.UTTypeIdentifier === prismTextUti,
+  );
+
+  if (existingIndex >= 0) {
+    info.UTExportedTypeDeclarations[existingIndex] = declaration;
+  } else {
+    info.UTExportedTypeDeclarations.push(declaration);
+  }
+}
+
 await ensureReadableFile(infoPlistPath, 'Info.plist');
 await ensureReadableFile(sourceIconPath, 'Markdown document icon');
+await ensureReadableFile(sourceTextIconPath, 'Text document icon');
 
 await copyFile(sourceIconPath, bundledIconPath);
+await copyFile(sourceTextIconPath, bundledTextIconPath);
 
 const info = readPlistJson(infoPlistPath);
 ensureMarkdownDocumentType(info);
 ensurePrismMarkdownUtiDeclaration(info);
 ensureMarkdownCompatibilityUtiDeclarations(info);
 ensureMarkdownAliasUtiDeclarations(info);
+ensureTextDocumentType(info);
+ensurePrismTextUtiDeclaration(info);
 await writePlistJson(infoPlistPath, info);
 
 console.log(`Copied ${documentIconFile} to ${bundledIconPath}`);
-console.log(`Patched Markdown document icon in ${infoPlistPath}`);
+console.log(`Copied ${textIconFile} to ${bundledTextIconPath}`);
+console.log(`Patched Markdown and Text document icons in ${infoPlistPath}`);

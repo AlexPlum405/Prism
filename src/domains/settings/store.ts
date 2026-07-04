@@ -643,6 +643,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         const legacySaved = await loadLegacySettingsConfig();
         if (legacySaved) {
           const settings = normalizeSettings(legacySaved);
+          settings.lastSession = null;
           if (!legacySaved.recentFiles) {
             settings.recentFiles = migrateLegacyRecentFiles(settings.recentFilesLimit);
           }

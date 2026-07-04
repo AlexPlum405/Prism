@@ -8,17 +8,20 @@ function delay(ms: number) {
 }
 
 export interface UseStartupFileOpenInput {
+  enabled?: boolean;
   onOpenFilePath: (path: string) => void | Promise<void>;
   pendingFilePollDelays?: readonly number[];
   wait?: (ms: number) => Promise<unknown>;
 }
 
 export function useStartupFileOpen({
+  enabled = true,
   onOpenFilePath,
   pendingFilePollDelays = DEFAULT_PENDING_FILE_POLL_DELAYS,
   wait = delay,
 }: UseStartupFileOpenInput) {
   useEffect(() => {
+    if (!enabled) return;
     let mounted = true;
 
     const openPaths = async (paths: string[]) => {
@@ -58,5 +61,5 @@ export function useStartupFileOpen({
       mounted = false;
       void unlisten.then((fn) => fn());
     };
-  }, [onOpenFilePath, pendingFilePollDelays, wait]);
+  }, [enabled, onOpenFilePath, pendingFilePollDelays, wait]);
 }

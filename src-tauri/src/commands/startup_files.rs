@@ -76,7 +76,7 @@ pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
 
     #[cfg(target_os = "macos")]
     if let tauri::RunEvent::Opened { urls } = event {
-        let paths = filter_existing_startup_file_paths(
+        let paths = filter_supported_startup_file_paths(
             urls.iter()
                 .filter_map(|u| u.to_file_path().ok())
                 .filter_map(|p| p.to_str().map(|s| s.to_string())),
@@ -114,7 +114,7 @@ fn is_supported_startup_document_path(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-fn filter_existing_startup_file_paths<I, S>(paths: I) -> Vec<String>
+fn filter_supported_startup_file_paths<I, S>(paths: I) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -124,7 +124,7 @@ where
         .filter_map(|path| {
             let path_text = path.as_ref();
             let candidate = Path::new(path_text);
-            if is_supported_startup_document_path(candidate) && candidate.exists() {
+            if is_supported_startup_document_path(candidate) {
                 Some(path_text.to_string())
             } else {
                 None
@@ -134,7 +134,7 @@ where
 }
 
 fn extract_file_paths_from_args() -> Vec<String> {
-    filter_existing_startup_file_paths(std::env::args().skip(1))
+    filter_supported_startup_file_paths(std::env::args().skip(1))
 }
 
 #[cfg(test)]
@@ -160,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn filters_existing_document_startup_paths_and_preserves_order() {
+    fn filters_supported_document_startup_paths_and_preserves_order_without_preflight_exists() {
         let root = unique_temp_dir();
         fs::create_dir_all(&root).unwrap();
         let md = write_fixture(&root, "first.md");
@@ -172,18 +172,18 @@ mod tests {
         let markdown = write_fixture(&root, "中文 文档.markdown");
         let missing = root.join("missing.md").to_string_lossy().to_string();
 
-        let filtered = filter_existing_startup_file_paths([
+        let filtered = filter_supported_startup_file_paths([
             md.clone(),
             txt.clone(),
             sql.clone(),
             json.clone(),
             env.clone(),
             ts,
-            missing,
+            missing.clone(),
             markdown.clone(),
         ]);
 
-        assert_eq!(filtered, vec![md, txt, sql, json, env, markdown]);
+        assert_eq!(filtered, vec![md, txt, sql, json, env, missing, markdown]);
         fs::remove_dir_all(root).unwrap();
     }
 
@@ -195,7 +195,7 @@ mod tests {
         let upper_markdown = write_fixture(&root, "UPPER.MARKDOWN");
         let upper_json = write_fixture(&root, "SETTINGS.JSON");
 
-        let filtered = filter_existing_startup_file_paths([
+        let filtered = filter_supported_startup_file_paths([
             upper_md.clone(),
             upper_markdown.clone(),
             upper_json.clone(),

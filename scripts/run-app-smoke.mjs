@@ -547,6 +547,75 @@ end tell
 `, timeoutMs);
 }
 
+function clickMacPermissionAllowButton() {
+  try {
+    return osascript(`
+tell application "System Events"
+  set candidateProcessNames to {${appleScriptString(appProcessName)}, "CoreServicesUIAgent", "UserNotificationCenter"}
+  set allowButtonNames to {"允许", "Allow", "許可", "OK", "好"}
+  repeat with candidateProcessName in candidateProcessNames
+    set processNameText to candidateProcessName as text
+    if exists process processNameText then
+      tell process processNameText
+        set frontmost to true
+        repeat with allowButtonName in allowButtonNames
+          set allowButtonText to allowButtonName as text
+          try
+            if exists button allowButtonText of window 1 then
+              click button allowButtonText of window 1
+              return "clicked " & allowButtonText & " in " & processNameText & " window"
+            end if
+          end try
+          try
+            if exists sheet 1 of window 1 then
+              if exists button allowButtonText of sheet 1 of window 1 then
+                click button allowButtonText of sheet 1 of window 1
+                return "clicked " & allowButtonText & " in " & processNameText & " sheet"
+              end if
+            end if
+          end try
+        end repeat
+      end tell
+    end if
+  end repeat
+  repeat with candidateProcessName in candidateProcessNames
+    set processNameText to candidateProcessName as text
+    if exists process processNameText then
+      tell process processNameText
+        repeat with permissionWindow in windows
+          repeat with allowButtonName in allowButtonNames
+            set allowButtonText to allowButtonName as text
+            try
+              if exists button allowButtonText of permissionWindow then
+                click button allowButtonText of permissionWindow
+                return "clicked " & allowButtonText & " in " & processNameText & " scanned window"
+              end if
+            end try
+          end repeat
+        end repeat
+      end tell
+    end if
+  end repeat
+  return "none"
+end tell
+`, 2500);
+  } catch {
+    return 'none';
+  }
+}
+
+async function handleMacPermissionPromptIfPresent() {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const result = clickMacPermissionAllowButton();
+    if (result.startsWith('clicked ')) {
+      await delay(900);
+      return result;
+    }
+    await delay(250);
+  }
+  return 'none';
+}
+
 function clickRelative(bounds, relX, relY) {
   const x = Math.round(bounds.x + relX);
   const y = Math.round(bounds.y + relY);
@@ -588,6 +657,34 @@ async function waitForLastSession(filePath) {
   }, 16000, 400);
 }
 
+async function waitForSourceMode(filePath, timeoutMs = 3000) {
+  return waitFor(`source mode ${filePath}`, async () => {
+    if (!(await pathExists(configPath))) return false;
+    const config = await readJson(configPath);
+    return config.lastSession?.filePath === filePath && config.lastSession?.viewMode === 'edit'
+      ? config
+      : false;
+  }, timeoutMs, 250);
+}
+
+async function switchToSourceMode(filePath, bounds) {
+  const attempts = [
+    () => key('key code 18 using command down'),
+    () => clickRelative(bounds, bounds.width - 92, 31),
+  ];
+
+  for (const attempt of attempts) {
+    attempt();
+    try {
+      return await waitForSourceMode(filePath);
+    } catch {
+      // Try the next source-mode path.
+    }
+  }
+
+  return waitForSourceMode(filePath, 8000);
+}
+
 async function runSmoke() {
   if (process.platform !== 'darwin') {
     throw new Error('Prism.app smoke requires macOS.');
@@ -609,15 +706,16 @@ async function runSmoke() {
       } catch {
         return false;
       }
-    }, 16000, 500);
-    const markdownLaunchConfig = await waitForLastSession(startupMarkdownFile);
-    const markdownLaunchBounds = getWindowBounds();
-    await delay(500);
-    await capture('00-launch-markdown-chinese-space', markdownLaunchBounds);
-    record('launch opens .markdown fixture with Chinese space path', 'pass', {
-      summary: path.relative(repoRoot, startupMarkdownFile),
-      lastSession: markdownLaunchConfig.lastSession,
-    });
+      }, 16000, 500);
+      const markdownLaunchConfig = await waitForLastSession(startupMarkdownFile);
+      const markdownLaunchBounds = getWindowBounds();
+      await delay(500);
+      await handleMacPermissionPromptIfPresent();
+      await capture('00-launch-markdown-chinese-space', markdownLaunchBounds);
+      record('launch opens .markdown fixture with Chinese space path', 'pass', {
+        summary: path.relative(repoRoot, startupMarkdownFile),
+        lastSession: markdownLaunchConfig.lastSession,
+      });
 
     const textLaunchCases = [
       ['JSON fixture', jsonFile, '00b-launch-json'],
@@ -637,6 +735,7 @@ async function runSmoke() {
       const textLaunchConfig = await waitForLastSession(filePath);
       const textLaunchBounds = getWindowBounds();
       await delay(500);
+      await handleMacPermissionPromptIfPresent();
       await capture(screenshotName, textLaunchBounds);
       record(`launch opens ${label} without blank screen`, 'pass', {
         summary: path.relative(repoRoot, filePath),
@@ -657,6 +756,7 @@ async function runSmoke() {
     const launchConfig = await waitForLastSession(sourceFile);
     const bounds = getWindowBounds();
     await delay(800);
+    await handleMacPermissionPromptIfPresent();
     await capture('01-launch-source', bounds);
     record('launch opens markdown fixture', 'pass', {
       summary: path.relative(repoRoot, sourceFile),
@@ -739,6 +839,7 @@ async function runSmoke() {
     delay 0.05
     key code 36`, 30000);
     await delay(900);
+    await handleMacPermissionPromptIfPresent();
     await capture('05a-quick-open-target-opened', bounds);
     const targetConfig = await waitForLastSession(targetFile);
     record('Cmd+Shift+P opens workspace target file', 'pass', {
@@ -747,15 +848,21 @@ async function runSmoke() {
     });
 
     await capture('06-target-opened', bounds);
-    clickRelative(bounds, 315, 83);
+    await switchToSourceMode(targetFile, bounds);
+    await delay(500);
+    await handleMacPermissionPromptIfPresent();
+    await capture('06a-target-source-mode', bounds);
+    systemEventsClickRelative(bounds, 470, 120);
+    clickRelative(bounds, 470, 120);
+    await handleMacPermissionPromptIfPresent();
     await delay(250);
-    key(`key code 124 using command down
-    delay 0.1
-    keystroke return
+    key(`keystroke return
     delay 0.1
     keystroke "${marker}"
     delay 0.2
     keystroke "s" using command down`);
+    await delay(500);
+    await capture('06b-target-edited', bounds);
     await waitFor('saved marker', async () => {
       const content = await fs.readFile(targetFile, 'utf8');
       return content.includes(marker);

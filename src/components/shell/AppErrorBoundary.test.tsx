@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppErrorBoundary } from './AppErrorBoundary';
 
-function BrokenChild() {
+function BrokenChild(): ReactElement {
   throw new Error('Injected render failure');
 }
 

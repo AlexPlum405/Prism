@@ -389,7 +389,49 @@ describe('useBootstrap', () => {
     expect(wait).toHaveBeenCalledWith(200);
   });
 
-  it('opens the default Prism workspace and guide for plain window launches', async () => {
+  it('waits for delayed pending startup files by default on macOS', async () => {
+    const originalPlatform = window.navigator.platform;
+    Object.defineProperty(window.navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    });
+
+    try {
+      window.history.replaceState({}, '', '/');
+      const wait = vi.fn(async () => undefined);
+      let pendingPollCount = 0;
+      (invoke as ReturnType<typeof vi.fn>).mockImplementation(async (command: string) => {
+        if (command === 'get_pending_files') {
+          pendingPollCount += 1;
+          return pendingPollCount === 1 ? [] : ['C:/docs/from-finder.md'];
+        }
+        return undefined;
+      });
+      (readTextFile as ReturnType<typeof vi.fn>).mockImplementation(async (path: string) => (
+        path.endsWith('from-finder.md') ? '# from Finder' : '# guide'
+      ));
+      (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+      renderHook(() => useBootstrap({
+        enabled: true,
+        wait,
+      }));
+
+      await waitFor(() => {
+        expect(useDocumentStore.getState().currentDocument?.path).toBe('C:/docs/from-finder.md');
+      });
+
+      expect(wait).toHaveBeenCalledWith(200);
+      expect(readTextFile).not.toHaveBeenCalledWith('C:/Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md');
+    } finally {
+      Object.defineProperty(window.navigator, 'platform', {
+        configurable: true,
+        value: originalPlatform,
+      });
+    }
+  });
+
+  it('authorizes and opens the default Prism workspace and guide for plain window launches', async () => {
     window.history.replaceState({}, '', '/');
     const workspacePath = 'C:/Users/Alex/Documents/Prism';
     const guidePath = `${workspacePath}/Examples/Prism Markdown 语法指南.md`;
@@ -424,6 +466,7 @@ describe('useBootstrap', () => {
     expect(useWorkspaceStore.getState().fileTree).toEqual(workspaceTree);
     expect(readTextFile).toHaveBeenCalledWith(guidePath);
     expect(nativeCommandCallCount('grant_markdown_file_scope')).toBe(0);
+    expect(nativeCommandCallCount('grant_workspace_directory_scope')).toBe(1);
     expect(revealWindowCallCount()).toBe(1);
   });
 

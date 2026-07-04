@@ -8,7 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
-const appPath = path.resolve(process.argv[2] ?? '/Applications/Prism.app');
+const args = process.argv.slice(2);
+const explicitAppPath = args.find((arg) => !arg.startsWith('--'));
+const appPath = path.resolve(explicitAppPath ?? '/Applications/Prism.app');
 const buildAppPath = path.join(repoRoot, 'src-tauri', 'target', 'release', 'bundle', 'macos', 'Prism.app');
 const bundleId = 'com.prism.editor.v1';
 const markdownTypes = [
@@ -18,6 +20,19 @@ const markdownTypes = [
   'net.ia.markdown',
   'com.unknown.md',
 ];
+const textTypes = [
+  'com.prism.editor.text',
+  'public.plain-text',
+  'public.text',
+  'public.source-code',
+  'public.json',
+  'public.yaml',
+  'public.xml',
+  'public.comma-separated-values-text',
+  'public.tab-separated-values-text',
+  'org.iso.sql',
+];
+const registerText = args.includes('--text');
 
 async function ensureReadableFile(filePath, label) {
   try {
@@ -57,6 +72,8 @@ import Foundation
 
 let bundleId = "${bundleId}" as CFString
 let contentTypes = ${JSON.stringify(markdownTypes)}
+let textTypes = ${JSON.stringify(textTypes)}
+let registerText = ${registerText}
 var failed = false
 
 for contentType in contentTypes {
@@ -71,6 +88,23 @@ for contentType in contentTypes {
   } else {
     failed = true
     print("Failed \\(contentType): OSStatus \\(status)")
+  }
+}
+
+if registerText {
+  for contentType in textTypes {
+    let status = LSSetDefaultRoleHandlerForContentType(
+      contentType as CFString,
+      LSRolesMask.all,
+      bundleId,
+    )
+
+    if status == noErr {
+      print("Registered \\(contentType) -> ${bundleId}")
+    } else {
+      failed = true
+      print("Failed \\(contentType): OSStatus \\(status)")
+    }
   }
 }
 
@@ -89,7 +123,7 @@ exit(failed ? 1 : 0)
     process.stderr.write(result.stderr);
   }
   if (result.status !== 0) {
-    throw new Error(`Failed to register Markdown default handlers for ${bundleId}`);
+    throw new Error(`Failed to register default handlers for ${bundleId}`);
   }
 } finally {
   await rm(tempRoot, { recursive: true, force: true });
