@@ -49,6 +49,20 @@ describe('openDocumentFlow policy', () => {
     });
   });
 
+  it('opens Finder and OS-level file requests in a new window when another document is active', () => {
+    expect(resolveOpenDocumentPolicy({
+      currentDocumentPath: '/repo/current.md',
+      entryPoint: 'system',
+      hasCurrentDocument: true,
+      targetPath: '/repo/from-finder.md',
+    })).toEqual({
+      dirtyGuard: false,
+      reason: 'entry-prefers-new-window',
+      syncWorkspace: false,
+      target: 'new-window',
+    });
+  });
+
   it('centralizes the supported Markdown and Text Document type boundary', () => {
     expect(isSupportedOpenDocumentPath('/repo/readme.md')).toBe(true);
     expect(isSupportedOpenDocumentPath('/repo/readme.markdown')).toBe(true);

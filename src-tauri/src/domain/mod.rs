@@ -6,6 +6,7 @@ pub mod initial_documents;
 pub mod path;
 pub mod settings_store;
 pub mod theme_store;
+pub mod workspace_ignore;
 pub mod workspace_index;
 pub mod workspace_index_job;
 pub mod workspace_tree;

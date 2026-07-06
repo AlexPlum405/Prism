@@ -37,13 +37,18 @@ interface ViewModeSwitchProps {
 export function ViewModeSwitch({ className = '', flushStart = false }: ViewModeSwitchProps = {}) {
   const { t } = useI18n();
   const viewMode = useDocumentStore((s) => s.currentDocument?.viewMode);
+  const supportsPreview = useDocumentStore((s) => s.currentDocument?.profile?.supportsPreview ?? true);
   const setViewMode = useDocumentStore((s) => s.setViewMode);
 
   if (!viewMode) return null;
 
+  const viewModes = supportsPreview
+    ? VIEW_MODES
+    : VIEW_MODES.filter((mode) => mode.key === 'edit');
+
   return (
     <div className={`${styles.container} ${flushStart ? styles.flushStart : ''} ${className}`.trim()}>
-      {VIEW_MODES.map((m) => {
+      {viewModes.map((m) => {
         const Icon = m.icon;
         const label = t(m.labelKey);
         return (

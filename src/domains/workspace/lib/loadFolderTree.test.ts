@@ -1,21 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PrismNativeError } from '../../../platform/tauri/result';
 
 const nativeTreeMock = vi.hoisted(() => ({
   loadWorkspaceTreeNative: vi.fn(),
 }));
 
-vi.mock('../../../platform/tauri/workspaceTree', () => nativeTreeMock);
-
-vi.mock('../../../platform/tauri/fileSystem', () => ({
+const fileSystemMock = vi.hoisted(() => ({
   readDir: vi.fn(),
   readTextFile: vi.fn(),
   stat: vi.fn(),
 }));
 
+vi.mock('../../../platform/tauri/workspaceTree', () => nativeTreeMock);
+
+vi.mock('../../../platform/tauri/fileSystem', () => fileSystemMock);
+
 describe('loadFolderTree', () => {
   beforeEach(() => {
     nativeTreeMock.loadWorkspaceTreeNative.mockReset();
     nativeTreeMock.loadWorkspaceTreeNative.mockResolvedValue([]);
+    fileSystemMock.readDir.mockReset();
+    fileSystemMock.readTextFile.mockReset();
+    fileSystemMock.stat.mockReset();
   });
 
   it('does not request file previews by default', async () => {
@@ -38,5 +44,42 @@ describe('loadFolderTree', () => {
       maxDepth: 8,
       includePreview: true,
     });
+  });
+
+  it('skips generated directories when falling back to filesystem traversal', async () => {
+    nativeTreeMock.loadWorkspaceTreeNative.mockRejectedValue(
+      new PrismNativeError({
+        code: 'unknown_error',
+        message: 'window.__TAURI__.invoke is not a function',
+      }),
+    );
+    fileSystemMock.readDir.mockImplementation(async (path: string) => {
+      if (path === '/workspace') {
+        return [
+          { name: 'node_modules', isDirectory: true, isFile: false },
+          { name: 'target', isDirectory: true, isFile: false },
+          { name: 'docs', isDirectory: true, isFile: false },
+          { name: 'root.md', isDirectory: false, isFile: true },
+        ];
+      }
+      if (path === '/workspace/docs') {
+        return [{ name: 'a.md', isDirectory: false, isFile: true }];
+      }
+      throw new Error(`unexpected readDir: ${path}`);
+    });
+    fileSystemMock.stat.mockResolvedValue({
+      size: 10,
+      birthtime: new Date(0),
+      mtime: new Date(0),
+    });
+
+    const { loadFolderTree } = await import('./loadFolderTree');
+
+    const tree = await loadFolderTree('/workspace');
+
+    expect(tree.map((node) => node.name)).toEqual(['docs', 'root.md']);
+    expect(tree[0]?.children?.map((node) => node.name)).toEqual(['a.md']);
+    expect(fileSystemMock.readDir).not.toHaveBeenCalledWith('/workspace/node_modules');
+    expect(fileSystemMock.readDir).not.toHaveBeenCalledWith('/workspace/target');
   });
 });

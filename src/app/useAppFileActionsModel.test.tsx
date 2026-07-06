@@ -125,7 +125,7 @@ describe('useAppFileActionsModel', () => {
     });
   });
 
-  it('routes running-app startup files through the system-open policy when a document is already active', async () => {
+  it('opens running-app startup files in a new window when a document is already active', async () => {
     useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current');
     vi.mocked(openSelectedDocument).mockResolvedValueOnce({ status: 'opened-new-window' });
 

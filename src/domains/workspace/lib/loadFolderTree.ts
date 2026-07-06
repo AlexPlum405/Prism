@@ -5,6 +5,30 @@ import { loadWorkspaceTreeNative } from '../../../platform/tauri/workspaceTree';
 import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
 const MAX_DEPTH = 8;
+const IGNORED_WORKSPACE_DIRECTORY_NAMES = new Set([
+  '.cache',
+  '.git',
+  '.gradle',
+  '.hg',
+  '.idea',
+  '.mypy_cache',
+  '.next',
+  '.nuxt',
+  '.parcel-cache',
+  '.pytest_cache',
+  '.ruff_cache',
+  '.svelte-kit',
+  '.svn',
+  '.turbo',
+  '.venv',
+  '__pycache__',
+  'build',
+  'coverage',
+  'dist',
+  'node_modules',
+  'target',
+  'venv',
+]);
 
 interface LoadFolderTreeOptions {
   includePreview?: boolean;
@@ -45,6 +69,10 @@ function extractPreview(content: string): string {
     .filter((line) => line.length > 0);
 
   return lines.join(' ').slice(0, 100);
+}
+
+function isIgnoredWorkspaceDirectoryName(name: string): boolean {
+  return IGNORED_WORKSPACE_DIRECTORY_NAMES.has(name.toLowerCase());
 }
 
 async function buildFileNode(path: string, name: string, includePreview: boolean): Promise<FileNode> {
@@ -101,7 +129,8 @@ async function readFolderChildren(
 
   const visibleEntries = entries
     .filter((entry) => {
-      return entry.isDirectory || (entry.isFile && isSupportedDocumentPath(entry.name));
+      if (entry.isDirectory) return !isIgnoredWorkspaceDirectoryName(entry.name);
+      return entry.isFile && isSupportedDocumentPath(entry.name);
     })
     .sort((a, b) => {
       if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;

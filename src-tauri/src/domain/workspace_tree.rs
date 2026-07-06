@@ -5,6 +5,7 @@ use std::time::UNIX_EPOCH;
 
 use super::error::{PrismCommandError, PrismResult};
 use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
+use super::workspace_ignore::is_ignored_workspace_directory;
 
 const DEFAULT_MAX_DEPTH: usize = 8;
 const PREVIEW_MAX_CHARS: usize = 100;
@@ -268,6 +269,9 @@ fn read_folder_children(
         };
 
         if file_type.is_dir() {
+            if is_ignored_workspace_directory(&path) {
+                continue;
+            }
             entries.push((name, path, true));
         } else if file_type.is_file() && is_supported_document_path(&path) {
             entries.push((name, path, false));
@@ -387,6 +391,8 @@ mod tests {
         fs::write(root.join(".idea").join("notes.md"), "# Idea Notes").expect("write idea");
         fs::create_dir_all(root.join(".venv")).expect("create venv");
         fs::write(root.join(".venv").join("notes.md"), "# Venv Notes").expect("write venv");
+        fs::create_dir_all(root.join("dist")).expect("create dist");
+        fs::write(root.join("dist").join("bundle.md"), "# Dist Notes").expect("write dist");
         fs::create_dir_all(root.join("empty")).expect("create empty");
         fs::create_dir_all(root.join("node_modules")).expect("create node_modules");
         fs::write(
@@ -394,6 +400,12 @@ mod tests {
             "# Dependency Notes",
         )
         .expect("write node_modules");
+        fs::create_dir_all(root.join("src-tauri").join("target")).expect("create target");
+        fs::write(
+            root.join("src-tauri").join("target").join("artifact.md"),
+            "# Target Notes",
+        )
+        .expect("write target");
         fs::write(root.join("image.png"), "png").expect("write png");
 
         let tree = load_workspace_tree(path_to_string(&root), None).expect("load tree");
@@ -402,18 +414,7 @@ mod tests {
             tree.iter()
                 .map(|node| node.name.as_str())
                 .collect::<Vec<_>>(),
-            [
-                ".agents",
-                ".cache",
-                ".claude",
-                ".codex",
-                ".git",
-                ".idea",
-                ".venv",
-                "docs",
-                "node_modules",
-                "root.md"
-            ]
+            [".agents", ".claude", ".codex", "docs", "root.md"]
         );
         let docs_children = tree
             .iter()
@@ -446,10 +447,13 @@ mod tests {
                 .name,
             "agents"
         );
-        assert!(tree.iter().any(|node| node.name == ".git"));
-        assert!(tree.iter().any(|node| node.name == ".cache"));
-        assert!(tree.iter().any(|node| node.name == ".venv"));
-        assert!(tree.iter().any(|node| node.name == "node_modules"));
+        assert!(tree.iter().all(|node| node.name != ".git"));
+        assert!(tree.iter().all(|node| node.name != ".cache"));
+        assert!(tree.iter().all(|node| node.name != ".idea"));
+        assert!(tree.iter().all(|node| node.name != ".venv"));
+        assert!(tree.iter().all(|node| node.name != "dist"));
+        assert!(tree.iter().all(|node| node.name != "node_modules"));
+        assert!(tree.iter().all(|node| node.name != "src-tauri"));
         assert!(tree.iter().all(|node| node.name != "empty"));
         assert_eq!(
             tree.iter()

@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::error::{PrismCommandError, PrismResult};
 use super::path::{canonicalize_existing_path, ensure_directory, path_to_string};
+use super::workspace_ignore::is_ignored_workspace_directory;
 
 const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown"];
 const TEXT_DOCUMENT_EXTENSIONS: &[&str] = &[
@@ -451,6 +452,9 @@ fn collect_workspace_files(
             continue;
         };
         if file_type.is_dir() {
+            if is_ignored_workspace_directory(&path) {
+                continue;
+            }
             collect_workspace_files(root, &path, out, stage, options, scanned_files)?;
             continue;
         }
@@ -2008,7 +2012,7 @@ mod tests {
     }
 
     #[test]
-    fn indexes_supported_documents_inside_dot_and_tool_directories() {
+    fn indexes_supported_documents_inside_agent_dirs_and_skips_generated_dirs() {
         let root = temp_dir("agent-dirs");
         fs::create_dir_all(root.join(".agents")).expect("create agents");
         fs::write(root.join(".agents").join("SKILL.md"), "# Skill").expect("write skill");
@@ -2028,12 +2032,20 @@ mod tests {
         fs::write(root.join(".idea").join("notes.md"), "# Idea Notes").expect("write idea");
         fs::create_dir_all(root.join(".venv")).expect("create venv");
         fs::write(root.join(".venv").join("notes.md"), "# Venv Notes").expect("write venv");
+        fs::create_dir_all(root.join("dist")).expect("create dist");
+        fs::write(root.join("dist").join("bundle.md"), "# Dist Notes").expect("write dist");
         fs::create_dir_all(root.join("node_modules")).expect("create node_modules");
         fs::write(
             root.join("node_modules").join("notes.md"),
             "# Dependency Notes",
         )
         .expect("write node_modules");
+        fs::create_dir_all(root.join("src-tauri").join("target")).expect("create target");
+        fs::write(
+            root.join("src-tauri").join("target").join("artifact.md"),
+            "# Target Notes",
+        )
+        .expect("write target");
         fs::write(root.join("settings.json"), "{\"needle\": true}").expect("write json");
         fs::write(root.join(".env"), "TOKEN=local").expect("write env");
         fs::create_dir_all(root.join("empty")).expect("create empty");
@@ -2056,17 +2068,26 @@ mod tests {
             relative_paths,
             [
                 ".agents/SKILL.md",
-                ".cache/cached.md",
                 ".claude/README.md",
                 ".codex/agents/oec-dev.md",
                 ".env",
-                ".git/notes.md",
-                ".idea/notes.md",
-                ".venv/notes.md",
-                "node_modules/notes.md",
                 "settings.json",
             ]
         );
+        for ignored_path in [
+            ".cache/cached.md",
+            ".git/notes.md",
+            ".idea/notes.md",
+            ".venv/notes.md",
+            "dist/bundle.md",
+            "node_modules/notes.md",
+            "src-tauri/target/artifact.md",
+        ] {
+            assert!(
+                !relative_paths.contains(&ignored_path),
+                "expected generated path to be skipped: {ignored_path}"
+            );
+        }
         assert_eq!(
             index
                 .documents
