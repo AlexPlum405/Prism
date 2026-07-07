@@ -92,3 +92,49 @@ Verified public body excerpt:
 ```text
 Prism is a free, open-source Markdown editor for local writing. It keeps files on disk, gives Markdown a refined editor and preview surface, and helps writers carry the same document quality into export.
 ```
+
+## Post-Publication Asset Refresh
+
+Captured: 2026-07-07 20:30 CST
+
+The public `v1.0.0` Release asset was refreshed after the original publication evidence above. Current GitHub Release metadata is:
+
+```text
+tagName=v1.0.0
+isDraft=false
+isPrerelease=false
+publishedAt=2026-07-04T03:26:28Z
+targetCommitish=e03f199e6f3bcd256bc9cc83c356302e69239d31
+asset=Prism_1.0.0_aarch64.dmg
+assetSize=28354400
+assetDigest=sha256:d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04
+assetUpdatedAt=2026-07-06T06:02:45Z
+url=https://github.com/AlexPlum405/Prism/releases/tag/v1.0.0
+```
+
+Verification command:
+
+```bash
+env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY -u all_proxy -u https_proxy -u http_proxy \
+  gh release view v1.0.0 --repo AlexPlum405/Prism \
+  --json tagName,targetCommitish,isDraft,isPrerelease,publishedAt,assets,url
+```
+
+The public Release body was also re-synced from `docs/releases/prism-macos-1.0.0-confidence-pack/github-release-notes.md` so the visible checksum matches the refreshed asset.
+
+```bash
+env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY -u all_proxy -u https_proxy -u http_proxy \
+  gh release edit v1.0.0 --repo AlexPlum405/Prism \
+  --notes-file docs/releases/prism-macos-1.0.0-confidence-pack/github-release-notes.md
+
+env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY -u all_proxy -u https_proxy -u http_proxy \
+  gh release view v1.0.0 --repo AlexPlum405/Prism --json body \
+  | jq -r '.body' | rg -n "ef995e02|d28d0a|sha256"
+```
+
+Verified public body checksum lines:
+
+```text
+29:sha256:d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04
+45:- Release asset digest verified: `sha256:d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04`
+```

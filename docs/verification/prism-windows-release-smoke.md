@@ -1,5 +1,7 @@
 # Prism Windows Release Smoke 验证
 
+> 历史文档：本文保留 2026-05-15 的 v1.4.0 旧口径记录。Prism 1.0.0 Windows staged 平台补证请使用 `docs/releases/prism-windows-1.0.0-confidence-plan.md`。
+>
 > 日期：2026-05-15
 > 目标：把 Windows 发布链路从旧版人工清单升级为 Prism v1.4.0 的 release 阻塞项与验收协议。
 > 计划来源：`docs/archive/dirty-data-2026-05-30/historical-docs/prism-product-optimization-plan.md` 第 2 节“产品信任与发布治理”和第 12 节“质量体系”。

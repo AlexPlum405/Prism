@@ -17,16 +17,22 @@ Preferred DMG:
 src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg
 ```
 
-Preserved upload copy after workspace cleanup:
+Original preserved upload copy from the first publication pass:
 
 ```text
 /Users/Alex/Downloads/Prism_1.0.0_aarch64.dmg
 ```
 
-SHA256:
+Original RC SHA256:
 
 ```text
 ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
+```
+
+Current public GitHub asset SHA256 after the post-publication asset refresh:
+
+```text
+d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04
 ```
 
 If the public DMG asset needs to be replaced later and generated artifacts have been cleaned, rebuild and re-check the checksum first:
@@ -53,7 +59,7 @@ Public release notes are maintained in `github-release-notes.md` and are used as
 - P0: 88 pass / 0 fail / 0 blocked
 - P1: 56 pass / 0 fail / 0 blocked
 - Final installed-app smoke: Pass
-- Preferred RC DMG SHA256: `ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993`
+- Current public DMG SHA256: `d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04`
 
 ## Published Release
 
@@ -63,7 +69,7 @@ The GitHub Release has been published:
 tag=v1.0.0
 title=Prism 1.0.0 for macOS
 asset=Prism_1.0.0_aarch64.dmg
-target=2f89d3c001dc77785514c2a2b3515a4a0dbd7351
+target=e03f199e6f3bcd256bc9cc83c356302e69239d31
 isDraft=false
 isPrerelease=false
 publishedAt=2026-07-04T03:26:28Z

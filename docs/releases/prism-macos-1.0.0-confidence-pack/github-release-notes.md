@@ -26,7 +26,7 @@ Install:
 Checksum:
 
 ```text
-sha256:ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
+sha256:d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04
 ```
 
 ## Known Limitations
@@ -42,4 +42,4 @@ sha256:ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
 - P1: 56 pass / 0 fail / 0 blocked
 - Final installed-app smoke: Pass
 - Public DMG download smoke: Pass
-- Release asset digest verified: `sha256:ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993`
+- Release asset digest verified: `sha256:d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04`

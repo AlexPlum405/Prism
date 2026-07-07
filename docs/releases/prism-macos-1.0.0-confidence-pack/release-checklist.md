@@ -82,7 +82,7 @@ npm run build: passed with non-blocking Vite chunk/externalization warnings
 macOS app smoke: npm run tauri:build:app-smoke passed
 First-run documents: installed app cold start opened /Users/Alex/Documents/Prism/Examples/Prism Markdown 语法指南.md after macOS Documents authorization
 Final RC DMG: src-tauri/target/release/bundle/macos/Prism_1.0.0_aarch64.dmg
-Final RC DMG SHA256: ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993
+Current GitHub DMG SHA256: d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04
 Final installed-app smoke: PRISM_APP_PATH=/Applications/Prism.app node scripts/run-app-smoke.mjs passed
 Updater signing: not included; TAURI_SIGNING_PRIVATE_KEY unavailable
 Old GitHub Releases: removed

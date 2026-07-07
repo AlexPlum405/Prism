@@ -59,3 +59,25 @@ Interpretation:
 - The DMG mounts read-only.
 - The bundled app reports the expected Prism identity and `1.0.0` version.
 - This smoke did not overwrite `/Applications/Prism.app`; the installed-app smoke remains covered by `final-rc-build-and-smoke.md`.
+
+## Post-Refresh Download Checksum
+
+Captured: 2026-07-07 20:31 CST
+
+The public `v1.0.0` DMG asset was refreshed after the original full mount smoke above. A follow-up download checksum verified the current asset:
+
+```bash
+tmpdir=$(mktemp -d /tmp/prism-release-smoke-XXXXXX)
+curl -L --fail --silent --show-error \
+  -o "$tmpdir/Prism_1.0.0_aarch64.dmg" \
+  https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_aarch64.dmg
+shasum -a 256 "$tmpdir/Prism_1.0.0_aarch64.dmg"
+du -h "$tmpdir/Prism_1.0.0_aarch64.dmg"
+```
+
+Observed:
+
+```text
+d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04  /tmp/prism-release-smoke-U7KV3j/Prism_1.0.0_aarch64.dmg
+27M /tmp/prism-release-smoke-U7KV3j/Prism_1.0.0_aarch64.dmg
+```

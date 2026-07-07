@@ -31,7 +31,7 @@ Prism 是一款开源免费的本地 Markdown 编辑器。它让文档在编辑�
   Prism 1.0.0 for macOS Apple Silicon ·
   <a href="https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_aarch64.dmg">下载 DMG</a>
   · SHA256:
-  <code>ef995e02a2a8aa1a4319d7929688c9c4f59125af6b7cc13fd8601a3f99919993</code>
+  <code>d28d0a545fb98c92327867a64b1fe824c799bf9d079e95a10af018bfb96e5b04</code>
 </sub>
 
 </div>
