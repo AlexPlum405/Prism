@@ -7,6 +7,8 @@ import { ContextMenu, type ContextMenuItem } from '../../../components/shell/Con
 import { useDocumentStore } from '../../document/store';
 import type { DocumentScrollState } from '../../document/types';
 import { useSettingsStore } from '../../settings/store';
+import { DEFAULT_SETTINGS } from '../../settings/types';
+import { getThemeContract } from '../../themes';
 import { useWorkspaceStore } from '../../workspace/store';
 import type { WorkspaceIndex } from '../../workspace/services';
 import { getCommandMenuItems, type CommandContext } from '../../commands';
@@ -61,11 +63,73 @@ const DEFAULT_SEARCH_PARAMS: SearchParams = {
 const PREVIEW_SEARCH_INPUT_DEBOUNCE_MS = 140;
 const PREVIEW_SEARCH_BATCH_SIZE = 80;
 const MAX_PENDING_SOURCE_JUMP_FRAMES = 60;
+const EDITOR_FONT_SIZE_MIN = 10;
+const EDITOR_FONT_SIZE_MAX = 32;
+const PREVIEW_FONT_SIZE_MIN = 10;
+const PREVIEW_FONT_SIZE_MAX = 36;
+const FONT_ZOOM_WHEEL_STEP_DELTA = 80;
+const WHEEL_DELTA_LINE = 1;
+const WHEEL_DELTA_PAGE = 2;
 
 function normalizeSelectionSeed(text: string) {
   const seed = text.replace(/\u00a0/g, ' ');
   return seed.trim().length > 0 ? seed : '';
 }
+
+function clampDocumentFontSize(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+function isApplePlatform(platform: string) {
+  return /mac|iphone|ipad|ipod/i.test(platform);
+}
+
+function shouldUseFontZoomModifier(event: { ctrlKey: boolean; metaKey: boolean }, platform = navigator.platform) {
+  return isApplePlatform(platform) ? event.metaKey : event.ctrlKey;
+}
+
+function isInteractiveFontZoomTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest([
+    'button',
+    'input',
+    'select',
+    'textarea',
+    '[contenteditable="true"]',
+    '[role="button"]',
+    '[role="textbox"]',
+  ].join(',')));
+}
+
+function normalizeWheelDeltaY(event: { deltaMode: number; deltaY: number }) {
+  if (event.deltaMode === WHEEL_DELTA_LINE) return event.deltaY * 40;
+  if (event.deltaMode === WHEEL_DELTA_PAGE) return event.deltaY * 800;
+  return event.deltaY;
+}
+
+function consumeFontZoomWheelDelta(deltaY: number, accumulatedDelta: number) {
+  const nextDelta = accumulatedDelta + deltaY;
+  const magnitude = Math.abs(nextDelta);
+  if (magnitude < FONT_ZOOM_WHEEL_STEP_DELTA) {
+    return { remainder: nextDelta, steps: 0 };
+  }
+
+  const stepCount = Math.trunc(magnitude / FONT_ZOOM_WHEEL_STEP_DELTA);
+  return {
+    remainder: nextDelta % FONT_ZOOM_WHEEL_STEP_DELTA,
+    steps: -Math.sign(nextDelta) * stepCount,
+  };
+}
+
+export const __splitViewFontZoomTesting = {
+  clampDocumentFontSize,
+  consumeFontZoomWheelDelta,
+  isApplePlatform,
+  isInteractiveFontZoomTarget,
+  normalizeWheelDeltaY,
+  shouldUseFontZoomModifier,
+};
 
 async function copyText(text: string) {
   if (!text) return;
@@ -410,6 +474,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     workspaceIndex,
     workspaceIndexJobId,
   }, ref) {
+    const splitSurfaceRef = useRef<HTMLDivElement>(null);
     const previewContainerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<EditorPaneHandle>(null);
     const [searchVisible, setSearchVisible] = useState(false);
@@ -436,6 +501,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     const pendingSourceJumpLineRef = useRef<number | null>(null);
     const pendingSourceJumpFrameRef = useRef<number | null>(null);
     const pendingSourceJumpAttemptsRef = useRef(0);
+    const fontZoomWheelDeltaRef = useRef(0);
     const [editorActivated, setEditorActivated] = useState(viewMode !== 'preview');
     // 同步方向锁：防止反馈循环
     const syncingRef = useRef<'editor' | 'preview' | null>(null);
@@ -855,6 +921,60 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       return getPreviewSelectedText();
     }, [getPreviewSelectedText]);
 
+    const applyFontZoomSteps = useCallback((steps: number) => {
+      if (steps === 0) return;
+
+      const settings = useSettingsStore.getState();
+      const themePreviewFontSize = getThemeContract(settings.contentTheme).preview.fontSize;
+      const currentPreviewFontSize = settings.previewFontSize === DEFAULT_SETTINGS.previewFontSize
+        ? themePreviewFontSize
+        : settings.previewFontSize;
+      const nextEditorFontSize = clampDocumentFontSize(
+        settings.fontSize + steps,
+        EDITOR_FONT_SIZE_MIN,
+        EDITOR_FONT_SIZE_MAX,
+      );
+      const nextPreviewFontSize = clampDocumentFontSize(
+        currentPreviewFontSize + steps,
+        PREVIEW_FONT_SIZE_MIN,
+        PREVIEW_FONT_SIZE_MAX,
+      );
+
+      if (nextEditorFontSize !== settings.fontSize) {
+        settings.setFontSize(nextEditorFontSize);
+      }
+      if (nextPreviewFontSize !== settings.previewFontSize) {
+        settings.setPreviewFontSize(nextPreviewFontSize);
+      }
+    }, []);
+
+    useEffect(() => {
+      const splitSurface = splitSurfaceRef.current;
+      if (!splitSurface) return;
+
+      const handleContentFontZoomWheel = (event: WheelEvent) => {
+        if (!shouldUseFontZoomModifier(event) || isInteractiveFontZoomTarget(event.target)) {
+          fontZoomWheelDeltaRef.current = 0;
+          return;
+        }
+
+        const deltaY = normalizeWheelDeltaY(event);
+        if (deltaY === 0) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const consumed = consumeFontZoomWheelDelta(deltaY, fontZoomWheelDeltaRef.current);
+        fontZoomWheelDeltaRef.current = consumed.remainder;
+        applyFontZoomSteps(consumed.steps);
+      };
+
+      splitSurface.addEventListener('wheel', handleContentFontZoomWheel, { passive: false });
+      return () => {
+        splitSurface.removeEventListener('wheel', handleContentFontZoomWheel);
+      };
+    }, [applyFontZoomSteps]);
+
     const activateSearch = useCallback((mode: SearchMode) => {
       if (mode === 'replace' && viewModeRef.current === 'preview') {
         useDocumentStore.getState().setViewMode('split');
@@ -1088,7 +1208,10 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     const getPreviewScroller = useCallback(() => previewContainerRef.current, []);
 
     return (
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0, backgroundColor: 'transparent', position: 'relative' }}>
+      <div
+        ref={splitSurfaceRef}
+        style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0, backgroundColor: 'transparent', position: 'relative' }}
+      >
         {shouldRenderEditor && (
           <div
             aria-hidden={isPreviewOnly}

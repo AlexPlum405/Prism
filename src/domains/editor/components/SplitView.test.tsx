@@ -1,11 +1,12 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentStore } from '../../document/store';
 import {
   SplitView,
+  __splitViewFontZoomTesting,
   collectCodeLineElements,
   lineToPreviewScrollTop,
   pageOffsetToLine,
@@ -17,6 +18,8 @@ import {
   pageOffsetToLineInMap,
 } from './previewScrollMap';
 import { hasPresentationSlides } from '../extensions/presentation';
+import { useSettingsStore } from '../../settings/store';
+import { DEFAULT_SETTINGS } from '../../settings/types';
 
 const mockState = vi.hoisted(() => ({
   jumpToLine: vi.fn(),
@@ -165,11 +168,29 @@ function installScrollIntoViewMock() {
   };
 }
 
+function mockNavigatorPlatform(platform: string) {
+  const original = Object.getOwnPropertyDescriptor(window.navigator, 'platform');
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+
+  return () => {
+    if (original) {
+      Object.defineProperty(window.navigator, 'platform', original);
+      return;
+    }
+    Reflect.deleteProperty(window.navigator, 'platform');
+  };
+}
+
 afterEach(() => {
   vi.useRealTimers();
 });
 
 describe('SplitView editor lifecycle', () => {
+  const originalSettings = useSettingsStore.getState();
+
   beforeEach(() => {
     mockState.jumpToLine.mockClear();
     mockState.setScrollRatio.mockClear();
@@ -177,6 +198,12 @@ describe('SplitView editor lifecycle', () => {
     mockState.mounts = 0;
     mockState.unmounts = 0;
     useDocumentStore.setState({ currentDocument: null });
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      exportDefaults: { ...DEFAULT_SETTINGS.exportDefaults },
+      setFontSize: originalSettings.setFontSize,
+      setPreviewFontSize: originalSettings.setPreviewFontSize,
+    });
   });
 
   it('keeps the editor mounted when switching through preview mode so undo history survives', async () => {
@@ -400,6 +427,78 @@ describe('SplitView editor lifecycle', () => {
     fireEvent.click(screen.getByTestId('editor-selection'));
 
     expect(onSelectionTextChange).toHaveBeenCalledWith('选中文本 selected text');
+  });
+
+  it('zooms editor and preview font sizes with the platform font zoom wheel shortcut', () => {
+    const setFontSize = vi.fn((fontSize: number) => {
+      useSettingsStore.setState({ fontSize });
+    });
+    const setPreviewFontSize = vi.fn((previewFontSize: number) => {
+      useSettingsStore.setState({ previewFontSize });
+    });
+    useSettingsStore.setState({
+      contentTheme: 'miaoyan',
+      fontSize: 16,
+      previewFontSize: 16,
+      setFontSize,
+      setPreviewFontSize,
+    });
+    const restorePlatform = mockNavigatorPlatform('MacIntel');
+
+    try {
+      const { container } = render(
+        <SplitView
+          content="Preview block"
+          viewMode="split"
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />,
+      );
+      const surface = container.firstElementChild as HTMLElement;
+      const event = createEvent.wheel(surface, {
+        deltaY: -120,
+        metaKey: true,
+      });
+
+      fireEvent(surface, event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(setFontSize).toHaveBeenCalledWith(17);
+      expect(setPreviewFontSize).toHaveBeenCalledWith(17);
+    } finally {
+      restorePlatform();
+    }
+  });
+
+  it('does not zoom document fonts while wheel events start from controls', () => {
+    const setFontSize = vi.fn();
+    const setPreviewFontSize = vi.fn();
+    useSettingsStore.setState({ setFontSize, setPreviewFontSize });
+    const restorePlatform = mockNavigatorPlatform('Win32');
+
+    try {
+      render(
+        <SplitView
+          content="Preview block"
+          viewMode="split"
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />,
+      );
+      const button = screen.getByRole('button', { name: '跳到源码' });
+      const event = createEvent.wheel(button, {
+        ctrlKey: true,
+        deltaY: -120,
+      });
+
+      fireEvent(button, event);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(setFontSize).not.toHaveBeenCalled();
+      expect(setPreviewFontSize).not.toHaveBeenCalled();
+    } finally {
+      restorePlatform();
+    }
   });
 
   it('opens presentation overlay from the global presentation event when slides exist', async () => {
@@ -755,6 +854,44 @@ describe('SplitView editor lifecycle', () => {
     });
 
     expect(mockState.jumpToLine).toHaveBeenCalledWith(9);
+  });
+});
+
+describe('SplitView font zoom helpers', () => {
+  it('uses Command on Apple platforms and Ctrl on other desktop platforms', () => {
+    expect(__splitViewFontZoomTesting.shouldUseFontZoomModifier(
+      { ctrlKey: false, metaKey: true },
+      'MacIntel',
+    )).toBe(true);
+    expect(__splitViewFontZoomTesting.shouldUseFontZoomModifier(
+      { ctrlKey: true, metaKey: false },
+      'MacIntel',
+    )).toBe(false);
+    expect(__splitViewFontZoomTesting.shouldUseFontZoomModifier(
+      { ctrlKey: true, metaKey: false },
+      'Win32',
+    )).toBe(true);
+  });
+
+  it('accumulates small wheel deltas before changing font size', () => {
+    expect(__splitViewFontZoomTesting.consumeFontZoomWheelDelta(-20, 0)).toEqual({
+      remainder: -20,
+      steps: 0,
+    });
+    expect(__splitViewFontZoomTesting.consumeFontZoomWheelDelta(-65, -20)).toEqual({
+      remainder: -5,
+      steps: 1,
+    });
+    expect(__splitViewFontZoomTesting.consumeFontZoomWheelDelta(180, 0)).toEqual({
+      remainder: 20,
+      steps: -2,
+    });
+  });
+
+  it('clamps font sizes to the settings range', () => {
+    expect(__splitViewFontZoomTesting.clampDocumentFontSize(4, 10, 32)).toBe(10);
+    expect(__splitViewFontZoomTesting.clampDocumentFontSize(18.4, 10, 32)).toBe(18);
+    expect(__splitViewFontZoomTesting.clampDocumentFontSize(48, 10, 32)).toBe(32);
   });
 });
 
