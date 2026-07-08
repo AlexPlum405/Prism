@@ -97,7 +97,7 @@
       "status": "pass",
       "steps": ["检查安装后 app.exe 的文件版本和产品版本"],
       "expected": "安装后 Prism 版本为目标版本 1.0.0",
-      "actual": "C:\\Users\\alex\\AppData\\Local\\Prism\\app.exe 的 FileVersion 和 ProductVersion 均为 1.0.0，ProductName 为 Prism；Size 31,839,232；SHA256 A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0",
+      "actual": "updater key rotation 后已手动安装一次新 key 版本。C:\\Users\\alex\\AppData\\Local\\Prism\\app.exe 的 FileVersion 和 ProductVersion 均为 1.0.0，ProductName 为 Prism；Size 31,839,232；SHA256 114A085E1640B6411EFE5FB969AEBE3626A87360DFEAEED1FAEB0F883018DFE5；二进制中能搜到新 public key id 4D7CCC88FB14D827，搜不到旧 public key",
       "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md"]
     },
     {
@@ -399,7 +399,7 @@
       "status": "pass",
       "steps": ["生成 updater .sig 和 Windows latest.json 条目"],
       "expected": "可验证的 updater 产物",
-      "actual": "已执行 updater key rotation：src-tauri/tauri.conf.json 更新为新正式 public key；私钥保存在本机 C:\\Users\\alex\\.tauri\\prism-updater.key，不进入仓库。使用新正式 key 执行 npm run tauri:build -- --bundles nsis,msi 通过，生成 NSIS / MSI .sig；windows-x86_64 latest.json 生成并通过 release:manifest:check。兼容性限制：旧 v1.0.0 安装版内嵌旧 public key，不能自动接受新 key 签名更新，需要手动安装一次新 key 版本",
+      "actual": "已执行 updater key rotation：src-tauri/tauri.conf.json 更新为新正式 public key；私钥保存在本机 C:\\Users\\alex\\.tauri\\prism-updater.key，不进入仓库。使用新正式 key 执行 npm run tauri:build -- --bundles nsis,msi 通过，生成 NSIS / MSI .sig；windows-x86_64 latest.json 生成并通过 release:manifest:check。本机已手动安装一次新 key 版本，安装落点 app.exe 能搜到新 public key，搜不到旧 public key。兼容性限制：外部旧 v1.0.0 安装版仍需手动安装一次新 key 版本",
       "evidence": ["evidence/updater.md", "issues.md", "artifacts/updater/official-public-key.pub", "artifacts/updater/official-nsis-setup.exe.sig", "artifacts/updater/official-msi.msi.sig", "artifacts/updater/official-windows-latest.json", "artifacts/updater/validation-public-key.pub", "artifacts/updater/validation-nsis-setup.exe.sig", "artifacts/updater/validation-msi.msi.sig", "artifacts/updater/validation-windows-latest.json"]
     },
     {

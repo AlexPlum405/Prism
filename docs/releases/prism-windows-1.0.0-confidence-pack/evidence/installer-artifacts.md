@@ -20,11 +20,11 @@
 
 | 路径 | 大小 | SHA256 | 文件版本 | 产品版本 | 产品名 | 签名状态 |
 |---|---:|---|---|---|---|---|
-| `C:\Users\alex\AppData\Local\Prism\app.exe` | 31,839,232 | `A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0` | `1.0.0` | `1.0.0` | `Prism` | `NotSigned` |
+| `C:\Users\alex\AppData\Local\Prism\app.exe` | 31,839,232 | `114A085E1640B6411EFE5FB969AEBE3626A87360DFEAEED1FAEB0F883018DFE5` | `1.0.0` | `1.0.0` | `Prism` | `NotSigned` |
 
 ## 安装方式验证
 
 - NSIS 静默安装：通过。
 - MSI 管理员静默安装：通过；非管理员 `/qn` 静默安装因 per-machine 权限限制失败，见 `install-smoke.md`。
 - 修复分支 NSIS 覆盖安装：通过，返回 `0`；用于 `WIN-WRITE-004` 安装版快捷键复测。
-- updater key rotation 后的 NSIS / MSI 产物已完成打包和 `.sig` / `latest.json` 生成；本轮未重复执行安装器安装 smoke。
+- updater key rotation 后的 NSIS / MSI 产物已完成打包和 `.sig` / `latest.json` 生成；本机已用新 NSIS 手动覆盖安装一次，返回 `0`，安装版内嵌新 public key id `4D7CCC88FB14D827`。

@@ -18,11 +18,12 @@
 - `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 已在修复分支重打包安装版中完成 Windows 真机复测。
 - `F9` 打字机模式已在 Windows 真机中通过菜单触发和勾选状态完成补验。
 - updater 已轮换到新的正式 key，Windows NSIS / MSI `.sig` 和 `windows-x86_64 latest.json` 均已生成并通过校验。
+- 本机已手动安装一次新 key 版本，安装落点 `app.exe` 内嵌新 public key，旧 public key 不再存在。
 - 应用内 `检查更新...` 不会一直 loading，会给出“暂不可用”最终态。
 
 但还不能把 Windows 1.0.0 记成稳定发布，原因也很明确：
 
-- 旧 `v1.0.0` 安装版仍内嵌旧 updater public key；本轮 key rotation 后，旧安装版不能自动接受新 key 签名的更新，需要用户手动安装一次新版本。
+- 外部旧 `v1.0.0` 安装版仍内嵌旧 updater public key；本轮 key rotation 后，旧安装版不能自动接受新 key 签名的更新，需要用户手动安装一次新版本。本机已完成这次手动安装。
 - 删除到回收站需要用户动作前确认，125% / 150% 高 DPI 需要改系统缩放后补验。
 - 额外 Rust workspace index job 查询风险已消减，定向测试通过。
 - 条件项 `Ctrl` + 鼠标滚轮字号不属于当前 `e03f199e` 基线，按计划 Not Run。
@@ -95,7 +96,7 @@ Windows version: Microsoft Windows 11 专业版 10.0.26200, x64
 Installer: NSIS + MSI
 SHA256:
   app.exe BF21B29C1AD0BD2D1B36ABCF98AA978E47B1D2C315174B664E283BEC1CBA6540
-  installed app.exe A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0
+  installed app.exe 114A085E1640B6411EFE5FB969AEBE3626A87360DFEAEED1FAEB0F883018DFE5
   Prism_1.0.0_x64-setup.exe D76BA7F01D50436EB4FA1B7A2D1E1D81CE4605CC1D12C06F4308E53524016E20
   Prism_1.0.0_x64_en-US.msi D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6
 P0: Pass，MSI 管理员权限静默安装通过；非管理员 /qn 静默安装受 per-machine 权限限制

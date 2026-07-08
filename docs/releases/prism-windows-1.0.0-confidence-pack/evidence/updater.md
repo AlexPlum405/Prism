@@ -25,6 +25,7 @@ updater 工具链已经闭环到新的正式 key。
 - `src-tauri/tauri.conf.json` 已更新为新正式 public key。
 - 使用新正式 key 执行 `npm run tauri:build -- --bundles nsis,msi` 通过。
 - NSIS / MSI updater `.sig` 已生成，`windows-x86_64 latest.json` 已生成并通过 `release:manifest:check`。
+- 本机已手动安装一次新 key 版本；安装落点 `app.exe` 能搜到新 public key，搜不到旧 public key。
 
 兼容性限制：旧 `v1.0.0` 安装版内嵌旧 public key，无法自动接受新 key 签名的更新。用户需要手动安装一次内嵌新 public key 的版本；之后 updater 才能继续使用新 key。
 
@@ -88,6 +89,21 @@ MSI             D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6
 NSIS .sig       EE8070FD9A3F6A4EAA0F097298F0FCC4DEB92B18DDA1F76B4D7D864192A662D0
 MSI .sig        C093F99D46F36A52B2C8E1B9EEB59F5EFB787507C3BD6276F452888DDBC39BBB
 latest.json     7D0D7BD43FAA7178AFB0994F582E528ED765B5000843358FAFAF7DECAF076FE4
+```
+
+本机手动安装一次新 key 版本：
+
+```powershell
+src-tauri\target\release\bundle\nsis\Prism_1.0.0_x64-setup.exe /S
+```
+
+结果：
+
+```text
+ExitCode             0
+Installed app.exe    114A085E1640B6411EFE5FB969AEBE3626A87360DFEAEED1FAEB0F883018DFE5
+New public key        present
+Old public key        absent
 ```
 
 结论：`WIN-UPDATER-001` 从 Blocked 调整为 Pass with key rotation。发布说明必须明确旧 public key 安装版不能自动升级到新 key 版本，需要手动安装一次。

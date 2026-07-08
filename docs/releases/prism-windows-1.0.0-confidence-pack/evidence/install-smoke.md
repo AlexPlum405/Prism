@@ -26,6 +26,22 @@ Size   31,839,232
 SHA256 A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0
 ```
 
+updater key rotation 后手动安装一次新 key 版本：
+
+```text
+Installer  src-tauri\target\release\bundle\nsis\Prism_1.0.0_x64-setup.exe
+ExitCode   0
+Size       31,839,232
+SHA256     114A085E1640B6411EFE5FB969AEBE3626A87360DFEAEED1FAEB0F883018DFE5
+```
+
+二进制确认：
+
+```text
+New public key id 4D7CCC88FB14D827: present
+Old public key: absent
+```
+
 开始菜单快捷方式：
 
 ```text
@@ -75,6 +91,7 @@ ProductName    Prism
 - `config.json` SHA256 前后保持不变：`92E283F252DADC4788084AB0CA9282A58747B82E6CAFDB797FF5BAF2D91E87EA`。
 - 最近文件列表保持不变，包含 `复杂 路径 (测试).md`、`windows-smoke.md`、`data.json`、`plain.txt` 等。
 - 快捷键修复后再次用新 NSIS 覆盖安装，`ExitCode 0`，用于 `WIN-WRITE-004` 安装版复测。
+- updater key rotation 后再次用新 NSIS 覆盖安装，`ExitCode 0`；安装落点 `app.exe` 内嵌新 public key，旧 public key 不再存在。
 
 结论：覆盖安装没有清空用户设置和最近文件。
 

@@ -84,6 +84,7 @@ key rotation 结果：
 - `npm run tauri:build -- --bundles nsis,msi` 在注入新正式私钥后返回 `0`。
 - 生成 `Prism_1.0.0_x64-setup.exe.sig` 和 `Prism_1.0.0_x64_en-US.msi.sig`。
 - 使用 `windows-x86_64` 平台 key 生成 `latest.json`，并通过 `release:manifest:check`。
+- 已用新 NSIS 手动覆盖安装一次新 key 版本，返回 `0`；安装落点 `app.exe` SHA256 为 `114A085E1640B6411EFE5FB969AEBE3626A87360DFEAEED1FAEB0F883018DFE5`，二进制中能搜到新 public key id `4D7CCC88FB14D827`，搜不到旧 public key。
 
 正式 key rotation 产物：
 
