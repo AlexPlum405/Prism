@@ -75,6 +75,8 @@ latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 
 结论：updater 签名工具链本身已验证可用；`WIN-UPDATER-001` 仍保持 Blocked，因为正式发布必须使用 `src-tauri/tauri.conf.json` 当前内嵌 public key 对应的私钥。若该私钥已丢失，需要做 updater key rotation 决策，并明确现有 `v1.0.0` macOS 安装版无法通过旧 public key 接受新 key 签名的自动更新。
 
+正式私钥查找结果：本机 `C:\Users\alex\.tauri` 只有 validation key；当前 shell 没有 updater signing env；GitHub Actions secrets 未列出 signing secret；Git 历史 `-S` 搜索未发现当前 public key 或 tauri secret key 线索；用户目录文件名搜索也只命中 validation key。因此该项继续属于外部状态阻塞。
+
 ## 4. 已修复并复测通过：部分快捷键在 Windows 真机未生效
 
 验证文件：`C:\Users\alex\Documents\PrismWindowsSmoke\Examples\keyboard-smoke.md`

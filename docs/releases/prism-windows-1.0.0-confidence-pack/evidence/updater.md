@@ -87,6 +87,18 @@ latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 
 结论：技术链路已跑通；正式发布闭环仍取决于当前内嵌 public key 对应的私钥。GitHub `v1.0.0` macOS release 目前只有 DMG，没有 `latest.json` / `.sig`。如果找不回旧私钥，需要显式决定是否旋转 updater key，并接受旧安装版不能自动更新到新 key 签名版本的后果。
 
+## 正式私钥查找
+
+2026-07-08 追加查找：
+
+- `C:\Users\alex\.tauri` 只存在 `prism-updater-validation.key` 和 `.pub`，没有 `prism-updater.key`。
+- 当前 shell 环境没有 `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PATH`。
+- GitHub Actions secrets 列表没有返回 updater signing secret。
+- `git log --all -S"DDA9E1E9A224F4B0"` 和 `git log --all -S"trusted comment: tauri secret"` 没有命中。
+- 用户目录按文件名搜索 `prism-updater.key`、`*updater*.key`、`*updater*.key.pub` 只命中 validation key。
+
+结论：当前机器和仓库可见配置中没有正式 updater 私钥。`WIN-UPDATER-001` 继续保持 Blocked，下一步只能由维护者提供旧私钥，或明确做 updater key rotation。
+
 ## 应用内检查更新
 
 步骤：
