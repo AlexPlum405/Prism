@@ -8,10 +8,10 @@
 
 尚不能记为 Windows Stable 的项目：
 
-- 文件树删除到回收站、高 DPI 125% / 150% 仍需人工或稳定入口补验。
 - updater 已通过新正式 key rotation 生成 Windows `.sig` 和 `latest.json`；旧 public key 安装版不能自动升级到新 key 版本，需要手动安装一次。
 - MSI 非管理员 `/qn` 静默安装仍会因 per-machine 权限限制失败；管理员静默安装已经通过。
 - 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
+- `Ctrl` + 鼠标滚轮字号属于不在当前基线内的条件项，按计划 Not Run。
 
 ## 计划项映射
 
@@ -39,7 +39,7 @@
 | WIN-UI-001 标题栏 / 窗口控制 | `evidence/ui-and-shortcuts.md`、`screenshots/03-titlebar-window-controls.png` | Pass |
 | WIN-UI-002 最大化 / 还原不重叠 | `evidence/ui-and-shortcuts.md`、`screenshots/03b-maximized.png` | Pass |
 | WIN-UI-003 多窗口单文档 | `evidence/ui-and-shortcuts.md`、`evidence/file-association.md` | Pass |
-| WIN-UI-004 高 DPI 125% / 150% | `evidence/ui-and-shortcuts.md`、`manifest.json` | Blocked |
+| WIN-UI-004 高 DPI 125% / 150% | `evidence/ui-and-shortcuts.md`、`manifest.json`、`screenshots/18-high-dpi-125.jpg`、`screenshots/18b-high-dpi-150.jpg` | Pass |
 | WIN-FILE-001 默认打开 `.md` | `evidence/file-association.md` | Pass |
 | WIN-FILE-002 Explorer 打开方式候选 | `evidence/file-association.md` | Pass by registry/default shell evidence |
 | WIN-FILE-003 文件 B 不错误跳回文件 A | `evidence/file-association.md`、`evidence/ui-and-shortcuts.md` | Pass |
@@ -48,7 +48,7 @@
 | WIN-FILE-006 Explorer 图标 | `evidence/file-association.md`、`screenshots/04-file-association-explorer.png` | Pass |
 | WIN-PATH-001 路径复制 | `evidence/path-actions.md` | Pass |
 | WIN-PATH-002 Explorer 定位 | `evidence/path-actions.md`、`screenshots/04-file-association-explorer.png` | Pass |
-| WIN-PATH-003 删除到回收站 | `evidence/path-actions.md`、`manifest.json` | Blocked |
+| WIN-PATH-003 删除到回收站 | `evidence/path-actions.md`、`manifest.json` | Pass |
 | WIN-PATH-004 复杂路径打开 / 保存 / 导出 | `evidence/path-actions.md`、`evidence/export.md` | Pass |
 | WIN-WRITE-001 编辑 / 分栏 / 预览 | `evidence/writing-preview.md`、`screenshots/05-split-preview.png` | Pass |
 | WIN-WRITE-002 复杂 Markdown 预览 | `evidence/writing-preview.md`、`evidence/export.md`、`screenshots/08-diagrams-formulas.png` | Pass |

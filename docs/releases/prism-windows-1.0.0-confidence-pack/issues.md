@@ -162,13 +162,30 @@ latest.json     7D0D7BD43FAA7178AFB0994F582E528ED765B5000843358FAFAF7DECAF076FE4
 
 结论：`WIN-WRITE-005` 从 Blocked 调整为 Pass。
 
-## 6. 仍未补齐 / 需要人工确认的验证项
+## 6. 已补验：回收站删除和高 DPI
 
-这些项本轮没有做成完整真机证据：
+用户已确认允许通过 Prism UI 删除测试文件 `DeleteSmoke\delete-me.md`。
 
-- 删除到回收站：需要用户在动作前确认允许 Prism UI 删除 `DeleteSmoke\delete-me.md`
-- 高 DPI 125% / 150%：需要确认后修改 Windows 显示缩放
-- `Ctrl` + 鼠标滚轮调整字号：当前验证基线 `e03f199e6f3bcd256bc9cc83c356302e69239d31` 不包含 `912c9fb5`，按计划 Not Run
+回收站删除补验结果：
+
+- Prism 文件树右键 `delete-me.md` 后点击 `删除`。
+- 在确认框中点击 `移到废纸篓`。
+- 原路径不存在，`keep.md` 仍存在。
+- Windows 回收站中可查到 `delete-me.md`，原位置为 `C:\Users\alex\Documents\PrismWindowsSmoke\DeleteSmoke`。
+
+高 DPI 补验结果：
+
+- Windows 显示缩放依次切到 `125%` 和 `150%`。
+- 每次缩放后均重启 Prism，并采集窗口级截图。
+- 标题栏、顶部菜单、三模式按钮、文件树、预览正文、状态栏均可见；未观察到重叠、裁切或溢出。
+- 截图：`screenshots/18-high-dpi-125.jpg`、`screenshots/18b-high-dpi-150.jpg`。
+- 复测结束后已恢复系统缩放到 `100% (推荐)`。
+
+结论：`WIN-PATH-003` 和 `WIN-UI-004` 均从 Blocked 调整为 Pass。
+
+仍未执行的条件项：
+
+- `Ctrl` + 鼠标滚轮调整字号：当前验证基线 `e03f199e6f3bcd256bc9cc83c356302e69239d31` 不包含 `912c9fb5`，按计划 Not Run。
 
 ## 7. 证据限制：图片粘贴 / 拖拽
 

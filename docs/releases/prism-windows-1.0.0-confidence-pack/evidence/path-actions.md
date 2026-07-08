@@ -38,13 +38,34 @@ C:\Users\alex\Documents\PrismWindowsSmoke\路径 Smoke (中文 空格)\复杂 �
 
 ## 删除到回收站
 
-状态：Blocked。
+状态：Pass。
 
-原因：该项需要通过 Prism UI 删除本地文件 `DeleteSmoke\delete-me.md`。这属于通过应用界面删除本地数据，必须在动作发生前由用户明确确认。
-
-未执行前，测试文件仍存在：
+用户已在 2026-07-09 明确确认允许通过 Prism UI 删除测试文件：
 
 ```text
 C:\Users\alex\Documents\PrismWindowsSmoke\DeleteSmoke\delete-me.md
 ```
+
+动作前 SHA256：
+
+```text
+435054A230788A46A02A6F328793EFBB6372A342184DB279B4679420C813989A
+```
+
+复测步骤：
+
+1. 用安装版 Prism 打开 `DeleteSmoke\delete-me.md`。
+2. 在文件树中右键 `delete-me.md`。
+3. 点击 `删除`。
+4. 在 Prism 弹出的系统确认框中点击 `移到废纸篓`。
+
+结果：
+
+- Prism 文件树刷新后只剩 `keep.md`。
+- Prism toast 显示 `已移到系统废纸篓`。
+- 原路径 `C:\Users\alex\Documents\PrismWindowsSmoke\DeleteSmoke\delete-me.md` 已不存在。
+- 对照文件 `C:\Users\alex\Documents\PrismWindowsSmoke\DeleteSmoke\keep.md` 仍存在。
+- Windows 回收站 Shell namespace 中找到 `delete-me.md`，原位置为 `C:\Users\alex\Documents\PrismWindowsSmoke\DeleteSmoke`，删除时间为 `2026/7/9 0:58`。
+
+结论：`WIN-PATH-003` 从 Blocked 调整为 Pass。Prism 文件树删除默认进入 Windows 回收站，没有触发永久删除 fallback。
 

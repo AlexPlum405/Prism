@@ -17,6 +17,8 @@
 - 图片粘贴 / 拖拽有定向自动化覆盖。
 - `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 已在修复分支重打包安装版中完成 Windows 真机复测。
 - `F9` 打字机模式已在 Windows 真机中通过菜单触发和勾选状态完成补验。
+- 文件树删除到回收站已在用户确认后通过 Prism UI 完成补验。
+- 125% / 150% 高 DPI 已通过 Windows 显示缩放切换、Prism 重启和窗口级截图补验，复测后系统缩放已恢复到 100%。
 - updater 已轮换到新的正式 key，Windows NSIS / MSI `.sig` 和 `windows-x86_64 latest.json` 均已生成并通过校验。
 - 本机已手动安装一次新 key 版本，安装落点 `app.exe` 内嵌新 public key，旧 public key 不再存在。
 - 应用内 `检查更新...` 不会一直 loading，会给出“暂不可用”最终态。
@@ -24,7 +26,6 @@
 但还不能把 Windows 1.0.0 记成稳定发布，原因也很明确：
 
 - 外部旧 `v1.0.0` 安装版仍内嵌旧 updater public key；本轮 key rotation 后，旧安装版不能自动接受新 key 签名的更新，需要用户手动安装一次新版本。本机已完成这次手动安装。
-- 删除到回收站需要用户动作前确认，125% / 150% 高 DPI 需要改系统缩放后补验。
 - 额外 Rust workspace index job 查询风险已消减，定向测试通过。
 - 条件项 `Ctrl` + 鼠标滚轮字号不属于当前 `e03f199e` 基线，按计划 Not Run。
 
@@ -76,15 +77,15 @@
 | 长文预览 / 导出反馈 | Pass |
 | 图片粘贴 / 拖拽自动化 | Pass |
 | 索引取消 / 降级自动化 | Pass |
-| 回收站删除 / 高 DPI 125% 150% | Blocked |
+| 回收站删除 / 高 DPI 125% 150% | Pass |
 
 ## Manifest 计数
 
 | 状态 | 数量 |
 |---|---:|
-| Pass | 41 |
+| Pass | 43 |
 | Fail | 0 |
-| Blocked | 2 |
+| Blocked | 0 |
 | Not Run | 1 |
 
 ## Release Status 摘要
@@ -100,8 +101,8 @@ SHA256:
   Prism_1.0.0_x64-setup.exe D76BA7F01D50436EB4FA1B7A2D1E1D81CE4605CC1D12C06F4308E53524016E20
   Prism_1.0.0_x64_en-US.msi D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6
 P0: Pass，MSI 管理员权限静默安装通过；非管理员 /qn 静默安装受 per-machine 权限限制
-P1: Blocked，高 DPI、删除回收站需要补验
-Known blockers: UI 删除需确认；高 DPI 需改系统缩放；旧 updater public key 安装版需手动升级到新 key 版本
+P1: Pass，回收站删除和高 DPI 125% / 150% 已补验
+Known blockers: 无 manifest blocker；旧 updater public key 安装版需手动升级到新 key 版本
 Release note changes required: 不得把 Windows 1.0.0 写成 Released / Stable
 ```
 

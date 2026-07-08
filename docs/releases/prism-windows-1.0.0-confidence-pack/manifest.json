@@ -14,9 +14,9 @@
   },
   "summary": {
     "status": "Conditional Go",
-    "pass": 41,
+    "pass": 43,
     "fail": 0,
-    "blocked": 2,
+    "blocked": 0,
     "notRun": 1
   },
   "items": [
@@ -194,12 +194,11 @@
       "id": "WIN-PATH-003",
       "priority": "P1",
       "domain": "path-actions",
-      "status": "blocked",
+      "status": "pass",
       "steps": ["通过 Prism UI 删除 DeleteSmoke\\delete-me.md"],
       "expected": "文件树删除默认进入 Windows 回收站；失败时二次确认永久删除",
-      "actual": "未执行。通过应用界面删除本地文件需要用户动作前确认",
-      "evidence": ["evidence/path-actions.md"],
-      "issue": "需要用户确认后才能执行 UI 删除"
+      "actual": "用户确认后通过 Prism 文件树右键删除 delete-me.md，确认框选择移到废纸篓；原路径不存在，keep.md 仍存在；Windows 回收站中可查到 delete-me.md，原位置为 C:\\Users\\alex\\Documents\\PrismWindowsSmoke\\DeleteSmoke",
+      "evidence": ["evidence/path-actions.md"]
     },
     {
       "id": "WIN-PATH-004",
@@ -245,12 +244,11 @@
       "id": "WIN-UI-004",
       "priority": "P1",
       "domain": "ui",
-      "status": "blocked",
+      "status": "pass",
       "steps": ["切换系统缩放到 125% / 150% 后验证"],
       "expected": "高 DPI 缩放下文字和按钮不溢出",
-      "actual": "本机当前为 96 DPI / 100%；未修改系统显示设置。该项需要改动 Windows 显示缩放并可能影响当前会话，需人工确认后执行",
-      "evidence": ["evidence/ui-and-shortcuts.md"],
-      "issue": "需要确认后修改系统显示缩放"
+      "actual": "Windows 显示缩放切到 125% 和 150% 后分别重启 Prism；顶部菜单、编辑/分栏/预览按钮、窗口控制、文件树、预览正文和状态栏均可见，未观察到重叠、裁切或溢出；复测后已恢复 100% 缩放",
+      "evidence": ["evidence/ui-and-shortcuts.md", "screenshots/18-high-dpi-125.jpg", "screenshots/18b-high-dpi-150.jpg"]
     },
     {
       "id": "WIN-WRITE-001",
