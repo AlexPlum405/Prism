@@ -8,7 +8,6 @@
 
 尚不能记为 Windows Stable 的项目：
 
-- `npm test -- --run` 全量测试失败。
 - MSI 静默安装在当前权限下失败。
 - updater 签名私钥缺失。
 - 部分快捷键在 Windows 真机未生效。
@@ -24,7 +23,7 @@
 | Windows 11 x64 环境 | `evidence/environment.md` | Pass |
 | Git / Node / npm / Rust / Cargo | `evidence/environment.md` | Pass |
 | PowerShell / Build Tools / WebView2 | `evidence/environment.md` | Pass |
-| `npm test -- --run` | `evidence/build-and-test.md`、`issues.md` | Fail |
+| `npm test -- --run` | `evidence/build-and-test.md`、`issues.md` | Pass |
 | `npm run build` | `evidence/build-and-test.md` | Pass |
 | `npm run tauri:build` | `evidence/build-and-test.md`、`evidence/installer-artifacts.md`、`evidence/updater.md` | Blocked at updater signing |
 | `git diff --check` | `evidence/build-and-test.md` | Pass |

@@ -18,7 +18,6 @@
 
 但还不能把 Windows 1.0.0 记成稳定发布，原因也很明确：
 
-- 全量测试仍有 4 个失败。
 - MSI 静默安装在当前用户权限下会失败，错误是 per-machine 权限不足。
 - updater 私钥缺失，所以 updater `.sig` 和 Windows `latest.json` 不能闭环。
 - Windows 真机发现部分快捷键未生效：`Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11`。
@@ -49,7 +48,7 @@
 |---|---|
 | 环境记录 | Pass |
 | Windows bundle 产物 | Pass |
-| 全量测试 | Fail |
+| 全量测试 | Pass |
 | 导出 smoke | Pass |
 | NSIS 安装 | Pass |
 | 覆盖安装 | Pass |
@@ -79,8 +78,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| Pass | 36 |
-| Fail | 3 |
+| Pass | 37 |
+| Fail | 2 |
 | Blocked | 4 |
 | Not Run | 1 |
 
@@ -95,7 +94,7 @@ SHA256:
   app.exe 975842CFA0917AC5C98932614752F16E06D2F33FE5503C5C4F31BE3BB956A396
   Prism_1.0.0_x64-setup.exe 53E46E5A1FC2182F2C8ABD84BDA27A514262150808B56501087504B2B8BA4C19
   Prism_1.0.0_x64_en-US.msi 82CBA51BA38A0988926D3CC1150EE45B7F376324AFF3272C7A9B1D68158C0556
-P0: Fail，npm test 全量测试失败；MSI 当前权限下静默安装失败
+P0: Fail，MSI 当前权限下静默安装失败
 P1: Fail/Blocked，快捷键未生效；updater 私钥、高 DPI、删除回收站等需要补验
 Known blockers: TAURI_SIGNING_PRIVATE_KEY 缺失；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
 Release note changes required: 不得把 Windows 1.0.0 写成 Released / Stable

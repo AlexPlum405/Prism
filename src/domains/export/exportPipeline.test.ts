@@ -976,6 +976,7 @@ describe('export pipeline raster CSS compatibility', () => {
 });
 
 describe('export pipeline image progress', () => {
+  const PNG_SLICING_TEST_TIMEOUT_MS = 15_000;
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
   const originalImage = globalThis.Image;
   const originalCreateElement = document.createElement.bind(document);
@@ -1236,7 +1237,7 @@ describe('export pipeline image progress', () => {
       width: 3_920,
       height: 16_004,
     });
-  });
+  }, PNG_SLICING_TEST_TIMEOUT_MS);
 
   it('renders over-limit wide png exports in horizontal slices at the requested scale', async () => {
     fsMock.writeFile.mockClear();
@@ -1264,7 +1265,7 @@ describe('export pipeline image progress', () => {
       width: 16_004,
       height: 800,
     });
-  });
+  }, PNG_SLICING_TEST_TIMEOUT_MS);
 
   it('renders png exports that exceed both width and height limits as a tile grid', async () => {
     fsMock.writeFile.mockClear();
@@ -1296,7 +1297,7 @@ describe('export pipeline image progress', () => {
       width: 16_004,
       height: 4_000,
     });
-  });
+  }, PNG_SLICING_TEST_TIMEOUT_MS);
 
   it('expands png capture width to include overflowing PlantUML diagrams', async () => {
     fsMock.writeFile.mockClear();

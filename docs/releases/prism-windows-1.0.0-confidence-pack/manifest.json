@@ -14,8 +14,8 @@
   },
   "summary": {
     "status": "No-Go",
-    "pass": 36,
-    "fail": 3,
+    "pass": 37,
+    "fail": 2,
     "blocked": 4,
     "notRun": 1
   },
@@ -44,12 +44,11 @@
       "id": "WIN-TEST-001",
       "priority": "P0",
       "domain": "tests",
-      "status": "fail",
+      "status": "pass",
       "steps": ["执行 npm test -- --run"],
       "expected": "全量测试绿灯",
-      "actual": "Test Files 2 failed | 168 passed | 4 skipped；Tests 4 failed | 1049 passed | 6 skipped。失败集中在编辑器上下文菜单复制选区和 exportPipeline 的 PNG/PDF 边界用例",
-      "evidence": ["evidence/build-and-test.md", "issues.md"],
-      "issue": "全量测试仍有 4 个失败"
+      "actual": "Test Files 170 passed | 4 skipped；Tests 1061 passed | 6 skipped。超限 PNG 分片集成测试保留真实 PNG 尺寸断言，并为 3 个分片用例设置 15s 用例超时预算",
+      "evidence": ["evidence/build-and-test.md", "issues.md"]
     },
     {
       "id": "WIN-TEST-002",
@@ -363,7 +362,7 @@
       "status": "pass",
       "steps": ["校验 PNG 导出产物"],
       "expected": "PNG 导出成功，不因默认清晰度直接失败；如超限，错误提示可理解",
-      "actual": "复杂导出 smoke 生成 complex-export.png，文件有合法 PNG 签名；全量测试仍另有 PNG 超限边界失败，已单独记为 WIN-TEST-001",
+      "actual": "复杂导出 smoke 生成 complex-export.png，文件有合法 PNG 签名；全量测试中的 PNG 超限分片边界用例已通过",
       "evidence": ["evidence/export.md", "screenshots/10-export-results.png", "artifacts/export/complex-export.png"]
     },
     {

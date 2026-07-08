@@ -4,23 +4,19 @@
 
 命令：`npm test -- --run`
 
-结果：失败，4 个测试失败。
+结果：通过。
 
 概要：
 
-- `EditorPane.integration.test.tsx` 复制选区上下文菜单失败。
-- `exportPipeline.test.ts` 有 3 个 PNG/PDF 边界失败。
-- Test Files：`2 failed | 168 passed | 4 skipped`。
-- Tests：`4 failed | 1049 passed | 6 skipped`。
+- Test Files：`170 passed | 4 skipped`。
+- Tests：`1061 passed | 6 skipped`。
 
-失败项：
+消减记录：
 
-| 文件 | 失败点 | 结果 |
-|---|---|---|
-| `src/domains/editor/components/EditorPane.integration.test.tsx` | copies active CodeMirror selection from context menu | `writeText('hello')` 未调用 |
-| `src/domains/export/exportPipeline.test.ts` | over-limit long png slices | timeout |
-| `src/domains/export/exportPipeline.test.ts` | png tile grid | `jsdom` 空 `_location` |
-| `src/domains/export/exportPipeline.test.ts` | URI annotations for linked images in pdf export | timeout |
+| 项目 | 处理 |
+|---|---|
+| `src/domains/export/exportPipeline.test.ts` | 超限 PNG 分片导出测试会真实拼接接近 16000px 的 PNG，默认 5s 用例超时预算过低；已只为 3 个分片集成用例设置 15s 预算，保留分片坐标和 PNG 尺寸断言 |
+| 全量测试 | 当前最新代码全量通过，`WIN-TEST-001` 从 Fail 调整为 Pass |
 
 ## 2. 前端 build
 

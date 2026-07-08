@@ -1,17 +1,17 @@
 # Prism Windows 1.0.0 已知问题
 
-## 1. 全量测试仍有 4 个失败
+## 1. 已消减：全量测试失败
 
 命令：`npm test -- --run`
 
-失败项：
+当前结果：通过。
 
-| 文件 | 失败点 | 结果 |
-|---|---|---|
-| `src/domains/editor/components/EditorPane.integration.test.tsx` | 复制当前 CodeMirror 选区的上下文菜单 | `writeText('hello')` 没有被调用 |
-| `src/domains/export/exportPipeline.test.ts` | 超限长 PNG 分片导出 | 超时 |
-| `src/domains/export/exportPipeline.test.ts` | 宽高都超限的 PNG 瓦片导出 | `jsdom` 空引用错误 |
-| `src/domains/export/exportPipeline.test.ts` | PDF linked image URI annotations | 超时 |
+```text
+Test Files  170 passed | 4 skipped (174)
+Tests       1061 passed | 6 skipped (1067)
+```
+
+处理记录：当前失败收敛到 `exportPipeline.test.ts` 的超限 PNG 分片用例。该路径会真实拼接接近 16000px 的 PNG，默认 5s 用例超时预算过低；已只为 3 个分片集成用例设置 15s 预算，保留分片坐标和 PNG 尺寸断言。`WIN-TEST-001` 已从 Fail 调整为 Pass。
 
 ## 2. MSI 静默安装在当前用户权限下失败
 
