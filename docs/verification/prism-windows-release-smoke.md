@@ -27,12 +27,15 @@ PowerShell：
 npm ci
 npm test -- --run
 npm run build
-$env:TAURI_SIGNING_PRIVATE_KEY="$HOME\.tauri\prism-updater.key"
+$key = Join-Path $HOME ".tauri\prism-updater.key"
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw -LiteralPath $key
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 npm run tauri:build
+npm run release:manifest -- --platform windows-x86_64 --asset Prism_1.0.0_x64-setup.exe --bundle-dir src-tauri/target/release/bundle/nsis --output src-tauri/target/release/bundle/nsis/latest.json
+npm run release:manifest:check -- --platform windows-x86_64 --asset Prism_1.0.0_x64-setup.exe --bundle-dir src-tauri/target/release/bundle/nsis --output src-tauri/target/release/bundle/nsis/latest.json
 ```
 
-如果在 CI 中使用 updater 私钥内容而不是路径，必须通过 secret 注入，不要写入仓库。
+`TAURI_SIGNING_PRIVATE_KEY` 必须是私钥内容；不要只填私钥路径。如果在 CI 中使用 updater 私钥，必须通过 secret 注入，不要写入仓库。
 
 ## 3. 产物检查
 

@@ -32,7 +32,7 @@ Prism updater 使用 Tauri updater 自己的 Ed25519 签名密钥，和 Apple �
 发布构建前必须设置：
 
 ```bash
-export TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/prism-updater.key"
+export TAURI_SIGNING_PRIVATE_KEY="$(cat "$HOME/.tauri/prism-updater.key")"
 export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 ```
 
@@ -57,7 +57,9 @@ export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 验收：
 
 ```bash
-TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/prism-updater.key" TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" npm run tauri:build
+export TAURI_SIGNING_PRIVATE_KEY="$(cat "$HOME/.tauri/prism-updater.key")"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+npm run tauri:build
 test -f src-tauri/target/release/bundle/macos/Prism.app.tar.gz
 test -f src-tauri/target/release/bundle/macos/Prism.app.tar.gz.sig
 ```
@@ -72,7 +74,7 @@ Stable 版需要 Apple Developer 账号和 Developer ID Application 证书。Tau
 
 ```bash
 export APPLE_SIGNING_IDENTITY="Developer ID Application: <Name> (<Team ID>)"
-export TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/prism-updater.key"
+export TAURI_SIGNING_PRIVATE_KEY="$(cat "$HOME/.tauri/prism-updater.key")"
 export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 npm run tauri:build
 ```
@@ -87,7 +89,7 @@ npm run tauri:build
 export APPLE_CERTIFICATE="<base64 encoded .p12>"
 export APPLE_CERTIFICATE_PASSWORD="<p12 export password>"
 export APPLE_SIGNING_IDENTITY="Developer ID Application: <Name> (<Team ID>)"
-export TAURI_SIGNING_PRIVATE_KEY="<updater private key content or path>"
+export TAURI_SIGNING_PRIVATE_KEY="<updater private key content>"
 export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="<updater key password or empty string>"
 npm run tauri:build
 ```
@@ -99,7 +101,7 @@ CI secret 必须至少包含：
 | `APPLE_CERTIFICATE` | `.p12` 证书的 base64 内容 |
 | `APPLE_CERTIFICATE_PASSWORD` | 导出 `.p12` 时设置的密码 |
 | `APPLE_SIGNING_IDENTITY` | Developer ID Application 证书名称 |
-| `TAURI_SIGNING_PRIVATE_KEY` | updater 私钥内容或路径 |
+| `TAURI_SIGNING_PRIVATE_KEY` | updater 私钥内容；不要只填文件路径 |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | updater 私钥密码；无密码时为空字符串 |
 
 ## 4. Apple 公证
@@ -178,7 +180,9 @@ src-tauri/target/release/bundle/macos/latest.json
 ```bash
 npm test -- --run
 npm run build
-TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/prism-updater.key" TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" npm run tauri:build
+export TAURI_SIGNING_PRIVATE_KEY="$(cat "$HOME/.tauri/prism-updater.key")"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+npm run tauri:build
 npm run release:manifest
 npm run release:manifest:check
 git diff --check

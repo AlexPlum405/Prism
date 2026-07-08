@@ -20,7 +20,7 @@
 
 但还不能把 Windows 1.0.0 记成稳定发布，原因也很明确：
 
-- updater 私钥缺失，所以 updater `.sig` 和 Windows `latest.json` 不能闭环。
+- updater 工具链已用 validation key 跑通，能生成 Windows `.sig` 和 `latest.json`；但正式发布仍缺少当前内嵌 public key 对应的 updater 私钥。
 - 删除到回收站需要用户动作前确认，F9 打字机模式需要人工视觉补验，125% / 150% 高 DPI 需要改系统缩放后补验。
 - 额外 Rust workspace index job 查询风险已消减，定向测试通过。
 - 条件项 `Ctrl` + 鼠标滚轮字号不属于当前 `e03f199e` 基线，按计划 Not Run。
@@ -96,8 +96,8 @@ SHA256:
   Prism_1.0.0_x64-setup.exe F3A1000B2EBFD3F6DF8BB6B53941CBE1B2C7210CB28228549427698EBB806FA9
   Prism_1.0.0_x64_en-US.msi 7921064DE709DAB6167D319C45C1A79457823DDF4F8BC0A7BEA709D85F49F31D
 P0: Pass，MSI 管理员权限静默安装通过；非管理员 /qn 静默安装受 per-machine 权限限制
-P1: Blocked，updater 私钥、高 DPI、删除回收站、F9 打字机模式需要补验
-Known blockers: TAURI_SIGNING_PRIVATE_KEY 缺失；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
+P1: Blocked，正式 updater 私钥、高 DPI、删除回收站、F9 打字机模式需要补验
+Known blockers: 当前内嵌 public key 对应的 TAURI_SIGNING_PRIVATE_KEY 缺失；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
 Release note changes required: 不得把 Windows 1.0.0 写成 Released / Stable
 ```
 

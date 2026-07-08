@@ -400,9 +400,9 @@
       "status": "blocked",
       "steps": ["生成 updater .sig 和 Windows latest.json 条目"],
       "expected": "可验证的 updater 产物",
-      "actual": "构建在 updater 私钥缺失处停止，没有 Windows .sig 和 latest.json 条目",
-      "evidence": ["evidence/updater.md", "issues.md"],
-      "issue": "缺少 TAURI_SIGNING_PRIVATE_KEY"
+      "actual": "使用 validation key 已跑通 Windows updater 工具链：NSIS / MSI 均生成 .sig，windows-x86_64 latest.json 生成并通过 --check。正式发布仍缺少当前 tauri.conf.json 内嵌 public key 对应的 TAURI_SIGNING_PRIVATE_KEY，不能把 validation key 产物当作 release updater 产物",
+      "evidence": ["evidence/updater.md", "issues.md", "artifacts/updater/validation-public-key.pub", "artifacts/updater/validation-nsis-setup.exe.sig", "artifacts/updater/validation-msi.msi.sig", "artifacts/updater/validation-windows-latest.json"],
+      "issue": "缺少正式 updater 私钥"
     },
     {
       "id": "WIN-UPDATER-002",

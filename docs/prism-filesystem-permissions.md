@@ -44,7 +44,9 @@
 rg '"path": "\\*\\*"' src-tauri/capabilities
 npm test -- --run
 npm run build
-TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/prism-updater.key" TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" npm run tauri:build
+export TAURI_SIGNING_PRIVATE_KEY="$(cat "$HOME/.tauri/prism-updater.key")"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+npm run tauri:build
 ```
 
 `rg` 不应命中能力文件。若未来为了某个功能重新引入全盘 scope，必须先写清楚原因、替代方案和移除计划。

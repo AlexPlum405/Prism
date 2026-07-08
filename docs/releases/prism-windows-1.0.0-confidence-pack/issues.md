@@ -37,15 +37,43 @@ MainEngineThread is returning 0
 
 结论：`WIN-INSTALL-002` 从 Fail 调整为 Pass。MSI 产物在正确提权前提下可静默安装通过；非管理员 `/qn` 不弹 UAC，因此仍会被 per-machine 权限限制拦截。
 
-## 3. updater 产物没有闭环
+## 3. 部分消减：updater 工具链跑通，正式私钥仍缺失
 
 `npm run tauri:build -- --verbose` 已经生成 MSI / NSIS，但在 updater 签名阶段失败，原因是本机没有 `TAURI_SIGNING_PRIVATE_KEY`。
 
-后果：
+原始后果：
 
 - 没有 Windows updater `.sig`
 - 没有可验证的 Windows `latest.json`
 - 应用内检查更新能给出“暂不可用”最终态，但不能替代真实 updater 产物验证
+
+本轮验证：
+
+- 生成本机 validation key：`C:\Users\alex\.tauri\prism-updater-validation.key`，私钥不进入仓库。
+- 临时用 validation public key 覆盖 Tauri updater config 后执行 Windows bundle。
+- `TAURI_SIGNING_PRIVATE_KEY_PATH` 不足以驱动 `tauri build`，构建仍报缺私钥；改用 `TAURI_SIGNING_PRIVATE_KEY=<私钥文件内容>` 后通过。
+- `npm run tauri:build -- --config <validation pubkey> --bundles nsis,msi` 返回 `0`。
+- 生成 `Prism_1.0.0_x64-setup.exe.sig` 和 `Prism_1.0.0_x64_en-US.msi.sig`。
+- 使用 `windows-x86_64` 平台 key 生成 `latest.json`，并通过 `release:manifest:check`。
+
+验证产物：
+
+- `artifacts/updater/validation-public-key.pub`
+- `artifacts/updater/validation-nsis-setup.exe.sig`
+- `artifacts/updater/validation-msi.msi.sig`
+- `artifacts/updater/validation-windows-latest.json`
+
+验证构建 SHA256：
+
+```text
+NSIS setup.exe  F907CCAA94AD31FB6B82FD87396D2887788855B95B05E8909C2C23EE46208A05
+MSI             38E38BFB35D0911AFCA6863E1510A6D9E01B9A6410FAC4031547C30C6B74295A
+NSIS .sig       712E303F11C690AD0D979213B94D6B45C09E72ADE859250CE4CC2B70707CA8FF
+MSI .sig        8EE18536245107877AC92E239FF267C93EBB8A72A458C1A364F934D321C40D4E
+latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
+```
+
+结论：updater 签名工具链本身已验证可用；`WIN-UPDATER-001` 仍保持 Blocked，因为正式发布必须使用 `src-tauri/tauri.conf.json` 当前内嵌 public key 对应的私钥。若该私钥已丢失，需要做 updater key rotation 决策，并明确现有 `v1.0.0` macOS 安装版无法通过旧 public key 接受新 key 签名的自动更新。
 
 ## 4. 已修复并复测通过：部分快捷键在 Windows 真机未生效
 

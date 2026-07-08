@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "notes": "Prism 1.0.0 Windows updater validation",
+  "pub_date": "2026-07-08T15:40:18.817Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUVWMzd3h0UitiODJDaGdxN3ZlSFNsWkFqcitjU1VsMnJWZVQ2YnhnR2dzWmllOVliMWZuOW80cWVHWGNaRjBiV3R2d3NRdW9nTGZLMWJRUndlQmllc0NPY1BuM1BjQVFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNTI1MTkzCWZpbGU6UHJpc21fMS4wLjBfeDY0LXNldHVwLmV4ZQpaY0FlTGJxTWtraVpJSm9Xd0NheGFKY2hlekpETjR0STltaS9XL3Q1Ym1LT2dFS1ZYV0x3dHc4VHk2dDUzZUxYcUpmT0tGRU1OSzhYdzVQN2t3NzZDdz09Cg==",
+      "url": "https://github.com/AlexPlum405/Prism/releases/download/v1.0.0/Prism_1.0.0_x64-setup.exe"
+    }
+  }
+}

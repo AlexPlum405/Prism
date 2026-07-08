@@ -310,7 +310,8 @@ PowerShell：
 npm ci
 npm test -- --run
 npm run build
-$env:TAURI_SIGNING_PRIVATE_KEY="$HOME\.tauri\prism-updater.key"
+$key = Join-Path $HOME ".tauri\prism-updater.key"
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw -LiteralPath $key
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 npm run tauri:build
 ```
@@ -381,8 +382,8 @@ Alt 原路径：
 ### 7.1 构建
 
 ```bash
-export TAURI_SIGNING_PRIVATE_KEY=/path/to/prism-updater.key
-export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=
+export TAURI_SIGNING_PRIVATE_KEY="$(cat /path/to/prism-updater.key)"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 npm run tauri:build
 ```
 

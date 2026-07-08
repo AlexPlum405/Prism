@@ -8,7 +8,7 @@
 
 尚不能记为 Windows Stable 的项目：
 
-- updater 签名私钥缺失。
+- updater 工具链已用 validation key 跑通；正式发布仍缺当前内嵌 public key 对应的私钥。
 - 文件树删除到回收站、高 DPI 125% / 150%、F9 打字机模式仍需人工或稳定入口补验。
 - MSI 非管理员 `/qn` 静默安装仍会因 per-machine 权限限制失败；管理员静默安装已经通过。
 - 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
@@ -66,7 +66,7 @@
 | WIN-EXPORT-006 中文 / 空格导出路径 | `evidence/export.md`、`evidence/path-actions.md` | Pass |
 | WIN-UPD-001 检查更新不一直 loading | `evidence/updater.md`、`screenshots/14-update-unavailable.png` | Pass |
 | WIN-UPD-002 无 Windows manifest 时合理最终态 | `evidence/updater.md` | Pass |
-| WIN-UPD-003 updater asset / `.sig` | `evidence/updater.md`、`issues.md` | Blocked |
+| WIN-UPD-003 updater asset / `.sig` | `evidence/updater.md`、`issues.md`、`artifacts/updater/` | Toolchain Pass with validation key; official key Blocked |
 | WIN-PERF-001 大工作区可交互 | `evidence/performance.md` | Pass |
 | WIN-PERF-002 选择 / 滚动 / 编辑 | `evidence/performance.md` | Pass |
 | WIN-PERF-003 索引取消 / 降级 | `evidence/performance.md`、`manifest.json` | Pass |
