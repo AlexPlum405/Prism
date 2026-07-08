@@ -13,13 +13,29 @@ Tests       1066 passed | 6 skipped (1072)
 
 处理记录：当前失败收敛到 `exportPipeline.test.ts` 的超限 PNG 分片用例。该路径会真实拼接接近 16000px 的 PNG，默认 5s 用例超时预算过低；已只为 3 个分片集成用例设置 15s 预算，保留分片坐标和 PNG 尺寸断言。`WIN-TEST-001` 已从 Fail 调整为 Pass。
 
-## 2. MSI 静默安装在当前用户权限下失败
+## 2. 已消减：MSI 管理员静默安装通过
 
 命令：`msiexec /i Prism_1.0.0_x64_en-US.msi /qn /norestart /l*v ...`
 
-结果：`1603`
+非管理员静默安装结果：`1603`
 
-日志结论：`Error 1925`，当前用户没有足够权限完成 per-machine 安装。这个问题是安装方式和权限约束，不是 bundle 未生成。
+非管理员日志结论：`Error 1925`，当前用户没有足够权限完成 per-machine 安装。这个问题是安装方式和权限约束，不是 bundle 未生成。
+
+管理员权限复测命令：通过 PowerShell `Start-Process msiexec.exe -Verb RunAs -Wait -PassThru` 执行同一 MSI 的 `/qn /norestart /l*v` 安装。
+
+管理员权限复测结果：`ExitCode 0`
+
+管理员日志：`artifacts/msi-install-admin.log`
+
+日志关键结论：
+
+```text
+Product: Prism -- Installation completed successfully.
+Windows Installer 已安装产品。产品名称: Prism。产品版本: 1.0.0。产品语言: 1033。制造商: prism。安装成功或错误状态: 0。
+MainEngineThread is returning 0
+```
+
+结论：`WIN-INSTALL-002` 从 Fail 调整为 Pass。MSI 产物在正确提权前提下可静默安装通过；非管理员 `/qn` 不弹 UAC，因此仍会被 per-machine 权限限制拦截。
 
 ## 3. updater 产物没有闭环
 

@@ -17,5 +17,5 @@
 ## 安装方式验证
 
 - NSIS 静默安装：通过。
-- MSI 静默安装：失败，见 `install-smoke.md`。
+- MSI 管理员静默安装：通过；非管理员 `/qn` 静默安装因 per-machine 权限限制失败，见 `install-smoke.md`。
 - 修复分支 NSIS 覆盖安装：通过，返回 `0`；用于 `WIN-WRITE-004` 安装版快捷键复测。

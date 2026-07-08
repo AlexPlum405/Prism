@@ -13,9 +13,9 @@
     "appData": "C:\\Users\\alex\\AppData\\Roaming\\com.prism.editor.v1"
   },
   "summary": {
-    "status": "No-Go",
-    "pass": 38,
-    "fail": 1,
+    "status": "Conditional Go",
+    "pass": 39,
+    "fail": 0,
     "blocked": 4,
     "notRun": 1
   },
@@ -74,12 +74,11 @@
       "id": "WIN-INSTALL-002",
       "priority": "P0",
       "domain": "installation",
-      "status": "fail",
-      "steps": ["用 MSI 静默安装 Prism"],
-      "expected": "MSI 可正常完成安装",
-      "actual": "MSI 返回 1603，日志里是 1925：当前用户没有足够权限做 per-machine 安装",
-      "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md", "artifacts/msi-install.log"],
-      "issue": "MSI 权限失败"
+      "status": "pass",
+      "steps": ["以管理员权限用 MSI 静默安装 Prism", "保留非管理员静默安装权限限制证据"],
+      "expected": "MSI 在具备管理员权限时可正常完成安装",
+      "actual": "管理员权限 msiexec 静默安装返回 0，日志显示 Installation completed successfully 和 MainEngineThread is returning 0。非管理员 /qn 静默安装仍会返回 1603 / Error 1925，属于 per-machine 安装权限前置条件",
+      "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md", "artifacts/msi-install.log", "artifacts/msi-install-admin.log"]
     },
     {
       "id": "WIN-INSTALL-003",

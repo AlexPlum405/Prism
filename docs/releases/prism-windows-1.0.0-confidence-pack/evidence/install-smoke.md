@@ -96,7 +96,9 @@ ProductName    Prism
 
 结论：卸载不会删除测试工作区文档。
 
-## MSI 安装失败
+## MSI 安装
+
+### 非管理员静默安装
 
 命令：`msiexec /i Prism_1.0.0_x64_en-US.msi /qn /norestart /l*v ...`
 
@@ -112,4 +114,22 @@ Action ended 2:24:55: InstallFinalize. Return value 3.
 Product: Prism -- Installation failed.
 ```
 
-结论：MSI 产物生成了，但当前用户权限下的静默安装失败。
+结论：非管理员 `/qn` 静默安装不会弹 UAC，会被 per-machine 安装权限限制拦截。
+
+### 管理员静默安装
+
+命令：通过 PowerShell `Start-Process msiexec.exe -Verb RunAs -Wait -PassThru` 执行同一 MSI 的 `/qn /norestart /l*v` 安装。
+
+结果：`ExitCode 0`
+
+日志：`artifacts/msi-install-admin.log`
+
+日志里的关键结论：
+
+```text
+Product: Prism -- Installation completed successfully.
+Windows Installer 已安装产品。产品名称: Prism。产品版本: 1.0.0。产品语言: 1033。制造商: prism。安装成功或错误状态: 0。
+MainEngineThread is returning 0
+```
+
+结论：MSI 产物在管理员权限下可以静默安装通过。此前失败是非管理员 silent install 的权限前置条件，不是 MSI 产物损坏。

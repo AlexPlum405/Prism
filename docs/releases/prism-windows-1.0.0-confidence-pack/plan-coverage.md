@@ -4,13 +4,13 @@
 
 ## 覆盖结论
 
-当前证据包已经覆盖原计划的主要命令、产物、安装、文件关联、路径动作、写作预览、导出、updater、性能和收尾检查。结论保持 `No-Go`。
+当前证据包已经覆盖原计划的主要命令、产物、安装、文件关联、路径动作、写作预览、导出、updater、性能和收尾检查。P0 安装阻塞已消减，结论推进到 `Conditional Go`。
 
 尚不能记为 Windows Stable 的项目：
 
-- MSI 静默安装在当前权限下失败。
 - updater 签名私钥缺失。
 - 文件树删除到回收站、高 DPI 125% / 150%、F9 打字机模式仍需人工或稳定入口补验。
+- MSI 非管理员 `/qn` 静默安装仍会因 per-machine 权限限制失败；管理员静默安装已经通过。
 - 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
 
 ## 计划项映射
@@ -28,7 +28,7 @@
 | `git diff --check` | `evidence/build-and-test.md` | Pass |
 | 安装器类型、文件名、大小、SHA256 | `evidence/installer-artifacts.md` | Pass |
 | 文件版本、产品名、签名状态 | `evidence/installer-artifacts.md`、`evidence/install-smoke.md` | Pass |
-| WIN-REL-001 安装器启动并安装 | `evidence/install-smoke.md`、`screenshots/00-installer-home.png` | Pass for NSIS; MSI Fail |
+| WIN-REL-001 安装器启动并安装 | `evidence/install-smoke.md`、`screenshots/00-installer-home.png` | Pass for NSIS and elevated MSI |
 | WIN-REL-002 开始菜单可启动 Prism | `evidence/install-smoke.md` | Pass |
 | WIN-REL-003 安装后版本为 1.0.0 | `evidence/install-smoke.md`、`evidence/installer-artifacts.md` | Pass |
 | WIN-REL-004 覆盖安装保留设置 / 最近文件 | `evidence/install-smoke.md` | Pass |
@@ -71,7 +71,7 @@
 | WIN-PERF-002 选择 / 滚动 / 编辑 | `evidence/performance.md` | Pass |
 | WIN-PERF-003 索引取消 / 降级 | `evidence/performance.md`、`manifest.json` | Pass |
 | WIN-PERF-004 长文预览 / 导出反馈 | `evidence/performance.md`、`screenshots/16-long-preview.png` | Pass |
-| 结论门槛 / Release status 摘要 | `README.md` | No-Go |
+| 结论门槛 / Release status 摘要 | `README.md` | Conditional Go |
 
 ## 截图约束
 
