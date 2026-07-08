@@ -75,7 +75,7 @@ C:\Users\alex\Documents\PrismWindowsSmoke\GraphSmoke
 
 结果：Pass。
 
-## 快捷键问题
+## 快捷键格式化 / 打开 / 新建 / 全屏
 
 原 Windows 真机基线在 `keyboard-smoke.md` 中验证：
 
@@ -106,7 +106,23 @@ Test Files  4 passed (4)
 Tests       94 passed (94)
 ```
 
-结论：代码层已修复并覆盖这 5 个快捷键从挂载的 CodeMirror 编辑器到 Prism 命令处理的路径。该项仍需重新打包安装后，在 Windows 真机中复测并归档结果。
+安装版复测：
+
+- 重打包命令：`npm run tauri:build -- --verbose`。
+- 结果：MSI / NSIS 产物生成成功；构建最终仍因缺少 `TAURI_SIGNING_PRIVATE_KEY` 停在 updater 签名阶段。
+- 安装方式：用新 NSIS 静默覆盖安装，返回 `0`。
+- 安装落点：`C:\Users\alex\AppData\Local\Prism\app.exe`，SHA256 `A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0`。
+- 复测文件：`C:\Users\alex\Documents\Prism\Examples\shortcut-retake.md`。
+
+修复后 Windows 真机结果：
+
+- `Ctrl+N`：在编辑器聚焦后创建 `未命名.md`，并可重命名为 `shortcut-retake.md`。
+- `Ctrl+B`：选中 `keyboard smoke` 后写入 `**keyboard smoke**`。
+- `Ctrl+I`：撤销粗体后选中同一文本，写入 `*keyboard smoke*`。
+- `Ctrl+O`：打开 Windows 系统“打开”文件选择对话框，可访问树读到 `文件名(N):`、`打开(O)`、`取消`；Esc 后对话框关闭。
+- `F11`：窗口从 1102x762 切到 2560x1440 全屏层；再次按 `F11` 还原到 1102x762。
+
+结论：代码层和安装版真机层均已覆盖这 5 个快捷键从挂载的 CodeMirror 编辑器到 Prism 命令处理的路径。`WIN-WRITE-004` 调整为 Pass。
 
 ## F9 打字机模式
 
@@ -133,9 +149,7 @@ e03f199e6f3bcd256bc9cc83c356302e69239d31
 
 该基线不包含 `912c9fb5`，因此本轮按计划记录为 Not Run。
 
-证据限制：
-
-- `Ctrl+S` 未出现错误提示；由于格式化快捷键未产生内容变化，无法把本轮结果作为独立保存成功证据。
+证据限制：本轮没有把 `Ctrl` + 鼠标滚轮字号纳入执行范围，因为当前严格验证基线不包含该功能 commit。
 
 ## 高 DPI
 

@@ -14,9 +14,9 @@
   },
   "summary": {
     "status": "No-Go",
-    "pass": 37,
+    "pass": 38,
     "fail": 1,
-    "blocked": 5,
+    "blocked": 4,
     "notRun": 1
   },
   "items": [
@@ -37,7 +37,7 @@
       "status": "pass",
       "steps": ["跑通 Windows bundle 到 MSI/NSIS 产物"],
       "expected": "能生成 Windows 安装器",
-      "actual": "Tauri bundle 生成了 MSI 和 NSIS。app.exe SHA256 975842CFA0917AC5C98932614752F16E06D2F33FE5503C5C4F31BE3BB956A396；NSIS SHA256 53E46E5A1FC2182F2C8ABD84BDA27A514262150808B56501087504B2B8BA4C19；MSI SHA256 82CBA51BA38A0988926D3CC1150EE45B7F376324AFF3272C7A9B1D68158C0556；最终 updater 签名因缺私钥中止",
+      "actual": "Tauri bundle 生成了 MSI 和 NSIS。本轮修复分支重打包 commit b9eca8c5c2eaaddff6644be0ccebf4a1812b723f；release app.exe SHA256 17D9233D5A08E10BC63D88A7296A478AB19A888399D836D963B6563E283033DB；NSIS SHA256 F3A1000B2EBFD3F6DF8BB6B53941CBE1B2C7210CB28228549427698EBB806FA9；MSI SHA256 7921064DE709DAB6167D319C45C1A79457823DDF4F8BC0A7BEA709D85F49F31D；最终 updater 签名因缺私钥中止",
       "evidence": ["evidence/build-and-test.md", "evidence/installer-artifacts.md"]
     },
     {
@@ -98,7 +98,7 @@
       "status": "pass",
       "steps": ["检查安装后 app.exe 的文件版本和产品版本"],
       "expected": "安装后 Prism 版本为目标版本 1.0.0",
-      "actual": "C:\\Users\\alex\\AppData\\Local\\Prism\\app.exe 的 FileVersion 和 ProductVersion 均为 1.0.0，ProductName 为 Prism；Size 31,851,008；SHA256 89FC627C51D582CAE7C749EA028EC6632E5B26ED5570260D7737D84667E33709",
+      "actual": "C:\\Users\\alex\\AppData\\Local\\Prism\\app.exe 的 FileVersion 和 ProductVersion 均为 1.0.0，ProductName 为 Prism；Size 31,839,232；SHA256 A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0",
       "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md"]
     },
     {
@@ -287,12 +287,11 @@
       "id": "WIN-WRITE-004",
       "priority": "P1",
       "domain": "writing",
-      "status": "blocked",
+      "status": "pass",
       "steps": ["验证 Ctrl+B、Ctrl+I、Ctrl+O、Ctrl+N、F11"],
       "expected": "快捷键触发对应格式化、打开、新建和全屏动作",
-      "actual": "原 Windows 真机基线中 Ctrl+B/I/O/N/F11 未生效；当前开发分支已在 CodeMirror 编辑器内桥接这 5 个 Prism 命令，并通过集成回归测试：EditorPane.integration、useAppShortcuts、commands platform/registry 共 94 项通过。仍需重打包安装后做 Windows 真机复测",
-      "evidence": ["evidence/ui-and-shortcuts.md", "issues.md"],
-      "issue": "快捷键代码修复已落地，缺少重打包后的 Windows 真机复测证据"
+      "actual": "原 Windows 真机基线中 Ctrl+B/I/O/N/F11 未生效；当前开发分支已在 CodeMirror 编辑器内桥接这 5 个 Prism 命令，并通过集成回归测试：EditorPane.integration、useAppShortcuts、commands platform/registry 共 94 项通过。修复分支已重新打包并用 NSIS 覆盖安装，安装版 app.exe SHA256 A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0。Windows 真机复测通过：Ctrl+N 创建 shortcut-retake.md；Ctrl+B 将选中文本写为 **keyboard smoke**；撤销后 Ctrl+I 写为 *keyboard smoke*；Ctrl+O 打开系统“打开”文件选择对话框；F11 从 1102x762 切到 2560x1440 全屏层并可再次 F11 还原",
+      "evidence": ["evidence/ui-and-shortcuts.md", "issues.md"]
     },
     {
       "id": "WIN-WRITE-005",

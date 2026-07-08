@@ -10,7 +10,6 @@
 
 - MSI 静默安装在当前权限下失败。
 - updater 签名私钥缺失。
-- 部分快捷键的代码修复和自动回归已完成，但需要重打包安装后做 Windows 真机复测。
 - 文件树删除到回收站、高 DPI 125% / 150%、F9 打字机模式仍需人工或稳定入口补验。
 - 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
 
@@ -54,7 +53,7 @@
 | WIN-WRITE-001 编辑 / 分栏 / 预览 | `evidence/writing-preview.md`、`screenshots/05-split-preview.png` | Pass |
 | WIN-WRITE-002 复杂 Markdown 预览 | `evidence/writing-preview.md`、`evidence/export.md`、`screenshots/08-diagrams-formulas.png` | Pass |
 | WIN-WRITE-003 搜索 / 替换 | `evidence/writing-preview.md`、`evidence/ui-and-shortcuts.md` | Pass |
-| WIN-WRITE-004 快捷键格式化 / 打开 / 新建 / 全屏 | `evidence/ui-and-shortcuts.md`、`manifest.json` | Blocked: 代码修复已通过自动回归，待重打包真机复测 |
+| WIN-WRITE-004 快捷键格式化 / 打开 / 新建 / 全屏 | `evidence/ui-and-shortcuts.md`、`manifest.json` | Pass |
 | WIN-WRITE-008 `Ctrl` + 滚轮字号条件项 | `evidence/ui-and-shortcuts.md`、`manifest.json` | Not Run |
 | WIN-WRITE-005 五套主题 | `evidence/ui-and-shortcuts.md`、主题截图 | Pass |
 | WIN-WRITE-006 三语无明显溢出 | `evidence/ui-and-shortcuts.md`、语言截图 | Pass |

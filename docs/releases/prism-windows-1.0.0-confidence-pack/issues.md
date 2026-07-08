@@ -31,7 +31,7 @@ Tests       1066 passed | 6 skipped (1072)
 - 没有可验证的 Windows `latest.json`
 - 应用内检查更新能给出“暂不可用”最终态，但不能替代真实 updater 产物验证
 
-## 4. 已修复待复测：部分快捷键在 Windows 真机未生效
+## 4. 已修复并复测通过：部分快捷键在 Windows 真机未生效
 
 验证文件：`C:\Users\alex\Documents\PrismWindowsSmoke\Examples\keyboard-smoke.md`
 
@@ -56,7 +56,19 @@ Tests       1066 passed | 6 skipped (1072)
 - 原因定位：编辑器聚焦时，部分组合键会先经过 CodeMirror keymap；`Ctrl+I` 可被 CodeMirror 默认命令消耗，导致 app 级快捷键 hook 收不到。
 - 修复：在 CodeMirror 最高优先级 keymap 中桥接 `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 到 Prism `command.run`。
 - 自动回归：`npm test -- --run src/domains/editor/components/EditorPane.integration.test.tsx src/app/useAppShortcuts.test.tsx src/domains/commands/platform.test.ts src/domains/commands/registry.test.ts` 通过，`Test Files 4 passed`，`Tests 94 passed`。
-- 剩余动作：需要重新打包安装后，在 Windows 真机里复测这 5 个快捷键，才能把 `WIN-WRITE-004` 记为 Pass。
+- 安装版复测：已重新执行 `npm run tauri:build -- --verbose`，生成 NSIS / MSI 后因缺少 `TAURI_SIGNING_PRIVATE_KEY` 停在 updater 签名阶段；NSIS 覆盖安装返回 0。安装落点 `C:\Users\alex\AppData\Local\Prism\app.exe` SHA256 为 `A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0`。
+
+修复后 Windows 真机复测文件：`C:\Users\alex\Documents\Prism\Examples\shortcut-retake.md`
+
+| 快捷键 | 预期 | 修复后实际 |
+|---|---|---|
+| `Ctrl+B` | 给选中文本加粗 | 选中 `keyboard smoke` 后写入 `**keyboard smoke**` |
+| `Ctrl+I` | 给选中文本斜体 | 撤销粗体后写入 `*keyboard smoke*` |
+| `Ctrl+O` | 打开系统文件选择对话框 | 出现 Windows “打开”对话框，包含文件名输入框、打开 / 取消按钮；Esc 可关闭 |
+| `Ctrl+N` | 新建文稿 | 创建 `未命名.md`，随后重命名为 `shortcut-retake.md` |
+| `F11` | Prism 窗口进入全屏 | 从 1102x762 窗口层切到 2560x1440 全屏层；再次按 `F11` 还原 |
+
+结论：`WIN-WRITE-004` 从 Blocked 调整为 Pass。
 
 ## 5. 仍未补齐 / 需要人工确认的验证项
 

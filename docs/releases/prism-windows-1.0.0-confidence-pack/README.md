@@ -14,13 +14,13 @@
 - Prism 可以打开 `.md`、`.markdown`、`.txt`、`.json`、`.sql` 文件。
 - Markdown 预览、路径动作、主题语言、知识图谱、HTML 导出、复杂导出、导出诊断、长文预览和 80 文件大工作区 smoke 都已验证。
 - 图片粘贴 / 拖拽有定向自动化覆盖。
+- `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 已在修复分支重打包安装版中完成 Windows 真机复测。
 - 应用内 `检查更新...` 不会一直 loading，会给出“暂不可用”最终态。
 
 但还不能把 Windows 1.0.0 记成稳定发布，原因也很明确：
 
 - MSI 静默安装在当前用户权限下会失败，错误是 per-machine 权限不足。
 - updater 私钥缺失，所以 updater `.sig` 和 Windows `latest.json` 不能闭环。
-- Windows 真机基线发现部分快捷键未生效：`Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11`；当前开发分支已做代码修复并补自动回归，仍需重打包安装后真机复测。
 - 删除到回收站需要用户动作前确认，F9 打字机模式需要人工视觉补验，125% / 150% 高 DPI 需要改系统缩放后补验。
 - 额外 Rust workspace index job 查询风险已消减，定向测试通过。
 - 条件项 `Ctrl` + 鼠标滚轮字号不属于当前 `e03f199e` 基线，按计划 Not Run。
@@ -60,7 +60,7 @@
 | 路径复制 / 资源管理器定位 | Pass |
 | 预览 | Pass |
 | 搜索 / 替换 | Pass |
-| 快捷键格式化 / 打开 / 新建 / 全屏 | Blocked: 代码修复已通过自动回归，待重打包真机复测 |
+| 快捷键格式化 / 打开 / 新建 / 全屏 | Pass |
 | 主题 / 语言 | Pass |
 | 知识图谱入口 | Pass |
 | HTML 导出 | Pass |
@@ -78,9 +78,9 @@
 
 | 状态 | 数量 |
 |---|---:|
-| Pass | 37 |
+| Pass | 38 |
 | Fail | 1 |
-| Blocked | 5 |
+| Blocked | 4 |
 | Not Run | 1 |
 
 ## Release Status 摘要
@@ -91,12 +91,13 @@ Commit: e03f199e6f3bcd256bc9cc83c356302e69239d31
 Windows version: Microsoft Windows 11 专业版 10.0.26200, x64
 Installer: NSIS + MSI
 SHA256:
-  app.exe 975842CFA0917AC5C98932614752F16E06D2F33FE5503C5C4F31BE3BB956A396
-  Prism_1.0.0_x64-setup.exe 53E46E5A1FC2182F2C8ABD84BDA27A514262150808B56501087504B2B8BA4C19
-  Prism_1.0.0_x64_en-US.msi 82CBA51BA38A0988926D3CC1150EE45B7F376324AFF3272C7A9B1D68158C0556
+  app.exe 17D9233D5A08E10BC63D88A7296A478AB19A888399D836D963B6563E283033DB
+  installed app.exe A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0
+  Prism_1.0.0_x64-setup.exe F3A1000B2EBFD3F6DF8BB6B53941CBE1B2C7210CB28228549427698EBB806FA9
+  Prism_1.0.0_x64_en-US.msi 7921064DE709DAB6167D319C45C1A79457823DDF4F8BC0A7BEA709D85F49F31D
 P0: Fail，MSI 当前权限下静默安装失败
-P1: Blocked，快捷键修复待重打包真机复测；updater 私钥、高 DPI、删除回收站等需要补验
-Known blockers: TAURI_SIGNING_PRIVATE_KEY 缺失；快捷键重打包真机复测；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
+P1: Blocked，updater 私钥、高 DPI、删除回收站、F9 打字机模式需要补验
+Known blockers: TAURI_SIGNING_PRIVATE_KEY 缺失；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
 Release note changes required: 不得把 Windows 1.0.0 写成 Released / Stable
 ```
 

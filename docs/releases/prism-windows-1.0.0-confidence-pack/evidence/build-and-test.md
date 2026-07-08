@@ -63,6 +63,15 @@ WiX warning：
 
 MSI/NSIS 产物已经能出来，当前阻塞点是 updater 私钥。
 
+本轮快捷键修复后重打包记录：
+
+- 命令：`npm run tauri:build -- --verbose`。
+- 结果：MSI / NSIS 产物生成成功；最终仍因缺少 `TAURI_SIGNING_PRIVATE_KEY` 停在 updater 签名阶段。
+- Commit：`b9eca8c5c2eaaddff6644be0ccebf4a1812b723f`。
+- `src-tauri\target\release\app.exe`：Size `31,839,232`，SHA256 `17D9233D5A08E10BC63D88A7296A478AB19A888399D836D963B6563E283033DB`。
+- `src-tauri\target\release\bundle\nsis\Prism_1.0.0_x64-setup.exe`：Size `21,341,955`，SHA256 `F3A1000B2EBFD3F6DF8BB6B53941CBE1B2C7210CB28228549427698EBB806FA9`。
+- `src-tauri\target\release\bundle\msi\Prism_1.0.0_x64_en-US.msi`：Size `23,453,696`，SHA256 `7921064DE709DAB6167D319C45C1A79457823DDF4F8BC0A7BEA709D85F49F31D`。
+
 ## 5. 导出 smoke 测试
 
 命令：

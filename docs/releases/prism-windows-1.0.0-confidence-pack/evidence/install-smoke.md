@@ -19,6 +19,13 @@ Size   31,851,008
 SHA256 89FC627C51D582CAE7C749EA028EC6632E5B26ED5570260D7737D84667E33709
 ```
 
+快捷键修复后重新打包，并用新 NSIS 覆盖安装后的 `app.exe`：
+
+```text
+Size   31,839,232
+SHA256 A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0
+```
+
 开始菜单快捷方式：
 
 ```text
@@ -67,6 +74,7 @@ ProductName    Prism
 - 覆盖安装 `ExitCode 0`。
 - `config.json` SHA256 前后保持不变：`92E283F252DADC4788084AB0CA9282A58747B82E6CAFDB797FF5BAF2D91E87EA`。
 - 最近文件列表保持不变，包含 `复杂 路径 (测试).md`、`windows-smoke.md`、`data.json`、`plain.txt` 等。
+- 快捷键修复后再次用新 NSIS 覆盖安装，`ExitCode 0`，用于 `WIN-WRITE-004` 安装版复测。
 
 结论：覆盖安装没有清空用户设置和最近文件。
 
