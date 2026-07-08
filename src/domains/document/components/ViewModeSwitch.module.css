@@ -1,4 +1,11 @@
 .container {
+  --view-mode-idle: var(--c-ash);
+  --view-mode-hover: var(--c-void);
+  --view-mode-active: var(--c-void);
+  --view-mode-active-underline: var(--view-mode-active);
+  --view-mode-titlebar-hover-bg: color-mix(in srgb, var(--view-mode-active) 7%, transparent);
+  --view-mode-titlebar-active-bg: color-mix(in srgb, var(--view-mode-active) 11%, transparent);
+  --view-mode-titlebar-press-bg: color-mix(in srgb, var(--view-mode-active) 16%, transparent);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -15,26 +22,36 @@
 }
 
 .btn {
+  position: relative;
   width: 23px;
   height: 23px;
   display: grid;
   place-items: center;
   border: none;
+  border-radius: 7px;
   background: transparent;
-  color: var(--c-ash);
+  color: var(--view-mode-idle);
   cursor: pointer;
   padding: 0;
-  transition: color var(--duration-hover) var(--ease-out);
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out),
+    transform var(--duration-hover) var(--ease-out);
   -webkit-app-region: no-drag;
   app-region: no-drag;
 }
 
 .btn:hover {
-  color: var(--c-void);
+  color: var(--view-mode-hover);
 }
 
 .btn.active {
-  color: var(--c-void);
+  color: var(--view-mode-active);
+}
+
+.btn:active {
+  color: var(--view-mode-active);
+  transform: translateY(0.5px);
 }
 
 .btn svg {
@@ -45,7 +62,53 @@
   transform: translateY(0.5px);
 }
 
+.titlebarBorderless {
+  align-self: center;
+  height: 100%;
+  gap: 4px;
+  margin-left: 0;
+  padding: 0 2px;
+  transform: none;
+  z-index: 2;
+}
+
+.titlebarBorderless .btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+
+.titlebarBorderless .btn:hover {
+  background: var(--view-mode-titlebar-hover-bg);
+}
+
+.titlebarBorderless .btn.active {
+  background: var(--view-mode-titlebar-active-bg);
+}
+
+.titlebarBorderless .btn:active {
+  background: var(--view-mode-titlebar-press-bg);
+}
+
+.titlebarBorderless .btn.active::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--view-mode-active-underline);
+}
+
 :global(html[data-content-theme='miaoyan']) .container {
+  --view-mode-idle: var(--miaoyan-secondary-text);
+  --view-mode-hover: var(--miaoyan-text);
+  --view-mode-active: var(--miaoyan-accent);
+  --view-mode-active-underline: var(--miaoyan-accent);
+  --view-mode-titlebar-hover-bg: rgba(28, 93, 51, 0.07);
+  --view-mode-titlebar-active-bg: rgba(28, 93, 51, 0.12);
+  --view-mode-titlebar-press-bg: rgba(28, 93, 51, 0.17);
   gap: 8px;
   margin-left: 16px;
   transform: translateY(16px);
@@ -63,15 +126,6 @@
 :global(html[data-content-theme='miaoyan']) .btn {
   width: 23px;
   height: 23px;
-  color: var(--miaoyan-secondary-text);
-}
-
-:global(html[data-content-theme='miaoyan']) .btn:hover {
-  color: var(--miaoyan-text);
-}
-
-:global(html[data-content-theme='miaoyan']) .btn.active {
-  color: var(--miaoyan-accent);
 }
 
 :global(html[data-content-theme='miaoyan']) .btn svg {
@@ -80,25 +134,64 @@
   transform: translateY(1px);
 }
 
-:global(html[data-content-theme='inkstone']) .btn,
-:global(html[data-content-theme='slate']) .btn,
-:global(html[data-content-theme='mono']) .btn,
-:global(html[data-content-theme='nocturne']) .btn {
-  color: var(--theme-secondary-text);
+:global(html[data-content-theme='inkstone']) .container {
+  --view-mode-idle: var(--inkstone-secondary-text);
+  --view-mode-hover: var(--inkstone-text);
+  --view-mode-active: var(--inkstone-accent);
+  --view-mode-active-underline: var(--inkstone-accent);
+  --view-mode-titlebar-hover-bg: rgba(154, 52, 18, 0.08);
+  --view-mode-titlebar-active-bg: rgba(154, 52, 18, 0.14);
+  --view-mode-titlebar-press-bg: rgba(154, 52, 18, 0.19);
 }
 
-:global(html[data-content-theme='inkstone']) .btn:hover,
-:global(html[data-content-theme='slate']) .btn:hover,
-:global(html[data-content-theme='mono']) .btn:hover,
-:global(html[data-content-theme='nocturne']) .btn:hover {
-  color: var(--theme-text);
+:global(html[data-content-theme='slate']) .container {
+  --view-mode-idle: var(--slate-secondary-text);
+  --view-mode-hover: var(--slate-text);
+  --view-mode-active: var(--slate-title);
+  --view-mode-active-underline: var(--slate-title);
+  --view-mode-titlebar-hover-bg: rgba(36, 106, 115, 0.09);
+  --view-mode-titlebar-active-bg: rgba(36, 106, 115, 0.15);
+  --view-mode-titlebar-press-bg: rgba(36, 106, 115, 0.2);
 }
 
-:global(html[data-content-theme='inkstone']) .btn.active,
-:global(html[data-content-theme='slate']) .btn.active,
-:global(html[data-content-theme='mono']) .btn.active,
-:global(html[data-content-theme='nocturne']) .btn.active {
-  color: var(--theme-accent);
+:global(html[data-content-theme='mono']) .container {
+  --view-mode-idle: var(--mono-secondary-text);
+  --view-mode-hover: var(--mono-text);
+  --view-mode-active: var(--mono-accent);
+  --view-mode-active-underline: var(--mono-accent);
+  --view-mode-titlebar-hover-bg: rgba(185, 28, 28, 0.08);
+  --view-mode-titlebar-active-bg: rgba(185, 28, 28, 0.14);
+  --view-mode-titlebar-press-bg: rgba(185, 28, 28, 0.19);
+}
+
+:global(html[data-content-theme='nocturne']) .container {
+  --view-mode-idle: var(--nocturne-secondary-text);
+  --view-mode-hover: var(--nocturne-text);
+  --view-mode-active: var(--nocturne-title);
+  --view-mode-active-underline: var(--nocturne-title);
+  --view-mode-titlebar-hover-bg: rgba(214, 168, 79, 0.12);
+  --view-mode-titlebar-active-bg: rgba(214, 168, 79, 0.18);
+  --view-mode-titlebar-press-bg: rgba(214, 168, 79, 0.24);
+}
+
+:global(html[data-content-theme='carbon']) .container {
+  --view-mode-idle: var(--carbon-secondary-text);
+  --view-mode-hover: var(--carbon-text);
+  --view-mode-active: var(--carbon-accent);
+  --view-mode-active-underline: var(--carbon-accent);
+  --view-mode-titlebar-hover-bg: rgba(163, 230, 53, 0.12);
+  --view-mode-titlebar-active-bg: rgba(163, 230, 53, 0.19);
+  --view-mode-titlebar-press-bg: rgba(163, 230, 53, 0.26);
+}
+
+:global(html[data-content-theme='miaoyan']) .container.titlebarBorderless {
+  margin-left: 0;
+  transform: none;
+}
+
+.container.titlebarBorderless .btn {
+  width: 30px;
+  height: 30px;
 }
 
 :global(html[data-platform='windows']) .container.flushStart {

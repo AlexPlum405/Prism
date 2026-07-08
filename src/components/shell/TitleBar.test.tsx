@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { MenuSection } from './types';
 
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({
@@ -11,6 +12,8 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 type RenderTitleBarProps = {
   isDirty?: boolean;
+  menuSections?: MenuSection;
+  onMenuAction?: (action: string) => void;
   onRenameDocument?: (name: string) => void | Promise<void>;
   saveError?: string | null;
   saveStatus?: 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict';
@@ -44,19 +47,47 @@ describe('TitleBar platform layout', () => {
     expect(screen.queryByText('Prism')).not.toBeInTheDocument();
   });
 
-  it('keeps Windows view controls on the left with the extensionless document title beside them', async () => {
-    const { container } = await renderTitleBarOn('Win32');
+  it('keeps Windows menus on the left and view controls beside the window buttons', async () => {
+    const onMenuAction = vi.fn();
+    const { container } = await renderTitleBarOn('Win32', {
+      menuSections: {
+        文件: [{ label: '打开', action: 'openFile' }],
+        导航: [],
+        帮助: [],
+      },
+      onMenuAction,
+    });
 
     const titlebar = container.querySelector('.app-titlebar');
     expect(titlebar).not.toBeNull();
-    const cluster = titlebar?.querySelector('[data-titlebar-section="windows-title-cluster"]');
-    expect(cluster).not.toBeNull();
+    const leftCluster = titlebar?.querySelector('[data-titlebar-section="windows-left-cluster"]');
+    const centerTitle = titlebar?.querySelector('[data-titlebar-section="windows-center-title"]');
+    const dragSpacer = titlebar?.querySelector('[data-titlebar-section="windows-drag-spacer"]');
+    const rightCluster = titlebar?.querySelector('[data-titlebar-section="windows-right-cluster"]');
 
-    expect(within(cluster as HTMLElement).getAllByRole('button')).toHaveLength(3);
-    expect(within(cluster as HTMLElement).getByText('proposal')).toBeInTheDocument();
+    expect(leftCluster).not.toBeNull();
+    expect(centerTitle).not.toBeNull();
+    expect(dragSpacer).not.toBeNull();
+    expect(rightCluster).not.toBeNull();
+
+    expect(titlebar).not.toHaveAttribute('data-tauri-drag-region');
+    expect(leftCluster).not.toHaveAttribute('data-tauri-drag-region');
+    expect(rightCluster).not.toHaveAttribute('data-tauri-drag-region');
+    expect(centerTitle).toHaveAttribute('data-tauri-drag-region');
+    expect(dragSpacer).toHaveAttribute('data-tauri-drag-region');
+    expect(within(leftCluster as HTMLElement).getByText('Prism')).toBeInTheDocument();
+    expect(leftCluster?.firstElementChild?.textContent).toBe('Prism');
+    expect(leftCluster?.firstElementChild?.childElementCount).toBe(1);
+    fireEvent.click(within(leftCluster as HTMLElement).getByRole('button', { name: '文件' }));
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: /打开/ }));
+    expect(onMenuAction).toHaveBeenCalledWith('openFile');
+    expect(within(leftCluster as HTMLElement).queryByRole('button', { name: '分栏' })).not.toBeInTheDocument();
+    expect(within(centerTitle as HTMLElement).getByText('proposal')).toBeInTheDocument();
+    expect(within(rightCluster as HTMLElement).getByRole('button', { name: '编辑' })).toBeInTheDocument();
+    expect(within(rightCluster as HTMLElement).getByRole('button', { name: '分栏' })).toBeInTheDocument();
+    expect(within(rightCluster as HTMLElement).getByRole('button', { name: '预览' })).toBeInTheDocument();
     expect(screen.queryByText('proposal.md')).not.toBeInTheDocument();
-    expect(screen.queryByText('P')).not.toBeInTheDocument();
-    expect(screen.queryByText('Prism')).not.toBeInTheDocument();
   });
 
   it('allows renaming the current document from the filename area', async () => {

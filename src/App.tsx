@@ -21,6 +21,7 @@ import type { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
 import { MenuBar } from './components/shell/MenuBar';
+import { getRuntimePlatform } from './domains/workspace/services';
 
 export { shouldShowRecoveryPrompt };
 
@@ -47,6 +48,7 @@ function resolveTitlebarRenameName(currentName: string, nextVisibleName: string)
 }
 
 function App() {
+  const isWindows = getRuntimePlatform() === 'windows';
   const {
     currentDocument,
     locale,
@@ -255,11 +257,13 @@ function App() {
       <TitleBar
         docName={titleDocName}
         isDirty={titleDirty}
+        menuSections={menuSections}
+        onMenuAction={handleCommandAction}
         onRenameDocument={currentDocument?.path ? handleTitlebarRename : undefined}
         saveError={currentDocument?.saveError ?? null}
         saveStatus={currentDocument?.saveStatus}
       />
-      <MenuBar sections={menuSections} onAction={handleCommandAction} />
+      {!isWindows && <MenuBar sections={menuSections} onAction={handleCommandAction} />}
       <AppWorkspaceViewController
         activePath={currentDocument?.path}
         actionableIssueCount={documentInsight.actionableDiagnostics.length}

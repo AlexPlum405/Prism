@@ -1,0 +1,471 @@
+{
+  "name": "Prism Windows 1.0.0 Confidence Pack",
+  "date": "2026-07-08",
+  "baseline": {
+    "tag": "v1.0.0",
+    "commit": "e03f199e6f3bcd256bc9cc83c356302e69239d31"
+  },
+  "environment": {
+    "windows": "Microsoft Windows 11 专业版 10.0.26200, x64",
+    "dpi": "96 DPI / 100%",
+    "installer": "NSIS + MSI",
+    "installedPath": "C:\\Users\\alex\\AppData\\Local\\Prism",
+    "appData": "C:\\Users\\alex\\AppData\\Roaming\\com.prism.editor.v1"
+  },
+  "summary": {
+    "status": "No-Go",
+    "pass": 36,
+    "fail": 3,
+    "blocked": 4,
+    "notRun": 1
+  },
+  "items": [
+    {
+      "id": "WIN-ENV-001",
+      "priority": "P0",
+      "domain": "environment",
+      "status": "pass",
+      "steps": ["记录 Windows 设备、Git、Node、npm、Rust 版本"],
+      "expected": "真机环境可用于 Windows 验证",
+      "actual": "Windows 11 专业版，build 26200，x64；PowerShell 7.6.2；Git 2.53.0；Node 24.15.0；npm 11.12.1；Rust 1.95.0；Visual Studio Build Tools 2022；WebView2 Runtime 149.0.4022.98",
+      "evidence": ["evidence/environment.md"]
+    },
+    {
+      "id": "WIN-BUILD-001",
+      "priority": "P0",
+      "domain": "build",
+      "status": "pass",
+      "steps": ["跑通 Windows bundle 到 MSI/NSIS 产物"],
+      "expected": "能生成 Windows 安装器",
+      "actual": "Tauri bundle 生成了 MSI 和 NSIS。app.exe SHA256 975842CFA0917AC5C98932614752F16E06D2F33FE5503C5C4F31BE3BB956A396；NSIS SHA256 53E46E5A1FC2182F2C8ABD84BDA27A514262150808B56501087504B2B8BA4C19；MSI SHA256 82CBA51BA38A0988926D3CC1150EE45B7F376324AFF3272C7A9B1D68158C0556；最终 updater 签名因缺私钥中止",
+      "evidence": ["evidence/build-and-test.md", "evidence/installer-artifacts.md"]
+    },
+    {
+      "id": "WIN-TEST-001",
+      "priority": "P0",
+      "domain": "tests",
+      "status": "fail",
+      "steps": ["执行 npm test -- --run"],
+      "expected": "全量测试绿灯",
+      "actual": "Test Files 2 failed | 168 passed | 4 skipped；Tests 4 failed | 1049 passed | 6 skipped。失败集中在编辑器上下文菜单复制选区和 exportPipeline 的 PNG/PDF 边界用例",
+      "evidence": ["evidence/build-and-test.md", "issues.md"],
+      "issue": "全量测试仍有 4 个失败"
+    },
+    {
+      "id": "WIN-TEST-002",
+      "priority": "P1",
+      "domain": "tests",
+      "status": "pass",
+      "steps": ["执行复杂导出 smoke test"],
+      "expected": "HTML/PDF/PNG/DOCX 产物可生成并通过校验",
+      "actual": "专门的导出 smoke test 通过，四种格式都生成并校验完成",
+      "evidence": ["evidence/export.md", "artifacts/export/complex-export.html", "artifacts/export/complex-export.pdf", "artifacts/export/complex-export.png", "artifacts/export/complex-export.docx"]
+    },
+    {
+      "id": "WIN-INSTALL-001",
+      "priority": "P0",
+      "domain": "installation",
+      "status": "pass",
+      "steps": ["用 NSIS 静默安装 Prism"],
+      "expected": "安装器可正常安装 Prism",
+      "actual": "NSIS 静默安装返回 0，安装到 C:\\Users\\alex\\AppData\\Local\\Prism",
+      "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md"]
+    },
+    {
+      "id": "WIN-INSTALL-002",
+      "priority": "P0",
+      "domain": "installation",
+      "status": "fail",
+      "steps": ["用 MSI 静默安装 Prism"],
+      "expected": "MSI 可正常完成安装",
+      "actual": "MSI 返回 1603，日志里是 1925：当前用户没有足够权限做 per-machine 安装",
+      "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md", "artifacts/msi-install.log"],
+      "issue": "MSI 权限失败"
+    },
+    {
+      "id": "WIN-INSTALL-003",
+      "priority": "P0",
+      "domain": "installation",
+      "status": "pass",
+      "steps": ["通过开始菜单快捷方式启动 Prism"],
+      "expected": "开始菜单链接可启动 Prism",
+      "actual": "开始菜单 Prism.lnk 打开后进入 Prism 主窗口",
+      "evidence": ["evidence/install-smoke.md"]
+    },
+    {
+      "id": "WIN-INSTALL-006",
+      "priority": "P0",
+      "domain": "installation",
+      "status": "pass",
+      "steps": ["检查安装后 app.exe 的文件版本和产品版本"],
+      "expected": "安装后 Prism 版本为目标版本 1.0.0",
+      "actual": "C:\\Users\\alex\\AppData\\Local\\Prism\\app.exe 的 FileVersion 和 ProductVersion 均为 1.0.0，ProductName 为 Prism；Size 31,851,008；SHA256 89FC627C51D582CAE7C749EA028EC6632E5B26ED5570260D7737D84667E33709",
+      "evidence": ["evidence/install-smoke.md", "evidence/installer-artifacts.md"]
+    },
+    {
+      "id": "WIN-INSTALL-004",
+      "priority": "P1",
+      "domain": "installation",
+      "status": "pass",
+      "steps": ["执行 NSIS 覆盖安装并对比用户配置"],
+      "expected": "覆盖安装不清空用户设置和最近文件",
+      "actual": "覆盖安装返回 0；config.json SHA256 前后保持 92E283F252DADC4788084AB0CA9282A58747B82E6CAFDB797FF5BAF2D91E87EA，最近文件列表保持不变",
+      "evidence": ["evidence/install-smoke.md"]
+    },
+    {
+      "id": "WIN-INSTALL-005",
+      "priority": "P1",
+      "domain": "installation",
+      "status": "pass",
+      "steps": ["执行 NSIS 卸载，检查工作区 keep.md，再重装"],
+      "expected": "卸载不会删除用户工作区文档",
+      "actual": "卸载返回 0；app.exe 被移除；DeleteSmoke\\keep.md 存在且 hash 不变；重装返回 0",
+      "evidence": ["evidence/install-smoke.md"]
+    },
+    {
+      "id": "WIN-FILE-001",
+      "priority": "P0",
+      "domain": "file-association",
+      "status": "pass",
+      "steps": ["用 Prism 打开 .md 文件"],
+      "expected": "Markdown 文件可加载到 Prism",
+      "actual": "windows-smoke.md 打开后进入 Prism 的 Markdown 文稿和预览链路",
+      "evidence": ["evidence/file-association.md", "evidence/writing-preview.md"]
+    },
+    {
+      "id": "WIN-FILE-002",
+      "priority": "P0",
+      "domain": "file-association",
+      "status": "pass",
+      "steps": ["用 Prism 命令行打开 .txt 和 .json"],
+      "expected": "文本文件按 Prism 文本文件模式加载",
+      "actual": "plain.txt 和 data.json 都打开到 Prism，状态栏显示文本文件模式",
+      "evidence": ["evidence/file-association.md"]
+    },
+    {
+      "id": "WIN-FILE-003",
+      "priority": "P1",
+      "domain": "file-association",
+      "status": "pass",
+      "steps": ["用 Prism 打开 .markdown 和 .sql"],
+      "expected": ".markdown 按 Markdown 处理；.sql 按文本文件边界处理",
+      "actual": ".markdown 显示 Markdown 文稿和排版入口；.sql 显示文本文件且不显示 Markdown 预览入口",
+      "evidence": ["evidence/file-association.md"]
+    },
+    {
+      "id": "WIN-FILE-004",
+      "priority": "P0",
+      "domain": "file-association",
+      "status": "pass",
+      "steps": ["已有 query.sql 窗口时再打开 windows-smoke.md"],
+      "expected": "文件 B 正确打开，不错误跳回文件 A",
+      "actual": "出现两个 Prism 窗口，分别保持 query.sql 和 windows-smoke.md",
+      "evidence": ["evidence/file-association.md", "evidence/ui-and-shortcuts.md"]
+    },
+    {
+      "id": "WIN-FILE-005",
+      "priority": "P1",
+      "domain": "file-association",
+      "status": "pass",
+      "steps": ["在 Explorer 中查看 Prism 文档图标"],
+      "expected": "Prism 文档图标显示合理，不是空白图标",
+      "actual": "Explorer 中 .md 文件显示 Prism 文档图标",
+      "evidence": ["evidence/file-association.md", "screenshots/04-file-association-explorer.png"]
+    },
+    {
+      "id": "WIN-PATH-001",
+      "priority": "P0",
+      "domain": "path-actions",
+      "status": "pass",
+      "steps": ["在文件树右键执行复制文件路径"],
+      "expected": "复制路径保留 Windows 路径语义",
+      "actual": "剪贴板为 \\\\?\\C:\\Users\\alex\\Documents\\PrismWindowsSmoke\\路径 Smoke (中文 空格)\\复杂 路径 (测试).md",
+      "evidence": ["evidence/path-actions.md"]
+    },
+    {
+      "id": "WIN-PATH-002",
+      "priority": "P0",
+      "domain": "path-actions",
+      "status": "pass",
+      "steps": ["在文件树右键执行在资源管理器中显示"],
+      "expected": "Explorer 打开并定位目标文件",
+      "actual": "资源管理器打开目标目录并选中复杂路径文件",
+      "evidence": ["evidence/path-actions.md", "screenshots/04-file-association-explorer.png"]
+    },
+    {
+      "id": "WIN-PATH-003",
+      "priority": "P1",
+      "domain": "path-actions",
+      "status": "blocked",
+      "steps": ["通过 Prism UI 删除 DeleteSmoke\\delete-me.md"],
+      "expected": "文件树删除默认进入 Windows 回收站；失败时二次确认永久删除",
+      "actual": "未执行。通过应用界面删除本地文件需要用户动作前确认",
+      "evidence": ["evidence/path-actions.md"],
+      "issue": "需要用户确认后才能执行 UI 删除"
+    },
+    {
+      "id": "WIN-PATH-004",
+      "priority": "P1",
+      "domain": "path-actions",
+      "status": "pass",
+      "steps": ["打开、保存、导出含中文、空格、括号的路径"],
+      "expected": "复杂路径可正常处理",
+      "actual": "复杂路径 Markdown 可打开；复制路径保留长路径语义；导出 smoke 已覆盖中文与空格路径",
+      "evidence": ["evidence/path-actions.md", "evidence/export.md"]
+    },
+    {
+      "id": "WIN-UI-001",
+      "priority": "P0",
+      "domain": "ui",
+      "status": "pass",
+      "steps": ["检查 Windows 标题栏和窗口控制"],
+      "expected": "标题栏、最小化、最大化、关闭按钮可见且不遮挡内容",
+      "actual": "窗口级截图能看到标准 Windows 标题栏和窗口控制按钮",
+      "evidence": ["evidence/ui-and-shortcuts.md", "screenshots/03-titlebar-window-controls.png"]
+    },
+    {
+      "id": "WIN-UI-002",
+      "priority": "P0",
+      "domain": "ui",
+      "status": "pass",
+      "steps": ["最大化 Prism 窗口"],
+      "expected": "最大化后编辑区、预览区、文件树不重叠",
+      "actual": "最大化截图 2560x1392，未观察到主要区域重叠",
+      "evidence": ["evidence/ui-and-shortcuts.md", "screenshots/03b-maximized.png"]
+    },
+    {
+      "id": "WIN-UI-003",
+      "priority": "P1",
+      "domain": "ui",
+      "status": "pass",
+      "steps": ["运行中打开第二个文件"],
+      "expected": "多窗口打开保持单文档单窗口，不变成标签页",
+      "actual": "query.sql 和 windows-smoke.md 分别保留在两个 Prism 窗口中",
+      "evidence": ["evidence/ui-and-shortcuts.md"]
+    },
+    {
+      "id": "WIN-UI-004",
+      "priority": "P1",
+      "domain": "ui",
+      "status": "blocked",
+      "steps": ["切换系统缩放到 125% / 150% 后验证"],
+      "expected": "高 DPI 缩放下文字和按钮不溢出",
+      "actual": "本机当前为 96 DPI / 100%；未修改系统显示设置。该项需要改动 Windows 显示缩放并可能影响当前会话，需人工确认后执行",
+      "evidence": ["evidence/ui-and-shortcuts.md"],
+      "issue": "需要确认后修改系统显示缩放"
+    },
+    {
+      "id": "WIN-WRITE-001",
+      "priority": "P0",
+      "domain": "writing",
+      "status": "pass",
+      "steps": ["切换 Markdown 文稿和预览"],
+      "expected": "预览能渲染标题、表格、任务列表、Mermaid、KaTeX",
+      "actual": "预览模式显示标题、复选框、表格、Mermaid 和公式",
+      "evidence": ["evidence/writing-preview.md"]
+    },
+    {
+      "id": "WIN-WRITE-002",
+      "priority": "P0",
+      "domain": "writing",
+      "status": "pass",
+      "steps": ["验证 Markdown 预览复杂内容"],
+      "expected": "标题、表格、任务列表、代码块、KaTeX、Mermaid 可见",
+      "actual": "windows-smoke.md 预览链路已验证；复杂导出 smoke 同时覆盖 PlantUML、Markmap、本地图片等内容",
+      "evidence": ["evidence/writing-preview.md", "evidence/export.md"]
+    },
+    {
+      "id": "WIN-WRITE-003",
+      "priority": "P0",
+      "domain": "writing",
+      "status": "pass",
+      "steps": ["按 Ctrl+F 和 Ctrl+H"],
+      "expected": "搜索 / 替换正常",
+      "actual": "Ctrl+F 打开查找栏；Ctrl+H 展开替换栏并显示替换控件",
+      "evidence": ["evidence/writing-preview.md", "evidence/ui-and-shortcuts.md"]
+    },
+    {
+      "id": "WIN-WRITE-004",
+      "priority": "P1",
+      "domain": "writing",
+      "status": "fail",
+      "steps": ["验证 Ctrl+B、Ctrl+I、Ctrl+O、Ctrl+N、F11"],
+      "expected": "快捷键触发对应格式化、打开、新建和全屏动作",
+      "actual": "Ctrl+B/I 未写入 Markdown 标记；Ctrl+O 未打开文件对话框；Ctrl+N 未新建文稿；F11 未进入全屏",
+      "evidence": ["evidence/ui-and-shortcuts.md", "issues.md"],
+      "issue": "部分快捷键在 Windows 真机未生效"
+    },
+    {
+      "id": "WIN-WRITE-005",
+      "priority": "P1",
+      "domain": "writing",
+      "status": "blocked",
+      "steps": ["验证 F9 打字机模式"],
+      "expected": "F9 切换打字机模式，并有可确认状态",
+      "actual": "顶部“视图”菜单可访问树能稳定读到“菜单项目 打字机模式 F9”，但触发后没有稳定可访问 checked 状态或明显视觉证据，本轮无法自动闭环",
+      "evidence": ["evidence/ui-and-shortcuts.md"],
+      "issue": "需要人工视觉补验"
+    },
+    {
+      "id": "WIN-WRITE-006",
+      "priority": "P1",
+      "domain": "writing",
+      "status": "pass",
+      "steps": ["切换主题与三语设置"],
+      "expected": "MiaoYan、Inkstone、Slate、Mono、Nocturne Dark、中文、English、日本語无明显溢出",
+      "actual": "窗口级截图已覆盖 MiaoYan、Inkstone、Slate、Mono、Nocturne Dark 主题和三语设置窗口，未观察到明显文字溢出",
+      "evidence": ["evidence/ui-and-shortcuts.md", "screenshots/06-theme-miaoyan.png", "screenshots/06b-theme-inkstone.png", "screenshots/06c-theme-slate.png", "screenshots/06d-theme-mono.png", "screenshots/07-theme-nocturne-dark.png", "screenshots/11-locale-zh.png", "screenshots/12-locale-en.png", "screenshots/13-locale-ja.png"]
+    },
+    {
+      "id": "WIN-WRITE-007",
+      "priority": "P1",
+      "domain": "writing",
+      "status": "pass",
+      "steps": ["在互链 Markdown 工作区打开关系图谱，再打开文本文件对照"],
+      "expected": "Markdown 有链接关系时知识图谱入口可用；文本文件不显示不该出现的 Markdown 控件",
+      "actual": "GraphSmoke/a.md 状态栏出现“查看关系图谱”，面板显示 Graph Smoke A/B 两个节点及边；plain.txt 显示“文本文件”且无关系图谱入口",
+      "evidence": ["evidence/writing-preview.md", "evidence/ui-and-shortcuts.md", "screenshots/15-relation-graph.png"]
+    },
+    {
+      "id": "WIN-WRITE-008",
+      "priority": "P2",
+      "domain": "writing",
+      "status": "not-run",
+      "steps": ["Ctrl + 鼠标滚轮调整编辑 / 预览字号"],
+      "expected": "仅当验证 commit 包含 912c9fb5 时执行",
+      "actual": "当前严格验证基线为 e03f199e6f3bcd256bc9cc83c356302e69239d31，不包含 912c9fb5，按计划标记 Not Run",
+      "evidence": ["evidence/ui-and-shortcuts.md"]
+    },
+    {
+      "id": "WIN-EXPORT-001",
+      "priority": "P0",
+      "domain": "export",
+      "status": "pass",
+      "steps": ["用 UI 导出 HTML"],
+      "expected": "HTML 导出成功",
+      "actual": "手工导出 windows-smoke.html 成功，文件落盘",
+      "evidence": ["evidence/export.md", "artifacts/export/windows-smoke.html"]
+    },
+    {
+      "id": "WIN-EXPORT-002",
+      "priority": "P0",
+      "domain": "export",
+      "status": "pass",
+      "steps": ["生成并校验 HTML/PDF/PNG/DOCX smoke 产物"],
+      "expected": "四种格式都能生成并通过自动校验",
+      "actual": "导出 smoke test 通过，四种格式都有产物",
+      "evidence": ["evidence/export.md", "screenshots/10-export-results.png", "artifacts/export/complex-export.html", "artifacts/export/complex-export.pdf", "artifacts/export/complex-export.png", "artifacts/export/complex-export.docx"]
+    },
+    {
+      "id": "WIN-EXPORT-003",
+      "priority": "P0",
+      "domain": "export",
+      "status": "pass",
+      "steps": ["校验 PNG 导出产物"],
+      "expected": "PNG 导出成功，不因默认清晰度直接失败；如超限，错误提示可理解",
+      "actual": "复杂导出 smoke 生成 complex-export.png，文件有合法 PNG 签名；全量测试仍另有 PNG 超限边界失败，已单独记为 WIN-TEST-001",
+      "evidence": ["evidence/export.md", "screenshots/10-export-results.png", "artifacts/export/complex-export.png"]
+    },
+    {
+      "id": "WIN-EXPORT-004",
+      "priority": "P0",
+      "domain": "export",
+      "status": "pass",
+      "steps": ["校验 DOCX 导出产物"],
+      "expected": "DOCX 导出成功，可被文档应用打开",
+      "actual": "复杂导出 smoke 生成 complex-export.docx，并校验包含 document.xml 和媒体文件",
+      "evidence": ["evidence/export.md", "screenshots/10-export-results.png", "artifacts/export/complex-export.docx"]
+    },
+    {
+      "id": "WIN-EXPORT-005",
+      "priority": "P1",
+      "domain": "export",
+      "status": "pass",
+      "steps": ["运行导出预检和链接诊断定向测试"],
+      "expected": "导出诊断能识别坏链接 / 缺图，不阻止无错误文档导出",
+      "actual": "preflight 与 linkDiagnostics 定向测试 15 项通过，覆盖缺图、缺失文件、空目标、重复标题锚点、Mermaid/KaTeX/表格诊断和无错误表格不阻断",
+      "evidence": ["evidence/export.md"]
+    },
+    {
+      "id": "WIN-EXPORT-006",
+      "priority": "P1",
+      "domain": "export",
+      "status": "pass",
+      "steps": ["导出路径含中文和空格时执行导出 smoke"],
+      "expected": "导出路径含中文和空格时成功",
+      "actual": "复杂导出 smoke 和路径动作覆盖中文、空格、括号路径；导出产物成功收集到 artifacts/export",
+      "evidence": ["evidence/export.md", "evidence/path-actions.md", "screenshots/10-export-results.png"]
+    },
+    {
+      "id": "WIN-UPDATER-001",
+      "priority": "P1",
+      "domain": "updater",
+      "status": "blocked",
+      "steps": ["生成 updater .sig 和 Windows latest.json 条目"],
+      "expected": "可验证的 updater 产物",
+      "actual": "构建在 updater 私钥缺失处停止，没有 Windows .sig 和 latest.json 条目",
+      "evidence": ["evidence/updater.md", "issues.md"],
+      "issue": "缺少 TAURI_SIGNING_PRIVATE_KEY"
+    },
+    {
+      "id": "WIN-UPDATER-002",
+      "priority": "P1",
+      "domain": "updater",
+      "status": "pass",
+      "steps": ["帮助菜单点击检查更新"],
+      "expected": "检查更新不会卡死或一直 loading",
+      "actual": "窗口底部出现检查更新暂不可用提示，没有卡 loading",
+      "evidence": ["evidence/updater.md", "screenshots/14-update-unavailable.png"]
+    },
+    {
+      "id": "WIN-PERF-001",
+      "priority": "P1",
+      "domain": "performance",
+      "status": "pass",
+      "steps": ["打开 80 文件大工作区，滚动文件树并编辑 note-001.md"],
+      "expected": "大工作区可交互",
+      "actual": "窗口约 1163 ms 出现；文件树滚动可用；编辑保存 performance edit smoke 成功",
+      "evidence": ["evidence/performance.md"]
+    },
+    {
+      "id": "WIN-PERF-002",
+      "priority": "P1",
+      "domain": "performance",
+      "status": "pass",
+      "steps": ["在大工作区选择 Markdown 文件、滚动、编辑输入并保存"],
+      "expected": "选择、滚动、编辑输入可用",
+      "actual": "LargeWorkspaceSmoke/note-001.md 可打开；文件树滚动可用；输入 performance edit smoke 后落盘成功",
+      "evidence": ["evidence/performance.md"]
+    },
+    {
+      "id": "WIN-PERF-003",
+      "priority": "P2",
+      "domain": "performance",
+      "status": "pass",
+      "steps": ["验证工作区索引可取消或降级"],
+      "expected": "索引工作不会拖垮主窗口，必要时可取消或降级",
+      "actual": "前端定向测试通过：2 个文件通过，13 个测试通过。覆盖 workspace root 变化时取消 running native index job、大工作区 native job、native 不可用时超过 500 文件降级为 lightweight metadata index，以及命令面板 indexing/no index/native ready 状态。额外 Rust workspace_index_job 查询测试有 1 个失败，已记录为风险",
+      "evidence": ["evidence/performance.md", "issues.md"]
+    },
+    {
+      "id": "WIN-PERF-004",
+      "priority": "P2",
+      "domain": "performance",
+      "status": "pass",
+      "steps": ["打开长文档并切换预览，运行导出进度反馈测试和长文诊断基准"],
+      "expected": "长文档预览和导出有可接受反馈",
+      "actual": "186126 字符 / 5034 行长文可在 Prism 预览；长文诊断基准通过；导出进度反馈测试通过",
+      "evidence": ["evidence/performance.md", "screenshots/16-long-preview.png"]
+    },
+    {
+      "id": "WIN-IMG-001",
+      "priority": "P2",
+      "domain": "writing",
+      "status": "pass",
+      "steps": ["图片粘贴 / 拖拽并确认 Alt 原路径"],
+      "expected": "图片插入路径和 Alt 行为正确",
+      "actual": "定向自动化测试通过：4 个文件通过；24 个测试通过，31 个跳过。覆盖剪贴板图片保存到 assets、拖拽图片复制、Alt / Option drop 插入原路径和读取不到原路径时提示；未补人工拖拽 UI 截图",
+      "evidence": ["evidence/build-and-test.md", "evidence/writing-preview.md", "issues.md"]
+    }
+  ]
+}

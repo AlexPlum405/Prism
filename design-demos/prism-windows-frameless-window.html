@@ -1,0 +1,678 @@
+<!doctype html>
+<!--
+  Assumptions:
+  - Windows 版采用完全自绘无边框窗口：Tauri 关闭 native decorations / native menu，只保留一套 app chrome。
+  - 视图模式 edit / split / preview 仍是标题栏右上角主入口，但不再放在文件名左侧。
+  - 菜单栏保留中文 app menu，作为自绘第二行；顶部总高度从截图里的四层压到两层。
+  - 默认展示 split，三个图标可点击切换，用来检查位置和状态反馈。
+
+  Reasoning:
+  - Windows 用户熟悉右上窗口控制，因此控制按钮仍贴右侧边缘。
+  - ViewModeSwitch 是文档视图级操作，放在窗口控制按钮左侧，比放到左侧标题簇更符合 CONTEXT.md。
+  - 中段留作 drag region，避免图标组、菜单项和窗口按钮抢拖拽命中区域。
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prism Windows Frameless Window Prototype</title>
+  <style>
+    :root {
+      --app-bg: #ffffff;
+      --chrome-bg: #fbfaf8;
+      --sidebar-bg: #f6f6f5;
+      --panel-bg: #f1f1f0;
+      --hover-bg: #ececea;
+      --hairline: rgba(0, 0, 0, 0.075);
+      --hairline-soft: rgba(0, 0, 0, 0.045);
+      --text: #171717;
+      --text-soft: #626262;
+      --text-faint: #8f8f8f;
+      --accent: #7f42bf;
+      --accent-soft: rgba(127, 66, 191, 0.12);
+      --green: #159164;
+      --mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+      --sans: Inter, "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+      --shadow-window: 0 18px 50px rgba(33, 28, 20, 0.18), 0 4px 18px rgba(33, 28, 20, 0.12);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      min-width: 900px;
+      min-height: 620px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.86), rgba(246,243,239,0.9)),
+        #ebe7df;
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+    }
+
+    .window {
+      width: min(1100px, calc(100vw - 32px));
+      height: min(760px, calc(100vh - 32px));
+      min-width: 900px;
+      min-height: 620px;
+      display: grid;
+      grid-template-rows: 34px 26px 1fr 26px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+      background: var(--app-bg);
+      box-shadow: var(--shadow-window);
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      height: 34px;
+      background: var(--chrome-bg);
+      border-bottom: 1px solid var(--hairline-soft);
+      user-select: none;
+    }
+
+    .identity {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 286px;
+      max-width: 440px;
+      height: 100%;
+      padding: 0 10px 0 12px;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app-icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      border-radius: 4px;
+      image-rendering: auto;
+    }
+
+    .app-name {
+      font-size: 12px;
+      font-weight: 520;
+      letter-spacing: 0;
+      color: var(--text-soft);
+    }
+
+    .title-divider {
+      width: 1px;
+      height: 14px;
+      flex: 0 0 auto;
+      background: var(--hairline);
+    }
+
+    .doc-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 520;
+      letter-spacing: 0;
+      color: var(--text);
+    }
+
+    .save-dot {
+      width: 6px;
+      height: 6px;
+      flex: 0 0 auto;
+      border-radius: 99px;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(21, 145, 100, 0.08);
+    }
+
+    .drag-region {
+      height: 100%;
+      min-width: 64px;
+      flex: 1 1 auto;
+    }
+
+    .view-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      height: 26px;
+      padding: 2px;
+      margin-right: 12px;
+      border: 1px solid var(--hairline);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.58);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.78);
+    }
+
+    .view-btn {
+      width: 25px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      color: var(--text-faint);
+      cursor: default;
+      transition: background 120ms var(--ease), color 120ms var(--ease);
+    }
+
+    .view-btn:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+    }
+
+    .view-btn.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .view-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      transform: translateY(0.5px);
+    }
+
+    .chrome-separator {
+      width: 1px;
+      height: 18px;
+      margin-right: 8px;
+      background: var(--hairline);
+    }
+
+    .window-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 46px);
+      height: 34px;
+      flex: 0 0 auto;
+    }
+
+    .win-btn {
+      display: grid;
+      place-items: center;
+      color: #5f5f5f;
+      transition: background 120ms var(--ease), color 120ms var(--ease);
+    }
+
+    .win-btn:hover {
+      background: #ececea;
+      color: #111;
+    }
+
+    .win-btn.close:hover {
+      background: #e81123;
+      color: #fff;
+    }
+
+    .win-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.35;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .menubar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 26px;
+      padding: 0 8px;
+      background: var(--chrome-bg);
+      border-bottom: 1px solid var(--hairline);
+      user-select: none;
+    }
+
+    .menu-item {
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 20px;
+      letter-spacing: 0;
+    }
+
+    .menu-item:hover,
+    .menu-item.active {
+      background: var(--hover-bg);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 0;
+      background: var(--app-bg);
+    }
+
+    .sidebar {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--hairline);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 12px 16px 6px;
+    }
+
+    .tab {
+      height: 30px;
+      border-radius: 7px;
+      color: var(--text-soft);
+      font-size: 13px;
+      font-weight: 520;
+    }
+
+    .tab.active {
+      background: #dfdfdd;
+      color: var(--text);
+    }
+
+    .files {
+      padding: 9px 16px 16px;
+    }
+
+    .file {
+      width: 100%;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      border-radius: 7px;
+      color: var(--text);
+      background: #eeeeed;
+      font-size: 13px;
+      text-align: left;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .outline-hint {
+      margin-top: 16px;
+      padding-left: 12px;
+      color: #ababab;
+      font-size: 12px;
+    }
+
+    .document {
+      display: grid;
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .document[data-mode="split"] {
+      grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+    }
+
+    .document[data-mode="edit"],
+    .document[data-mode="preview"] {
+      grid-template-columns: 1fr;
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--app-bg);
+    }
+
+    .editor-pane {
+      padding: 26px 30px 32px;
+    }
+
+    .preview-pane {
+      padding: 31px 42px 32px;
+      border-left: 1px solid var(--hairline);
+      background: #fffdfa;
+    }
+
+    .document[data-mode="edit"] .preview-pane,
+    .document[data-mode="preview"] .editor-pane {
+      display: none;
+    }
+
+    .document[data-mode="preview"] .preview-pane {
+      border-left: 0;
+      padding-left: min(9vw, 96px);
+      padding-right: min(9vw, 96px);
+    }
+
+    .editor {
+      max-width: 720px;
+      color: #101010;
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.78;
+      letter-spacing: 0;
+    }
+
+    .line {
+      min-height: 28px;
+      white-space: pre-wrap;
+    }
+
+    .hash,
+    .md-accent {
+      color: var(--accent);
+    }
+
+    .task {
+      color: #8a5b14;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 1px;
+      height: 20px;
+      margin-left: 1px;
+      transform: translateY(4px);
+      background: #171717;
+      animation: blink 1.1s steps(1) infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .preview {
+      max-width: 720px;
+      color: #1b1b1b;
+      font-family: "TsangerJinKai02", "Microsoft YaHei UI", "Microsoft YaHei", serif;
+      font-size: 16px;
+      line-height: 1.85;
+      letter-spacing: 0.3px;
+    }
+
+    .preview h1 {
+      margin-bottom: 26px;
+      color: var(--accent);
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    .preview p {
+      margin-bottom: 22px;
+    }
+
+    .preview .task-preview {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #242424;
+      font-family: var(--sans);
+      font-size: 14px;
+    }
+
+    .checkbox {
+      width: 13px;
+      height: 13px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+      color: var(--accent);
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .statusbar {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      align-items: center;
+      min-width: 0;
+      height: 26px;
+      border-top: 1px solid var(--hairline);
+      background: var(--chrome-bg);
+      color: var(--text-faint);
+      font-size: 11px;
+      letter-spacing: 0;
+      user-select: none;
+    }
+
+    .status-sidebar {
+      display: grid;
+      grid-template-columns: 28px 1fr 28px;
+      align-items: center;
+      height: 100%;
+      border-right: 1px solid var(--hairline);
+    }
+
+    .status-plus,
+    .status-grid {
+      display: grid;
+      place-items: center;
+      height: 100%;
+      color: #8e8e8e;
+      font-size: 16px;
+    }
+
+    .status-grid {
+      font-size: 14px;
+    }
+
+    .workspace-name {
+      overflow: hidden;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-main {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      padding-right: 10px;
+      gap: 10px;
+    }
+
+    .stats {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #676767;
+    }
+
+    .doc-kind {
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px;
+      border: 1px solid var(--hairline);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.6);
+    }
+
+    .tiny-icon {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      color: #858585;
+    }
+
+    .tiny-icon svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.45;
+    }
+
+    @media (max-width: 980px) {
+      .window {
+        width: 100vw;
+        height: 100vh;
+        min-width: 900px;
+        min-height: 620px;
+        border-radius: 0;
+      }
+
+      .identity {
+        min-width: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="window" role="application" aria-label="Prism Windows frameless prototype">
+    <header class="titlebar">
+      <div class="identity">
+        <img
+          class="app-icon"
+          alt=""
+          src="data:image/png;base64,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" />
+        <span class="app-name">Prism</span>
+        <span class="title-divider" aria-hidden="true"></span>
+        <span class="doc-title">复杂路径 Smoke.md</span>
+        <span class="save-dot" title="已保存"></span>
+      </div>
+
+      <div class="drag-region" aria-hidden="true"></div>
+
+      <div class="view-switch" aria-label="视图模式">
+        <button class="view-btn" data-mode-button="edit" type="button" title="编辑" aria-label="编辑">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.9 2.9h6.7c1.1 0 1.8.1 2.35.38.48.24.87.63 1.11 1.11.28.55.38 1.25.38 2.35v2.38a.67.67 0 0 1-1.34 0V6.78c0-.83-.04-1.32-.18-1.6a1.54 1.54 0 0 0-.67-.67c-.28-.14-.77-.18-1.6-.18H5.94c-.83 0-1.32.04-1.6.18-.29.15-.52.38-.67.67-.14.28-.18.77-.18 1.6v6.44c0 .83.04 1.32.18 1.6.15.29.38.52.67.67.28.14.77.18 1.6.18h2.98a.67.67 0 1 1 0 1.34H5.9c-1.1 0-1.8-.1-2.35-.38a2.89 2.89 0 0 1-1.11-1.11c-.28-.55-.38-1.25-.38-2.35V6.74c0-1.1.1-1.8.38-2.35.24-.48.63-.87 1.11-1.11.55-.28 1.25-.38 2.35-.38Zm.13 3.62c0-.34.28-.62.62-.62h5.88a.62.62 0 1 1 0 1.24H6.65a.62.62 0 0 1-.62-.62Zm0 3.02c0-.34.28-.62.62-.62h4.28a.62.62 0 1 1 0 1.24H6.65a.62.62 0 0 1-.62-.62Zm8.58 1.48a1.1 1.1 0 0 1 1.56 0l.62.62c.43.43.43 1.13 0 1.56l-3.2 3.2c-.2.2-.46.34-.74.4l-1.73.37a.58.58 0 0 1-.69-.69l.37-1.73c.06-.28.2-.54.4-.74l3.41-2.99Z"/></svg>
+        </button>
+        <button class="view-btn active" data-mode-button="split" type="button" title="分栏" aria-label="分栏">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.9 3.15h10.2c1.15 0 1.8.12 2.33.4.43.23.78.58 1.01 1.01.28.53.4 1.18.4 2.33v6.22c0 1.15-.12 1.8-.4 2.33-.23.43-.58.78-1.01 1.01-.53.28-1.18.4-2.33.4H4.9c-1.15 0-1.8-.12-2.33-.4a2.42 2.42 0 0 1-1.01-1.01c-.28-.53-.4-1.18-.4-2.33V6.89c0-1.15.12-1.8.4-2.33.23-.43.58-.78 1.01-1.01.53-.28 1.18-.4 2.33-.4Zm4.28 1.36H4.92c-.8 0-1.18.05-1.47.2-.2.11-.36.27-.47.47-.15.29-.2.67-.2 1.47v6.7c0 .8.05 1.18.2 1.47.11.2.27.36.47.47.29.15.67.2 1.47.2h4.26V4.51Zm1.36 10.98h4.54c.8 0 1.18-.05 1.47-.2.2-.11.36-.27.47-.47.15-.29.2-.67.2-1.47v-6.7c0-.8-.05-1.18-.2-1.47a1.06 1.06 0 0 0-.47-.47c-.29-.15-.67-.2-1.47-.2h-4.54v10.98Z"/></svg>
+        </button>
+        <button class="view-btn" data-mode-button="preview" type="button" title="预览" aria-label="预览">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.95c3.32 0 5.86 2.05 7.37 4.93.7 1.34.7 2.9 0 4.24-1.51 2.88-4.05 4.93-7.37 4.93s-5.86-2.05-7.37-4.93a4.55 4.55 0 0 1 0-4.24C4.14 5 6.68 2.95 10 2.95Zm0 1.36c-2.77 0-4.88 1.68-6.17 4.2a3.2 3.2 0 0 0 0 2.98c1.29 2.52 3.4 4.2 6.17 4.2s4.88-1.68 6.17-4.2a3.2 3.2 0 0 0 0-2.98c-1.29-2.52-3.4-4.2-6.17-4.2Zm0 2.45a3.24 3.24 0 1 1 0 6.48 3.24 3.24 0 0 1 0-6.48Zm0 1.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78Z"/></svg>
+        </button>
+      </div>
+
+      <span class="chrome-separator" aria-hidden="true"></span>
+      <div class="window-controls" aria-label="窗口控制">
+        <button class="win-btn" type="button" title="最小化" aria-label="最小化">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7"/></svg>
+        </button>
+        <button class="win-btn" type="button" title="最大化" aria-label="最大化">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7"/></svg>
+        </button>
+        <button class="win-btn close" type="button" title="关闭" aria-label="关闭">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="menubar" aria-label="应用菜单">
+      <span class="menu-item active">文件</span>
+      <span class="menu-item">编辑</span>
+      <span class="menu-item">插入</span>
+      <span class="menu-item">格式</span>
+      <span class="menu-item">导航</span>
+      <span class="menu-item">视图</span>
+      <span class="menu-item">导出</span>
+      <span class="menu-item">窗口</span>
+      <span class="menu-item">帮助</span>
+    </nav>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="tabs">
+          <button class="tab active" type="button">文件</button>
+          <button class="tab" type="button">大纲</button>
+        </div>
+        <div class="files">
+          <button class="file" type="button">复杂 路径（测试）.md</button>
+          <div class="outline-hint">路径 Smoke（中文 空格）</div>
+        </div>
+      </aside>
+
+      <main class="document" data-mode="split" id="document">
+        <section class="pane editor-pane" aria-label="编辑器">
+          <div class="editor" aria-hidden="true">
+            <div class="line"><span class="hash">#</span> <span class="md-accent">复杂路径 Smoke</span></div>
+            <div class="line"></div>
+            <div class="line">中文路径、空格和括号。</div>
+            <div class="line"></div>
+            <div class="line"><span class="task">- [x]</span> save path</div>
+            <div class="line"></div>
+            <div class="line"><span class="cursor"></span></div>
+          </div>
+        </section>
+        <section class="pane preview-pane" aria-label="预览">
+          <article class="preview">
+            <h1>复杂路径 Smoke</h1>
+            <p>中文路径、空格和括号。</p>
+            <p class="task-preview"><span class="checkbox">✓</span><span>save path</span></p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-sidebar">
+        <span class="status-plus">+</span>
+        <span class="workspace-name">路径 Smoke（中文 空格）</span>
+        <span class="status-grid">▪</span>
+      </div>
+      <div class="status-main">
+        <span class="stats">16 字 · 7:1</span>
+        <span class="doc-kind">Markdown 文档</span>
+        <span>排版</span>
+        <span class="tiny-icon" aria-hidden="true">
+          <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="3.1"/></svg>
+        </span>
+        <span class="tiny-icon" aria-hidden="true">
+          <svg viewBox="0 0 12 12"><path d="M6 2v7M3.6 6.7 6 9.1l2.4-2.4M2.4 10h7.2"/></svg>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const documentPane = document.querySelector('#document');
+    const modeButtons = Array.from(document.querySelectorAll('[data-mode-button]'));
+
+    modeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const mode = button.getAttribute('data-mode-button');
+        documentPane.setAttribute('data-mode', mode);
+        modeButtons.forEach((item) => {
+          item.classList.toggle('active', item === button);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

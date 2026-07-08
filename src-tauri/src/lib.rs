@@ -1,11 +1,15 @@
 use std::path::PathBuf;
 
+#[cfg(target_os = "macos")]
 use serde::Serialize;
-use tauri::{Emitter, Manager};
+#[cfg(target_os = "macos")]
+use tauri::Emitter;
+use tauri::Manager;
 
 mod commands;
 mod domain;
 
+#[cfg(target_os = "macos")]
 #[derive(Clone, Serialize)]
 struct NativeCommandPayload<'a> {
     action: &'a str,
@@ -50,12 +54,14 @@ fn show_preferred_window(app: &tauri::AppHandle) {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn emit_frontend_command(app: &tauri::AppHandle, action: &'static str) {
     if let Err(error) = app.emit("prism-command", NativeCommandPayload { action }) {
         eprintln!("[menu] Failed to emit command {action}: {error}");
     }
 }
 
+#[cfg(target_os = "macos")]
 fn command_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
     manager: &M,
     command: &'static str,
@@ -69,6 +75,7 @@ fn command_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
     builder.build(manager)
 }
 
+#[cfg(target_os = "macos")]
 fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
     use tauri::menu::{
         MenuBuilder, PredefinedMenuItem, SubmenuBuilder, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID,
@@ -470,6 +477,8 @@ pub fn run() {
 
             commands::startup_files::register_startup_files(app);
             seed_initial_documents(app);
+
+            #[cfg(target_os = "macos")]
             install_app_menu(app)?;
 
             Ok(())

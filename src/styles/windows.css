@@ -14,9 +14,21 @@ html[data-platform='windows'] .modal {
 }
 
 html[data-platform='windows'][data-content-theme='miaoyan'] .modal-overlay {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(8px) saturate(1.08);
+  -webkit-backdrop-filter: blur(8px) saturate(1.08);
+}
+
+html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono']) .modal-overlay {
+  background: rgba(255, 255, 255, 0.46);
+  backdrop-filter: blur(8px) saturate(1.08);
+  -webkit-backdrop-filter: blur(8px) saturate(1.08);
+}
+
+html[data-platform='windows']:is([data-content-theme='nocturne'], [data-content-theme='carbon']) .modal-overlay {
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(8px) saturate(1.04);
+  -webkit-backdrop-filter: blur(8px) saturate(1.04);
 }
 
 @keyframes prism-windows-modal-in {

@@ -65,12 +65,15 @@ describe('global Windows visual compensation', () => {
     const miaoyanOverlayOverride = css.lastIndexOf("html[data-content-theme='miaoyan'] .modal-overlay");
     const windowsModalClarity = css.lastIndexOf("html[data-platform='windows'] .modal {");
     const windowsMiaoyanOverlay = css.lastIndexOf("html[data-platform='windows'][data-content-theme='miaoyan'] .modal-overlay");
+    const windowsLightThemeOverlay = css.lastIndexOf("html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono']) .modal-overlay");
 
     expect(miaoyanOverlayOverride).toBeGreaterThan(-1);
     expect(windowsModalClarity).toBeGreaterThan(miaoyanOverlayOverride);
     expect(windowsMiaoyanOverlay).toBeGreaterThan(miaoyanOverlayOverride);
+    expect(windowsLightThemeOverlay).toBeGreaterThan(miaoyanOverlayOverride);
     expect(css.slice(windowsModalClarity, windowsMiaoyanOverlay)).toContain('transform: none');
-    expect(css.slice(windowsMiaoyanOverlay)).toContain('backdrop-filter: blur(3px)');
+    expect(css.slice(windowsMiaoyanOverlay)).toContain('backdrop-filter: blur(8px) saturate(1.08)');
+    expect(css.slice(windowsLightThemeOverlay)).toContain('background: rgba(255, 255, 255, 0.46)');
   });
 });
 

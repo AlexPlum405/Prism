@@ -17,6 +17,14 @@
 }
 
 .titlebar.windows {
+  position: relative;
+  height: 38px;
+  gap: 0;
+  padding-left: 8px;
+  padding-right: 0;
+}
+
+.titlebar.linux {
   gap: 10px;
   padding-left: 10px;
 }
@@ -156,6 +164,95 @@
 
 .app { color: var(--c-graphite); }
 
+.windowsLeftCluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  max-width: calc(100% - 300px);
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: visible;
+  z-index: 2;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.windowsBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  padding: 0 4px 0 2px;
+  color: var(--c-void);
+  flex: 0 0 auto;
+}
+
+.windowsBrandName {
+  color: var(--c-void);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.windowsInlineMenu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.windowsMenuItemWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.windowsMenuItem {
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--c-graphite);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 26px;
+  cursor: pointer;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.windowsMenuItem:hover,
+.windowsMenuItem.active {
+  background: var(--c-chalk);
+  color: var(--c-void);
+}
+
+.windowsCenterTitle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(360px, 32vw);
+  max-width: calc(100% - 620px);
+  height: 100%;
+  min-width: 160px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
 .windowsTitleCluster {
   display: flex;
   align-items: center;
@@ -171,16 +268,46 @@
   max-width: min(360px, 44vw);
 }
 
+.windowsCenterTitle .windowsTitleGroup {
+  align-items: center;
+  max-width: 100%;
+}
+
 .windowsTitle {
   color: var(--c-graphite);
   font-size: 12px;
   font-weight: 520;
 }
 
+.windowsCenterTitle .windowsTitle {
+  max-width: 100%;
+  justify-content: center;
+}
+
 .windowsDragSpacer {
-  min-width: 48px;
+  min-width: 28px;
   height: 100%;
   flex: 1 1 auto;
+}
+
+.windowsRightCluster {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-left: 12px;
+  flex: 0 0 auto;
+  z-index: 2;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.windowsControlsDivider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px 0 8px;
+  background: var(--c-fog);
+  opacity: 0.82;
+  flex: 0 0 auto;
 }
 
 .controls {
@@ -454,11 +581,116 @@
 }
 
 :global(html[data-platform='windows']) .titlebar.windows {
-  padding-left: 6px;
+  height: 38px;
+  padding-left: 8px;
+  padding-right: 0;
+  border-bottom: 1px solid var(--c-fog);
+  font-size: 13px;
+  letter-spacing: 0;
 }
 
-:global(html[data-platform='windows']) .windowsTitleCluster {
-  gap: 16px;
+:global(html[data-platform='windows']) .windowsBrandName,
+:global(html[data-platform='windows']) .windowsMenuItem,
+:global(html[data-platform='windows']) .windowsTitle {
+  letter-spacing: 0;
+}
+
+:global(html[data-platform='windows']) .windowsTitle {
+  color: var(--c-graphite);
+  font-size: 12px;
+}
+
+:global(html[data-platform='windows']) .windowsMenuItem {
+  color: color-mix(in srgb, var(--c-void) 88%, var(--c-graphite));
+  font-weight: 550;
+}
+
+:global(html[data-platform='windows']) .windowsMenuItem:hover,
+:global(html[data-platform='windows']) .windowsMenuItem.active {
+  background: var(--c-chalk);
+  color: var(--c-void);
+}
+
+:global(html[data-platform='windows']) .controls {
+  height: 100%;
+  margin-left: 0;
+}
+
+:global(html[data-platform='windows']) .btn {
+  width: 46px;
+  height: 38px;
+}
+
+:global(html[data-platform='windows']) .btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .titlebar.windows {
+  background: var(--miaoyan-main-bg);
+  border-bottom-color: var(--miaoyan-divider);
+  font-family: var(--miaoyan-font);
+}
+
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsBrand,
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsBrandName {
+  color: var(--miaoyan-text);
+}
+
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsTitle {
+  color: var(--miaoyan-secondary-text);
+  font-family: var(--miaoyan-font);
+  font-weight: 400;
+}
+
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsMenuItem {
+  color: color-mix(in srgb, var(--miaoyan-text) 86%, var(--miaoyan-secondary-text));
+  font-family: var(--miaoyan-font);
+  font-weight: 430;
+}
+
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsMenuItem:hover,
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsMenuItem.active {
+  background: var(--miaoyan-panel-secondary);
+  color: var(--miaoyan-text);
+}
+
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsControlsDivider {
+  background: var(--miaoyan-divider);
+}
+
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .titlebar.windows {
+  background: var(--theme-main-bg);
+  border-bottom-color: var(--theme-divider);
+  color: var(--theme-text);
+  font-family: var(--theme-font);
+}
+
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsBrand,
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsBrandName {
+  color: var(--theme-text);
+}
+
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsTitle {
+  color: var(--theme-secondary-text);
+  font-family: var(--theme-font);
+  font-weight: 400;
+}
+
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsMenuItem {
+  color: color-mix(in srgb, var(--theme-text) 86%, var(--theme-secondary-text));
+  font-family: var(--theme-font);
+  font-weight: 500;
+}
+
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsMenuItem:hover,
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsMenuItem.active {
+  background: var(--theme-panel-secondary);
+  color: var(--theme-text);
+}
+
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsControlsDivider {
+  background: var(--theme-divider);
 }
 
 @media (prefers-reduced-motion: reduce) {

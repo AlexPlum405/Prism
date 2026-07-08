@@ -27,6 +27,21 @@ describe('macOS window hit testing configuration', () => {
   });
 });
 
+describe('Windows frameless shell configuration', () => {
+  it('uses a platform-specific frameless window for the self-drawn titlebar', () => {
+    const config = JSON.parse(readFileSync('src-tauri/tauri.windows.conf.json', 'utf8'));
+    const windows = config.app?.windows ?? [];
+
+    expect(windows.length).toBeGreaterThan(0);
+
+    for (const windowConfig of windows) {
+      expect(windowConfig.decorations).toBe(false);
+      expect(windowConfig.titleBarStyle).toBeUndefined();
+      expect(windowConfig.hiddenTitle).toBeUndefined();
+    }
+  });
+});
+
 describe('default Tauri capability', () => {
   it('allows the document webview to open the native print dialog', () => {
     const capability = JSON.parse(readFileSync('src-tauri/capabilities/default.json', 'utf8'));

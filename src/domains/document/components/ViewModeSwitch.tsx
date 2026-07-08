@@ -32,9 +32,14 @@ const VIEW_MODES: Array<{ key: ViewMode; labelKey: I18nKey; icon: () => JSX.Elem
 interface ViewModeSwitchProps {
   className?: string;
   flushStart?: boolean;
+  variant?: 'default' | 'titlebarBorderless';
 }
 
-export function ViewModeSwitch({ className = '', flushStart = false }: ViewModeSwitchProps = {}) {
+export function ViewModeSwitch({
+  className = '',
+  flushStart = false,
+  variant = 'default',
+}: ViewModeSwitchProps = {}) {
   const { t } = useI18n();
   const viewMode = useDocumentStore((s) => s.currentDocument?.viewMode);
   const supportsPreview = useDocumentStore((s) => s.currentDocument?.profile?.supportsPreview ?? true);
@@ -47,7 +52,14 @@ export function ViewModeSwitch({ className = '', flushStart = false }: ViewModeS
     : VIEW_MODES.filter((mode) => mode.key === 'edit');
 
   return (
-    <div className={`${styles.container} ${flushStart ? styles.flushStart : ''} ${className}`.trim()}>
+    <div
+      className={[
+        styles.container,
+        flushStart ? styles.flushStart : '',
+        variant === 'titlebarBorderless' ? styles.titlebarBorderless : '',
+        className,
+      ].filter(Boolean).join(' ')}
+    >
       {viewModes.map((m) => {
         const Icon = m.icon;
         const label = t(m.labelKey);

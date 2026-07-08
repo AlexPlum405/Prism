@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-US" Codepage="936" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="TauriLanguage">1033</String>
+  <String Id="TauriCodepage">936</String>
+  <String Id="LaunchApp">Launch Prism</String>
+  <String Id="DowngradeErrorMessage">A newer version of Prism is already installed.</String>
+  <String Id="PathEnvVarFeature">Add the install location of the Prism executable to the PATH system environment variable. This allows the Prism executable to be called from any location.</String>
+  <String Id="InstallAppFeature">Installs Prism.</String>
+</WixLocalization>

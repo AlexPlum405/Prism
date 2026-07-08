@@ -27,4 +27,22 @@ describe('ViewModeSwitch titlebar placement', () => {
     expect(flushStart).toBeGreaterThan(container);
     expect(css.slice(flushStart)).toContain('margin-left: 0');
   });
+
+  it('defines a borderless titlebar variant with an active underline but no outer frame', () => {
+    const variant = css.indexOf('.titlebarBorderless');
+    const underline = css.indexOf('.titlebarBorderless .btn.active::after');
+
+    expect(variant).toBeGreaterThan(-1);
+    expect(underline).toBeGreaterThan(variant);
+    expect(css.slice(underline)).toContain('background: var(--view-mode-active-underline)');
+    expect(css.slice(variant, underline)).not.toMatch(/border\s*:\s*1px/);
+  });
+
+  it('gives non-MiaoYan themes distinct view-mode active tokens', () => {
+    expect(css).toContain("--view-mode-active: var(--inkstone-accent)");
+    expect(css).toContain("--view-mode-active: var(--slate-title)");
+    expect(css).toContain("--view-mode-active: var(--mono-accent)");
+    expect(css).toContain("--view-mode-active: var(--nocturne-title)");
+    expect(css).toContain("--view-mode-active: var(--carbon-accent)");
+  });
 });

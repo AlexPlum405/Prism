@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en-US" data-content-theme="miaoyan">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>导出 Smoke 验收文档</title>
+  <meta name="generator" content="Prism">
+  <meta name="author" content="Prism QA">
+  <meta name="date" content="2026-05-15">
+  <style>
+    html, body {
+      min-height: 100%;
+      height: auto !important;
+      overflow: auto !important;
+    }
+    body {
+      margin: 0;
+      background: var(--bg-preview, #fff);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .prism-export-document {
+      position: static !important;
+      min-height: 100vh;
+      height: auto !important;
+      overflow: visible !important;
+      background: var(--bg-preview, #fff);
+    }
+    .prism-export-document #write {
+      min-height: auto !important;
+      padding-top: 44px !important;
+      padding-bottom: 56px !important;
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-wrap: break-word;
+    }
+    .prism-export-document :is(.mermaid-placeholder, .markmap-placeholder, .plantuml-placeholder) {
+      box-sizing: border-box !important;
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .prism-export-document :is(.mermaid-placeholder svg, .markmap-placeholder svg, .plantuml-image) {
+      display: block !important;
+      max-width: 100% !important;
+      height: auto !important;
+      margin-inline: auto !important;
+      overflow: visible !important;
+    }
+    .prism-export-document :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, dd, dt) {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .prism-export-document .prism-export-scaled-atomic {
+      contain: layout paint;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+    .prism-export-document .prism-export-scaled-atomic-content {
+      max-width: 100% !important;
+    }
+    .prism-export-toc {
+      margin: 0 0 36px;
+      padding: 18px 0 20px;
+      border-top: 1px solid var(--theme-divider, var(--c-fog, #e5e7eb));
+      border-bottom: 1px solid var(--theme-divider, var(--c-fog, #e5e7eb));
+      break-inside: avoid;
+    }
+    .prism-export-toc-title {
+      margin: 0 0 12px;
+      color: var(--theme-muted, var(--c-ash, #8f8f8f));
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1;
+    }
+    .prism-export-toc-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .prism-export-toc-item {
+      margin: 0;
+      padding-left: var(--toc-indent, 0);
+    }
+    .prism-export-toc-item a {
+      display: flex;
+      min-width: 0;
+      color: var(--theme-text, var(--c-void, #000));
+      text-decoration: none;
+      line-height: 1.35;
+    }
+    .prism-export-toc-item span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .prism-export-heading-anchor {
+      scroll-margin-top: 28px;
+    }
+    .prism-export-atomic {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+    }
+    .prism-export-page-spacer {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      break-after: page;
+      page-break-after: always;
+    }
+    .prism-export-template--plain pre,
+    .prism-export-template--plain code {
+      background: transparent !important;
+      border-color: color-mix(in srgb, var(--theme-divider, #e5e0d8) 45%, transparent) !important;
+    }
+    .prism-export-template--plain table,
+    .prism-export-template--plain th,
+    .prism-export-template--plain td {
+      background: transparent !important;
+    }
+    .prism-export-template--business table,
+    .prism-export-template--academic table {
+      border-collapse: collapse !important;
+    }
+    .prism-export-template--business th,
+    .prism-export-template--business td,
+    .prism-export-template--academic th,
+    .prism-export-template--academic td {
+      border-width: 1px !important;
+    }
+    @page {
+      size: A4;
+      margin: 18mm 18mm 20mm;
+    }
+    @media print {
+      body { background: #fff !important; }
+      .prism-export-document { background: #fff !important; }
+      .prism-export-document #write {
+        max-width: none !important;
+        padding: 0 !important;
+      }
+      pre, blockquote, details, table, figure, img, svg, canvas, .mermaid-placeholder, .markmap-placeholder, .plantuml-placeholder, .katex-display, .prism-callout, .prism-html-block, .prism-export-toc, .prism-export-atomic {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="">
+<div class="prism-export-document prism-export-template--academic preview-compat preview-compat--miaoyan"><div id="write" class="markdown-body heti"><nav class="prism-export-toc prism-export-atomic" aria-label="目录" data-prism-export-atomic="true"><div class="prism-export-toc-title">目录</div><ol class="prism-export-toc-list"><li class="prism-export-toc-item" style="--toc-indent: 0px"><a href="#%E5%AF%BC%E5%87%BA-smoke-%E9%AA%8C%E6%94%B6%E6%96%87%E6%A1%A3"><span>导出 Smoke 验收文档</span></a></li><li class="prism-export-toc-item" style="--toc-indent: 14px"><a href="#%E8%A1%A8%E6%A0%BC%E4%B8%8E%E4%BB%BB%E5%8A%A1"><span>表格与任务</span></a></li><li class="prism-export-toc-item" style="--toc-indent: 14px"><a href="#%E4%BB%A3%E7%A0%81"><span>代码</span></a></li><li class="prism-export-toc-item" style="--toc-indent: 14px"><a href="#mermaid"><span>Mermaid</span></a></li><li class="prism-export-toc-item" style="--toc-indent: 14px"><a href="#katex"><span>KaTeX</span></a></li></ol></nav><h1 data-source-line="2" data-line="2" id="导出-smoke-验收文档" class="prism-export-heading-anchor prism-export-atomic" data-prism-export-atomic="true">导出 Smoke 验收文档</h1>
+<p data-source-line="4" data-line="4" class="prism-export-atomic" data-prism-export-atomic="true">这是一段中文长文内容，用于验证 Prism 的复杂导出。English words 与中文混排，行内公式 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E = mc^2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord mathnormal">m</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span> 应该正常渲染。</p>
+<p data-source-line="6" data-line="6" class="prism-export-atomic" data-prism-export-atomic="true">引用占位：<span class="prism-citation" data-citekeys="doe2024" title="引用占位：@doe2024">[@doe2024]</span>。如果 Pandoc 未检测成功，导出应保留 citekey 占位并给出 warning，不应崩溃。</p>
+<p data-source-line="8" data-line="8" class="prism-export-atomic" data-prism-export-atomic="true"><img src="assets/prism-export-figure.png" alt="本地图片"></p>
+<h2 data-source-line="10" data-line="10" id="表格与任务" class="prism-export-heading-anchor prism-export-atomic" data-prism-export-atomic="true">表格与任务</h2>
+<table data-source-line="12" data-line="12" class="prism-export-atomic" data-prism-export-atomic="true">
+<thead>
+<tr>
+<th>项目</th>
+<th>期望</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>中文</td>
+<td>保留中文字符</td>
+<td>通过</td>
+</tr>
+<tr>
+<td>表格</td>
+<td>保留表格结构</td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Mermaid</td>
+<td>导出为图表或图片</td>
+<td>待检</td>
+</tr>
+</tbody>
+</table>
+<ul class="contains-task-list cb" data-source-line="18" data-line="18">
+<li class="task-list-item strike prism-export-atomic" data-source-line="18" data-line="18" data-prism-export-atomic="true"><input type="checkbox" checked="" data-task-checkbox-index="0" data-source-line="18" data-line="18"> 已完成的任务</li>
+<li class="task-list-item prism-export-atomic" data-source-line="19" data-line="19" data-prism-export-atomic="true"><input type="checkbox" data-task-checkbox-index="1" data-source-line="19" data-line="19"> 待完成的任务</li>
+</ul>
+<blockquote data-source-line="21" data-line="21" class="prism-export-atomic" data-prism-export-atomic="true">
+<p data-source-line="21" data-line="21">引用块应该有明确层级，不能贴边或丢失正文。</p>
+</blockquote>
+<h2 data-source-line="23" data-line="23" id="代码" class="prism-export-heading-anchor prism-export-atomic" data-prism-export-atomic="true">代码</h2>
+<pre class="prism-export-atomic" data-prism-export-atomic="true"><code class="hljs language-ts" data-source-line="25" data-line="25"><span class="hljs-keyword">const</span> title = <span class="hljs-string">'Prism Export Smoke'</span>;
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(title);
+</code></pre>
+<h2 data-source-line="30" data-line="30" id="mermaid" class="prism-export-heading-anchor prism-export-atomic" data-prism-export-atomic="true">Mermaid</h2>
+<div class="mermaid-placeholder prism-export-atomic" data-mermaid="graph%20TD%0A%20%20A%5BMarkdown%5D%20--%3E%20B%5BHTML%5D%0A%20%20A%20--%3E%20C%5BPDF%5D%0A%20%20A%20--%3E%20D%5BPNG%5D%0A%20%20A%20--%3E%20E%5BDOCX%5D" data-source-line="32" data-line="32" style="display: flex; justify-content: center; margin: 8px 0px; box-sizing: border-box; width: 100%; max-width: 100%; overflow: hidden;" data-prism-export-atomic="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" style="display: block; margin-inline: auto; max-width: 100%; height: auto; overflow: visible;" preserveAspectRatio="xMidYMin meet"><text>Golden Mermaid</text></svg></div>
+<h2 data-source-line="40" data-line="40" id="katex" class="prism-export-heading-anchor prism-export-atomic" data-prism-export-atomic="true">KaTeX</h2>
+<span class="katex-display prism-export-atomic" data-source-line="42" data-line="42" data-prism-export-atomic="true"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msubsup><mo>∫</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>x</mi><mn>2</mn></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><mn>1</mn><mn>3</mn></mfrac></mrow><annotation encoding="application/x-tex">\int_0^1 x^2 dx = \frac{1}{3}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.476em;vertical-align:-0.9119em;"></span><span class="mop"><span class="mop op-symbol large-op" style="margin-right:0.4445em;position:relative;top:-0.0011em;">∫</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.564em;"><span style="top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span><span style="top:-3.8129em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9119em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord mathnormal">d</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">3</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></div></div>
+</body>
+</html>
