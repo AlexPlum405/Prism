@@ -36,6 +36,11 @@ Prism 保持跨平台写作器定位，但第一个正式版本按平台陆续�
 
 因此 Windows/Linux 的标题栏、文件关联、路径处理和导出用例在 macOS 首发时可以保持“待真机回填”，不能伪造成通过；同时也不应把这些未验证项表述为 macOS 首发阻塞。发布材料应清楚区分“macOS 正式版”和“Windows/Linux 待验证/后续发布”。
 
+### Windows 1.0.0 阻塞消减（Windows 1.0.0 blocker burn-down）
+Windows 1.0.0 阻塞消减是把 Windows 发布信心包从 `No-Go` 推进到至少 `Conditional Go` 的短周期工作，范围只包括证据包中明确导致 `Fail` / `Blocked` 的发布阻塞项。
+
+它不是继续做窗口视觉微调或新增功能；除非 UI 问题直接阻塞 Windows 发布信心，否则应优先处理全量测试失败、Windows 快捷键失效、native workspace index job 风险、安装策略说明和 updater 签名闭环。
+
 ### 发布主张（Launch positioning）
 Prism 1.0 采用差异能力型发布主张，而不是竞品替代型主张。发布材料可以承认 Prism 吸收了 Typora/MiaoYan 式本地 Markdown 写作体验，但不宣称“完全替代 Typora/MiaoYan”。
 

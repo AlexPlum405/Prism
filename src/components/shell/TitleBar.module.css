@@ -178,24 +178,6 @@
   app-region: no-drag;
 }
 
-.windowsBrand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  height: 100%;
-  padding: 0 4px 0 2px;
-  color: var(--c-void);
-  flex: 0 0 auto;
-}
-
-.windowsBrandName {
-  color: var(--c-void);
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0;
-  line-height: 1;
-}
-
 .windowsInlineMenu {
   display: flex;
   align-items: center;
@@ -589,7 +571,6 @@
   letter-spacing: 0;
 }
 
-:global(html[data-platform='windows']) .windowsBrandName,
 :global(html[data-platform='windows']) .windowsMenuItem,
 :global(html[data-platform='windows']) .windowsTitle {
   letter-spacing: 0;
@@ -632,11 +613,6 @@
   font-family: var(--miaoyan-font);
 }
 
-:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsBrand,
-:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsBrandName {
-  color: var(--miaoyan-text);
-}
-
 :global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsTitle {
   color: var(--miaoyan-secondary-text);
   font-family: var(--miaoyan-font);
@@ -664,11 +640,6 @@
   border-bottom-color: var(--theme-divider);
   color: var(--theme-text);
   font-family: var(--theme-font);
-}
-
-:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsBrand,
-:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsBrandName {
-  color: var(--theme-text);
 }
 
 :global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsTitle {

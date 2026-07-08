@@ -281,9 +281,6 @@ export function TitleBar({
       ) : IS_WINDOWS ? (
         <>
           <div className={styles.windowsLeftCluster} data-titlebar-section="windows-left-cluster">
-            <div className={styles.windowsBrand} aria-label="Prism">
-              <span className={styles.windowsBrandName}>Prism</span>
-            </div>
             {renderWindowsInlineMenu()}
           </div>
           <div className={styles.windowsCenterTitle} data-titlebar-section="windows-center-title" data-tauri-drag-region>

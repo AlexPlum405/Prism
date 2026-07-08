@@ -75,9 +75,9 @@ describe('TitleBar platform layout', () => {
     expect(rightCluster).not.toHaveAttribute('data-tauri-drag-region');
     expect(centerTitle).toHaveAttribute('data-tauri-drag-region');
     expect(dragSpacer).toHaveAttribute('data-tauri-drag-region');
-    expect(within(leftCluster as HTMLElement).getByText('Prism')).toBeInTheDocument();
-    expect(leftCluster?.firstElementChild?.textContent).toBe('Prism');
-    expect(leftCluster?.firstElementChild?.childElementCount).toBe(1);
+    expect(within(leftCluster as HTMLElement).queryByText('Prism')).not.toBeInTheDocument();
+    expect(within(leftCluster as HTMLElement).getByRole('button', { name: '文件' })).toBeInTheDocument();
+    expect(leftCluster?.firstElementChild?.querySelector('button')?.textContent).toBe('文件');
     fireEvent.click(within(leftCluster as HTMLElement).getByRole('button', { name: '文件' }));
     expect(screen.getByRole('menu')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('menuitem', { name: /打开/ }));
