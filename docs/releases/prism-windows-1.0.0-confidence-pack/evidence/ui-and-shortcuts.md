@@ -132,10 +132,11 @@ Tests       94 passed (94)
 
 - `View` 菜单可见 `打字机模式 F9`。
 - 顶部 `视图` 菜单可访问树可稳定读到 `菜单项目 打字机模式 F9`。
-- 可访问树没有暴露稳定的 checked / selected 状态。
-- 触发 F9 后视觉变化不稳定，本轮没有可重复、可归档的窗口级证据。
+- 通过菜单点击 `打字机模式 F9` 后，编辑区首屏内容整体下移，第一行内容位于窗口中部附近，符合打字机模式 `40vh` 上下留白预期。
+- 再次打开 `视图` 菜单时，`打字机模式` 左侧显示勾选。
+- 已保存窗口级截图：`screenshots/17-typewriter-mode.png`、`screenshots/17b-typewriter-menu-checked.png`。
 
-结论：保持 Blocked，需要人工视觉补验。本轮未保存曾被其它浮层干扰的截图。
+结论：`WIN-WRITE-005` 从 Blocked 调整为 Pass。
 
 ## 条件项：Ctrl + 鼠标滚轮字号
 

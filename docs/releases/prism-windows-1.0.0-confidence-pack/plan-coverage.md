@@ -9,7 +9,7 @@
 尚不能记为 Windows Stable 的项目：
 
 - updater 工具链已用 validation key 跑通；正式发布仍缺当前内嵌 public key 对应的私钥。
-- 文件树删除到回收站、高 DPI 125% / 150%、F9 打字机模式仍需人工或稳定入口补验。
+- 文件树删除到回收站、高 DPI 125% / 150% 仍需人工或稳定入口补验。
 - MSI 非管理员 `/qn` 静默安装仍会因 per-machine 权限限制失败；管理员静默安装已经通过。
 - 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
 
@@ -54,8 +54,9 @@
 | WIN-WRITE-002 复杂 Markdown 预览 | `evidence/writing-preview.md`、`evidence/export.md`、`screenshots/08-diagrams-formulas.png` | Pass |
 | WIN-WRITE-003 搜索 / 替换 | `evidence/writing-preview.md`、`evidence/ui-and-shortcuts.md` | Pass |
 | WIN-WRITE-004 快捷键格式化 / 打开 / 新建 / 全屏 | `evidence/ui-and-shortcuts.md`、`manifest.json` | Pass |
+| WIN-WRITE-005 F9 打字机模式 | `evidence/ui-and-shortcuts.md`、`screenshots/17-typewriter-mode.png`、`screenshots/17b-typewriter-menu-checked.png` | Pass |
 | WIN-WRITE-008 `Ctrl` + 滚轮字号条件项 | `evidence/ui-and-shortcuts.md`、`manifest.json` | Not Run |
-| WIN-WRITE-005 五套主题 | `evidence/ui-and-shortcuts.md`、主题截图 | Pass |
+| WIN-WRITE-006 五套主题 | `evidence/ui-and-shortcuts.md`、主题截图 | Pass |
 | WIN-WRITE-006 三语无明显溢出 | `evidence/ui-and-shortcuts.md`、语言截图 | Pass |
 | WIN-WRITE-007 知识图谱入口 | `evidence/writing-preview.md`、`screenshots/15-relation-graph.png` | Pass |
 | WIN-EXPORT-001 HTML 导出 | `evidence/export.md`、`artifacts/export/windows-smoke.html` | Pass |
@@ -75,4 +76,4 @@
 
 ## 截图约束
 
-本包保留的截图均为 Prism、Explorer 或安装器目标窗口本体。未把被其它浮层污染的 F9 测试截图作为证据。
+本包保留的截图均为 Prism、Explorer 或安装器目标窗口本体。F9 打字机模式已保存干净的窗口级截图，未把早先被其它浮层污染的测试截图作为证据。

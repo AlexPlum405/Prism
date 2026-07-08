@@ -116,16 +116,33 @@ latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 
 结论：`WIN-WRITE-004` 从 Blocked 调整为 Pass。
 
-## 5. 仍未补齐 / 需要人工确认的验证项
+## 5. F9 打字机模式已补验
+
+复测环境：Windows 安装版 Prism 主窗口，Guide 文档，编辑模式。
+
+复测步骤：
+
+1. 打开顶部 `视图` 菜单，确认存在 `打字机模式 F9` 菜单项。
+2. 点击 `打字机模式 F9`。
+3. 观察编辑区内容位置，并再次打开 `视图` 菜单确认勾选状态。
+
+结果：
+
+- 触发后首屏正文整体下移，第一行内容位于窗口中部附近，符合打字机模式 `40vh` 上下留白的预期视觉效果。
+- 再次打开 `视图` 菜单时，`打字机模式` 左侧显示勾选。
+- 已保存截图：`screenshots/17-typewriter-mode.png`、`screenshots/17b-typewriter-menu-checked.png`。
+
+结论：`WIN-WRITE-005` 从 Blocked 调整为 Pass。
+
+## 6. 仍未补齐 / 需要人工确认的验证项
 
 这些项本轮没有做成完整真机证据：
 
 - 删除到回收站：需要用户在动作前确认允许 Prism UI 删除 `DeleteSmoke\delete-me.md`
 - 高 DPI 125% / 150%：需要确认后修改 Windows 显示缩放
 - `Ctrl` + 鼠标滚轮调整字号：当前验证基线 `e03f199e6f3bcd256bc9cc83c356302e69239d31` 不包含 `912c9fb5`，按计划 Not Run
-- `F9` 打字机模式：触发后缺少稳定可访问文本或可见状态证据，需要人工视觉补验
 
-## 6. 证据限制：图片粘贴 / 拖拽
+## 7. 证据限制：图片粘贴 / 拖拽
 
 图片粘贴 / 拖拽定向自动化测试通过：
 
@@ -138,7 +155,7 @@ Tests       24 passed | 31 skipped (55)
 
 限制：本轮未补人工拖拽 UI 截图。
 
-## 7. 已消减：Rust workspace index job 定向测试失败
+## 8. 已消减：Rust workspace index job 定向测试失败
 
 命令：
 

@@ -14,9 +14,9 @@
   },
   "summary": {
     "status": "Conditional Go",
-    "pass": 39,
+    "pass": 40,
     "fail": 0,
-    "blocked": 4,
+    "blocked": 3,
     "notRun": 1
   },
   "items": [
@@ -296,12 +296,11 @@
       "id": "WIN-WRITE-005",
       "priority": "P1",
       "domain": "writing",
-      "status": "blocked",
+      "status": "pass",
       "steps": ["验证 F9 打字机模式"],
       "expected": "F9 切换打字机模式，并有可确认状态",
-      "actual": "顶部“视图”菜单可访问树能稳定读到“菜单项目 打字机模式 F9”，但触发后没有稳定可访问 checked 状态或明显视觉证据，本轮无法自动闭环",
-      "evidence": ["evidence/ui-and-shortcuts.md"],
-      "issue": "需要人工视觉补验"
+      "actual": "Windows 真机复测通过：通过顶部“视图”菜单触发“打字机模式 F9”后，编辑区首屏内容被推到窗口中部附近；再次打开“视图”菜单可见“打字机模式”左侧勾选，已保存窗口级截图证据",
+      "evidence": ["evidence/ui-and-shortcuts.md", "screenshots/17-typewriter-mode.png", "screenshots/17b-typewriter-menu-checked.png"]
     },
     {
       "id": "WIN-WRITE-006",
