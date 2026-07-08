@@ -363,8 +363,21 @@ fn metadata_time_ms(time: std::io::Result<std::time::SystemTime>) -> Option<f64>
         .map(|duration| duration.as_millis() as f64)
 }
 
+fn normalize_windows_verbatim_prefix(path: &str) -> String {
+    let normalized = path.replace('\\', "/");
+    if let Some(stripped) = normalized.strip_prefix("//?/UNC/") {
+        return format!("//{stripped}");
+    }
+    if let Some(stripped) = normalized.strip_prefix("//?/") {
+        return stripped.to_string();
+    }
+    normalized
+}
+
 fn normalize_path(path: &str) -> String {
-    path.replace('\\', "/").trim_end_matches('/').to_lowercase()
+    normalize_windows_verbatim_prefix(path)
+        .trim_end_matches('/')
+        .to_lowercase()
 }
 
 fn strip_markdown_extension(value: &str) -> String {
@@ -780,9 +793,10 @@ fn is_external_target(target: &str) -> bool {
 }
 
 fn normalize_path_parts(path: &str) -> String {
-    let absolute = path.starts_with('/');
+    let normalized = normalize_windows_verbatim_prefix(path);
+    let absolute = normalized.starts_with('/');
     let mut parts = Vec::new();
-    for part in path.replace('\\', "/").split('/') {
+    for part in normalized.split('/') {
         if part.is_empty() || part == "." {
             continue;
         }
@@ -1929,6 +1943,22 @@ mod tests {
     }
 
     #[test]
+    fn normalizes_windows_verbatim_paths_for_link_resolution() {
+        let verbatim = r"\\?\C:\repo\docs\current.md";
+        let normalized_candidate = normalize_path_parts(verbatim);
+
+        assert_eq!(normalize_path(verbatim), "c:/repo/docs/current.md");
+        assert_eq!(
+            normalize_path(&normalized_candidate),
+            normalize_path(verbatim)
+        );
+        assert_eq!(
+            normalize_path(r"\\?\UNC\server\share\docs\current.md"),
+            "//server/share/docs/current.md"
+        );
+    }
+
+    #[test]
     fn builds_index_with_current_document_override_and_backlinks() {
         let root = temp_dir("links");
         let current = root.join("current.md");
@@ -2252,16 +2282,24 @@ mod tests {
                 .map(|edge| edge.id.as_str())
                 .collect::<Vec<_>>(),
             [
-                normalize_path(&format!(
+                format!(
                     "{}->{}",
-                    path_to_string(&alpha.canonicalize().expect("canonical alpha")),
-                    path_to_string(&beta.canonicalize().expect("canonical beta"))
-                )),
-                normalize_path(&format!(
+                    normalize_path(&path_to_string(
+                        &alpha.canonicalize().expect("canonical alpha")
+                    )),
+                    normalize_path(&path_to_string(
+                        &beta.canonicalize().expect("canonical beta")
+                    ))
+                ),
+                format!(
                     "{}->{}",
-                    path_to_string(&beta.canonicalize().expect("canonical beta")),
-                    path_to_string(&gamma.canonicalize().expect("canonical gamma"))
-                )),
+                    normalize_path(&path_to_string(
+                        &beta.canonicalize().expect("canonical beta")
+                    )),
+                    normalize_path(&path_to_string(
+                        &gamma.canonicalize().expect("canonical gamma")
+                    ))
+                ),
             ]
         );
 
@@ -2342,7 +2380,11 @@ mod tests {
                 .iter()
                 .map(|edge| edge.id.as_str())
                 .collect::<Vec<_>>(),
-            [normalize_path(&format!("{current_path}->{linked_path}"))]
+            [format!(
+                "{}->{}",
+                normalize_path(&current_path),
+                normalize_path(&linked_path)
+            )]
         );
 
         let _ = fs::remove_dir_all(root);

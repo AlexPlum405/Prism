@@ -119,6 +119,24 @@ Tests       13 passed (13)
 cargo test -q workspace_index_job --manifest-path src-tauri\Cargo.toml
 ```
 
-结果：失败，`6` 项中 `5 passed / 1 failed`。失败项是 `queries_backlinks_and_relation_graph_from_completed_job`，在 backlinks 为空数组时越界。取消相关 Rust 测试通过，但该失败作为额外索引风险写入 `issues.md`。
+结果：
 
-结论：长文预览可用，导出反馈状态机有自动化测试覆盖；索引取消 / 降级有前端模型测试覆盖，另有 Rust workspace index job 查询测试风险。
+```text
+6 passed; 0 failed
+```
+
+补充复核：
+
+```text
+cargo test -q workspace_index --manifest-path src-tauri\Cargo.toml
+```
+
+结果：
+
+```text
+18 passed; 0 failed
+```
+
+修复说明：Windows `canonicalize()` 返回的 `\\?\C:\...` verbatim 路径前缀会导致相对 Markdown 链接候选路径和索引文档路径规范化结果不一致；已统一去除 Windows verbatim 前缀，并补底层单测。
+
+结论：长文预览可用，导出反馈状态机有自动化测试覆盖；索引取消 / 降级有前端模型测试覆盖，native workspace index job 查询 backlinks / relation graph 的额外风险已消减。

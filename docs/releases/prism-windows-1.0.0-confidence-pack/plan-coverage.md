@@ -12,7 +12,7 @@
 - updater 签名私钥缺失。
 - 部分快捷键的代码修复和自动回归已完成，但需要重打包安装后做 Windows 真机复测。
 - 文件树删除到回收站、高 DPI 125% / 150%、F9 打字机模式仍需人工或稳定入口补验。
-- 额外 Rust workspace index job 查询测试失败，已写入 `issues.md`。
+- 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
 
 ## 计划项映射
 

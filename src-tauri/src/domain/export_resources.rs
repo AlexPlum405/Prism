@@ -374,10 +374,9 @@ mod tests {
         })
         .expect("resolve local resource");
 
-        assert_eq!(
-            local.resolved_path,
-            Some("/tmp/prism/assets/图 A.svg".to_string())
-        );
+        let expected_local_path =
+            path_to_string(&std::path::Path::new("/tmp/prism").join("assets/图 A.svg"));
+        assert_eq!(local.resolved_path, Some(expected_local_path));
         assert_eq!(local.kind, "local_file");
         assert_eq!(local.mime_type, Some("image/svg+xml".to_string()));
 

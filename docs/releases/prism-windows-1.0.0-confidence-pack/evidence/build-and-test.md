@@ -26,7 +26,18 @@
 
 备注：Vite 输出 chunk size warnings 和 `node:module` externalized warning，未阻断构建。
 
-## 3. Windows bundle
+## 3. Rust native tests
+
+命令：`cargo test -q --manifest-path src-tauri\Cargo.toml`
+
+结果：通过。
+
+概要：
+
+- Tests：`53 passed`。
+- 备注：`src\commands\trash.rs` 仍有 unused import warnings，未阻断测试。
+
+## 4. Windows bundle
 
 命令：`npm run tauri:build -- --verbose`
 
@@ -52,7 +63,7 @@ WiX warning：
 
 MSI/NSIS 产物已经能出来，当前阻塞点是 updater 私钥。
 
-## 4. 导出 smoke 测试
+## 5. 导出 smoke 测试
 
 命令：
 
@@ -62,7 +73,7 @@ npm test -- --run src/domains/export/exportPipeline.test.ts -t "writes complex e
 
 结果：通过，1 个测试通过，64 个跳过。
 
-## 5. 图片粘贴 / 拖拽定向测试
+## 6. 图片粘贴 / 拖拽定向测试
 
 命令：
 
@@ -79,7 +90,7 @@ npm test -- --run src/domains/editor/extensions/imagePaste.test.ts src/domains/e
 
 覆盖：剪贴板图片保存到 assets、拖拽图片复制、Alt / Option drop 插入原路径、读取不到原路径时提示等。
 
-## 6. 收尾检查
+## 7. 收尾检查
 
 命令：`git diff --check`
 

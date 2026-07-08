@@ -80,7 +80,7 @@ Tests       24 passed | 31 skipped (55)
 
 限制：本轮未补人工拖拽 UI 截图。
 
-## 7. 额外风险：Rust workspace index job 定向测试失败
+## 7. 已消减：Rust workspace index job 定向测试失败
 
 命令：
 
@@ -88,12 +88,14 @@ Tests       24 passed | 31 skipped (55)
 cargo test -q workspace_index_job --manifest-path src-tauri\Cargo.toml
 ```
 
-结果：失败，`6` 项中 `5 passed / 1 failed`。
+当前结果：通过，`6 passed / 0 failed`。
 
-失败项：
+补充命令：
 
-| 文件 | 失败点 | 结果 |
-|---|---|---|
-| `src-tauri/src/domain/workspace_index_job.rs` | `queries_backlinks_and_relation_graph_from_completed_job` | `backlinks[0]` 越界，backlinks 长度为 0 |
+```text
+cargo test -q workspace_index --manifest-path src-tauri\Cargo.toml
+```
 
-说明：前端索引取消 / 降级模型测试通过，取消相关 Rust 测试也通过；这个失败暴露的是 completed native index job 查询 backlinks / relation graph 的额外风险。
+当前结果：通过，`18 passed / 0 failed`。
+
+处理记录：Windows `canonicalize()` 返回的 `\\?\C:\...` verbatim 路径前缀会导致相对 Markdown 链接候选路径和索引文档路径规范化结果不一致，从而让 completed native index job 查询 backlinks / relation graph 时拿不到反链。已统一去除 Windows verbatim 前缀，并补底层单测。

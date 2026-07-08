@@ -443,7 +443,7 @@
       "status": "pass",
       "steps": ["验证工作区索引可取消或降级"],
       "expected": "索引工作不会拖垮主窗口，必要时可取消或降级",
-      "actual": "前端定向测试通过：2 个文件通过，13 个测试通过。覆盖 workspace root 变化时取消 running native index job、大工作区 native job、native 不可用时超过 500 文件降级为 lightweight metadata index，以及命令面板 indexing/no index/native ready 状态。额外 Rust workspace_index_job 查询测试有 1 个失败，已记录为风险",
+      "actual": "前端定向测试通过：2 个文件通过，13 个测试通过。覆盖 workspace root 变化时取消 running native index job、大工作区 native job、native 不可用时超过 500 文件降级为 lightweight metadata index，以及命令面板 indexing/no index/native ready 状态。Rust workspace_index_job 定向测试 6 项通过，workspace_index 定向测试 18 项通过；Windows verbatim 路径规范化导致的 backlinks / relation graph 查询风险已消减",
       "evidence": ["evidence/performance.md", "issues.md"]
     },
     {
