@@ -15,8 +15,8 @@
   "summary": {
     "status": "No-Go",
     "pass": 37,
-    "fail": 2,
-    "blocked": 4,
+    "fail": 1,
+    "blocked": 5,
     "notRun": 1
   },
   "items": [
@@ -47,7 +47,7 @@
       "status": "pass",
       "steps": ["执行 npm test -- --run"],
       "expected": "全量测试绿灯",
-      "actual": "Test Files 170 passed | 4 skipped；Tests 1061 passed | 6 skipped。超限 PNG 分片集成测试保留真实 PNG 尺寸断言，并为 3 个分片用例设置 15s 用例超时预算",
+      "actual": "Test Files 170 passed | 4 skipped；Tests 1066 passed | 6 skipped。超限 PNG 分片集成测试保留真实 PNG 尺寸断言，并为 3 个分片用例设置 15s 用例超时预算",
       "evidence": ["evidence/build-and-test.md", "issues.md"]
     },
     {
@@ -287,12 +287,12 @@
       "id": "WIN-WRITE-004",
       "priority": "P1",
       "domain": "writing",
-      "status": "fail",
+      "status": "blocked",
       "steps": ["验证 Ctrl+B、Ctrl+I、Ctrl+O、Ctrl+N、F11"],
       "expected": "快捷键触发对应格式化、打开、新建和全屏动作",
-      "actual": "Ctrl+B/I 未写入 Markdown 标记；Ctrl+O 未打开文件对话框；Ctrl+N 未新建文稿；F11 未进入全屏",
+      "actual": "原 Windows 真机基线中 Ctrl+B/I/O/N/F11 未生效；当前开发分支已在 CodeMirror 编辑器内桥接这 5 个 Prism 命令，并通过集成回归测试：EditorPane.integration、useAppShortcuts、commands platform/registry 共 94 项通过。仍需重打包安装后做 Windows 真机复测",
       "evidence": ["evidence/ui-and-shortcuts.md", "issues.md"],
-      "issue": "部分快捷键在 Windows 真机未生效"
+      "issue": "快捷键代码修复已落地，缺少重打包后的 Windows 真机复测证据"
     },
     {
       "id": "WIN-WRITE-005",

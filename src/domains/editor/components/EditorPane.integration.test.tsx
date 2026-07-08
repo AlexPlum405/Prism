@@ -4,10 +4,14 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { currentCompletions, startCompletion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
+import { useEffect } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDocumentStore } from '../../document/store';
 import { useWorkspaceStore } from '../../workspace/store';
 import { buildWorkspaceIndex, TEXT_DOCUMENT_PROFILE, type WorkspaceIndex } from '../../workspace/services';
+import { useAppShortcuts } from '../../../app/useAppShortcuts';
+import type { CommandContext, CommandId } from '../../commands';
+import { onAppEvent } from '../../../platform/events/appEvents';
 import { EditorPane } from './EditorPane';
 
 const imagePasteMock = vi.hoisted(() => ({
@@ -144,6 +148,42 @@ function getMountedEditorView() {
     throw new Error('Expected a mounted CodeMirror editor view');
   }
   return view;
+}
+
+function AppShortcutHarness({
+  runCommandById,
+}: {
+  runCommandById: (id: CommandId, context: CommandContext) => void | Promise<void>;
+}) {
+  useAppShortcuts({
+    createCommandContext: () => ({} as CommandContext),
+    focusMode: false,
+    runCommandById,
+    toggleFocusMode: vi.fn(),
+  });
+  return null;
+}
+
+function AppCommandEventHarness({
+  onAction,
+}: {
+  onAction: (action: string) => void;
+}) {
+  useEffect(() => onAppEvent('command.run', ({ action }) => {
+    if (action) onAction(action);
+  }), [onAction]);
+  return null;
+}
+
+function mockNavigatorPlatform(platform: string, userAgent: string) {
+  Object.defineProperty(navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+  Object.defineProperty(navigator, 'userAgent', {
+    configurable: true,
+    value: userAgent,
+  });
 }
 
 async function pressEditorKey(key: string, init: KeyboardEventInit = {}) {
@@ -336,6 +376,41 @@ describe('EditorPane command event integration', () => {
       expect(onChange).toHaveBeenCalled();
       expect(latestChange(changes)).toBe('**Prism**');
     });
+  });
+
+  it.each([
+    ['Ctrl+B', 'b', { code: 'KeyB', ctrlKey: true }, 'bold'],
+    ['Ctrl+I', 'i', { code: 'KeyI', ctrlKey: true }, 'italic'],
+    ['Ctrl+O', 'o', { code: 'KeyO', ctrlKey: true }, 'open'],
+    ['Ctrl+N', 'n', { code: 'KeyN', ctrlKey: true }, 'new'],
+    ['F11', 'F11', { code: 'F11' }, 'fullscreen'],
+  ] as const)('lets Windows app shortcut %s reach Prism command handling from the mounted CodeMirror editor', async (
+    _label,
+    key,
+    eventInit,
+    expectedCommand,
+  ) => {
+    mockNavigatorPlatform('Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+    const recordCommand = vi.fn();
+
+    render(
+      <div style={{ width: 800, height: 600 }}>
+        <AppShortcutHarness runCommandById={(id) => recordCommand(id)} />
+        <AppCommandEventHarness onAction={recordCommand} />
+        <EditorPane content="Prism" onChange={vi.fn()} />
+      </div>,
+    );
+
+    await waitFor(() => {
+      expect(document.querySelector('.cm-editor')).toBeInTheDocument();
+    });
+
+    const event = await pressEditorKey(key, eventInit);
+
+    await waitFor(() => {
+      expect(recordCommand).toHaveBeenCalledWith(expectedCommand);
+    });
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it('formats the active source selection from the floating selection toolbar', async () => {

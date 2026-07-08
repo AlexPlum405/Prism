@@ -77,7 +77,7 @@ C:\Users\alex\Documents\PrismWindowsSmoke\GraphSmoke
 
 ## 快捷键问题
 
-在 `keyboard-smoke.md` 中验证：
+原 Windows 真机基线在 `keyboard-smoke.md` 中验证：
 
 - `Ctrl+B` / `Ctrl+I`：选中文本后快捷键未写入 Markdown 加粗 / 斜体标记；文件内容仍为 `keyboard smoke`。
 - `Ctrl+O`：未出现系统打开文件对话框。
@@ -89,6 +89,24 @@ C:\Users\alex\Documents\PrismWindowsSmoke\GraphSmoke
 - `Ctrl+F`
 - `Ctrl+H`
 - `F8`：状态区出现 `专注模式 (F8)`。
+
+当前开发分支修复：
+
+- 在 CodeMirror 编辑器最高优先级 keymap 中桥接 `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 到 Prism 命令系统，避免编辑器聚焦时组合键被 CodeMirror 或 WebView 默认行为吞掉。
+- 自动回归命令：
+
+```text
+npm test -- --run src/domains/editor/components/EditorPane.integration.test.tsx src/app/useAppShortcuts.test.tsx src/domains/commands/platform.test.ts src/domains/commands/registry.test.ts
+```
+
+结果：
+
+```text
+Test Files  4 passed (4)
+Tests       94 passed (94)
+```
+
+结论：代码层已修复并覆盖这 5 个快捷键从挂载的 CodeMirror 编辑器到 Prism 命令处理的路径。该项仍需重新打包安装后，在 Windows 真机中复测并归档结果。
 
 ## F9 打字机模式
 

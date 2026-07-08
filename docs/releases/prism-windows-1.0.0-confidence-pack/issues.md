@@ -8,7 +8,7 @@
 
 ```text
 Test Files  170 passed | 4 skipped (174)
-Tests       1061 passed | 6 skipped (1067)
+Tests       1066 passed | 6 skipped (1072)
 ```
 
 处理记录：当前失败收敛到 `exportPipeline.test.ts` 的超限 PNG 分片用例。该路径会真实拼接接近 16000px 的 PNG，默认 5s 用例超时预算过低；已只为 3 个分片集成用例设置 15s 预算，保留分片坐标和 PNG 尺寸断言。`WIN-TEST-001` 已从 Fail 调整为 Pass。
@@ -31,11 +31,11 @@ Tests       1061 passed | 6 skipped (1067)
 - 没有可验证的 Windows `latest.json`
 - 应用内检查更新能给出“暂不可用”最终态，但不能替代真实 updater 产物验证
 
-## 4. 部分快捷键在 Windows 真机未生效
+## 4. 已修复待复测：部分快捷键在 Windows 真机未生效
 
 验证文件：`C:\Users\alex\Documents\PrismWindowsSmoke\Examples\keyboard-smoke.md`
 
-结果：
+原 Windows 真机基线结果：
 
 | 快捷键 | 预期 | 实际 |
 |---|---|---|
@@ -50,6 +50,13 @@ Tests       1061 passed | 6 skipped (1067)
 - `Ctrl+F` 可打开查找栏。
 - `Ctrl+H` 可展开替换栏。
 - `F8` 可触发专注模式状态。
+
+当前开发分支处理记录：
+
+- 原因定位：编辑器聚焦时，部分组合键会先经过 CodeMirror keymap；`Ctrl+I` 可被 CodeMirror 默认命令消耗，导致 app 级快捷键 hook 收不到。
+- 修复：在 CodeMirror 最高优先级 keymap 中桥接 `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 到 Prism `command.run`。
+- 自动回归：`npm test -- --run src/domains/editor/components/EditorPane.integration.test.tsx src/app/useAppShortcuts.test.tsx src/domains/commands/platform.test.ts src/domains/commands/registry.test.ts` 通过，`Test Files 4 passed`，`Tests 94 passed`。
+- 剩余动作：需要重新打包安装后，在 Windows 真机里复测这 5 个快捷键，才能把 `WIN-WRITE-004` 记为 Pass。
 
 ## 5. 仍未补齐 / 需要人工确认的验证项
 

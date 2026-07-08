@@ -9,7 +9,7 @@
 概要：
 
 - Test Files：`170 passed | 4 skipped`。
-- Tests：`1061 passed | 6 skipped`。
+- Tests：`1066 passed | 6 skipped`。
 
 消减记录：
 

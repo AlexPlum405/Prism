@@ -52,6 +52,19 @@ import { emitAppEvent } from '../../../platform/events/appEvents';
 
 type EditorTranslate = (key: I18nKey, params?: I18nParams) => string;
 
+const EDITOR_APP_COMMAND_KEYMAP = [
+  { key: 'Mod-b', action: 'bold' },
+  { key: 'Mod-i', action: 'italic' },
+  { key: 'Mod-o', action: 'open' },
+  { key: 'Mod-n', action: 'new' },
+  { key: 'F11', action: 'fullscreen' },
+];
+
+function runAppCommandFromEditor(action: string) {
+  emitAppEvent('command.run', { action });
+  return true;
+}
+
 interface UseEditorRuntimeModelInput {
   clipboardController: ReturnType<typeof createEditorClipboardController>;
   content: string;
@@ -193,6 +206,10 @@ export function useEditorRuntimeModel({
             key: 'Escape',
             run: (view) => runMarkdownTableNavigation(view, 'escape'),
           },
+          ...EDITOR_APP_COMMAND_KEYMAP.map(({ key, action }) => ({
+            key,
+            run: () => runAppCommandFromEditor(action),
+          })),
           {
             key: 'Mod-f',
             run: () => {

@@ -20,7 +20,7 @@
 
 - MSI 静默安装在当前用户权限下会失败，错误是 per-machine 权限不足。
 - updater 私钥缺失，所以 updater `.sig` 和 Windows `latest.json` 不能闭环。
-- Windows 真机发现部分快捷键未生效：`Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11`。
+- Windows 真机基线发现部分快捷键未生效：`Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11`；当前开发分支已做代码修复并补自动回归，仍需重打包安装后真机复测。
 - 删除到回收站需要用户动作前确认，F9 打字机模式需要人工视觉补验，125% / 150% 高 DPI 需要改系统缩放后补验。
 - 额外 Rust workspace index job 定向测试有 1 项失败，见 `issues.md`。
 - 条件项 `Ctrl` + 鼠标滚轮字号不属于当前 `e03f199e` 基线，按计划 Not Run。
@@ -60,7 +60,7 @@
 | 路径复制 / 资源管理器定位 | Pass |
 | 预览 | Pass |
 | 搜索 / 替换 | Pass |
-| 快捷键格式化 / 打开 / 新建 / 全屏 | Fail |
+| 快捷键格式化 / 打开 / 新建 / 全屏 | Blocked: 代码修复已通过自动回归，待重打包真机复测 |
 | 主题 / 语言 | Pass |
 | 知识图谱入口 | Pass |
 | HTML 导出 | Pass |
@@ -79,8 +79,8 @@
 | 状态 | 数量 |
 |---|---:|
 | Pass | 37 |
-| Fail | 2 |
-| Blocked | 4 |
+| Fail | 1 |
+| Blocked | 5 |
 | Not Run | 1 |
 
 ## Release Status 摘要
@@ -95,8 +95,8 @@ SHA256:
   Prism_1.0.0_x64-setup.exe 53E46E5A1FC2182F2C8ABD84BDA27A514262150808B56501087504B2B8BA4C19
   Prism_1.0.0_x64_en-US.msi 82CBA51BA38A0988926D3CC1150EE45B7F376324AFF3272C7A9B1D68158C0556
 P0: Fail，MSI 当前权限下静默安装失败
-P1: Fail/Blocked，快捷键未生效；updater 私钥、高 DPI、删除回收站等需要补验
-Known blockers: TAURI_SIGNING_PRIVATE_KEY 缺失；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
+P1: Blocked，快捷键修复待重打包真机复测；updater 私钥、高 DPI、删除回收站等需要补验
+Known blockers: TAURI_SIGNING_PRIVATE_KEY 缺失；快捷键重打包真机复测；UI 删除需确认；高 DPI 需改系统缩放；F9 需人工视觉补验
 Release note changes required: 不得把 Windows 1.0.0 写成 Released / Stable
 ```
 
