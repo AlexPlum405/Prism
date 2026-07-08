@@ -1,6 +1,6 @@
 # Prism Windows 1.0.0 发布信心包
 
-> 日期：2026-07-08
+> 日期：2026-07-09
 > 基线：`tag=v1.0.0`, `target=e03f199e6f3bcd256bc9cc83c356302e69239d31`
 > 当前结论：Conditional Go
 
@@ -17,11 +17,12 @@
 - 图片粘贴 / 拖拽有定向自动化覆盖。
 - `Ctrl+B`、`Ctrl+I`、`Ctrl+O`、`Ctrl+N`、`F11` 已在修复分支重打包安装版中完成 Windows 真机复测。
 - `F9` 打字机模式已在 Windows 真机中通过菜单触发和勾选状态完成补验。
+- updater 已轮换到新的正式 key，Windows NSIS / MSI `.sig` 和 `windows-x86_64 latest.json` 均已生成并通过校验。
 - 应用内 `检查更新...` 不会一直 loading，会给出“暂不可用”最终态。
 
 但还不能把 Windows 1.0.0 记成稳定发布，原因也很明确：
 
-- updater 工具链已用 validation key 跑通，能生成 Windows `.sig` 和 `latest.json`；但正式发布仍缺少当前内嵌 public key 对应的 updater 私钥。
+- 旧 `v1.0.0` 安装版仍内嵌旧 updater public key；本轮 key rotation 后，旧安装版不能自动接受新 key 签名的更新，需要用户手动安装一次新版本。
 - 删除到回收站需要用户动作前确认，125% / 150% 高 DPI 需要改系统缩放后补验。
 - 额外 Rust workspace index job 查询风险已消减，定向测试通过。
 - 条件项 `Ctrl` + 鼠标滚轮字号不属于当前 `e03f199e` 基线，按计划 Not Run。
@@ -68,7 +69,7 @@
 | HTML 导出 | Pass |
 | PDF / PNG / DOCX 导出 smoke | Pass |
 | 导出预检 / 坏链接 / 缺图诊断 | Pass |
-| updater 签名产物 | Blocked |
+| updater 签名产物 | Pass with key rotation |
 | 检查更新 UI | Pass |
 | 性能大工作区 | Pass |
 | 长文预览 / 导出反馈 | Pass |
@@ -80,9 +81,9 @@
 
 | 状态 | 数量 |
 |---|---:|
-| Pass | 40 |
+| Pass | 41 |
 | Fail | 0 |
-| Blocked | 3 |
+| Blocked | 2 |
 | Not Run | 1 |
 
 ## Release Status 摘要
@@ -93,13 +94,13 @@ Commit: e03f199e6f3bcd256bc9cc83c356302e69239d31
 Windows version: Microsoft Windows 11 专业版 10.0.26200, x64
 Installer: NSIS + MSI
 SHA256:
-  app.exe 17D9233D5A08E10BC63D88A7296A478AB19A888399D836D963B6563E283033DB
+  app.exe BF21B29C1AD0BD2D1B36ABCF98AA978E47B1D2C315174B664E283BEC1CBA6540
   installed app.exe A4D5220F5AC8026FD4B65BA0CD11D19360B54180BCD39F93B105E418021062E0
-  Prism_1.0.0_x64-setup.exe F3A1000B2EBFD3F6DF8BB6B53941CBE1B2C7210CB28228549427698EBB806FA9
-  Prism_1.0.0_x64_en-US.msi 7921064DE709DAB6167D319C45C1A79457823DDF4F8BC0A7BEA709D85F49F31D
+  Prism_1.0.0_x64-setup.exe D76BA7F01D50436EB4FA1B7A2D1E1D81CE4605CC1D12C06F4308E53524016E20
+  Prism_1.0.0_x64_en-US.msi D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6
 P0: Pass，MSI 管理员权限静默安装通过；非管理员 /qn 静默安装受 per-machine 权限限制
-P1: Blocked，正式 updater 私钥、高 DPI、删除回收站需要补验
-Known blockers: 当前内嵌 public key 对应的 TAURI_SIGNING_PRIVATE_KEY 缺失；UI 删除需确认；高 DPI 需改系统缩放
+P1: Blocked，高 DPI、删除回收站需要补验
+Known blockers: UI 删除需确认；高 DPI 需改系统缩放；旧 updater public key 安装版需手动升级到新 key 版本
 Release note changes required: 不得把 Windows 1.0.0 写成 Released / Stable
 ```
 

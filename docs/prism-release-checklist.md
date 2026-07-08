@@ -52,7 +52,9 @@ hdiutil verify src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg
 - `src-tauri/tauri.conf.json` 必须开启 `bundle.createUpdaterArtifacts`，发布构建后检查 `.app.tar.gz` / `.sig`、Windows 安装器 `.sig` 等 updater 产物存在。
 - macOS `latest.json` 使用 `npm run release:manifest` 从 `Prism.app.tar.gz.sig` 生成，使用 `npm run release:manifest:check` 校验，不手工复制 signature。
 - manifest 脚本必须保留测试覆盖：生成结果要包含当前版本、GitHub Release URL、`.sig` 内容；当 `.sig` 变更后，`--check` 必须失败。
-- updater 签名私钥只保存在本地或 CI secret；本机文件路径可以是 `~/.tauri/prism-updater.key`，但发布构建时 `TAURI_SIGNING_PRIVATE_KEY` 必须注入私钥文件内容，不要只填路径。当前本机 key 无密码时，非交互构建也要显式设置 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""`。
+- updater 签名私钥只保存在本地或 CI secret；本机文件路径是 `~/.tauri/prism-updater.key`，但发布构建时 `TAURI_SIGNING_PRIVATE_KEY` 必须注入私钥文件内容，不要只填路径。当前本机 key 无密码时，非交互构建也要显式设置 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""`。
+- 2026-07-09 已执行 updater key rotation，新 public key id 为 `4D7CCC88FB14D827`，public key 写入 `src-tauri/tauri.conf.json`。私钥不得提交到仓库；仓库 `.gitignore` 已忽略 `*.key` / `*.pem` / `*.p12` / `*.pfx`。
+- key rotation 后，旧 public key 安装版不能自动接受新 key 签名更新；release note 必须明确旧安装版用户需要手动安装一次新版本。
 - macOS Stable 的签名、公证和 updater 资产流程见 `docs/prism-macos-release.md`；未完成签名/公证时不能把产物标为 Stable。
 - 文件系统权限边界见 `docs/prism-filesystem-permissions.md`；发布前确认 `src-tauri/capabilities/` 中没有静态 `**` 全盘 scope。
 - `latest.json` 至少包含 `version`、`notes`、`pub_date`、`platforms`，平台条目必须包含对应资产 `url` 和 `signature`。

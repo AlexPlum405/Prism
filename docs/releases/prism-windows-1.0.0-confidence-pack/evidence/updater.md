@@ -16,9 +16,81 @@
 
 ## 现阶段结论
 
-updater 正式发布产物仍是明确阻塞项，不是“看起来差不多”的状态。
+updater 工具链已经闭环到新的正式 key。
 
-本轮已经用 validation key 验证 Windows updater 工具链可用；正式发布仍需要当前 `src-tauri/tauri.conf.json` 内嵌 public key 对应的私钥，或者明确做 updater key rotation。
+本轮先用 validation key 验证 Windows updater 工具链可用，随后按维护者决策执行 updater key rotation：
+
+- 生成新正式 key：`C:\Users\alex\.tauri\prism-updater.key` 和 `.pub`。
+- 私钥只保存在本机，不进入仓库；仓库通过 `.gitignore` 忽略 `*.key` / `*.pem` / `*.p12` / `*.pfx`。
+- `src-tauri/tauri.conf.json` 已更新为新正式 public key。
+- 使用新正式 key 执行 `npm run tauri:build -- --bundles nsis,msi` 通过。
+- NSIS / MSI updater `.sig` 已生成，`windows-x86_64 latest.json` 已生成并通过 `release:manifest:check`。
+
+兼容性限制：旧 `v1.0.0` 安装版内嵌旧 public key，无法自动接受新 key 签名的更新。用户需要手动安装一次内嵌新 public key 的版本；之后 updater 才能继续使用新 key。
+
+## 正式 key rotation 验证
+
+新 public key 文件：
+
+- 本机：`C:\Users\alex\.tauri\prism-updater.key.pub`
+- 仓库证据：`artifacts/updater/official-public-key.pub`
+- public key id：`4D7CCC88FB14D827`
+
+私钥文件：
+
+- 本机：`C:\Users\alex\.tauri\prism-updater.key`
+- 仓库：不保存私钥内容。
+
+构建命令：
+
+```powershell
+$key = Join-Path $HOME '.tauri\prism-updater.key'
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw -LiteralPath $key
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ''
+$env:CI = 'true'
+npm run tauri:build -- --bundles nsis,msi
+```
+
+构建结果：
+
+```text
+Finished 2 updater signatures at:
+  src-tauri/target/release/bundle/nsis/Prism_1.0.0_x64-setup.exe.sig
+  src-tauri/target/release/bundle/msi/Prism_1.0.0_x64_en-US.msi.sig
+```
+
+Windows manifest：
+
+```powershell
+npm run release:manifest -- --platform windows-x86_64 --asset Prism_1.0.0_x64-setup.exe --bundle-dir src-tauri/target/release/bundle/nsis --output src-tauri/target/release/bundle/nsis/latest.json --notes "Prism 1.0.0 Windows updater official key rotation"
+npm run release:manifest:check -- --platform windows-x86_64 --asset Prism_1.0.0_x64-setup.exe --bundle-dir src-tauri/target/release/bundle/nsis --output src-tauri/target/release/bundle/nsis/latest.json
+```
+
+结果：
+
+```text
+Wrote C:\AI\Dev\Prism\src-tauri\target\release\bundle\nsis\latest.json
+OK: C:\AI\Dev\Prism\src-tauri\target\release\bundle\nsis\latest.json
+```
+
+证据产物：
+
+- `artifacts/updater/official-public-key.pub`
+- `artifacts/updater/official-nsis-setup.exe.sig`
+- `artifacts/updater/official-msi.msi.sig`
+- `artifacts/updater/official-windows-latest.json`
+
+SHA256：
+
+```text
+NSIS setup.exe  D76BA7F01D50436EB4FA1B7A2D1E1D81CE4605CC1D12C06F4308E53524016E20
+MSI             D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6
+NSIS .sig       EE8070FD9A3F6A4EAA0F097298F0FCC4DEB92B18DDA1F76B4D7D864192A662D0
+MSI .sig        C093F99D46F36A52B2C8E1B9EEB59F5EFB787507C3BD6276F452888DDBC39BBB
+latest.json     7D0D7BD43FAA7178AFB0994F582E528ED765B5000843358FAFAF7DECAF076FE4
+```
+
+结论：`WIN-UPDATER-001` 从 Blocked 调整为 Pass with key rotation。发布说明必须明确旧 public key 安装版不能自动升级到新 key 版本，需要手动安装一次。
 
 ## Validation key 工具链验证
 
@@ -85,7 +157,7 @@ MSI .sig        8EE18536245107877AC92E239FF267C93EBB8A72A458C1A364F934D321C40D4E
 latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 ```
 
-结论：技术链路已跑通；正式发布闭环仍取决于当前内嵌 public key 对应的私钥。GitHub `v1.0.0` macOS release 目前只有 DMG，没有 `latest.json` / `.sig`。如果找不回旧私钥，需要显式决定是否旋转 updater key，并接受旧安装版不能自动更新到新 key 签名版本的后果。
+结论：validation key 技术链路已跑通。正式发布现已改走新 key rotation，见上方“正式 key rotation 验证”。
 
 ## 正式私钥查找
 
@@ -97,7 +169,7 @@ latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 - `git log --all -S"DDA9E1E9A224F4B0"` 和 `git log --all -S"trusted comment: tauri secret"` 没有命中。
 - 用户目录按文件名搜索 `prism-updater.key`、`*updater*.key`、`*updater*.key.pub` 只命中 validation key。
 
-结论：当前机器和仓库可见配置中没有正式 updater 私钥。`WIN-UPDATER-001` 继续保持 Blocked，下一步只能由维护者提供旧私钥，或明确做 updater key rotation。
+结论：当前机器和仓库可见配置中没有旧 public key 对应的正式 updater 私钥。2026-07-09 已明确做 updater key rotation，因此 `WIN-UPDATER-001` 不再因缺旧私钥阻塞；剩余风险是旧安装版需要手动升级到新 key 版本。
 
 ## 应用内检查更新
 
@@ -113,4 +185,4 @@ latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 - 窗口底部出现提示：`检查更新暂不可用：当前发布通道暂未提供可用的更新清...`
 - 截图：`screenshots/14-update-unavailable.png`，Prism 窗口级截图，尺寸 1102x792。
 
-结论：应用内检查更新 UI 有最终态，但 updater 签名和 Windows release manifest 仍未闭环。
+结论：应用内检查更新 UI 有最终态；updater 签名和 Windows release manifest 已通过新 key rotation 闭环。

@@ -4,6 +4,10 @@ dist/
 src-tauri/target/
 src-tauri/gen/
 *.log
+*.key
+*.pem
+*.p12
+*.pfx
 .DS_Store
 Thumbs.db
 .claude/

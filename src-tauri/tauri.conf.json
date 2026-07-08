@@ -37,7 +37,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEREQTlFMUU5QTIyNEY0QjAKUldTdzlDU2k2ZUdwM1F1S3dKenoyL3dUbmZsZTlIVjFkZXBNQTFvRFNhdWtWRXdUSFJMMkZ5Y0MK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDREN0NDQzg4RkIxNEQ4MjcKUldRbjJCVDdpTXg4VFIzeUVYTFhZa1V4WXR2anFwNVZCNVVxNGQ0Z05BNWU1Nkd4TituUS9ZQlAK",
       "endpoints": [
         "https://github.com/AlexPlum405/Prism/releases/latest/download/latest.json"
       ]

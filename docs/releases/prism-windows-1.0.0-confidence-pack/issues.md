@@ -37,7 +37,7 @@ MainEngineThread is returning 0
 
 结论：`WIN-INSTALL-002` 从 Fail 调整为 Pass。MSI 产物在正确提权前提下可静默安装通过；非管理员 `/qn` 不弹 UAC，因此仍会被 per-machine 权限限制拦截。
 
-## 3. 部分消减：updater 工具链跑通，正式私钥仍缺失
+## 3. 已消减：updater 工具链跑通，并完成正式 key rotation
 
 `npm run tauri:build -- --verbose` 已经生成 MSI / NSIS，但在 updater 签名阶段失败，原因是本机没有 `TAURI_SIGNING_PRIVATE_KEY`。
 
@@ -73,9 +73,36 @@ MSI .sig        8EE18536245107877AC92E239FF267C93EBB8A72A458C1A364F934D321C40D4E
 latest.json     58C21E5FFE0B48BD45BFF48FCAE99709CE4B073510352D375F1BB9EB1F8EB6F9
 ```
 
-结论：updater 签名工具链本身已验证可用；`WIN-UPDATER-001` 仍保持 Blocked，因为正式发布必须使用 `src-tauri/tauri.conf.json` 当前内嵌 public key 对应的私钥。若该私钥已丢失，需要做 updater key rotation 决策，并明确现有 `v1.0.0` macOS 安装版无法通过旧 public key 接受新 key 签名的自动更新。
+结论：updater 签名工具链本身已验证可用。旧 public key 对应的正式私钥仍未找回，因此已执行 updater key rotation，并明确现有 `v1.0.0` 安装版无法通过旧 public key 接受新 key 签名的自动更新，需要用户手动安装一次新 key 版本。
 
-正式私钥查找结果：本机 `C:\Users\alex\.tauri` 只有 validation key；当前 shell 没有 updater signing env；GitHub Actions secrets 未列出 signing secret；Git 历史 `-S` 搜索未发现当前 public key 或 tauri secret key 线索；用户目录文件名搜索也只命中 validation key。因此该项继续属于外部状态阻塞。
+正式私钥查找结果：本机 `C:\Users\alex\.tauri` 原本只有 validation key；当前 shell 没有 updater signing env；GitHub Actions secrets 未列出 signing secret；Git 历史 `-S` 搜索未发现旧 public key 或 tauri secret key 线索；用户目录文件名搜索也只命中 validation key。
+
+key rotation 结果：
+
+- 新正式私钥：`C:\Users\alex\.tauri\prism-updater.key`，不进入仓库。
+- 新正式 public key 已写入 `src-tauri/tauri.conf.json`，仓库证据为 `artifacts/updater/official-public-key.pub`。
+- `npm run tauri:build -- --bundles nsis,msi` 在注入新正式私钥后返回 `0`。
+- 生成 `Prism_1.0.0_x64-setup.exe.sig` 和 `Prism_1.0.0_x64_en-US.msi.sig`。
+- 使用 `windows-x86_64` 平台 key 生成 `latest.json`，并通过 `release:manifest:check`。
+
+正式 key rotation 产物：
+
+- `artifacts/updater/official-public-key.pub`
+- `artifacts/updater/official-nsis-setup.exe.sig`
+- `artifacts/updater/official-msi.msi.sig`
+- `artifacts/updater/official-windows-latest.json`
+
+正式 key rotation 构建 SHA256：
+
+```text
+NSIS setup.exe  D76BA7F01D50436EB4FA1B7A2D1E1D81CE4605CC1D12C06F4308E53524016E20
+MSI             D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6
+NSIS .sig       EE8070FD9A3F6A4EAA0F097298F0FCC4DEB92B18DDA1F76B4D7D864192A662D0
+MSI .sig        C093F99D46F36A52B2C8E1B9EEB59F5EFB787507C3BD6276F452888DDBC39BBB
+latest.json     7D0D7BD43FAA7178AFB0994F582E528ED765B5000843358FAFAF7DECAF076FE4
+```
+
+结论：`WIN-UPDATER-001` 从 Blocked 调整为 Pass with key rotation。
 
 ## 4. 已修复并复测通过：部分快捷键在 Windows 真机未生效
 

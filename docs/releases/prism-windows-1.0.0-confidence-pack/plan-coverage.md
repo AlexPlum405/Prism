@@ -8,8 +8,8 @@
 
 尚不能记为 Windows Stable 的项目：
 
-- updater 工具链已用 validation key 跑通；正式发布仍缺当前内嵌 public key 对应的私钥。
 - 文件树删除到回收站、高 DPI 125% / 150% 仍需人工或稳定入口补验。
+- updater 已通过新正式 key rotation 生成 Windows `.sig` 和 `latest.json`；旧 public key 安装版不能自动升级到新 key 版本，需要手动安装一次。
 - MSI 非管理员 `/qn` 静默安装仍会因 per-machine 权限限制失败；管理员静默安装已经通过。
 - 额外 Rust workspace index job 查询风险已消减，见 `issues.md`。
 
@@ -24,7 +24,7 @@
 | PowerShell / Build Tools / WebView2 | `evidence/environment.md` | Pass |
 | `npm test -- --run` | `evidence/build-and-test.md`、`issues.md` | Pass |
 | `npm run build` | `evidence/build-and-test.md` | Pass |
-| `npm run tauri:build` | `evidence/build-and-test.md`、`evidence/installer-artifacts.md`、`evidence/updater.md` | Blocked at updater signing |
+| `npm run tauri:build` | `evidence/build-and-test.md`、`evidence/installer-artifacts.md`、`evidence/updater.md` | Pass with updater key rotation |
 | `git diff --check` | `evidence/build-and-test.md` | Pass |
 | 安装器类型、文件名、大小、SHA256 | `evidence/installer-artifacts.md` | Pass |
 | 文件版本、产品名、签名状态 | `evidence/installer-artifacts.md`、`evidence/install-smoke.md` | Pass |
@@ -67,7 +67,7 @@
 | WIN-EXPORT-006 中文 / 空格导出路径 | `evidence/export.md`、`evidence/path-actions.md` | Pass |
 | WIN-UPD-001 检查更新不一直 loading | `evidence/updater.md`、`screenshots/14-update-unavailable.png` | Pass |
 | WIN-UPD-002 无 Windows manifest 时合理最终态 | `evidence/updater.md` | Pass |
-| WIN-UPD-003 updater asset / `.sig` | `evidence/updater.md`、`issues.md`、`artifacts/updater/` | Toolchain Pass with validation key; official key Blocked |
+| WIN-UPD-003 updater asset / `.sig` | `evidence/updater.md`、`issues.md`、`artifacts/updater/` | Pass with official key rotation |
 | WIN-PERF-001 大工作区可交互 | `evidence/performance.md` | Pass |
 | WIN-PERF-002 选择 / 滚动 / 编辑 | `evidence/performance.md` | Pass |
 | WIN-PERF-003 索引取消 / 降级 | `evidence/performance.md`、`manifest.json` | Pass |

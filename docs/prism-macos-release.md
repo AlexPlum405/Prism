@@ -29,6 +29,10 @@ Prism updater 使用 Tauri updater 自己的 Ed25519 签名密钥，和 Apple �
 ~/.tauri/prism-updater.key.pub
 ```
 
+2026-07-09 已执行 updater key rotation，新 public key id 为 `4D7CCC88FB14D827`。`src-tauri/tauri.conf.json` 保存 public key；private key 只保存在本机或 CI secret，不进入仓库。
+
+兼容性说明：旧 public key 安装版不能自动接受新 key 签名更新，需要用户手动安装一次内嵌新 public key 的版本。
+
 发布构建前必须设置：
 
 ```bash

@@ -61,7 +61,7 @@ WiX warning：
 - `ICE57`：per-user / per-machine component
 - `ICE61`：upgrade max version
 
-MSI/NSIS 产物已经能出来，当前阻塞点是 updater 私钥。
+MSI/NSIS 产物已经能出来；该轮原始阻塞点是 updater 私钥，后续已通过 key rotation 消减，见下方记录和 `evidence/updater.md`。
 
 本轮快捷键修复后重打包记录：
 
@@ -71,6 +71,16 @@ MSI/NSIS 产物已经能出来，当前阻塞点是 updater 私钥。
 - `src-tauri\target\release\app.exe`：Size `31,839,232`，SHA256 `17D9233D5A08E10BC63D88A7296A478AB19A888399D836D963B6563E283033DB`。
 - `src-tauri\target\release\bundle\nsis\Prism_1.0.0_x64-setup.exe`：Size `21,341,955`，SHA256 `F3A1000B2EBFD3F6DF8BB6B53941CBE1B2C7210CB28228549427698EBB806FA9`。
 - `src-tauri\target\release\bundle\msi\Prism_1.0.0_x64_en-US.msi`：Size `23,453,696`，SHA256 `7921064DE709DAB6167D319C45C1A79457823DDF4F8BC0A7BEA709D85F49F31D`。
+
+本轮 updater key rotation 后重打包记录：
+
+- 命令：设置 `TAURI_SIGNING_PRIVATE_KEY` 为 `C:\Users\alex\.tauri\prism-updater.key` 文件内容，`TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""`，执行 `npm run tauri:build -- --bundles nsis,msi`。
+- 结果：前端 build、Rust release build、NSIS、MSI、NSIS updater `.sig`、MSI updater `.sig` 全部生成成功。
+- `src-tauri\target\release\app.exe`：Size `31,839,232`，SHA256 `BF21B29C1AD0BD2D1B36ABCF98AA978E47B1D2C315174B664E283BEC1CBA6540`。
+- `src-tauri\target\release\bundle\nsis\Prism_1.0.0_x64-setup.exe`：Size `21,342,380`，SHA256 `D76BA7F01D50436EB4FA1B7A2D1E1D81CE4605CC1D12C06F4308E53524016E20`。
+- `src-tauri\target\release\bundle\msi\Prism_1.0.0_x64_en-US.msi`：Size `23,453,696`，SHA256 `D1B23C336F716FB9D220E52841D98D9A7E9A0AF484048AEDFB5E074A5EB5E5F6`。
+- `src-tauri\target\release\bundle\nsis\Prism_1.0.0_x64-setup.exe.sig`：Size `416`，SHA256 `EE8070FD9A3F6A4EAA0F097298F0FCC4DEB92B18DDA1F76B4D7D864192A662D0`。
+- `src-tauri\target\release\bundle\msi\Prism_1.0.0_x64_en-US.msi.sig`：Size `416`，SHA256 `C093F99D46F36A52B2C8E1B9EEB59F5EFB787507C3BD6276F452888DDBC39BBB`。
 
 ## 5. 导出 smoke 测试
 
