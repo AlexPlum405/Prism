@@ -68,6 +68,7 @@ const EDITOR_FONT_SIZE_MAX = 32;
 const PREVIEW_FONT_SIZE_MIN = 10;
 const PREVIEW_FONT_SIZE_MAX = 36;
 const FONT_ZOOM_WHEEL_STEP_DELTA = 80;
+const FONT_ZOOM_PERSIST_DEBOUNCE_MS = 220;
 const WHEEL_DELTA_LINE = 1;
 const WHEEL_DELTA_PAGE = 2;
 
@@ -502,6 +503,10 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     const pendingSourceJumpFrameRef = useRef<number | null>(null);
     const pendingSourceJumpAttemptsRef = useRef(0);
     const fontZoomWheelDeltaRef = useRef(0);
+    const fontZoomPendingStepsRef = useRef(0);
+    const fontZoomApplyFrameRef = useRef<number | null>(null);
+    const fontZoomPersistTimerRef = useRef<number | null>(null);
+    const fontZoomPersistPendingRef = useRef(false);
     const [editorActivated, setEditorActivated] = useState(viewMode !== 'preview');
     // 同步方向锁：防止反馈循环
     const syncingRef = useRef<'editor' | 'preview' | null>(null);
@@ -921,6 +926,31 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       return getPreviewSelectedText();
     }, [getPreviewSelectedText]);
 
+    const flushFontZoomPersistence = useCallback(() => {
+      if (fontZoomPersistTimerRef.current !== null) {
+        window.clearTimeout(fontZoomPersistTimerRef.current);
+        fontZoomPersistTimerRef.current = null;
+      }
+      if (!fontZoomPersistPendingRef.current) return;
+
+      fontZoomPersistPendingRef.current = false;
+      void useSettingsStore.getState().saveSettings();
+    }, []);
+
+    const scheduleFontZoomPersistence = useCallback(() => {
+      fontZoomPersistPendingRef.current = true;
+      if (fontZoomPersistTimerRef.current !== null) {
+        window.clearTimeout(fontZoomPersistTimerRef.current);
+      }
+
+      fontZoomPersistTimerRef.current = window.setTimeout(() => {
+        fontZoomPersistTimerRef.current = null;
+        if (!fontZoomPersistPendingRef.current) return;
+        fontZoomPersistPendingRef.current = false;
+        void useSettingsStore.getState().saveSettings();
+      }, FONT_ZOOM_PERSIST_DEBOUNCE_MS);
+    }, []);
+
     const applyFontZoomSteps = useCallback((steps: number) => {
       if (steps === 0) return;
 
@@ -940,13 +970,49 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         PREVIEW_FONT_SIZE_MAX,
       );
 
+      const update: { fontSize?: number; previewFontSize?: number } = {};
       if (nextEditorFontSize !== settings.fontSize) {
-        settings.setFontSize(nextEditorFontSize);
+        update.fontSize = nextEditorFontSize;
       }
       if (nextPreviewFontSize !== settings.previewFontSize) {
-        settings.setPreviewFontSize(nextPreviewFontSize);
+        update.previewFontSize = nextPreviewFontSize;
       }
+      if (Object.keys(update).length === 0) return;
+
+      useSettingsStore.setState(update);
+      scheduleFontZoomPersistence();
+    }, [scheduleFontZoomPersistence]);
+
+    const cancelFontZoomApplyFrame = useCallback(() => {
+      if (fontZoomApplyFrameRef.current === null) return;
+      cancelAnimationFrame(fontZoomApplyFrameRef.current);
+      fontZoomApplyFrameRef.current = null;
     }, []);
+
+    const flushPendingFontZoomSteps = useCallback(() => {
+      cancelFontZoomApplyFrame();
+      const steps = fontZoomPendingStepsRef.current;
+      fontZoomPendingStepsRef.current = 0;
+      applyFontZoomSteps(steps);
+    }, [applyFontZoomSteps, cancelFontZoomApplyFrame]);
+
+    const scheduleFontZoomSteps = useCallback((steps: number) => {
+      if (steps === 0) return;
+      fontZoomPendingStepsRef.current += steps;
+      if (fontZoomApplyFrameRef.current !== null) return;
+
+      fontZoomApplyFrameRef.current = requestAnimationFrame(() => {
+        fontZoomApplyFrameRef.current = null;
+        flushPendingFontZoomSteps();
+      });
+    }, [flushPendingFontZoomSteps]);
+
+    useEffect(() => {
+      return () => {
+        flushPendingFontZoomSteps();
+        flushFontZoomPersistence();
+      };
+    }, [flushFontZoomPersistence, flushPendingFontZoomSteps]);
 
     useEffect(() => {
       const splitSurface = splitSurfaceRef.current;
@@ -966,14 +1032,14 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
 
         const consumed = consumeFontZoomWheelDelta(deltaY, fontZoomWheelDeltaRef.current);
         fontZoomWheelDeltaRef.current = consumed.remainder;
-        applyFontZoomSteps(consumed.steps);
+        scheduleFontZoomSteps(consumed.steps);
       };
 
       splitSurface.addEventListener('wheel', handleContentFontZoomWheel, { passive: false });
       return () => {
         splitSurface.removeEventListener('wheel', handleContentFontZoomWheel);
       };
-    }, [applyFontZoomSteps]);
+    }, [scheduleFontZoomSteps]);
 
     const activateSearch = useCallback((mode: SearchMode) => {
       if (mode === 'replace' && viewModeRef.current === 'preview') {

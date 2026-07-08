@@ -429,19 +429,13 @@ describe('SplitView editor lifecycle', () => {
     expect(onSelectionTextChange).toHaveBeenCalledWith('选中文本 selected text');
   });
 
-  it('zooms editor and preview font sizes with the platform font zoom wheel shortcut', () => {
-    const setFontSize = vi.fn((fontSize: number) => {
-      useSettingsStore.setState({ fontSize });
-    });
-    const setPreviewFontSize = vi.fn((previewFontSize: number) => {
-      useSettingsStore.setState({ previewFontSize });
-    });
+  it('zooms editor and preview font sizes with the platform font zoom wheel shortcut', async () => {
+    const saveSettings = vi.fn(async () => undefined);
     useSettingsStore.setState({
       contentTheme: 'miaoyan',
       fontSize: 16,
       previewFontSize: 16,
-      setFontSize,
-      setPreviewFontSize,
+      saveSettings,
     });
     const restorePlatform = mockNavigatorPlatform('MacIntel');
 
@@ -463,8 +457,67 @@ describe('SplitView editor lifecycle', () => {
       fireEvent(surface, event);
 
       expect(event.defaultPrevented).toBe(true);
-      expect(setFontSize).toHaveBeenCalledWith(17);
-      expect(setPreviewFontSize).toHaveBeenCalledWith(17);
+      await waitFor(() => {
+        expect(useSettingsStore.getState().fontSize).toBe(17);
+        expect(useSettingsStore.getState().previewFontSize).toBe(17);
+      });
+      expect(saveSettings).not.toHaveBeenCalled();
+    } finally {
+      restorePlatform();
+    }
+  });
+
+  it('coalesces rapid font zoom wheel updates and persists once after zooming stops', async () => {
+    vi.useFakeTimers();
+    const saveSettings = vi.fn(async () => undefined);
+    useSettingsStore.setState({
+      contentTheme: 'miaoyan',
+      fontSize: 16,
+      previewFontSize: 16,
+      saveSettings,
+    });
+    const restorePlatform = mockNavigatorPlatform('MacIntel');
+
+    try {
+      const { container } = render(
+        <SplitView
+          content="Preview block"
+          viewMode="split"
+          onChange={vi.fn()}
+          onCursorChange={vi.fn()}
+        />,
+      );
+      const surface = container.firstElementChild as HTMLElement;
+
+      for (let index = 0; index < 5; index += 1) {
+        fireEvent(surface, createEvent.wheel(surface, {
+          deltaY: -80,
+          metaKey: true,
+        }));
+      }
+
+      expect(saveSettings).not.toHaveBeenCalled();
+      expect(useSettingsStore.getState().fontSize).toBe(16);
+
+      act(() => {
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(useSettingsStore.getState().fontSize).toBe(21);
+      expect(useSettingsStore.getState().previewFontSize).toBe(21);
+      expect(saveSettings).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(219);
+      });
+      expect(saveSettings).not.toHaveBeenCalled();
+
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+        await Promise.resolve();
+      });
+
+      expect(saveSettings).toHaveBeenCalledTimes(1);
     } finally {
       restorePlatform();
     }
