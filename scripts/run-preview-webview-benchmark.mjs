@@ -13,8 +13,8 @@ const appPath = path.join(repoRoot, 'src-tauri/target/release/bundle/macos/Prism
 const benchRoot = path.join(repoRoot, '.codex-smoke/preview-webview-benchmark');
 const fixtureDir = path.join(benchRoot, 'fixtures');
 const evidenceDir = path.join(benchRoot, 'evidence');
-const reportJsonPath = path.join(repoRoot, 'docs/verification/prism-preview-webview-benchmark-2026-06-17.json');
-const reportMarkdownPath = path.join(repoRoot, 'docs/verification/prism-preview-webview-benchmark-2026-06-17.md');
+const reportJsonPath = path.join(repoRoot, 'docs/verification/prism-preview-webview-benchmark-2026-07-26.json');
+const reportMarkdownPath = path.join(repoRoot, 'docs/verification/prism-preview-webview-benchmark-2026-07-26.md');
 const reportOnly = process.argv.includes('--report-only');
 const configPath = path.join(os.homedir(), 'Library/Application Support/com.prism.editor.v1/config.json');
 const configBackupPath = path.join(benchRoot, 'config.before.json');
@@ -126,6 +126,28 @@ function buildBenchmarkSection(index) {
     index % 6 === 0 ? `![Local image](assets/preview-${index}.png)` : '',
     '',
     index % 7 === 0 ? `Block math: $$E_${index}=mc^2$$` : `Inline math $a_${index}^2 + b_${index}^2 = c_${index}^2$.`,
+    '',
+    // Raw HTML and task lists are the constructs the common-markdown fast path
+    // delegates per block. Real documents mix them in, so the fixture must too.
+    index % 4 === 0
+      ? [
+        '<details>',
+        `<summary>Folded section ${index} / 折叠章节 ${index}</summary>`,
+        '',
+        `Folded body ${index} with **bold** and \`code\`.`,
+        '',
+        '</details>',
+      ].join('\n')
+      : '',
+    '',
+    index % 3 === 0
+      ? [
+        `- [x] Task ${index} done / 已完成`,
+        `- [ ] Task ${index} pending / 待办`,
+      ].join('\n')
+      : '',
+    '',
+    index % 9 === 0 ? `Press <kbd>Cmd</kbd> + <kbd>K</kbd> for section ${index}.` : '',
     '',
   ].join('\n');
 }

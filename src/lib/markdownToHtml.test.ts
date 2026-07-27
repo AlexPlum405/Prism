@@ -522,7 +522,7 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).not.toContain('<tbody>');
   });
 
-  it('falls back to the full unified pipeline for large preview raw HTML', () => {
+  it('delegates only the raw HTML block and keeps the rest on the large-preview fast path', () => {
     const markdown = [
       buildCommonFastPathMarkdown(),
       '',
@@ -532,12 +532,208 @@ describe('markdownToHtml compatibility modes', () => {
       '折叠内容包含 **加粗**。',
       '',
       '</details>',
+      '',
+      '快速路径段落包含 **加粗**。',
     ].join('\n');
     const html = markdownToHtml(markdown, largePreviewRenderOptions);
 
     expect(html).toContain('<details>');
     expect(html).toContain('<summary>点击展开</summary>');
     expect(html).toContain('<strong>加粗</strong>');
+    // 快速路径专属产物证明其余内容没有退回完整管线。
+    expect(html).toContain('class="prism-simple-table prism-simple-table--cols-2"');
+    expect(html).toContain('<p data-line="');
+    expect(html).toContain('快速路径段落包含 <strong>加粗</strong>');
+  });
+
+  it('keeps a details block whole when a blank line separates its markdown body', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '<details>',
+      '<summary>折叠</summary>',
+      '',
+      '第一段。',
+      '',
+      '第二段。',
+      '',
+      '</details>',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html.match(/<details>/g)).toHaveLength(1);
+    expect(html.match(/<\/details>/g)).toHaveLength(1);
+    const detailsBlock = html.slice(html.indexOf('<details>'), html.indexOf('</details>'));
+    expect(detailsBlock).toContain('第一段。');
+    expect(detailsBlock).toContain('第二段。');
+  });
+
+  it('rebases delegated chunk source lines onto the whole document', () => {
+    const base = buildCommonFastPathMarkdown();
+    const markdown = [base, '', '<details>', '<summary>折叠</summary>', '', '折叠正文。', '', '</details>'].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+    // base 之后依次是空行、<details>、<summary>、空行，正文落在第 5 行。
+    const bodyLine = base.split('\n').length + 5;
+
+    // 委派块渲染时只看到自身，行号必须回写为全文行号。
+    expect(html).toContain(`<p data-source-line="${bodyLine}" data-line="${bodyLine}">折叠正文。</p>`);
+  });
+
+  it('renders task lists inside the large-preview fast path with continuous checkbox indices', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '- [ ] 待办一',
+      '- [x] 完成二 **加粗**',
+      '- 普通项',
+      '',
+      '<div>委派块</div>',
+      '',
+      '- [ ] 待办三',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).toContain('class="contains-task-list cb"');
+    expect(html).toContain('class="task-list-item strike"');
+    expect(html).toContain('data-task-checkbox-index="0"');
+    expect(html).toContain('data-task-checkbox-index="1"');
+    // 委派块之后的复选框需要接着编号，否则点击会改错行。
+    expect(html).toContain('data-task-checkbox-index="2"');
+    expect(html).toContain('<input type="checkbox" checked data-task-checkbox-index="1"');
+    expect(html).toContain('完成二 <strong>加粗</strong>');
+    expect(html).not.toContain('disabled');
+  });
+
+  it('renders emphasis, strikethrough and sub/sup inline syntax in the large-preview fast path', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '行内组合：*斜体*、_下划斜体_、~~删除~~、H~2~O、x^2^、**加粗**。',
+      '',
+      '不应变化：snake_case_word 与 2 * 3 * 4。',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).toContain('<em>斜体</em>');
+    expect(html).toContain('<em>下划斜体</em>');
+    expect(html).toContain('<del>删除</del>');
+    expect(html).toContain('H<sub>2</sub>O');
+    expect(html).toContain('x<sup>2</sup>');
+    expect(html).toContain('snake_case_word 与 2 * 3 * 4');
+  });
+
+  it('renders pandoc citations in the large-preview fast path', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '参见 [@smith2020, p. 3] 的论述。',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).toContain('class="prism-citation"');
+    expect(html).toContain('data-citekeys="smith2020"');
+    expect(html).toContain('[@smith2020, p. 3]');
+  });
+
+  it('escapes raw HTML comments through the unified pipeline instead of emitting them inline', () => {
+    const markdown = [buildCommonFastPathMarkdown(), '', '<!-- 隐藏说明 -->', '', '正文。'].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    // 注释交给完整管线处理，不能被当作普通段落转义输出。
+    expect(html).not.toContain('&lt;!-- 隐藏说明 --&gt;');
+    expect(html).toContain('正文。');
+  });
+
+  it('drops dangerous delegated HTML in the large-preview fast path', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '<script>window.stolen = 1;</script>',
+      '',
+      '<a href="javascript:alert(1)">点我</a>',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('javascript:alert(1)');
+  });
+
+  it('keeps raw HTML inside fenced code blocks on the fast path as literal text', () => {
+    const markdown = [
+      buildCommonFastPathMarkdown(),
+      '',
+      '```html',
+      '<details><summary>示例</summary></details>',
+      '```',
+    ].join('\n');
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).toContain('class="hljs language-html"');
+    expect(html).toContain('&lt;details&gt;&lt;summary&gt;示例&lt;/summary&gt;&lt;/details&gt;');
+  });
+
+  it('delegates blocks whose raw HTML appears after the first line', () => {
+    const base = buildCommonFastPathMarkdown();
+    const cases = [
+      ['段落文本。', '<div>紧随其后</div>'],
+      ['- 列表一', '- 列表二', '<div>紧随列表</div>'],
+      ['> 引用含 <kbd>Cmd</kbd>'],
+    ];
+
+    cases.forEach((block) => {
+      const html = markdownToHtml([base, '', ...block].join('\n'), largePreviewRenderOptions);
+      const expected = markdownToHtml(block.join('\n'), largePreviewRenderOptions);
+      // 委派块的产物必须与完整管线一致，不能把 HTML 当成文本转义。
+      expect(html).not.toContain('&lt;div&gt;');
+      expect(html).not.toContain('&lt;kbd&gt;');
+      expect(html).toContain(expected.split('\n').at(-1) ?? '');
+    });
+  });
+
+  it('keeps math, mermaid and source lines usable in documents that delegate blocks', () => {
+    const base = buildCommonFastPathMarkdown();
+    const baseLines = base.split('\n').length;
+    const html = markdownToHtml(
+      [
+        base,
+        '',
+        '<details><summary>折叠</summary>',
+        '',
+        '内部 $E=mc^2$ 公式。',
+        '',
+        '</details>',
+        '',
+        '块级公式：',
+        '',
+        '$$\\int_0^1 x dx$$',
+        '',
+        '```mermaid',
+        'graph TD; A-->B',
+        '```',
+      ].join('\n'),
+      largePreviewRenderOptions,
+    );
+
+    // 委派块内的行内公式与其后快速路径产物都要保留占位符与源码行，供滚动同步与源码定位使用。
+    expect(html).toContain('<details><summary>折叠</summary>');
+    expect(html).toContain(`data-katex="E%3Dmc%5E2"`);
+    expect(html).toContain(`<p data-source-line="${baseLines + 4}" data-line="${baseLines + 4}">`);
+    expect(html).toContain(`<p data-line="${baseLines + 8}">块级公式：</p>`);
+    expect(html).toContain(`data-katex-display="true"`);
+    expect(html).toContain(`data-mermaid="graph%20TD%3B%20A--%3EB"`);
+  });
+
+  it('emits the flat source map only when no chunk was delegated', () => {
+    const clean = markdownToHtml(buildCommonFastPathMarkdown(), largePreviewRenderOptions);
+    const delegated = markdownToHtml(
+      [buildCommonFastPathMarkdown(), '', '<div>委派</div>'].join('\n'),
+      largePreviewRenderOptions,
+    );
+
+    expect(clean).toContain('<!--prism-preview-source-map:flat:');
+    // 混合文档的元素顺序无法与扁平侧车对齐，必须退回属性映射。
+    expect(delegated).not.toContain('<!--prism-preview-source-map:flat:');
+    expect(delegated).toContain('data-line="');
   });
 
   it('keeps complex tables on the normal GFM path when lightweight table extraction is enabled', () => {

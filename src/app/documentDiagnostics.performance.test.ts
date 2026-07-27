@@ -18,7 +18,7 @@ const DOCUMENT_DIAGNOSTICS_BENCHMARK_FILE = process.env.PRISM_DIAGNOSTICS_BENCH_
 function buildDiagnosticsBenchmarkMarkdown() {
   const parts = ['# Prism 诊断性能基准\n\n'];
 
-  for (let index = 1; index <= 1200; index += 1) {
+  for (let index = 1; index <= 1600; index += 1) {
     parts.push(`## 第 ${index} 节\n\n`);
     parts.push(
       `这是Prism编辑器第${index}段,用于验证诊断扫描在长文中保持可控。` +

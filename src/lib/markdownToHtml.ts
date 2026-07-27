@@ -1024,6 +1024,16 @@ const LARGE_PRE_TABLE_ROW_THRESHOLD = 24;
 const LARGE_PRE_TABLE_PLACEHOLDER_BASE = 'PrismLargePreTablePlaceholder';
 const COMMON_MARKDOWN_PREVIEW_FAST_PATH_MIN_LENGTH = 300 * 1024;
 const COMMON_MARKDOWN_PREVIEW_SOURCE_MAP_MARKER = 'prism-preview-source-map:flat';
+// Raw HTML (including comments) cannot be rendered by hand without losing the
+// sanitising the unified pipeline performs, so any chunk containing it is
+// delegated back to that pipeline instead of disqualifying the whole document.
+const COMMON_FAST_PATH_HTML_PATTERN = /<\/?[A-Za-z][A-Za-z0-9:-]*(?:\s|>|\/>)|<!--/;
+const COMMON_FAST_PATH_TASK_ITEM_PATTERN = /^\[([ xX])\](\s[\s\S]*)?$/;
+const COMMON_FAST_PATH_LIST_ITEM_PATTERN = /^(\s{0,3})([-+*]|\d+[.)])\s+(.+)$/;
+const COMMON_FAST_PATH_SOURCE_LINE_ATTRIBUTE_PATTERN = /\sdata-(source-)?line="(\d+)"/g;
+// Next position that can start an inline construct. Only the index matters; the
+// inline loop re-tests the exact construct at that offset.
+const COMMON_FAST_PATH_INLINE_SPECIAL_PATTERN = /!\[|==|https?:\/\/|www\.|[[`*_~^$@]/g;
 const HTML_ESCAPE_CANDIDATE_PATTERN = /[&<>"']/;
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
 const HTML_TEXT_ESCAPE_CANDIDATE_PATTERN = /[&<>]/;
@@ -1179,8 +1189,10 @@ function canUseCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
   const frontMatter = FRONT_MATTER_PATTERN.exec(content);
   const body = frontMatter ? content.slice(frontMatter[0].length) : content;
   const bodyOutsideFences = collectCommonFastPathBodyLinesOutsideFences(body).join('\n');
-  if (HTML_CANDIDATE_PATTERN.test(bodyOutsideFences)) return false;
-  if (GFM_TASK_LIST_PATTERN.test(bodyOutsideFences) || GFM_FOOTNOTE_PATTERN.test(bodyOutsideFences)) return false;
+  // Footnotes, link reference definitions and indented code need document-wide
+  // context to resolve, so they still disqualify the whole document. Raw HTML
+  // and task lists are handled per block instead.
+  if (GFM_FOOTNOTE_PATTERN.test(bodyOutsideFences)) return false;
   if (/(^|\n)\s{0,3}\[[^\]\n]+]:/.test(bodyOutsideFences)) return false;
   if (hasIndentedCodeOutsideFences(body)) return false;
   return true;
@@ -1218,6 +1230,38 @@ function renderCommonPreviewKatexPlaceholder(value: string, displayMode: boolean
 
   const sourceAttribute = Number.isFinite(line) ? ` data-line="${escapeGeneratedHtml(String(line))}"` : '';
   return `<span class="katex-display katex-placeholder" data-katex="${encoded}" data-katex-display="true"${sourceAttribute}>${text}</span>`;
+}
+
+function renderCommonPreviewCitation(value: string, index: number) {
+  const citations = findPandocCitations(value.slice(index));
+  const citation = citations.find((candidate) => candidate.index === 0);
+  if (!citation) return null;
+
+  const keys = citation.keys.map((key) => `@${key}`).join(', ');
+  return {
+    html: [
+      `<span class="prism-citation" data-citekeys="${escapeGeneratedHtml(citation.keys.join(' '))}"`,
+      ` title="${escapeGeneratedHtml(t('frontMatter.citationPlaceholder', { keys }))}">`,
+      escapeGeneratedHtmlText(citation.raw),
+      '</span>',
+    ].join(''),
+    nextIndex: index + citation.raw.length,
+  };
+}
+
+// Emphasis delimiters must be flanked by non-space to open/close, mirroring the
+// CommonMark rule closely enough for the constructs writers actually produce.
+function findCommonPreviewEmphasisEnd(value: string, delimiter: string, contentStart: number) {
+  let index = contentStart;
+  while (index < value.length) {
+    const endIndex = findClosingDelimiter(value, delimiter, index);
+    if (endIndex === -1) return -1;
+    if (endIndex === contentStart) return -1;
+    const previous = value[endIndex - 1] ?? '';
+    if (!/\s/.test(previous)) return endIndex;
+    index = endIndex + delimiter.length;
+  }
+  return -1;
 }
 
 function renderCommonMarkdownInline(value: string, options: { allowImages?: boolean } = {}): string {
@@ -1304,6 +1348,54 @@ function renderCommonMarkdownInline(value: string, options: { allowImages?: bool
       }
     }
 
+    if (value.startsWith('~~', index)) {
+      const endIndex = findCommonPreviewEmphasisEnd(value, '~~', index + 2);
+      if (endIndex !== -1) {
+        output.push(`<del>${renderCommonMarkdownInline(value.slice(index + 2, endIndex), options)}</del>`);
+        index = endIndex + 2;
+        continue;
+      }
+    }
+
+    if (value[index] === '~' && !value.startsWith('~~', index)) {
+      const endIndex = findCommonPreviewEmphasisEnd(value, '~', index + 1);
+      if (endIndex !== -1 && !value.startsWith('~~', endIndex)) {
+        output.push(`<sub>${escapeGeneratedHtmlText(value.slice(index + 1, endIndex))}</sub>`);
+        index = endIndex + 1;
+        continue;
+      }
+    }
+
+    if (value[index] === '^') {
+      const supMatch = /^\^([^\s^\n][^\^\n]*?)\^(?!\^)/.exec(value.slice(index));
+      if (supMatch) {
+        output.push(`<sup>${escapeGeneratedHtmlText(supMatch[1])}</sup>`);
+        index += supMatch[0].length;
+        continue;
+      }
+    }
+
+    if ((value[index] === '*' || value[index] === '_') && !value.startsWith('**', index)) {
+      const delimiter = value[index];
+      const endIndex = findCommonPreviewEmphasisEnd(value, delimiter, index + 1);
+      // `_` inside words (snake_case) must not become emphasis.
+      const opensWord = delimiter === '_' && /[\w]/.test(value[index - 1] ?? '');
+      if (endIndex !== -1 && !opensWord && !/\s/.test(value[index + 1] ?? ' ')) {
+        output.push(`<em>${renderCommonMarkdownInline(value.slice(index + 1, endIndex), options)}</em>`);
+        index = endIndex + 1;
+        continue;
+      }
+    }
+
+    if (value[index] === '[') {
+      const citation = renderCommonPreviewCitation(value, index);
+      if (citation) {
+        output.push(citation.html);
+        index = citation.nextIndex;
+        continue;
+      }
+    }
+
     if (value.startsWith('$$', index)) {
       const endIndex = findClosingDelimiter(value, '$$', index + 2);
       if (endIndex !== -1) {
@@ -1339,18 +1431,9 @@ function renderCommonMarkdownInline(value: string, options: { allowImages?: bool
       continue;
     }
 
-    const nextSpecialIndex = [
-      value.indexOf('[[', index + 1),
-      value.indexOf('![', index + 1),
-      value.indexOf('[', index + 1),
-      value.indexOf('`', index + 1),
-      value.indexOf('**', index + 1),
-      value.indexOf('==', index + 1),
-      value.indexOf('$', index + 1),
-      value.indexOf('http://', index + 1),
-      value.indexOf('https://', index + 1),
-      value.indexOf('www.', index + 1),
-    ].filter((nextIndex) => nextIndex !== -1).sort((a, b) => a - b)[0] ?? value.length;
+    COMMON_FAST_PATH_INLINE_SPECIAL_PATTERN.lastIndex = index + 1;
+    const nextSpecial = COMMON_FAST_PATH_INLINE_SPECIAL_PATTERN.exec(value);
+    const nextSpecialIndex = nextSpecial ? nextSpecial.index : value.length;
     appendEscapedInlineChunk(output, value, index, nextSpecialIndex);
     index = nextSpecialIndex;
   }
@@ -1520,29 +1603,66 @@ function renderCommonPreviewBlockquote(
   };
 }
 
+function renderCommonPreviewTaskListItem(
+  body: string,
+  sourceLine: number,
+  checkboxIndex: number,
+): string | null {
+  const match = COMMON_FAST_PATH_TASK_ITEM_PATTERN.exec(body);
+  if (!match) return null;
+
+  const checked = match[1] !== ' ';
+  const label = (match[2] ?? '').replace(/^\s/, '');
+  const itemClass = checked ? 'task-list-item strike' : 'task-list-item';
+  return [
+    `<li class="${itemClass}" data-line="${sourceLine}">`,
+    `<input type="checkbox"${checked ? ' checked' : ''} data-task-checkbox-index="${checkboxIndex}"`,
+    ` data-source-line="${sourceLine}" data-line="${sourceLine}">`,
+    label ? ` ${renderCommonMarkdownInline(label)}` : '',
+    '</li>',
+  ].join('');
+}
+
 function renderCommonPreviewList(
   lines: string[],
   startIndex: number,
-): { html: string; nextIndex: number } | null {
-  const firstMatch = /^(\s{0,3})([-+*]|\d+[.)])\s+(.+)$/.exec(lines[startIndex] ?? '');
+  checkboxOffset: number,
+): { checkboxCount: number; html: string; nextIndex: number } | null {
+  const firstMatch = COMMON_FAST_PATH_LIST_ITEM_PATTERN.exec(lines[startIndex] ?? '');
   if (!firstMatch) return null;
 
   const ordered = /\d/.test(firstMatch[2]);
   const tagName = ordered ? 'ol' : 'ul';
   const items: string[] = [];
+  let checkboxCount = 0;
   let index = startIndex;
   while (index < lines.length) {
-    const match = /^(\s{0,3})([-+*]|\d+[.)])\s+(.+)$/.exec(lines[index] ?? '');
+    const match = COMMON_FAST_PATH_LIST_ITEM_PATTERN.exec(lines[index] ?? '');
     if (!match) break;
     const nextOrdered = /\d/.test(match[2]);
     if (nextOrdered !== ordered) break;
     const sourceLine = index + 1;
-    items.push(`<li data-line="${sourceLine}">${renderCommonMarkdownInline(match[3])}</li>`);
+    const taskItem = renderCommonPreviewTaskListItem(
+      match[3],
+      sourceLine,
+      checkboxOffset + checkboxCount,
+    );
+    if (taskItem) {
+      items.push(taskItem);
+      checkboxCount += 1;
+    } else {
+      items.push(`<li data-line="${sourceLine}">${renderCommonMarkdownInline(match[3])}</li>`);
+    }
     index += 1;
   }
 
+  // MiaoYan marks task lists so the checkbox styling and click handling engage.
+  const listClass = checkboxCount > 0
+    ? ` class="contains-task-list${ordered ? '' : ' cb'}"`
+    : '';
   return {
-    html: `<${tagName}>${items.join('')}</${tagName}>`,
+    checkboxCount,
+    html: `<${tagName}${listClass}>${items.join('')}</${tagName}>`,
     nextIndex: index,
   };
 }
@@ -1576,13 +1696,135 @@ function encodeCommonPreviewSourceMapLines(lines: string[]) {
     .join(',');
 }
 
+interface CommonFastPathSegment {
+  html: string;
+  /** Delegated segments carry absolute line attributes; fast segments use the sidecar. */
+  kind: 'delegated' | 'fast';
+}
+
+/**
+ * Rebases the line numbers and checkbox indices of a chunk that was rendered in
+ * isolation so they refer to the whole document again.
+ */
+function rebaseDelegatedChunkHtml(html: string, lineOffset: number, checkboxOffset: number) {
+  let checkboxCount = 0;
+  const rebased = html
+    .replace(
+      COMMON_FAST_PATH_SOURCE_LINE_ATTRIBUTE_PATTERN,
+      (_match, sourcePrefix: string | undefined, line: string) => (
+        ` data-${sourcePrefix ?? ''}line="${Number(line) + lineOffset}"`
+      ),
+    )
+    .replace(/\sdata-task-checkbox-index="(\d+)"/g, (_match, rawIndex: string) => {
+      const index = Number(rawIndex);
+      checkboxCount = Math.max(checkboxCount, index + 1);
+      return ` data-task-checkbox-index="${index + checkboxOffset}"`;
+    });
+
+  return { checkboxCount, html: rebased };
+}
+
+const COMMON_FAST_PATH_VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
+const COMMON_FAST_PATH_TAG_PATTERN = /<(\/?)([A-Za-z][A-Za-z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
+
+/** Net change in open-tag depth contributed by one line of raw HTML. */
+function commonFastPathTagDepthDelta(line: string) {
+  let delta = 0;
+  COMMON_FAST_PATH_TAG_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = COMMON_FAST_PATH_TAG_PATTERN.exec(line)) !== null) {
+    const tagName = match[2].toLowerCase();
+    if (COMMON_FAST_PATH_VOID_TAGS.has(tagName)) continue;
+    if (match[4] === '/') continue;
+    delta += match[1] === '/' ? -1 : 1;
+  }
+  return delta;
+}
+
+/**
+ * Finds the end of the raw-HTML run starting at `startIndex`. The run has to
+ * cover the whole balanced HTML block — stopping at the first blank line would
+ * split a `<details>` wrapper from the markdown it encloses, which the unified
+ * pipeline reassembles only when it sees both together.
+ */
+function findCommonPreviewRawHtmlChunkEnd(lines: string[], startIndex: number) {
+  let depth = 0;
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const line = lines[index] ?? '';
+
+    if (!line.trim() && depth <= 0 && index > startIndex) break;
+
+    const fence = isFenceLine(line);
+    if (fence) {
+      const fenceChar = fence[1][0];
+      const closePattern = new RegExp(
+        `^\\s{0,3}${escapeRegExp(fenceChar.repeat(fence[1].length))}${fenceChar}*\\s*$`,
+      );
+      index += 1;
+      while (index < lines.length && !closePattern.test(lines[index])) {
+        index += 1;
+      }
+      index += 1;
+      continue;
+    }
+
+    depth = Math.max(0, depth + commonFastPathTagDepthDelta(line));
+    index += 1;
+  }
+
+  return index;
+}
+
+/**
+ * Renders just the raw-HTML run through the unified pipeline. Isolating the
+ * chunk keeps HTML fidelity and sanitising identical to the full pipeline while
+ * leaving the rest of the document on the fast path.
+ */
+function renderCommonPreviewRawHtmlChunk(
+  lines: string[],
+  startIndex: number,
+  options: MarkdownToHtmlOptions,
+  checkboxOffset: number,
+): { checkboxCount: number; html: string; nextIndex: number } {
+  const index = findCommonPreviewRawHtmlChunkEnd(lines, startIndex);
+  const chunk = lines.slice(startIndex, index).join('\n');
+  const rendered = renderMarkdownWithUnifiedPipeline(chunk, {
+    ...options,
+    frontMatterMode: 'plain',
+  });
+  const rebased = rebaseDelegatedChunkHtml(rendered, startIndex, checkboxOffset);
+  return {
+    checkboxCount: rebased.checkboxCount,
+    html: rebased.html,
+    nextIndex: index,
+  };
+}
+
+function hasRawHtmlInLineRange(lines: string[], startIndex: number, endIndex: number) {
+  for (let index = startIndex; index < endIndex; index += 1) {
+    if (COMMON_FAST_PATH_HTML_PATTERN.test(lines[index] ?? '')) return true;
+  }
+  return false;
+}
+
 function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownToHtmlOptions): string | null {
   if (!canUseCommonMarkdownPreviewFastPath(content, options)) return null;
 
   const lines = content.split(/\r?\n/);
-  const html: string[] = [];
+  const segments: CommonFastPathSegment[] = [];
+  const html = {
+    push(value: string) {
+      segments.push({ html: value, kind: 'fast' });
+    },
+  };
   const frontMatter = findFrontMatterForCommonFastPath(content);
   const usedHeadingSlugs = new Map<string, number>();
+  let checkboxIndex = 0;
   let index = 0;
 
   if (frontMatter) {
@@ -1594,6 +1836,16 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     const line = lines[index] ?? '';
     if (!line.trim()) {
       index += 1;
+      continue;
+    }
+
+    // Raw HTML is the only construct the hand-written renderer cannot reproduce
+    // safely, so its block is delegated while the rest stays on the fast path.
+    if (!isFenceLine(line) && COMMON_FAST_PATH_HTML_PATTERN.test(line)) {
+      const chunk = renderCommonPreviewRawHtmlChunk(lines, index, options, checkboxIndex);
+      segments.push({ html: chunk.html, kind: 'delegated' });
+      checkboxIndex += chunk.checkboxCount;
+      index = chunk.nextIndex;
       continue;
     }
 
@@ -1630,15 +1882,33 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
       continue;
     }
 
+    // A block whose later lines contain raw HTML must be delegated as a whole:
+    // the dispatch check above only sees the block's first line.
+    const delegateBlock = (nextIndex: number) => {
+      const chunk = renderCommonPreviewRawHtmlChunk(lines, index, options, checkboxIndex);
+      segments.push({ html: chunk.html, kind: 'delegated' });
+      checkboxIndex += chunk.checkboxCount;
+      return Math.max(chunk.nextIndex, nextIndex);
+    };
+
     if (isBlockquoteLine(line)) {
       const blockquote = renderCommonPreviewBlockquote(lines, index);
       if (!blockquote) return null;
+      if (hasRawHtmlInLineRange(lines, index, blockquote.nextIndex)) {
+        index = delegateBlock(blockquote.nextIndex);
+        continue;
+      }
       html.push(blockquote.html);
       index = blockquote.nextIndex;
       continue;
     }
 
     if (splitMarkdownTableRow(line) && isMarkdownTableSeparator(lines[index + 1] ?? '')) {
+      const tableEnd = parseLightweightMarkdownTableRows(lines, index + 2).nextIndex;
+      if (hasRawHtmlInLineRange(lines, index, tableEnd)) {
+        index = delegateBlock(tableEnd);
+        continue;
+      }
       const table = renderCommonPreviewTable(lines, index);
       if (!table) return null;
       html.push(table.html);
@@ -1647,9 +1917,14 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     }
 
     if (isSimpleListLine(line)) {
-      const list = renderCommonPreviewList(lines, index);
+      const list = renderCommonPreviewList(lines, index, checkboxIndex);
       if (!list) return null;
+      if (hasRawHtmlInLineRange(lines, index, list.nextIndex)) {
+        index = delegateBlock(list.nextIndex);
+        continue;
+      }
       html.push(list.html);
+      checkboxIndex += list.checkboxCount;
       index = list.nextIndex;
       continue;
     }
@@ -1661,18 +1936,34 @@ function renderCommonMarkdownPreviewFastPath(content: string, options: MarkdownT
     }
 
     const paragraph = renderCommonPreviewParagraph(lines, index);
+    if (hasRawHtmlInLineRange(lines, index, paragraph.nextIndex)) {
+      index = delegateBlock(paragraph.nextIndex);
+      continue;
+    }
     html.push(paragraph.html);
     index = paragraph.nextIndex;
   }
 
+  // The flat sidecar map pairs sidecar entries with mapped elements by document
+  // order, which only holds while every element came from this renderer.
+  // Delegated chunks emit the same tags at nesting depths the flat collector
+  // never walks, so those documents keep their line attributes inline and let
+  // the preview fall back to attribute-based scroll mapping.
+  if (segments.some((segment) => segment.kind === 'delegated')) {
+    return segments.map((segment) => segment.html).join('\n');
+  }
+
   const sourceLines: string[] = [];
-  const body = html.join('\n').replace(
-    COMMON_MARKDOWN_PREVIEW_SIDECAR_LINE_PATTERN,
-    (_match, prefix: string, line: string) => {
-      sourceLines.push(line);
-      return prefix;
-    },
-  );
+  const body = segments
+    .map((segment) => segment.html)
+    .join('\n')
+    .replace(
+      COMMON_MARKDOWN_PREVIEW_SIDECAR_LINE_PATTERN,
+      (_match, prefix: string, line: string) => {
+        sourceLines.push(line);
+        return prefix;
+      },
+    );
   return [
     `<!--${COMMON_MARKDOWN_PREVIEW_SOURCE_MAP_MARKER}:${encodeCommonPreviewSourceMapLines(sourceLines)}-->`,
     body,
@@ -2093,10 +2384,7 @@ function renderFrontMatterForPreview(content: string, mode: 'plain' | 'hide' | '
   return `${renderFrontMatterMetadataHtml(content)}${'\n'.repeat(preservedLineOffset)}${content.slice(match[0].length)}`;
 }
 
-export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
-  const fastPathHtml = renderCommonMarkdownPreviewFastPath(content, options);
-  if (fastPathHtml !== null) return fastPathHtml;
-
+function renderMarkdownWithUnifiedPipeline(content: string, options: MarkdownToHtmlOptions): string {
   const displayMathLines: number[] = [];
   const largePreTablePreview = extractLargePreTablesForPreview(
     renderFrontMatterForPreview(content, frontMatterModeForOptions(options)),
@@ -2154,4 +2442,11 @@ export function markdownToHtml(content: string, options: MarkdownToHtmlOptions =
     .processSync(largePreTablePreview.content);
 
   return injectLargePreTablePlaceholders(String(result), largePreTablePreview.placeholders);
+}
+
+export function markdownToHtml(content: string, options: MarkdownToHtmlOptions = {}): string {
+  const fastPathHtml = renderCommonMarkdownPreviewFastPath(content, options);
+  if (fastPathHtml !== null) return fastPathHtml;
+
+  return renderMarkdownWithUnifiedPipeline(content, options);
 }

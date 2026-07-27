@@ -29,6 +29,9 @@ const fsMock = vi.hoisted(() => ({
   readFile: vi.fn(),
   stat: vi.fn(),
 }));
+const exportResourceMock = vi.hoisted(() => ({
+  readExportResource: vi.fn(),
+}));
 const renderServiceMock = vi.hoisted(() => ({
   render: vi.fn(),
 }));
@@ -54,6 +57,10 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 
 vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: openerMock.openUrl,
+}));
+
+vi.mock('../../export/resources/exportResourceClient', () => ({
+  readExportResource: exportResourceMock.readExportResource,
 }));
 
 vi.mock('mermaid', () => ({
@@ -164,6 +171,8 @@ describe('PreviewPane theme switching', () => {
       readonly: false,
       size: 5,
     });
+    exportResourceMock.readExportResource.mockReset();
+    exportResourceMock.readExportResource.mockResolvedValue(null);
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:prism-preview-media'),
@@ -404,6 +413,7 @@ describe('PreviewPane theme switching', () => {
       [
         '<p>',
         '<img alt="local" src="assets/preview-1.png">',
+        '<img alt="encoded" src="assets/uap/%E6%96%B0UAP%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E5%9B%BE.png?cache=1#figure">',
         '<img alt="absolute" src="/Users/Alex/Pictures/preview-2.png">',
         '<img alt="remote" src="https://example.com/preview-3.png">',
         '</p>',
@@ -415,11 +425,65 @@ describe('PreviewPane theme switching', () => {
     await waitFor(() => {
       expect(fsMock.readFile).toHaveBeenCalledWith('/Users/Alex/Notes/assets/preview-1.png');
     });
+    expect(fsMock.readFile).toHaveBeenCalledWith('/Users/Alex/Notes/assets/uap/新UAP总体架构图.png');
     expect(fsMock.readFile).toHaveBeenCalledWith('/Users/Alex/Pictures/preview-2.png');
-    expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(3);
     expect(screen.getByAltText('local')).toHaveAttribute('src', 'blob:prism-preview-media');
+    expect(screen.getByAltText('encoded')).toHaveAttribute('src', 'blob:prism-preview-media');
     expect(screen.getByAltText('absolute')).toHaveAttribute('src', 'blob:prism-preview-media');
     expect(screen.getByAltText('remote')).toHaveAttribute('src', 'https://example.com/preview-3.png');
+  });
+
+  it('loads animated gif preview images with the gif MIME type', async () => {
+    const objectUrlBlobs: Blob[] = [];
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn((blob: Blob) => {
+        objectUrlBlobs.push(blob);
+        return 'blob:prism-preview-gif';
+      }),
+    });
+    fsMock.readFile.mockResolvedValueOnce(new Uint8Array([71, 73, 70, 56, 57, 97]));
+    vi.mocked(markdownToHtml).mockReturnValueOnce('<p><img alt="animated" src="assets/loop.gif"></p>');
+
+    render(<PreviewPane content="gif" documentPath="/Users/Alex/Notes/Plan.md" />);
+
+    await waitFor(() => {
+      expect(fsMock.readFile).toHaveBeenCalledWith('/Users/Alex/Notes/assets/loop.gif');
+    });
+    expect(objectUrlBlobs[0]?.type).toBe('image/gif');
+    expect(screen.getByAltText('animated')).toHaveAttribute('src', 'blob:prism-preview-gif');
+  });
+
+  it('falls back to native resource reads when scoped file-system reads reject local gif media', async () => {
+    const objectUrlBlobs: Blob[] = [];
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn((blob: Blob) => {
+        objectUrlBlobs.push(blob);
+        return 'blob:prism-preview-native-gif';
+      }),
+    });
+    fsMock.stat.mockRejectedValueOnce(new Error('path not allowed'));
+    fsMock.readFile.mockRejectedValueOnce(new Error('path not allowed'));
+    exportResourceMock.readExportResource.mockResolvedValueOnce({
+      bytes: new Uint8Array([71, 73, 70, 56, 57, 97]),
+      mimeType: 'image/gif',
+      path: '/private/tmp/prism-gif-smoke/assets/loop.gif',
+    });
+    vi.mocked(markdownToHtml).mockReturnValueOnce('<p><img alt="native-gif" src="assets/loop.gif"></p>');
+
+    render(<PreviewPane content="gif" documentPath="/private/tmp/prism-gif-smoke/gif-preview.md" />);
+
+    await waitFor(() => {
+      expect(exportResourceMock.readExportResource).toHaveBeenCalledWith({
+        rawSrc: 'assets/loop.gif',
+        documentPath: '/private/tmp/prism-gif-smoke/gif-preview.md',
+      });
+    });
+    expect(fsMock.readFile).toHaveBeenCalledWith('/private/tmp/prism-gif-smoke/assets/loop.gif');
+    expect(objectUrlBlobs[0]?.type).toBe('image/gif');
+    expect(screen.getByAltText('native-gif')).toHaveAttribute('src', 'blob:prism-preview-native-gif');
   });
 
   it('reuses cached local preview images when the file signature is unchanged', async () => {

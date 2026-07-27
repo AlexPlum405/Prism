@@ -6,6 +6,7 @@ import { useSettingsStore } from '../../settings/store';
 import { getMermaidThemeConfig, getThemeContract } from '../../themes';
 import { dirname, joinPath } from '../../workspace/services/path';
 import { t, useI18n } from '../../i18n';
+import { readExportResource } from '../../export/resources/exportResourceClient';
 import {
   collectPreviewDomPostProcessTargets,
   getPreviewDomTargetHints,
@@ -271,12 +272,27 @@ function getPreviewDocumentLinkTarget(anchor: HTMLAnchorElement) {
 }
 
 function resolvePreviewMediaPath(rawSrc: string, documentPath?: string) {
-  const src = rawSrc.trim();
+  const src = safeDecodePreviewMediaSrc(stripPreviewMediaSrcMetadata(rawSrc.trim()));
   if (!src || !documentPath || src.startsWith('#') || src.startsWith('?')) return null;
   if (isExternalMediaSrc(src)) return null;
   if (src.startsWith('/')) return src;
   if (isWindowsAbsolutePath(src)) return src;
   return joinPath(dirname(documentPath), src);
+}
+
+function stripPreviewMediaSrcMetadata(src: string) {
+  const hashIndex = src.indexOf('#');
+  const queryIndex = src.indexOf('?');
+  const indexes = [hashIndex, queryIndex].filter((index) => index >= 0);
+  return indexes.length > 0 ? src.slice(0, Math.min(...indexes)) : src;
+}
+
+function safeDecodePreviewMediaSrc(src: string) {
+  try {
+    return decodeURI(src);
+  } catch {
+    return src;
+  }
 }
 
 function getPreviewMediaMimeType(filePath: string) {
@@ -320,6 +336,33 @@ function rememberPreviewMedia(filePath: string, entry: PreviewMediaCacheEntry) {
     const removed = previewMediaCache.get(oldest);
     if (removed) URL.revokeObjectURL(removed.objectUrl);
     previewMediaCache.delete(oldest);
+  }
+}
+
+async function readPreviewMedia(
+  filePath: string,
+  rawSrc: string,
+  documentPath: string | undefined,
+) {
+  try {
+    return {
+      bytes: await readFile(filePath),
+      mimeType: getPreviewMediaMimeType(filePath),
+    };
+  } catch (fileSystemError) {
+    if (documentPath) {
+      const resource = await readExportResource({
+        rawSrc,
+        documentPath,
+      });
+      if (resource) {
+        return {
+          bytes: resource.bytes,
+          mimeType: resource.mimeType || getPreviewMediaMimeType(resource.path || filePath),
+        };
+      }
+    }
+    throw fileSystemError;
   }
 }
 
@@ -376,10 +419,11 @@ async function resolveLocalPreviewMedia(
     }
 
     try {
-      const bytes = await readFile(filePath);
+      const rawSrc = rawSrcByElement.get(elements[0]) ?? filePath;
+      const { bytes, mimeType } = await readPreviewMedia(filePath, rawSrc, documentPath);
       if (options.isCancelled()) return;
 
-      const objectUrl = URL.createObjectURL(new Blob([bytes], { type: getPreviewMediaMimeType(filePath) }));
+      const objectUrl = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: mimeType }));
       if (signature === null) {
         options.trackObjectUrl(objectUrl);
       } else {
