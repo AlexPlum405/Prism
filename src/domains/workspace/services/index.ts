@@ -69,6 +69,14 @@ export {
   type ResolvedDocumentLink,
 } from './documentLinks';
 export {
+  planLinkRewrites,
+  rebaseMovedDocumentLinks,
+  rewriteDocumentLinksForMovedPath,
+  type LinkRewriteReference,
+  type LinkRewriteResult,
+  type PlannedLinkRewrite,
+} from './linkRewrite';
+export {
   applyWorkspaceIndexOverlay,
   buildWorkspaceIndex,
   buildWorkspaceIndexIncremental,
