@@ -35,8 +35,13 @@ import {
 import { t } from '../domains/i18n';
 import { emitAppEvent } from '../platform/events/appEvents';
 import {
+  readDocumentFileSession,
   writeDocumentFileSession,
 } from '../domains/document/services/fileSafety';
+import {
+  applyLinkRewrites,
+  scanLinkRewritesForMovedPath,
+} from './linkRewriteFlow';
 
 export type { FileActionInput } from './fileActionCommands';
 export type { DirtyDocumentSwitchAction } from './openDocumentFlow';
@@ -162,9 +167,13 @@ async function copyText(text: string): Promise<void> {
   }
 }
 
-async function refreshWorkspace(context: FileActionContext, rootPath = context.workspaceStore.rootPath): Promise<void> {
+async function refreshWorkspace(
+  context: FileActionContext,
+  rootPath = context.workspaceStore.rootPath,
+  scope = context.workspaceStore.workspaceTreeScope,
+): Promise<void> {
   if (!rootPath) return;
-  const tree = await loadFolderTree(rootPath);
+  const tree = await loadFolderTree(rootPath, { scope: scope ?? 'currentLevel' });
   context.workspaceStore.setFileTree(tree);
 }
 
@@ -277,6 +286,79 @@ async function handleCommitRename(path: string, newName: string, context: FileAc
 
   await refreshWorkspace(context);
   context.showToast?.(t('file.renameDone'));
+
+  if (oldInfo.isFile) {
+    await updateIncomingLinksAfterMove(path, targetPath, context);
+  }
+}
+
+/**
+ * A rename silently breaks every link pointing at the old path, so offer to
+ * rewrite them. Runs after the rename succeeded and never blocks it: a failure
+ * here leaves the file renamed and the stale links visible to link diagnostics.
+ */
+async function updateIncomingLinksAfterMove(
+  previousPath: string,
+  nextPath: string,
+  context: FileActionContext,
+): Promise<void> {
+  const { rootPath, fileTree } = context.workspaceStore;
+  if (!rootPath || fileTree.length === 0) return;
+
+  try {
+    const doc = context.documentStore.currentDocument;
+    const overlay = doc?.path && doc.isDirty
+      ? new Map([[doc.path, doc.content]])
+      : undefined;
+
+    const plans = await scanLinkRewritesForMovedPath({
+      fileTree,
+      nextPath,
+      overlay,
+      previousPath,
+      workspaceRoot: rootPath,
+    });
+    if (plans.length === 0) return;
+
+    const confirmed = await confirm(
+      t('file.linkRewriteConfirm', { count: plans.length, name: basename(nextPath) }),
+      {
+        title: t('file.linkRewriteConfirmTitle'),
+        okLabel: t('file.linkRewriteUpdate'),
+        cancelLabel: t('file.linkRewriteKeep'),
+      },
+    );
+    if (!confirmed) return;
+
+    const result = await applyLinkRewrites({ plans });
+
+    // Reload the open document if its own content was rewritten on disk, so the
+    // editor buffer does not overwrite the rewrite on the next save.
+    const rewrittenCurrent = doc?.path
+      ? plans.find((plan) => isSamePath(plan.path, doc.path as string))
+      : undefined;
+    if (rewrittenCurrent && result.written.some((written) => isSamePath(written, rewrittenCurrent.path))) {
+      const session = await readDocumentFileSession(rewrittenCurrent.path);
+      context.documentStore.openDocument(
+        session.path,
+        session.name,
+        session.content,
+        session.knownSnapshot,
+      );
+    }
+
+    if (result.written.length > 0) {
+      context.showToast?.(t('file.linkRewriteDone', { count: result.written.length }));
+    }
+    if (result.failed.length > 0) {
+      context.showToast?.(t('file.linkRewriteFailed', {
+        count: result.failed.length,
+        error: result.failed[0].error,
+      }));
+    }
+  } catch (err) {
+    context.showToast?.(t('file.linkRewriteFailed', { count: 0, error: formatError(err) }));
+  }
 }
 
 async function handleDuplicate(path: string, context: FileActionContext): Promise<void> {
@@ -351,6 +433,17 @@ async function handleRefresh(context: FileActionContext): Promise<void> {
 
   await refreshWorkspace(context);
   context.showToast?.(t('file.treeRefreshed'));
+}
+
+async function handleWorkspaceTreeScope(
+  scope: 'currentLevel' | 'recursive',
+  context: FileActionContext,
+): Promise<void> {
+  context.workspaceStore.setWorkspaceTreeScope(scope);
+  await refreshWorkspace(context, context.workspaceStore.rootPath, scope);
+  context.showToast?.(scope === 'recursive'
+    ? t('file.treeScopeRecursive')
+    : t('file.treeScopeCurrentLevel'));
 }
 
 export async function executeFileAction(
@@ -433,6 +526,14 @@ export async function executeFileAction(
 
       case 'viewTree':
         context.workspaceStore.setFileTreeMode('tree');
+        return;
+
+      case 'viewCurrentLevel':
+        await handleWorkspaceTreeScope('currentLevel', context);
+        return;
+
+      case 'viewRecursive':
+        await handleWorkspaceTreeScope('recursive', context);
         return;
 
       case 'sortByName':

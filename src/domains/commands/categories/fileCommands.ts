@@ -6,6 +6,7 @@ import {
 import { openPrismWindow } from '../../../lib/openWindow';
 import { executeFileAction } from '../../../lib/fileActions';
 import { openSelectedDocument } from '../../../lib/openDocumentFlow';
+import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import {
   createDocumentFileSession,
   fileConflictDetector,
@@ -27,6 +28,7 @@ import {
 import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
+import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -60,6 +62,20 @@ function emitEditorCommand(command: string, detail: Record<string, unknown> = {}
   emitAppEvent('editor.command', { command, ...detail });
 }
 
+async function setWorkspaceToDocumentDirectoryIfNeeded(context: CommandContext, path: string): Promise<void> {
+  if (context.workspaceStore.rootPath) return;
+
+  const rootPath = dirname(path);
+  try {
+    await grantWorkspaceDirectoryScope(rootPath);
+    const tree = await loadFolderTree(rootPath);
+    context.workspaceStore.setWorkspace(rootPath, tree);
+  } catch (err) {
+    console.error('[fileCommands] Failed to set workspace after save:', err);
+    context.showToast?.(t('command.operationFailed', { message: formatError(err) }));
+  }
+}
+
 async function handleNew(context: CommandContext): Promise<void> {
   const doc = context.documentStore.currentDocument;
   if (doc?.isDirty && !doc.path && !context.requestSavePath) {
@@ -67,14 +83,13 @@ async function handleNew(context: CommandContext): Promise<void> {
     return;
   }
 
-  if (doc?.isDirty) {
-    await handleSave(context);
-  }
+  const savedPath = doc?.isDirty ? await saveCurrentDocument(context) : null;
+  if (doc?.isDirty && !savedPath) return;
 
-  const currentDocumentDir = doc?.path ? dirname(doc.path) : null;
+  const currentDocumentDir = savedPath ? dirname(savedPath) : doc?.path ? dirname(doc.path) : null;
   const targetDir = currentDocumentDir || context.workspaceStore.rootPath;
   if (!targetDir) {
-    context.showToast?.(t('file.noWorkspace'));
+    context.documentStore.createNewDocument();
     return;
   }
 
@@ -121,22 +136,22 @@ async function handleOpen(context: CommandContext): Promise<void> {
   }
 }
 
-async function handleSave(context: CommandContext): Promise<void> {
+async function saveCurrentDocument(context: CommandContext): Promise<string | null> {
   const doc = context.documentStore.currentDocument;
-  if (!doc) return;
+  if (!doc) return null;
 
   let targetPath = doc.path;
 
   if (!targetPath) {
     if (!context.requestSavePath) {
       context.showToast?.(t('command.savePanelUnavailable'));
-      return;
+      return null;
     }
     const chosen = await context.requestSavePath({
       filename: doc.name,
       documentPath: doc.path,
     });
-    if (!chosen) return;
+    if (!chosen) return null;
     targetPath = chosen;
   }
 
@@ -162,13 +177,19 @@ async function handleSave(context: CommandContext): Promise<void> {
     }
     addRecentFile(targetPath, basename(targetPath));
     context.documentStore.markSaved(targetPath, snapshot);
+    await setWorkspaceToDocumentDirectoryIfNeeded(context, targetPath);
     await recoverySnapshotStore.clearForDocument(targetPath).catch(() => undefined);
+    return targetPath;
   } catch (err) {
     if (!isFileConflictError(err)) {
       context.documentStore.markSaveFailed(err, doc.path || undefined);
     }
     throw err;
   }
+}
+
+async function handleSave(context: CommandContext): Promise<void> {
+  await saveCurrentDocument(context);
 }
 
 async function handleSaveAs(context: CommandContext): Promise<void> {
@@ -200,6 +221,7 @@ async function handleSaveAs(context: CommandContext): Promise<void> {
     context.documentStore.openDocument(chosen, basename(chosen), doc.content, snapshot);
     addRecentFile(chosen, basename(chosen));
     context.documentStore.markSaved(chosen, snapshot);
+    await setWorkspaceToDocumentDirectoryIfNeeded(context, chosen);
     if (doc.path) await recoverySnapshotStore.clearForDocument(doc.path).catch(() => undefined);
     await recoverySnapshotStore.clearForDocument(chosen).catch(() => undefined);
   } catch (err) {
@@ -299,9 +321,9 @@ export function createFileCommands(): CommandDefinition[] {
     },
     {
       id: 'newWindow',
-      category: 'window',
+      category: 'file',
       shortcuts: [{ code: 'KeyN', mod: true, shift: true }],
-      run: () => openPrismWindow({}),
+      run: () => openPrismWindow(),
     },
     {
       id: 'open',

@@ -15,6 +15,8 @@ interface UseAppShortcutsInput {
   toggleFocusMode: () => void;
 }
 
+const NATIVE_CODEMIRROR_SHORTCUTS = new Set<CommandId>(['paste', 'pastePlain']);
+
 function getTargetElement(target: EventTarget | null): Element | null {
   if (target instanceof Element) return target;
   if (target instanceof Node) return target.parentElement;
@@ -35,7 +37,9 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 function shouldPreserveEditableShortcut(event: KeyboardEvent, command: CommandDefinition): boolean {
   if (!isEditableTarget(event.target)) return false;
-  if (isCodeMirrorTarget(getTargetElement(event.target))) return false;
+  if (isCodeMirrorTarget(getTargetElement(event.target))) {
+    return NATIVE_CODEMIRROR_SHORTCUTS.has(command.id);
+  }
   return command.category === 'edit' || command.category === 'format' || command.category === 'insert';
 }
 

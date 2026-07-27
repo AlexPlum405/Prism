@@ -53,10 +53,13 @@ beforeEach(() => {
   useDocumentStore.setState({ currentDocument: null });
   useWorkspaceStore.setState({
     fileTree: [],
+    fileSortMode: 'name',
+    fileTreeMode: 'tree',
     mode: 'single',
     rootPath: null,
     sidebarTab: 'files',
     sidebarVisible: true,
+    workspaceTreeScope: 'currentLevel',
   });
   (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# Opened from Finder');
   (ask as ReturnType<typeof vi.fn>).mockResolvedValue(true);
@@ -224,13 +227,41 @@ describe('executeFileAction openFile workspace sync', () => {
     expect(useWorkspaceStore.getState().fileTree).toEqual([
       { kind: 'file', name: 'opened.md', path: '/new/project/opened.md' },
     ]);
+    expect(invoke).not.toHaveBeenCalledWith('move_path_to_trash', expect.anything());
+    expect(remove).not.toHaveBeenCalled();
+    expect(rename).not.toHaveBeenCalled();
+    expect(writeTextFile).not.toHaveBeenCalled();
   });
 
-  it('refreshes the current workspace when the Finder-opened file is missing from the tree', async () => {
+  it('switches current-level workspace to the opened file directory when the file is hidden by the current tree', async () => {
     useWorkspaceStore.setState({
       fileTree: [{ kind: 'file', name: 'index.md', path: '/repo/index.md' }],
       mode: 'folder',
       rootPath: '/repo',
+    });
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' },
+    ]);
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/docs/opened.md' },
+      fileActionContext(),
+    );
+
+    expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/docs/opened.md');
+    expect(useWorkspaceStore.getState().rootPath).toBe('/repo/docs');
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo/docs');
+    expect(useWorkspaceStore.getState().fileTree).toEqual([
+      { kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' },
+    ]);
+  });
+
+  it('keeps recursive workspace root when the opened file is missing from the current tree', async () => {
+    useWorkspaceStore.setState({
+      fileTree: [{ kind: 'file', name: 'index.md', path: '/repo/index.md' }],
+      mode: 'folder',
+      rootPath: '/repo',
+      workspaceTreeScope: 'recursive',
     });
     (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
       {
@@ -248,15 +279,7 @@ describe('executeFileAction openFile workspace sync', () => {
 
     expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/docs/opened.md');
     expect(useWorkspaceStore.getState().rootPath).toBe('/repo');
-    expect(loadFolderTree).toHaveBeenCalledWith('/repo');
-    expect(useWorkspaceStore.getState().fileTree).toEqual([
-      {
-        kind: 'directory',
-        name: 'docs',
-        path: '/repo/docs',
-        children: [{ kind: 'file', name: 'opened.md', path: '/repo/docs/opened.md' }],
-      },
-    ]);
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'recursive' });
   });
 
   it('keeps the current workspace without refreshing when the opened file is already visible', async () => {
@@ -435,6 +458,53 @@ describe('executeFileAction openFile workspace sync', () => {
     });
   });
 
+  it('blocks saving an untitled dirty document over the file being opened', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('save');
+    const requestSavePath = vi.fn().mockResolvedValue('/repo/next.md');
+    const showToast = vi.fn();
+    useDocumentStore.getState().createNewDocument('# Unsaved draft', 'Draft.md');
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction, requestSavePath, showToast }),
+    );
+
+    expect(requestSavePath).toHaveBeenCalledWith({
+      documentPath: '',
+      filename: 'Draft.md',
+    });
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('为保护文件，不能把当前改动保存到正在打开的目标文件。请选择其他位置，或放弃当前改动后再打开。');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Unsaved draft',
+      isDirty: true,
+      path: '',
+    });
+  });
+
+  it('blocks save-as from overwriting the file being opened during dirty document switching', async () => {
+    const requestDirtyDocumentAction = vi.fn().mockResolvedValue('saveAs');
+    const requestSavePath = vi.fn().mockResolvedValue('/repo/next.md');
+    const showToast = vi.fn();
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Original', { mtimeMs: 1000, size: 10 });
+    useDocumentStore.getState().updateContent('# Unsaved edit');
+
+    await executeFileAction(
+      { action: 'openFile', path: '/repo/next.md' },
+      fileActionContext({ requestDirtyDocumentAction, requestSavePath, showToast }),
+    );
+
+    expect(writeTextFile).not.toHaveBeenCalled();
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('为保护文件，不能把当前改动保存到正在打开的目标文件。请选择其他位置，或放弃当前改动后再打开。');
+    expect(useDocumentStore.getState().currentDocument).toMatchObject({
+      content: '# Unsaved edit',
+      isDirty: true,
+      path: '/repo/current.md',
+    });
+  });
+
   it('keeps the current document when saving before switch detects an external disk change', async () => {
     const requestDirtyDocumentAction = vi.fn().mockResolvedValue('save');
     const showToast = vi.fn();
@@ -507,7 +577,7 @@ describe('executeFileAction openFile workspace sync', () => {
     expect(invoke).toHaveBeenCalledWith('move_path_to_trash', { path: '/repo/current.md' });
     expect(remove).not.toHaveBeenCalled();
     expect(useDocumentStore.getState().currentDocument).toBeNull();
-    expect(loadFolderTree).toHaveBeenCalledWith('/repo');
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'currentLevel' });
     expect(useWorkspaceStore.getState().fileTree).toEqual([
       { kind: 'file', name: 'other.md', path: '/repo/other.md' },
     ]);
@@ -553,7 +623,7 @@ describe('executeFileAction openFile workspace sync', () => {
       name: 'current.md',
       path: '/repo/renamed/current.md',
     });
-    expect(loadFolderTree).toHaveBeenCalledWith('/repo');
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'currentLevel' });
     expect(useWorkspaceStore.getState().fileTree).toEqual([
       {
         kind: 'directory',
@@ -563,6 +633,56 @@ describe('executeFileAction openFile workspace sync', () => {
       },
     ]);
     expect(showToast).toHaveBeenCalledWith('重命名完成');
+  });
+});
+
+describe('executeFileAction workspace tree scope', () => {
+  it('switches to recursive scope and refreshes the current workspace', async () => {
+    const showToast = vi.fn();
+    const recursiveTree = [{
+      kind: 'directory' as const,
+      name: 'docs',
+      path: '/repo/docs',
+      children: [{ kind: 'file' as const, name: 'nested.md', path: '/repo/docs/nested.md' }],
+    }];
+    useWorkspaceStore.setState({
+      fileTree: [{ kind: 'file', name: 'root.md', path: '/repo/root.md' }],
+      mode: 'folder',
+      rootPath: '/repo',
+      workspaceTreeScope: 'currentLevel',
+    });
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce(recursiveTree);
+
+    await executeFileAction('viewRecursive', fileActionContext({ showToast }));
+
+    expect(useWorkspaceStore.getState().workspaceTreeScope).toBe('recursive');
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'recursive' });
+    expect(useWorkspaceStore.getState().fileTree).toEqual(recursiveTree);
+    expect(showToast).toHaveBeenCalledWith('已递归显示子目录');
+  });
+
+  it('switches back to current-level scope and refreshes only that level', async () => {
+    const showToast = vi.fn();
+    const currentLevelTree = [{ kind: 'file' as const, name: 'root.md', path: '/repo/root.md' }];
+    useWorkspaceStore.setState({
+      fileTree: [{
+        kind: 'directory',
+        name: 'docs',
+        path: '/repo/docs',
+        children: [{ kind: 'file', name: 'nested.md', path: '/repo/docs/nested.md' }],
+      }],
+      mode: 'folder',
+      rootPath: '/repo',
+      workspaceTreeScope: 'recursive',
+    });
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValueOnce(currentLevelTree);
+
+    await executeFileAction('viewCurrentLevel', fileActionContext({ showToast }));
+
+    expect(useWorkspaceStore.getState().workspaceTreeScope).toBe('currentLevel');
+    expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'currentLevel' });
+    expect(useWorkspaceStore.getState().fileTree).toEqual(currentLevelTree);
+    expect(showToast).toHaveBeenCalledWith('已切换为当前层级');
   });
 });
 

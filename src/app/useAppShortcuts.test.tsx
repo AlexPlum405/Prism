@@ -183,4 +183,29 @@ describe('useAppShortcuts', () => {
     });
     expect(event.defaultPrevented).toBe(true);
   });
+
+  it('preserves native CodeMirror paste handling', () => {
+    const editor = document.createElement('div');
+    editor.className = 'cm-editor';
+    const content = document.createElement('div');
+    content.className = 'cm-content';
+    content.setAttribute('contenteditable', 'true');
+    editor.append(content);
+    document.body.append(editor);
+    const command = { id: 'paste', category: 'edit' } as CommandDefinition;
+    const runCommandById = vi.fn();
+
+    renderHook(() => useAppShortcuts({
+      createCommandContext: vi.fn(() => ({} as CommandContext)),
+      findCommand: () => command,
+      focusMode: false,
+      runCommandById,
+      toggleFocusMode: vi.fn(),
+    }));
+
+    const event = dispatchKeyboardEvent(content, { key: 'v', code: 'KeyV', metaKey: true });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(runCommandById).not.toHaveBeenCalled();
+  });
 });
