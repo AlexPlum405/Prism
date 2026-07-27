@@ -496,7 +496,7 @@ describe('command registry', () => {
     await runCommand('quickOpen', context);
 
     expect(openQuickOpen).toHaveBeenCalledTimes(1);
-    expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyP', mod: true, shift: true }]);
+    expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyO', mod: true, shift: true }]);
     expect(commandRegistryById.get('print')?.shortcuts).toEqual([{ code: 'KeyP', mod: true }]);
   });
 
