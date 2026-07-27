@@ -24,6 +24,7 @@ import { isSupportedDocumentPath } from '../domains/workspace/services/fileAssoc
 import { t } from '../domains/i18n';
 import { grantMarkdownFileScope } from './fileSystemScope';
 import { openPrismWindow } from './openWindow';
+import { markPerf } from './performanceInstrumentation';
 
 export const LARGE_DOCUMENT_WARNING_BYTES = 10 * 1024 * 1024;
 
@@ -324,14 +325,18 @@ export async function openDocumentInCurrentWindow(
     return { status: 'cancelled-dirty-document' };
   }
 
+  markPerf('document_read_start');
   const session = await readDocumentFileSession(path);
+  markPerf('document_read_done', { contentLength: session.content.length });
   if (options.shouldAbort?.()) return { status: 'aborted' };
   context.documentStore.openDocument(session.path, session.name, session.content, session.knownSnapshot);
+  markPerf('document_store_updated');
   if (options.restoreViewMode) context.documentStore.setViewMode(options.restoreViewMode);
   if (options.restoreScrollState) context.documentStore.updateScrollState(options.restoreScrollState);
   addRecentFile(session.path, session.name);
   if (!options.skipWorkspaceSync) {
     await syncWorkspaceForOpenedDocument(path, context);
+    markPerf('workspace_sync_done');
   }
   return { status: 'opened-current-window' };
 }

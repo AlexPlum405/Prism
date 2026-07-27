@@ -172,7 +172,6 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       { title: t('command.checkUpdate'), kind: 'info' },
     );
     if (shouldInstall) {
-      context.showToast?.(t('command.downloadingUpdate'));
       await downloadAndInstallUpdate(result.update);
     }
   } catch (error) {

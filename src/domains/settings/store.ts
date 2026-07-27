@@ -48,6 +48,7 @@ import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 import { isNativeCommandUnavailableError } from '../../platform/tauri/result';
 import { readSettingsFileNative, writeSettingsFileNative } from '../../platform/tauri/settingsStorage';
 import { emitAppEvent } from '../../platform/events/appEvents';
+import { initPerfInstrumentation, markPerf } from '../../lib/performanceInstrumentation';
 import { joinPath } from '../workspace/services/path';
 
 const CONFIG_FILENAME = 'config.json';
@@ -628,7 +629,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     try {
       const raw = await readSettingsFile();
       if (!raw) throw new Error('settings file missing');
-      const saved = JSON.parse(raw) as Partial<SettingsState>;
+      const saved = JSON.parse(raw) as Partial<SettingsState> & { perfInstrumentation?: boolean };
+      // 诊断开关，不进入 normalizeSettings，因此不会被 saveSettings 回写。
+      initPerfInstrumentation(saved.perfInstrumentation);
+      markPerf('settings_loaded');
       const settings = normalizeSettings(saved);
       if (!saved.recentFiles) {
         settings.recentFiles = migrateLegacyRecentFiles(settings.recentFilesLimit);

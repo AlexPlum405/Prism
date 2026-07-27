@@ -8,6 +8,7 @@ import { useWorkspaceFocusRefresh } from '../domains/workspace/hooks/useWorkspac
 import { useWorkspaceStore } from '../domains/workspace/store';
 import type { SidebarTab } from '../domains/workspace/types';
 import { getRuntimePlatform } from '../domains/workspace/services';
+import { markPerf } from '../lib/performanceInstrumentation';
 import { useBootstrap } from '../hooks/useBootstrap';
 
 interface AppLifecycleInput {
@@ -97,7 +98,11 @@ export function useAppLifecycleModel({
   useEffect(() => {
     if (!settingsReady) return;
 
+    markPerf('last_session_debounce_scheduled');
     const timer = window.setTimeout(() => {
+      // 基准脚本以 config.json 的 lastSession 落盘为「会话就绪」，
+      // 因此此处是该指标的终点；上方 mark 用于量出 500ms 防抖占比。
+      markPerf('last_session_write_start');
       const doc = useDocumentStore.getState().currentDocument;
       const ws = useWorkspaceStore.getState();
       useSettingsStore.getState().setLastSession(

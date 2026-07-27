@@ -14,6 +14,11 @@ import {
 } from './previewDomTargets';
 import { getMarkmapOptions, getMarkmapPalette } from './markmap';
 import { createPlantUmlSvgElement } from './plantUml';
+import {
+  isPerfInstrumentationEnabled,
+  markPerf,
+  markPerfDuration,
+} from '../../../lib/performanceInstrumentation';
 
 interface PreviewPaneProps {
   content: string;
@@ -1115,6 +1120,12 @@ export function PreviewPane({
           renderElapsedMs: result.timing.elapsedMs,
           requestToStateMs: nowMs() - renderStartedAt,
         });
+        markPerfDuration('preview_markdown_render', result.timing.elapsedMs, {
+          contentLength: renderContent.length,
+          htmlLength: result.html.length,
+          mode: result.timing.mode,
+          markdownToHtmlMs: result.timing.markdownToHtmlMs,
+        });
         setHtml(result.html);
         setHtmlRenderPending(false);
       })
@@ -1128,6 +1139,25 @@ export function PreviewPane({
       cancelled = true;
     };
   }, [locale, renderContent]);
+
+  // DOM commit 归因：本 effect 在 React 把 html 写入 #write 之后运行，
+  // 因此 preview_dom_committed 是 commit 完成点；随后两帧 rAF 近似首次绘制。
+  // CONTEXT.md 要求先证明 DOM commit 是否为瓶颈，才可改渲染策略。
+  useEffect(() => {
+    if (!html) return;
+    if (!isPerfInstrumentationEnabled()) return;
+    markPerf('preview_dom_committed', { htmlLength: html.length });
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        markPerf('preview_painted', { htmlLength: html.length });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [html]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -1182,6 +1212,16 @@ export function PreviewPane({
           mediaMs: nowMs() - mediaStartedAt,
           scheduleDelayMs: postProcessStartedAt - scheduledAt,
           elapsedMs: nowMs() - postProcessStartedAt,
+        });
+        markPerfDuration('preview_post_process', nowMs() - postProcessStartedAt, {
+          htmlLength: html.length,
+          targetScanMs: roundTimingMs(targetScanMs),
+          katexMs: roundTimingMs(katexMs),
+          mediaMs: roundTimingMs(nowMs() - mediaStartedAt),
+          scheduleDelayMs: roundTimingMs(postProcessStartedAt - scheduledAt),
+          katexPlaceholderCount,
+          mediaCount,
+          plantUmlPlaceholderCount,
         });
       });
     }, { immediate: renderStrategy === 'immediate', timeout: 320 });

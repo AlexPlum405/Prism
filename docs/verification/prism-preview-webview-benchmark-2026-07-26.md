@@ -1,29 +1,23 @@
 # Prism Real WebView Preview Benchmark
 
-> Generated: 2026-07-26T14:27:27.642Z（issue #1 修复后一轮）
+> Generated: 2026-07-27T06:17:10.649Z
 
-This benchmark launches the packaged Tauri `.app` with 1MB and 3MB Markdown fixtures. DOM commit is recorded as an observable substitute because `tauri-driver` is not available in this environment.
+This benchmark launches the packaged Tauri `.app` with 1MB and 3MB Markdown fixtures.
 
-Fixtures 现已注入原生 HTML `<details>` 折叠块、GFM 任务列表与行内 `<kbd>`，以便真正命中预览快速路径的按块委派逻辑（issue #1；此前 fixture 完全不含 HTML，即 issue #3 记录的盲点）。委派块数量：1MB 390 个 / 3MB 1158 个。
+**Metric caveats.** `Visible ms` includes the cost of the `swift` window probe that detected it (~260ms warm, ~960ms cold); the JSON also reports `openCommandToVisibleEarliestMs` as the lower bound. `Last session ms` includes a 500ms lifecycle debounce plus up to 500ms of poll lag, so roughly 750ms of it is fixed harness cost independent of document size. Per-action `actionMs` measures the `osascript` process including its hardcoded delays and returns once keystrokes are delivered — it is not an app response time.
 
 | Fixture | View mode | Bytes | Status | Visible ms | Last session ms | Screenshot ms | Actions / error |
 |---|---:|---:|---|---:|---:|---:|---|
-| 1mb | preview | 1048885 | pass | 1037.1 | 1508.3 | 5882.6 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:error, sourceLocateFromPreview:notAutomated |
-| 3mb | preview | 3146515 | pass | 1014 | 3527.7 | 7870.2 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:error, sourceLocateFromPreview:notAutomated |
+| 1mb | preview | 1048885 | pass | 947.7 | 1003.9 | 7641 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:pass, sourceLocateFromPreview:notAutomated |
+| 3mb | preview | 3146515 | pass | 953 | 5023.9 | 12786.8 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:pass, sourceLocateFromPreview:notAutomated |
 
-## issue #1 修复前后对比（同一 fixture，各打一次 release `.app`）
+## Stage breakdown (in-app instrumentation)
 
-修复前读数取自 `git show HEAD:src/lib/markdownToHtml.ts` 还原后重新打包实测。
+Measured by performance marks inside the packaged WebView, not inferred. `domCommit→paint` is two `requestAnimationFrame` ticks after React commits the HTML, so it approximates first paint rather than measuring compositing directly.
 
-| 指标 | 修复前 | 修复后 |
-|---|---:|---:|
-| 1MB 打开→会话就绪 | 2514.3ms | **1508.3ms** |
-| 1MB 打开→截图完成 | 7056.2ms | **5882.6ms** |
-| 3MB 打开→会话就绪 | 12094.6ms | **3527.7ms** |
-| 3MB 打开→截图完成 | 15842.2ms | **7870.2ms** |
-| 1MB / 3MB 预览滚动 action | 198.0 / 206.9ms | 215.9 / 212.5ms |
-| 1MB / 3MB 预览搜索 action | 309.1 / 294.4ms | 306.9 / 296.7ms |
-
-"打开→窗口可见"两次分别为 before 1133.4 / 345.1ms、after 1037.1 / 1014.0ms，波动大于差异，不作为结论。
+| Fixture | doc read ms | markdown render ms | markdown→domCommit ms | domCommit→paint ms | post-process ms | lastSession debounce ms |
+|---|---:|---:|---:|---:|---:|---:|
+| 1mb | 9 | 189 | 660 | 826 | - | 821 |
+| 3mb | 18 | 365 | 4293 | 1555 | - | 4598 |
 
 JSON report: `docs/verification/prism-preview-webview-benchmark-2026-07-26.json`
