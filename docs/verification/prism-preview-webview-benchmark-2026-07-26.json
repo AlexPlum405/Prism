@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-27T07:35:02.846Z",
+  "generatedAt": "2026-07-27T08:10:50.710Z",
   "environment": {
     "platform": "darwin",
     "arch": "arm64",
@@ -19,18 +19,18 @@
       "bytes": 1048885,
       "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-1mb.md",
       "defaultViewMode": "preview",
-      "openCommandToVisibleMs": 1627.4,
-      "openCommandToVisibleEarliestMs": 1171.5,
+      "openCommandToVisibleMs": 1780,
+      "openCommandToVisibleEarliestMs": 1211.9,
       "visibleProbe": {
         "count": 2,
-        "lastProbeMs": 455.9,
+        "lastProbeMs": 568.1,
         "note": "openCommandToVisibleMs includes this probe cost; the earliest value excludes it. True visibility lies between them."
       },
-      "openCommandToLastSessionMs": 3023.8,
-      "openCommandToLastSessionEarliestMs": 3023,
-      "openCommandToScreenshotMs": 18249.3,
+      "openCommandToLastSessionMs": 2523.4,
+      "openCommandToLastSessionEarliestMs": 2522.8,
+      "openCommandToScreenshotMs": 31007.7,
       "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-opened.png",
-      "screenshotMs": 287.3,
+      "screenshotMs": 917.5,
       "lastSession": {
         "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-1mb.md",
         "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures",
@@ -41,36 +41,113 @@
         },
         "sidebarVisible": true,
         "sidebarTab": "files",
-        "updatedAt": 1785137589768
+        "updatedAt": 1785139810112
       },
       "actions": [
         {
           "name": "scrollPageDown",
           "status": "pass",
-          "elapsedMs": 1659.4,
-          "actionMs": 573.5,
-          "baselineMs": 175.7,
-          "attributableMs": 397.8,
+          "elapsedMs": 1516.3,
+          "actionMs": 515.4,
+          "baselineMs": 174.3,
+          "attributableMs": 341.1,
           "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
           "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-scroll.png",
-          "screenshotMs": 309.3
+          "screenshotMs": 225.9
         },
         {
           "name": "searchFirstTerm",
           "status": "pass",
-          "elapsedMs": 1915.1,
-          "actionMs": 331.4,
-          "baselineMs": 368.9,
-          "attributableMs": -37.5,
+          "elapsedMs": 1836.3,
+          "actionMs": 336.3,
+          "baselineMs": 294.8,
+          "attributableMs": 41.5,
           "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
           "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-search.png",
-          "screenshotMs": 278.1
+          "screenshotMs": 362.2
         },
         {
           "name": "contextMenuAttempt",
           "status": "error",
-          "elapsedMs": 4521.3,
-          "error": "98:117: execution error: “System Events”遇到一个错误：“osascript”不允许辅助访问。 (-10000)"
+          "elapsedMs": 15014.2,
+          "error": "spawnSync osascript ETIMEDOUT"
+        },
+        {
+          "name": "sourceLocateFromPreview",
+          "status": "notAutomated",
+          "reason": "Current harness records context menu availability, but does not select the localized source-locate menu item through Accessibility."
+        }
+      ],
+      "perfTrace": {
+        "status": "missing",
+        "reason": "perf-trace.json not written; instrumentation flag may not have been read"
+      },
+      "stageBreakdown": {
+        "status": "missing"
+      },
+      "domCommitMetric": {
+        "status": "observableSubstitute",
+        "substitute": "openCommandToLastSessionMs + openCommandToScreenshotMs in packaged Tauri WebView",
+        "reason": "in-app trace unavailable (missing); tauri-driver is not installed in this environment."
+      }
+    },
+    {
+      "label": "3mb",
+      "bytes": 3146515,
+      "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md",
+      "defaultViewMode": "preview",
+      "openCommandToVisibleMs": 525.8,
+      "openCommandToVisibleEarliestMs": 0,
+      "visibleProbe": {
+        "count": 1,
+        "lastProbeMs": 525.8,
+        "note": "openCommandToVisibleMs includes this probe cost; the earliest value excludes it. True visibility lies between them."
+      },
+      "openCommandToLastSessionMs": 6073.2,
+      "openCommandToLastSessionEarliestMs": 6072.2,
+      "openCommandToScreenshotMs": 12902.6,
+      "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-opened.png",
+      "screenshotMs": 313.2,
+      "lastSession": {
+        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md",
+        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures",
+        "viewMode": "preview",
+        "scrollState": {
+          "editorRatio": 0,
+          "previewRatio": 0
+        },
+        "sidebarVisible": true,
+        "sidebarTab": "files",
+        "updatedAt": 1785139844208
+      },
+      "actions": [
+        {
+          "name": "scrollPageDown",
+          "status": "pass",
+          "elapsedMs": 1244.6,
+          "actionMs": 234.5,
+          "baselineMs": 166.4,
+          "attributableMs": 68.1,
+          "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
+          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-scroll.png",
+          "screenshotMs": 215.1
+        },
+        {
+          "name": "searchFirstTerm",
+          "status": "pass",
+          "elapsedMs": 1616.6,
+          "actionMs": 285.8,
+          "baselineMs": 274.5,
+          "attributableMs": 11.3,
+          "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
+          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-search.png",
+          "screenshotMs": 234.3
+        },
+        {
+          "name": "contextMenuAttempt",
+          "status": "error",
+          "elapsedMs": 238.3,
+          "error": "98:117: execution error: “System Events”遇到一个错误：发生“-25208”类型错误。 (-25208)"
         },
         {
           "name": "sourceLocateFromPreview",
@@ -87,77 +164,73 @@
           },
           {
             "name": "last_session_debounce_scheduled",
-            "atMs": 41
+            "atMs": 28
           },
           {
             "name": "document_read_start",
-            "atMs": 204
+            "atMs": 285
           },
           {
             "name": "document_read_done",
-            "atMs": 212,
+            "atMs": 301,
             "meta": {
-              "contentLength": 906919
+              "contentLength": 2725075
             }
           },
           {
             "name": "document_store_updated",
-            "atMs": 212
+            "atMs": 302
           },
           {
             "name": "last_session_debounce_scheduled",
-            "atMs": 312
+            "atMs": 513
           },
           {
             "name": "last_session_debounce_scheduled",
-            "atMs": 356
+            "atMs": 593
           },
           {
             "name": "workspace_sync_done",
-            "atMs": 356
-          },
-          {
-            "name": "preview_post_process",
-            "atMs": 357,
-            "durationMs": 0,
-            "meta": {
-              "htmlLength": 0,
-              "targetScanMs": 0,
-              "katexMs": 0,
-              "mediaMs": 0,
-              "scheduleDelayMs": 45,
-              "katexPlaceholderCount": 0,
-              "mediaCount": 0,
-              "plantUmlPlaceholderCount": 0
-            }
+            "atMs": 593
           },
           {
             "name": "preview_markdown_render",
-            "atMs": 545,
-            "durationMs": 227,
+            "atMs": 945,
+            "durationMs": 424,
             "meta": {
-              "contentLength": 906919,
-              "htmlLength": 1743034,
+              "contentLength": 2725075,
+              "htmlLength": 5230650,
               "mode": "main",
-              "markdownToHtmlMs": 227
+              "markdownToHtmlMs": 424
             }
           },
           {
             "name": "preview_dom_committed",
-            "atMs": 2764,
+            "atMs": 1037,
             "meta": {
-              "htmlLength": 1743034
+              "htmlLength": 5230650,
+              "firstChunkChildCount": 19,
+              "totalChildCount": 45315,
+              "firstChunkMs": 89
+            }
+          },
+          {
+            "name": "preview_second_chunk_committed",
+            "atMs": 3066,
+            "meta": {
+              "htmlLength": 5230650,
+              "totalChildCount": 22668
             }
           },
           {
             "name": "last_session_write_start",
-            "atMs": 2773
+            "atMs": 5724
           },
           {
             "name": "preview_painted",
-            "atMs": 5565,
+            "atMs": 5762,
             "meta": {
-              "htmlLength": 1743034
+              "htmlLength": 5230650
             }
           }
         ]
@@ -173,55 +246,29 @@
           "last_session_debounce_scheduled",
           "last_session_debounce_scheduled",
           "workspace_sync_done",
-          "preview_post_process",
           "preview_markdown_render",
           "preview_dom_committed",
+          "preview_second_chunk_committed",
           "last_session_write_start",
           "preview_painted"
         ],
-        "documentReadMs": 8,
-        "readToMarkdownDoneMs": 333,
-        "markdownRenderMs": 227,
+        "documentReadMs": 16,
+        "readToMarkdownDoneMs": 644,
+        "markdownRenderMs": 424,
         "markdownRenderMode": "main",
-        "htmlLength": 1743034,
-        "markdownToDomCommitMs": 2219,
-        "domCommitToPaintMs": 2801,
+        "htmlLength": 5230650,
+        "markdownToDomCommitMs": 92,
+        "domCommitToPaintMs": 4725,
         "postProcessMs": null,
         "postProcessScheduleDelayMs": null,
         "postProcessNote": "no post-process mark with htmlLength > 0 was captured; the only run observed was the initial empty render",
-        "lastSessionDebounceMs": 2417,
-        "lastSessionDebounceOverrunMs": 1917
+        "lastSessionDebounceMs": 5131,
+        "lastSessionDebounceOverrunMs": 4631
       },
       "domCommitMetric": {
         "status": "instrumented",
         "source": "in-app performance marks written to appData/perf-trace.json",
         "note": "preview_dom_committed is measured after React commits html into #write; preview_painted is two rAF later."
-      }
-    },
-    {
-      "label": "3mb",
-      "bytes": 3146515,
-      "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md",
-      "defaultViewMode": "preview",
-      "status": "timeout",
-      "error": "lastSession /Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md timed out",
-      "openCommandToVisibleMs": 1053.2,
-      "openCommandToVisibleEarliestMs": 713.3,
-      "openCommandToLastSessionMs": null,
-      "openCommandToScreenshotMs": 98590.8,
-      "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-timeout.png",
-      "screenshotMs": 281.1,
-      "actions": [],
-      "perfTrace": {
-        "status": "missing",
-        "reason": "perf-trace.json not written; instrumentation flag may not have been read"
-      },
-      "stageBreakdown": {
-        "status": "missing"
-      },
-      "domCommitMetric": {
-        "status": "timeoutBeforeReady",
-        "substitute": "window became visible, but lastSession did not update before timeout"
       }
     }
   ]
