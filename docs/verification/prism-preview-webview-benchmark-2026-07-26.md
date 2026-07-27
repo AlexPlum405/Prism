@@ -1,6 +1,6 @@
 # Prism Real WebView Preview Benchmark
 
-> Generated: 2026-07-27T06:17:10.649Z
+> Generated: 2026-07-27T07:35:02.846Z
 
 This benchmark launches the packaged Tauri `.app` with 1MB and 3MB Markdown fixtures.
 
@@ -8,8 +8,8 @@ This benchmark launches the packaged Tauri `.app` with 1MB and 3MB Markdown fixt
 
 | Fixture | View mode | Bytes | Status | Visible ms | Last session ms | Screenshot ms | Actions / error |
 |---|---:|---:|---|---:|---:|---:|---|
-| 1mb | preview | 1048885 | pass | 947.7 | 1003.9 | 7641 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:pass, sourceLocateFromPreview:notAutomated |
-| 3mb | preview | 3146515 | pass | 953 | 5023.9 | 12786.8 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:pass, sourceLocateFromPreview:notAutomated |
+| 1mb | preview | 1048885 | pass | 1627.4 | 3023.8 | 18249.3 | scrollPageDown:pass, searchFirstTerm:pass, contextMenuAttempt:error, sourceLocateFromPreview:notAutomated |
+| 3mb | preview | 3146515 | timeout | 1053.2 | - | 98590.8 |  |
 
 ## Stage breakdown (in-app instrumentation)
 
@@ -17,7 +17,6 @@ Measured by performance marks inside the packaged WebView, not inferred. `domCom
 
 | Fixture | doc read ms | markdown render ms | markdown→domCommit ms | domCommit→paint ms | post-process ms | lastSession debounce ms |
 |---|---:|---:|---:|---:|---:|---:|
-| 1mb | 9 | 189 | 660 | 826 | - | 821 |
-| 3mb | 18 | 365 | 4293 | 1555 | - | 4598 |
+| 1mb | 8 | 227 | 2219 | 2801 | - | 2417 |
 
 JSON report: `docs/verification/prism-preview-webview-benchmark-2026-07-26.json`

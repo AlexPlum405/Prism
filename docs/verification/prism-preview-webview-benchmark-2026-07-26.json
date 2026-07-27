@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-27T06:17:10.649Z",
+  "generatedAt": "2026-07-27T07:35:02.846Z",
   "environment": {
     "platform": "darwin",
     "arch": "arm64",
@@ -19,18 +19,18 @@
       "bytes": 1048885,
       "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-1mb.md",
       "defaultViewMode": "preview",
-      "openCommandToVisibleMs": 947.7,
-      "openCommandToVisibleEarliestMs": 608,
+      "openCommandToVisibleMs": 1627.4,
+      "openCommandToVisibleEarliestMs": 1171.5,
       "visibleProbe": {
         "count": 2,
-        "lastProbeMs": 339.8,
+        "lastProbeMs": 455.9,
         "note": "openCommandToVisibleMs includes this probe cost; the earliest value excludes it. True visibility lies between them."
       },
-      "openCommandToLastSessionMs": 1003.9,
-      "openCommandToLastSessionEarliestMs": 1003.2,
-      "openCommandToScreenshotMs": 7641,
+      "openCommandToLastSessionMs": 3023.8,
+      "openCommandToLastSessionEarliestMs": 3023,
+      "openCommandToScreenshotMs": 18249.3,
       "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-opened.png",
-      "screenshotMs": 233.3,
+      "screenshotMs": 287.3,
       "lastSession": {
         "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-1mb.md",
         "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures",
@@ -41,41 +41,36 @@
         },
         "sidebarVisible": true,
         "sidebarTab": "files",
-        "updatedAt": 1785133011442
+        "updatedAt": 1785137589768
       },
       "actions": [
         {
           "name": "scrollPageDown",
           "status": "pass",
-          "elapsedMs": 1412.7,
-          "actionMs": 427.7,
-          "baselineMs": 170.2,
-          "attributableMs": 257.5,
+          "elapsedMs": 1659.4,
+          "actionMs": 573.5,
+          "baselineMs": 175.7,
+          "attributableMs": 397.8,
           "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
           "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-scroll.png",
-          "screenshotMs": 226.6
+          "screenshotMs": 309.3
         },
         {
           "name": "searchFirstTerm",
           "status": "pass",
-          "elapsedMs": 1632.2,
-          "actionMs": 306.6,
-          "baselineMs": 276.7,
-          "attributableMs": 29.9,
+          "elapsedMs": 1915.1,
+          "actionMs": 331.4,
+          "baselineMs": 368.9,
+          "attributableMs": -37.5,
           "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
           "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-search.png",
-          "screenshotMs": 232.4
+          "screenshotMs": 278.1
         },
         {
           "name": "contextMenuAttempt",
-          "status": "pass",
-          "elapsedMs": 805.2,
-          "actionMs": 329.9,
-          "baselineMs": null,
-          "attributableMs": null,
-          "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
-          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/1mb-preview-context-menu.png",
-          "screenshotMs": 224.7
+          "status": "error",
+          "elapsedMs": 4521.3,
+          "error": "98:117: execution error: “System Events”遇到一个错误：“osascript”不允许辅助访问。 (-10000)"
         },
         {
           "name": "sourceLocateFromPreview",
@@ -92,45 +87,45 @@
           },
           {
             "name": "last_session_debounce_scheduled",
-            "atMs": 28
+            "atMs": 41
           },
           {
             "name": "document_read_start",
-            "atMs": 198
+            "atMs": 204
           },
           {
             "name": "document_read_done",
-            "atMs": 207,
+            "atMs": 212,
             "meta": {
               "contentLength": 906919
             }
           },
           {
             "name": "document_store_updated",
-            "atMs": 208
+            "atMs": 212
           },
           {
             "name": "last_session_debounce_scheduled",
-            "atMs": 293
+            "atMs": 312
           },
           {
             "name": "last_session_debounce_scheduled",
-            "atMs": 333
+            "atMs": 356
           },
           {
             "name": "workspace_sync_done",
-            "atMs": 334
+            "atMs": 356
           },
           {
             "name": "preview_post_process",
-            "atMs": 335,
-            "durationMs": 1,
+            "atMs": 357,
+            "durationMs": 0,
             "meta": {
               "htmlLength": 0,
               "targetScanMs": 0,
-              "katexMs": 1,
+              "katexMs": 0,
               "mediaMs": 0,
-              "scheduleDelayMs": 42,
+              "scheduleDelayMs": 45,
               "katexPlaceholderCount": 0,
               "mediaCount": 0,
               "plantUmlPlaceholderCount": 0
@@ -138,29 +133,29 @@
           },
           {
             "name": "preview_markdown_render",
-            "atMs": 486,
-            "durationMs": 189,
+            "atMs": 545,
+            "durationMs": 227,
             "meta": {
               "contentLength": 906919,
               "htmlLength": 1743034,
               "mode": "main",
-              "markdownToHtmlMs": 189
+              "markdownToHtmlMs": 227
             }
           },
           {
             "name": "preview_dom_committed",
-            "atMs": 1146,
+            "atMs": 2764,
             "meta": {
               "htmlLength": 1743034
             }
           },
           {
             "name": "last_session_write_start",
-            "atMs": 1154
+            "atMs": 2773
           },
           {
             "name": "preview_painted",
-            "atMs": 1972,
+            "atMs": 5565,
             "meta": {
               "htmlLength": 1743034
             }
@@ -184,18 +179,18 @@
           "last_session_write_start",
           "preview_painted"
         ],
-        "documentReadMs": 9,
-        "readToMarkdownDoneMs": 279,
-        "markdownRenderMs": 189,
+        "documentReadMs": 8,
+        "readToMarkdownDoneMs": 333,
+        "markdownRenderMs": 227,
         "markdownRenderMode": "main",
         "htmlLength": 1743034,
-        "markdownToDomCommitMs": 660,
-        "domCommitToPaintMs": 826,
+        "markdownToDomCommitMs": 2219,
+        "domCommitToPaintMs": 2801,
         "postProcessMs": null,
         "postProcessScheduleDelayMs": null,
         "postProcessNote": "no post-process mark with htmlLength > 0 was captured; the only run observed was the initial empty render",
-        "lastSessionDebounceMs": 821,
-        "lastSessionDebounceOverrunMs": 321
+        "lastSessionDebounceMs": 2417,
+        "lastSessionDebounceOverrunMs": 1917
       },
       "domCommitMetric": {
         "status": "instrumented",
@@ -208,188 +203,25 @@
       "bytes": 3146515,
       "fixture": ".codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md",
       "defaultViewMode": "preview",
-      "openCommandToVisibleMs": 953,
-      "openCommandToVisibleEarliestMs": 631.8,
-      "visibleProbe": {
-        "count": 2,
-        "lastProbeMs": 321.3,
-        "note": "openCommandToVisibleMs includes this probe cost; the earliest value excludes it. True visibility lies between them."
-      },
-      "openCommandToLastSessionMs": 5023.9,
-      "openCommandToLastSessionEarliestMs": 5023.2,
-      "openCommandToScreenshotMs": 12786.8,
-      "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-opened.png",
-      "screenshotMs": 237.5,
-      "lastSession": {
-        "filePath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md",
-        "folderPath": "/Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures",
-        "viewMode": "preview",
-        "scrollState": {
-          "editorRatio": 0,
-          "previewRatio": 0
-        },
-        "sidebarVisible": true,
-        "sidebarTab": "files",
-        "updatedAt": 1785133023621
-      },
-      "actions": [
-        {
-          "name": "scrollPageDown",
-          "status": "pass",
-          "elapsedMs": 1137.3,
-          "actionMs": 198.7,
-          "baselineMs": 162.2,
-          "attributableMs": 36.5,
-          "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
-          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-scroll.png",
-          "screenshotMs": 207.6
-        },
-        {
-          "name": "searchFirstTerm",
-          "status": "pass",
-          "elapsedMs": 1582.1,
-          "actionMs": 302.9,
-          "baselineMs": 279.2,
-          "attributableMs": 23.7,
-          "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
-          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-search.png",
-          "screenshotMs": 201.7
-        },
-        {
-          "name": "contextMenuAttempt",
-          "status": "pass",
-          "elapsedMs": 725,
-          "actionMs": 258.7,
-          "baselineMs": null,
-          "attributableMs": null,
-          "metricCaveat": "actionMs measures the osascript process, including hardcoded delays; it returns once keys are delivered and does not wait for the app to finish responding.",
-          "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-context-menu.png",
-          "screenshotMs": 214.9
-        },
-        {
-          "name": "sourceLocateFromPreview",
-          "status": "notAutomated",
-          "reason": "Current harness records context menu availability, but does not select the localized source-locate menu item through Accessibility."
-        }
-      ],
+      "status": "timeout",
+      "error": "lastSession /Users/Alex/AI/project/Prism/.codex-smoke/preview-webview-benchmark/fixtures/preview-webview-3mb.md timed out",
+      "openCommandToVisibleMs": 1053.2,
+      "openCommandToVisibleEarliestMs": 713.3,
+      "openCommandToLastSessionMs": null,
+      "openCommandToScreenshotMs": 98590.8,
+      "screenshot": ".codex-smoke/preview-webview-benchmark/evidence/3mb-preview-timeout.png",
+      "screenshotMs": 281.1,
+      "actions": [],
       "perfTrace": {
-        "status": "ok",
-        "marks": [
-          {
-            "name": "settings_loaded",
-            "atMs": 0
-          },
-          {
-            "name": "last_session_debounce_scheduled",
-            "atMs": 29
-          },
-          {
-            "name": "document_read_start",
-            "atMs": 206
-          },
-          {
-            "name": "document_read_done",
-            "atMs": 224,
-            "meta": {
-              "contentLength": 2725075
-            }
-          },
-          {
-            "name": "document_store_updated",
-            "atMs": 224
-          },
-          {
-            "name": "last_session_debounce_scheduled",
-            "atMs": 428
-          },
-          {
-            "name": "last_session_debounce_scheduled",
-            "atMs": 494
-          },
-          {
-            "name": "workspace_sync_done",
-            "atMs": 495
-          },
-          {
-            "name": "preview_post_process",
-            "atMs": 506,
-            "durationMs": 1,
-            "meta": {
-              "htmlLength": 0,
-              "targetScanMs": 0,
-              "katexMs": 0,
-              "mediaMs": 1,
-              "scheduleDelayMs": 78,
-              "katexPlaceholderCount": 0,
-              "mediaCount": 0,
-              "plantUmlPlaceholderCount": 0
-            }
-          },
-          {
-            "name": "preview_markdown_render",
-            "atMs": 800,
-            "durationMs": 365,
-            "meta": {
-              "contentLength": 2725075,
-              "htmlLength": 5230650,
-              "mode": "main",
-              "markdownToHtmlMs": 364.0000000000001
-            }
-          },
-          {
-            "name": "last_session_write_start",
-            "atMs": 5092
-          },
-          {
-            "name": "preview_dom_committed",
-            "atMs": 5093,
-            "meta": {
-              "htmlLength": 5230650
-            }
-          },
-          {
-            "name": "preview_painted",
-            "atMs": 6648,
-            "meta": {
-              "htmlLength": 5230650
-            }
-          }
-        ]
+        "status": "missing",
+        "reason": "perf-trace.json not written; instrumentation flag may not have been read"
       },
       "stageBreakdown": {
-        "status": "ok",
-        "marks": [
-          "settings_loaded",
-          "last_session_debounce_scheduled",
-          "document_read_start",
-          "document_read_done",
-          "document_store_updated",
-          "last_session_debounce_scheduled",
-          "last_session_debounce_scheduled",
-          "workspace_sync_done",
-          "preview_post_process",
-          "preview_markdown_render",
-          "last_session_write_start",
-          "preview_dom_committed",
-          "preview_painted"
-        ],
-        "documentReadMs": 18,
-        "readToMarkdownDoneMs": 576,
-        "markdownRenderMs": 365,
-        "markdownRenderMode": "main",
-        "htmlLength": 5230650,
-        "markdownToDomCommitMs": 4293,
-        "domCommitToPaintMs": 1555,
-        "postProcessMs": null,
-        "postProcessScheduleDelayMs": null,
-        "postProcessNote": "no post-process mark with htmlLength > 0 was captured; the only run observed was the initial empty render",
-        "lastSessionDebounceMs": 4598,
-        "lastSessionDebounceOverrunMs": 4098
+        "status": "missing"
       },
       "domCommitMetric": {
-        "status": "instrumented",
-        "source": "in-app performance marks written to appData/perf-trace.json",
-        "note": "preview_dom_committed is measured after React commits html into #write; preview_painted is two rAF later."
+        "status": "timeoutBeforeReady",
+        "substitute": "window became visible, but lastSession did not update before timeout"
       }
     }
   ]
