@@ -19,12 +19,14 @@ describe('checkForAppUpdate', () => {
   });
 
   it('normalizes available update metadata', async () => {
-    (check as ReturnType<typeof vi.fn>).mockResolvedValue({
+    const mockUpdate = {
       currentVersion: '1.4.0',
       version: '1.4.1',
       date: '2026-05-14T00:00:00Z',
       body: 'Bug fixes',
-    });
+      downloadAndInstall: vi.fn(),
+    };
+    (check as ReturnType<typeof vi.fn>).mockResolvedValue(mockUpdate);
 
     await expect(checkForAppUpdate()).resolves.toEqual({
       status: 'available',
@@ -32,6 +34,7 @@ describe('checkForAppUpdate', () => {
       version: '1.4.1',
       date: '2026-05-14T00:00:00Z',
       body: 'Bug fixes',
+      update: mockUpdate,
     });
   });
 

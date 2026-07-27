@@ -372,18 +372,23 @@ describe('command registry', () => {
 
   it('shows an actionable final toast when an update is available', async () => {
     const showToast = vi.fn();
+    const mockUpdate = { version: '1.4.1' };
     updateMock.checkForAppUpdate.mockResolvedValue({
       currentVersion: '1.4.0',
       status: 'available',
       version: '1.4.1',
+      update: mockUpdate,
     });
 
     await runCommand('checkUpdate', createCommandContext({ showToast }));
 
     expect(showToast).toHaveBeenCalledWith('正在检查更新...');
     expect(showToast).toHaveBeenCalledWith(expect.objectContaining({
-      actions: [expect.objectContaining({ label: '打开' })],
-      message: '发现新版本 1.4.1（当前 1.4.0）。是否打开 GitHub Releases？',
+      actions: [
+        expect.objectContaining({ label: '安装更新' }),
+        expect.objectContaining({ label: '在 GitHub 查看' }),
+      ],
+      message: '发现新版本 1.4.1（当前 1.4.0）',
       title: '检查更新',
     }));
 
@@ -391,7 +396,7 @@ describe('command registry', () => {
       typeof toast !== 'string' && toast.title === '检查更新'
     ))?.[0] as any;
 
-    await updateToast.actions[0].onClick();
+    await updateToast.actions[1].onClick();
 
     expect(openerMock.openUrl).toHaveBeenCalledWith('https://github.com/AlexPlum405/Prism/releases/latest');
   });

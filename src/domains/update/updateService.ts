@@ -1,4 +1,5 @@
-import { check } from '@tauri-apps/plugin-updater';
+import { check, type Update } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { t } from '../i18n';
 
 export interface AvailableUpdate {
@@ -7,6 +8,7 @@ export interface AvailableUpdate {
   version: string;
   date?: string;
   body?: string;
+  update: Update;
 }
 
 export interface NoUpdate {
@@ -19,6 +21,11 @@ export interface UpdateUnavailable {
 }
 
 export type UpdateCheckResult = AvailableUpdate | NoUpdate | UpdateUnavailable;
+
+export interface DownloadProgress {
+  chunkLength: number;
+  contentLength: number | null;
+}
 
 function getUpdateErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -53,5 +60,26 @@ export async function checkForAppUpdate(): Promise<UpdateCheckResult> {
     version: update.version,
     date: update.date,
     body: update.body,
+    update,
   };
+}
+
+export async function downloadAndInstallUpdate(
+  update: Update,
+  onProgress?: (progress: DownloadProgress) => void,
+): Promise<void> {
+  await update.downloadAndInstall((event) => {
+    switch (event.event) {
+      case 'Started':
+        onProgress?.({ chunkLength: 0, contentLength: event.data.contentLength ?? null });
+        break;
+      case 'Progress':
+        onProgress?.({ chunkLength: event.data.chunkLength, contentLength: null });
+        break;
+      case 'Finished':
+        break;
+    }
+  });
+
+  await relaunch();
 }

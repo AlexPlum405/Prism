@@ -1,6 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { checkForAppUpdate } from '../update/updateService';
+import { checkForAppUpdate, downloadAndInstallUpdate } from '../update/updateService';
 import type {
   CommandContext,
   CommandDefinition,
@@ -136,20 +136,45 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       currentVersion: result.currentVersion,
       version: result.version,
     });
+
     if (context.showToast) {
       context.showToast({
-        actions: [{
-          label: t('common.open'),
-          onClick: () => openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest'),
-        }],
+        actions: [
+          {
+            label: t('command.installUpdate'),
+            onClick: async () => {
+              context.showToast?.(t('command.downloadingUpdate'));
+              try {
+                await downloadAndInstallUpdate(result.update, (progress) => {
+                  if (progress.contentLength) {
+                    const percent = Math.round((progress.chunkLength / progress.contentLength) * 100);
+                    context.showToast?.(t('command.downloadingProgress', { percent }));
+                  }
+                });
+              } catch (error) {
+                context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
+              }
+            },
+          },
+          {
+            label: t('command.viewOnGitHub'),
+            onClick: () => openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest'),
+          },
+        ],
         message: updateMessage,
         title: t('command.checkUpdate'),
       });
       return;
     }
 
-    const shouldOpen = await askDialog(updateMessage, { title: t('command.checkUpdate'), kind: 'info' });
-    if (shouldOpen) await openExternalUrl('https://github.com/AlexPlum405/Prism/releases/latest');
+    const shouldInstall = await askDialog(
+      updateMessage + '\n\n' + t('command.installUpdatePrompt'),
+      { title: t('command.checkUpdate'), kind: 'info' },
+    );
+    if (shouldInstall) {
+      context.showToast?.(t('command.downloadingUpdate'));
+      await downloadAndInstallUpdate(result.update);
+    }
   } catch (error) {
     context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
   }
