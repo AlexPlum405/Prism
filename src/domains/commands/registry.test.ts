@@ -173,6 +173,7 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       fileTree: [],
       fileTreeMode: 'tree',
       fileSortMode: 'name',
+      workspaceTreeScope: 'currentLevel',
       sidebarVisible: true,
       sidebarTab: 'files',
       focusMode: false,
@@ -185,6 +186,7 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       setWorkspace: vi.fn(),
       setFileTreeMode: vi.fn(),
       setFileSortMode: vi.fn(),
+      setWorkspaceTreeScope: vi.fn(),
       toggleSidebar: vi.fn(),
       setSidebarVisible: vi.fn(),
       toggleStatusBar: vi.fn(),
@@ -323,14 +325,14 @@ describe('command registry', () => {
     expect(helpActions).not.toContain('commandPalette');
   });
 
-  it('keeps New Document in File and New Window only in Window', () => {
+  it('keeps New Document and New Window in File only', () => {
     const sections = getMenuSections(createCommandContext());
     const fileActions = sections['文件'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
     const windowActions = sections['窗口'].flatMap((item) => item.type === 'separator' ? [] : [item.action]);
 
     expect(fileActions).toContain('new');
-    expect(fileActions).not.toContain('newWindow');
-    expect(windowActions).toContain('newWindow');
+    expect(fileActions).toContain('newWindow');
+    expect(windowActions).not.toContain('newWindow');
   });
 
   it('opens the Prism migration guide from product help', async () => {
@@ -1509,7 +1511,7 @@ describe('command registry', () => {
     expect(detail.diagnostic).toContain('Pandoc 引用条件: 未满足');
   });
 
-  it('does not create an in-memory untitled document when new has no target folder and skips disabled save', async () => {
+  it('creates an in-memory untitled document when new has no target folder and skips disabled save', async () => {
     const createNewDocument = vi.fn();
     const requestSavePath = vi.fn();
     const showToast = vi.fn();
@@ -1525,8 +1527,8 @@ describe('command registry', () => {
     await runCommand('new', context);
     await runCommand('save', context);
 
-    expect(createNewDocument).not.toHaveBeenCalled();
-    expect(showToast).toHaveBeenCalledWith('当前没有打开的工作区');
+    expect(createNewDocument).toHaveBeenCalledWith();
+    expect(showToast).not.toHaveBeenCalled();
     expect(requestSavePath).not.toHaveBeenCalled();
   });
 

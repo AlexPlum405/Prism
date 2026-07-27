@@ -86,6 +86,10 @@ Markdown Document 与 Text Document 的边界详见 ADR-0007。
 ### 工作区（Workspace）
 侧栏展示的根目录。一次打开一个工作区；`status-folder` 显示其名称，右键/点击弹出工作区级上下文菜单。
 
+**工作区树范围（Workspace tree scope）**：
+侧栏文件树展示工作区文稿时采用的层级范围。默认范围是“当前层级”，只展示工作区根目录下的文稿；“递归子目录”是用户显式开启的范围，用于把子目录中的文稿纳入文件树。
+_Avoid_: 把工作区树范围称为搜索范围、索引范围或打开范围。
+
 ### 打字机模式（Typewriter mode）
 `F9` 触发。开启后当前编辑行始终保持在 viewport 垂直中心。实现依赖 CodeMirror 6 的 `selection` 变化监听 + `scrollIntoView`。与专注模式**正交**，可同时打开。
 

@@ -257,6 +257,53 @@ describe('workspace index', () => {
     ]);
   });
 
+  it('keeps unaffected indexed document objects stable while overlaying current content', () => {
+    const baseIndex = buildWorkspaceIndex({
+      fileTree,
+      workspaceRoot: '/repo',
+      documents: [
+        { path: '/repo/docs/guide.md', content: '# Stale guide\n\n[API](api.md)' },
+        { path: '/repo/docs/api.md', content: '# API 设计' },
+        { path: '/repo/index.md', content: '# 首页\n\n[Guide](docs/guide.md)\n\n[API](docs/api.md)' },
+      ],
+    });
+    const unchangedApiDocument = baseIndex.documentByPath.get('/repo/docs/api.md');
+    const baseApiBacklinks = baseIndex.backlinksByPath.get('/repo/docs/api.md');
+
+    const overlaid = applyWorkspaceIndexOverlay(baseIndex, {
+      currentDocument: {
+        path: '/repo/docs/guide.md',
+        content: '# Fresh guide\n\n没有链接。',
+      },
+      recentFiles: [],
+    });
+
+    expect(overlaid.documentByPath.get('/repo/docs/api.md')).toBe(unchangedApiDocument);
+    expect(overlaid.backlinksByPath.get('/repo/docs/api.md')).toEqual([
+      expect.objectContaining({
+        path: '/repo/index.md',
+        title: '首页',
+      }),
+    ]);
+    expect(baseIndex.backlinksByPath.get('/repo/docs/api.md')).toBe(baseApiBacklinks);
+    expect(baseIndex.backlinksByPath.get('/repo/docs/api.md')).toEqual([
+      expect.objectContaining({
+        path: '/repo/docs/guide.md',
+        title: 'Stale guide',
+      }),
+      expect.objectContaining({
+        path: '/repo/index.md',
+        title: '首页',
+      }),
+    ]);
+    expect(overlaid.backlinksByPath.get('/repo/docs/guide.md')).toEqual([
+      expect.objectContaining({
+        path: '/repo/index.md',
+        title: '首页',
+      }),
+    ]);
+  });
+
   it('keeps incremental index output correct when unchanged metadata can be reused', () => {
     const first = buildWorkspaceIndexIncremental({
       fileTree,

@@ -241,7 +241,17 @@ function resolveWorkspaceDocumentLinks(
   documents: WorkspaceIndexedDocument[],
   rootPath: string | null,
 ) {
-  const workspaceFiles = documents
+  const workspaceFiles = getWorkspaceLinkResolutionFiles(documents);
+
+  return documents.map((document) => resolveWorkspaceDocumentLinksForDocument(
+    document,
+    workspaceFiles,
+    rootPath,
+  ));
+}
+
+function getWorkspaceLinkResolutionFiles(documents: WorkspaceIndexedDocument[]) {
+  return documents
     .filter((document) => document.profile === 'markdown')
     .map((document) => ({
       headings: document.headings.map((heading) => ({ slug: heading.slug, title: heading.title })),
@@ -249,20 +259,90 @@ function resolveWorkspaceDocumentLinks(
       path: document.path,
       title: document.title,
     }));
+}
 
-  return documents.map((document) => ({
-    ...document,
-    links: document.profile === 'markdown' ? document.links.map((link) => ({
-      ...link,
-      resolvedPath: resolveDocumentLinkTarget({
-        kind: link.kind,
-        sourcePath: document.path,
-        target: link.target,
-        workspaceFiles,
-        workspaceRoot: rootPath,
-      })?.path ?? null,
-    })) : [],
+function resolveWorkspaceDocumentLinksForDocument(
+  document: WorkspaceIndexedDocument,
+  workspaceFiles: ReturnType<typeof getWorkspaceLinkResolutionFiles>,
+  rootPath: string | null,
+) {
+  if (document.profile !== 'markdown') {
+    return document.links.length === 0 ? document : { ...document, links: [] };
+  }
+
+  const links = document.links.map((link) => ({
+    ...link,
+    resolvedPath: resolveDocumentLinkTarget({
+      kind: link.kind,
+      sourcePath: document.path,
+      target: link.target,
+      workspaceFiles,
+      workspaceRoot: rootPath,
+    })?.path ?? null,
   }));
+
+  return { ...document, links };
+}
+
+function sortBacklinks(backlinks: WorkspaceIndexBacklink[]) {
+  backlinks.sort((a, b) => (
+    a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }) ||
+    a.line - b.line ||
+    a.column - b.column
+  ));
+}
+
+function addDocumentBacklinks(
+  backlinksByPath: Map<string, WorkspaceIndexBacklink[]>,
+  document: WorkspaceIndexedDocument,
+) {
+  const sourceKey = normalizePathForCompare(document.path);
+  const lines = document.links.length > 0 ? document.content.split(/\r?\n/) : [];
+  const touchedKeys = new Set<string>();
+
+  document.links.forEach((link) => {
+    if (!link.resolvedPath) return;
+    const targetKey = normalizePathForCompare(link.resolvedPath);
+    if (targetKey === sourceKey) return;
+    const backlinks = backlinksByPath.get(targetKey) ?? [];
+    backlinks.push({
+      column: link.column,
+      excerpt: excerptForLine(lines, link.line),
+      line: link.line,
+      path: document.path,
+      title: document.title,
+    });
+    backlinksByPath.set(targetKey, backlinks);
+    touchedKeys.add(targetKey);
+  });
+
+  touchedKeys.forEach((key) => {
+    const backlinks = backlinksByPath.get(key);
+    if (backlinks) sortBacklinks(backlinks);
+  });
+}
+
+function cloneBacklinksWithoutSource(
+  backlinksByPath: Map<string, WorkspaceIndexBacklink[]>,
+  sourcePath: string,
+) {
+  const sourceKey = normalizePathForCompare(sourcePath);
+  const next = new Map<string, WorkspaceIndexBacklink[]>();
+
+  backlinksByPath.forEach((backlinks, targetKey) => {
+    const filtered = backlinks.filter((backlink) => normalizePathForCompare(backlink.path) !== sourceKey);
+    if (filtered.length > 0) {
+      next.set(targetKey, filtered.length === backlinks.length ? [...backlinks] : filtered);
+    }
+  });
+
+  return next;
+}
+
+function getRecentDocuments(documents: WorkspaceIndexedDocument[]) {
+  return documents
+    .filter((document) => document.recentRank !== undefined)
+    .sort((a, b) => (a.recentRank ?? 0) - (b.recentRank ?? 0));
 }
 
 function createWorkspaceIndexFromDocuments(
@@ -279,42 +359,14 @@ function createWorkspaceIndexFromDocuments(
   ]));
   const backlinksByPath = new Map<string, WorkspaceIndexBacklink[]>();
 
-  resolvedDocuments.forEach((document) => {
-    const lines = document.links.length > 0 ? document.content.split(/\r?\n/) : [];
-    document.links.forEach((link) => {
-      if (!link.resolvedPath) return;
-      const targetKey = normalizePathForCompare(link.resolvedPath);
-      if (targetKey === normalizePathForCompare(document.path)) return;
-      const backlinks = backlinksByPath.get(targetKey) ?? [];
-      backlinks.push({
-        column: link.column,
-        excerpt: excerptForLine(lines, link.line),
-        line: link.line,
-        path: document.path,
-        title: document.title,
-      });
-      backlinksByPath.set(targetKey, backlinks);
-    });
-  });
-
-  backlinksByPath.forEach((backlinks) => {
-    backlinks.sort((a, b) => (
-      a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }) ||
-      a.line - b.line ||
-      a.column - b.column
-    ));
-  });
-
-  const recentDocuments = resolvedDocuments
-    .filter((document) => document.recentRank !== undefined)
-    .sort((a, b) => (a.recentRank ?? 0) - (b.recentRank ?? 0));
+  resolvedDocuments.forEach((document) => addDocumentBacklinks(backlinksByPath, document));
 
   return {
     backlinksByPath,
     documentByPath,
     documents: resolvedDocuments,
     generatedAt,
-    recentDocuments,
+    recentDocuments: getRecentDocuments(resolvedDocuments),
     rootPath,
   };
 }
@@ -386,7 +438,7 @@ export function applyWorkspaceIndexOverlay(
     ? normalizePathForCompare(currentDocument.path)
     : null;
 
-  const documents = baseIndex.documents.map((document) => {
+  const documentsWithMetadata = baseIndex.documents.map((document) => {
     const normalizedPath = normalizePathForCompare(document.path);
     const recent = recentByPath.get(normalizedPath);
 
@@ -408,7 +460,55 @@ export function applyWorkspaceIndexOverlay(
     return applyRecentMetadata(document, recent);
   });
 
-  return createWorkspaceIndexFromDocuments(documents, baseIndex.rootPath, baseIndex.generatedAt);
+  if (!currentDocumentKey) {
+    return {
+      ...baseIndex,
+      documentByPath: new Map(documentsWithMetadata.map((document) => [
+        normalizePathForCompare(document.path),
+        document,
+      ])),
+      documents: documentsWithMetadata,
+      recentDocuments: getRecentDocuments(documentsWithMetadata),
+    };
+  }
+
+  const currentDocumentIndex = documentsWithMetadata.findIndex(
+    (document) => normalizePathForCompare(document.path) === currentDocumentKey,
+  );
+  if (currentDocumentIndex === -1) {
+    return {
+      ...baseIndex,
+      documentByPath: new Map(documentsWithMetadata.map((document) => [
+        normalizePathForCompare(document.path),
+        document,
+      ])),
+      documents: documentsWithMetadata,
+      recentDocuments: getRecentDocuments(documentsWithMetadata),
+    };
+  }
+
+  const workspaceFiles = getWorkspaceLinkResolutionFiles(documentsWithMetadata);
+  const resolvedCurrentDocument = resolveWorkspaceDocumentLinksForDocument(
+    documentsWithMetadata[currentDocumentIndex],
+    workspaceFiles,
+    baseIndex.rootPath,
+  );
+  const documents = [...documentsWithMetadata];
+  documents[currentDocumentIndex] = resolvedCurrentDocument;
+  const backlinksByPath = cloneBacklinksWithoutSource(baseIndex.backlinksByPath, resolvedCurrentDocument.path);
+  addDocumentBacklinks(backlinksByPath, resolvedCurrentDocument);
+
+  return {
+    backlinksByPath,
+    documentByPath: new Map(documents.map((document) => [
+      normalizePathForCompare(document.path),
+      document,
+    ])),
+    documents,
+    generatedAt: baseIndex.generatedAt,
+    recentDocuments: getRecentDocuments(documents),
+    rootPath: baseIndex.rootPath,
+  };
 }
 
 function getWorkspaceDocumentSearchCache(document: WorkspaceIndexedDocument): WorkspaceDocumentSearchCache {

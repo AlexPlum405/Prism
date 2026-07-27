@@ -28,6 +28,7 @@ function renderModel() {
     createCommandContext,
     fileSortMode: 'name',
     fileTreeMode: 'tree',
+    workspaceTreeScope: 'currentLevel',
     handleCommandAction,
     handleFileAction,
   }));
@@ -57,6 +58,7 @@ describe('useAppWorkspaceContextMenu', () => {
     expect(createFileTreeContextMenuItems).toHaveBeenCalledWith({
       fileTreeMode: 'tree',
       fileSortMode: 'name',
+      workspaceTreeScope: 'currentLevel',
       includeOpenNewWindow: true,
     });
     expect(result.current.globalContextMenu).toMatchObject({

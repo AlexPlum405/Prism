@@ -1,10 +1,11 @@
 import { readDir, readTextFile, stat } from '../../../platform/tauri/fileSystem';
-import { FileNode } from '../types';
+import { FileNode, type WorkspaceTreeScope } from '../types';
 import { isSupportedDocumentPath, joinPath } from '../services';
 import { loadWorkspaceTreeNative } from '../../../platform/tauri/workspaceTree';
 import { isNativeCommandUnavailableError } from '../../../platform/tauri/result';
 
-const MAX_DEPTH = 8;
+const RECURSIVE_MAX_DEPTH = 8;
+const CURRENT_LEVEL_MAX_DEPTH = 1;
 const IGNORED_WORKSPACE_DIRECTORY_NAMES = new Set([
   '.cache',
   '.git',
@@ -32,6 +33,11 @@ const IGNORED_WORKSPACE_DIRECTORY_NAMES = new Set([
 
 interface LoadFolderTreeOptions {
   includePreview?: boolean;
+  scope?: WorkspaceTreeScope;
+}
+
+function maxDepthForScope(scope: WorkspaceTreeScope): number {
+  return scope === 'recursive' ? RECURSIVE_MAX_DEPTH : CURRENT_LEVEL_MAX_DEPTH;
 }
 
 function stripFrontmatter(content: string): string {
@@ -115,9 +121,10 @@ async function buildFileNode(path: string, name: string, includePreview: boolean
 async function readFolderChildren(
   folderPath: string,
   depth: number,
+  maxDepth: number,
   includePreview: boolean,
 ): Promise<FileNode[]> {
-  if (depth >= MAX_DEPTH) return [];
+  if (depth >= maxDepth) return [];
 
   let entries;
   try {
@@ -142,7 +149,7 @@ async function readFolderChildren(
       const fullPath = joinPath(folderPath, entry.name);
 
       if (entry.isDirectory) {
-        const children = await readFolderChildren(fullPath, depth + 1, includePreview);
+        const children = await readFolderChildren(fullPath, depth + 1, maxDepth, includePreview);
         // 只保留包含文件的目录（递归后 children 非空）
         if (children.length === 0) return null;
         return {
@@ -165,10 +172,11 @@ export async function loadFolderTree(
   options: LoadFolderTreeOptions = {},
 ): Promise<FileNode[]> {
   const includePreview = options.includePreview ?? false;
+  const maxDepth = maxDepthForScope(options.scope ?? 'currentLevel');
 
   try {
     const tree = await loadWorkspaceTreeNative(folderPath, {
-      maxDepth: MAX_DEPTH,
+      maxDepth,
       includePreview,
     });
     if (Array.isArray(tree)) return tree;
@@ -176,5 +184,5 @@ export async function loadFolderTree(
     if (!isNativeCommandUnavailableError(error)) throw error;
   }
 
-  return readFolderChildren(folderPath, 0, includePreview);
+  return readFolderChildren(folderPath, 0, maxDepth, includePreview);
 }

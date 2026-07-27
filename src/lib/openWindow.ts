@@ -16,6 +16,9 @@ export async function openPrismWindow(params: {
   if (params.folderPath) {
     searchParams.set('folder', params.folderPath);
   }
+  if (!params.filePath && !params.folderPath) {
+    searchParams.set('newWindow', '1');
+  }
 
   const query = searchParams.toString();
   const url = query ? `/?${query}` : '/';

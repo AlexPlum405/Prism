@@ -7,7 +7,6 @@ const webviewWindowMock = vi.hoisted(() => vi.fn(function MockWebviewWindow(
 ) {
   this.once = vi.fn(async () => undefined);
 }));
-
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: webviewWindowMock,
 }));
@@ -17,14 +16,14 @@ describe('openPrismWindow', () => {
     vi.clearAllMocks();
   });
 
-  it('opens default windows without query parameters so bootstrap loads the guide', async () => {
+  it('opens new windows as blank documents without restoring the guide or session', async () => {
     const { openPrismWindow } = await import('./openWindow');
 
     await openPrismWindow();
 
     expect(webviewWindowMock).toHaveBeenCalledTimes(1);
     expect(webviewWindowMock.mock.calls[0][1]).toEqual(expect.objectContaining({
-      url: '/',
+      url: '/?newWindow=1',
       visible: false,
     }));
   });
@@ -58,4 +57,5 @@ describe('openPrismWindow', () => {
       url: '/?folder=%2FUsers%2FAlex%2FDocuments%2FPrism+%E6%B5%8B%E8%AF%95',
     }));
   });
+
 });

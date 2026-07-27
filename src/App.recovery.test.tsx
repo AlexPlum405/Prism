@@ -196,6 +196,7 @@ beforeEach(() => {
     fileTree: [],
     fileTreeMode: 'tree',
     fileSortMode: 'name',
+    workspaceTreeScope: 'currentLevel',
     sidebarVisible: true,
     sidebarTab: 'files',
     focusMode: false,

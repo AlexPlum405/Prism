@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '../store';
 
 export function useWorkspaceFocusRefresh(enabled = true) {
   const rootPath = useWorkspaceStore((state) => state.rootPath);
+  const workspaceTreeScope = useWorkspaceStore((state) => state.workspaceTreeScope);
   const setFileTree = useWorkspaceStore((state) => state.setFileTree);
 
   useEffect(() => {
@@ -16,8 +17,13 @@ export function useWorkspaceFocusRefresh(enabled = true) {
       if (inFlight || document.visibilityState === 'hidden') return;
       inFlight = true;
       try {
-        const tree = await loadFolderTree(rootPath);
-        if (!disposed && useWorkspaceStore.getState().rootPath === rootPath) {
+        const tree = await loadFolderTree(rootPath, { scope: workspaceTreeScope });
+        const latestWorkspace = useWorkspaceStore.getState();
+        if (
+          !disposed
+          && latestWorkspace.rootPath === rootPath
+          && latestWorkspace.workspaceTreeScope === workspaceTreeScope
+        ) {
           setFileTree(tree);
         }
       } catch {
@@ -42,5 +48,5 @@ export function useWorkspaceFocusRefresh(enabled = true) {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, rootPath, setFileTree]);
+  }, [enabled, rootPath, setFileTree, workspaceTreeScope]);
 }

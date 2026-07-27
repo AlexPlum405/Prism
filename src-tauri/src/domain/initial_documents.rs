@@ -26,6 +26,7 @@ struct InitialDocumentsMarker<'a> {
     target_dir: &'a str,
     copied_files: usize,
     skipped_files: usize,
+    install_id: Option<&'a str>,
 }
 
 fn io_error(
@@ -120,7 +121,11 @@ fn copy_dir_without_overwrite(
     Ok(())
 }
 
-fn write_marker(app_data_dir: &Path, result: &InitialDocumentsSeedResult) -> PrismResult<()> {
+fn write_marker(
+    app_data_dir: &Path,
+    result: &InitialDocumentsSeedResult,
+    install_id: Option<&str>,
+) -> PrismResult<()> {
     fs::create_dir_all(app_data_dir).map_err(|error| {
         io_error(
             "initial_documents_create_app_data_failed",
@@ -134,6 +139,7 @@ fn write_marker(app_data_dir: &Path, result: &InitialDocumentsSeedResult) -> Pri
         target_dir: &result.target_dir.to_string_lossy(),
         copied_files: result.copied_files,
         skipped_files: result.skipped_files,
+        install_id,
     };
     let contents = serde_json::to_string_pretty(&marker).map_err(|error| {
         PrismCommandError::new(
@@ -158,9 +164,15 @@ pub fn seed_initial_documents_at(
     resource_dir: &Path,
     documents_dir: &Path,
     app_data_dir: &Path,
+    install_id: Option<&str>,
 ) -> PrismResult<Option<InitialDocumentsSeedResult>> {
-    if marker_path(app_data_dir).exists() {
-        return Ok(None);
+    if let Ok(marker_contents) = fs::read_to_string(marker_path(app_data_dir)) {
+        let marker_install_id = serde_json::from_str::<serde_json::Value>(&marker_contents)
+            .ok()
+            .and_then(|marker| marker.get("install_id")?.as_str().map(str::to_owned));
+        if marker_install_id.as_deref() == install_id {
+            return Ok(None);
+        }
     }
 
     if !resource_dir.is_dir() {
@@ -186,7 +198,7 @@ pub fn seed_initial_documents_at(
         copied_files,
         skipped_files,
     };
-    write_marker(app_data_dir, &result)?;
+    write_marker(app_data_dir, &result, install_id)?;
 
     Ok(Some(result))
 }
@@ -237,7 +249,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = seed_initial_documents_at(&resource_dir, &documents_dir, &app_data_dir)
+        let result = seed_initial_documents_at(&resource_dir, &documents_dir, &app_data_dir, None)
             .unwrap()
             .unwrap();
 
@@ -272,7 +284,7 @@ mod tests {
         fs::write(marker_path(&app_data_dir), "{}").unwrap();
 
         let result =
-            seed_initial_documents_at(&resource_dir, &documents_dir, &app_data_dir).unwrap();
+            seed_initial_documents_at(&resource_dir, &documents_dir, &app_data_dir, None).unwrap();
 
         assert!(result.is_none());
         assert!(!documents_dir.join("Prism").exists());

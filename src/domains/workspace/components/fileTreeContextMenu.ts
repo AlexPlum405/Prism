@@ -1,5 +1,5 @@
 import type { ContextMenuItem } from '../../../components/shell/ContextMenu';
-import type { FileNode, FileSortMode, FileTreeMode } from '../types';
+import type { FileNode, FileSortMode, FileTreeMode, WorkspaceTreeScope } from '../types';
 import {
   dirname,
   getShowInFileManagerLabel,
@@ -11,14 +11,34 @@ interface FileTreeContextMenuInput {
   node?: FileNode;
   fileTreeMode: FileTreeMode;
   fileSortMode: FileSortMode;
+  workspaceTreeScope?: WorkspaceTreeScope;
   showInFileManagerLabel?: string;
   includeOpenNewWindow?: boolean;
+}
+
+function createWorkspaceTreeScopeMenuItem(workspaceTreeScope: WorkspaceTreeScope): ContextMenuItem {
+  return {
+    label: t('workspace.fileTree.scope'),
+    children: [
+      {
+        label: t('workspace.fileTree.scope.currentLevel'),
+        action: 'viewCurrentLevel',
+        checked: workspaceTreeScope === 'currentLevel',
+      },
+      {
+        label: t('workspace.fileTree.scope.recursive'),
+        action: 'viewRecursive',
+        checked: workspaceTreeScope === 'recursive',
+      },
+    ],
+  };
 }
 
 export function createFileTreeContextMenuItems({
   node,
   fileTreeMode,
   fileSortMode,
+  workspaceTreeScope = 'currentLevel',
   showInFileManagerLabel = getShowInFileManagerLabel(),
   includeOpenNewWindow = false,
 }: FileTreeContextMenuInput): ContextMenuItem[] {
@@ -34,6 +54,7 @@ export function createFileTreeContextMenuItems({
       { type: 'separator' },
       { label: t('workspace.fileTree.viewTree'), action: 'viewTree', checked: fileTreeMode === 'tree' },
       { label: t('workspace.fileTree.viewList'), action: 'viewList', checked: fileTreeMode === 'list' },
+      createWorkspaceTreeScopeMenuItem(workspaceTreeScope),
       {
         label: t('workspace.fileTree.sortBy'),
         children: [
@@ -71,6 +92,8 @@ export function createFileTreeContextMenuItems({
     { type: 'separator' },
     { label: t('workspace.fileTree.newFile'), action: targetDir ? `newFile:${targetDir}` : 'newFile' },
     { label: t('workspace.fileTree.newFolder'), action: targetDir ? `newFolder:${targetDir}` : 'newFolder' },
+    { type: 'separator' },
+    createWorkspaceTreeScopeMenuItem(workspaceTreeScope),
     { type: 'separator' },
     { label: t('workspace.fileTree.rename'), action: `rename:${node.path}`, shortcut: 'F2' },
     { label: t('workspace.fileTree.delete'), action: `delete:${node.path}`, danger: true },

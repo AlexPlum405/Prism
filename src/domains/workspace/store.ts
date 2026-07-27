@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { WorkspaceState, FileNode, SidebarTab, FileTreeMode, FileSortMode } from './types';
+import { WorkspaceState, FileNode, SidebarTab, FileTreeMode, FileSortMode, WorkspaceTreeScope } from './types';
 
 interface WorkspaceStore extends WorkspaceState {
   setRootPath: (path: string) => void;
@@ -7,6 +7,7 @@ interface WorkspaceStore extends WorkspaceState {
   setWorkspace: (path: string, tree: FileNode[]) => void;
   setFileTreeMode: (mode: FileTreeMode) => void;
   setFileSortMode: (mode: FileSortMode) => void;
+  setWorkspaceTreeScope: (scope: WorkspaceTreeScope) => void;
   toggleSidebar: () => void;
   setSidebarVisible: (visible: boolean) => void;
   toggleStatusBar: () => void;
@@ -23,6 +24,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   fileTree: [],
   fileTreeMode: 'tree',
   fileSortMode: 'name',
+  workspaceTreeScope: 'currentLevel',
   sidebarVisible: true,
   sidebarTab: 'files',
   focusMode: false,
@@ -32,7 +34,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   isAlwaysOnTop: false,
 
   setRootPath: (path) => {
-    set({ rootPath: path, mode: 'folder' });
+    set({ rootPath: path, mode: 'folder', workspaceTreeScope: 'currentLevel' });
   },
 
   setFileTree: (tree) => {
@@ -40,7 +42,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   },
 
   setWorkspace: (path, tree) => {
-    set({ rootPath: path, fileTree: tree, mode: 'folder' });
+    set({ rootPath: path, fileTree: tree, mode: 'folder', workspaceTreeScope: 'currentLevel' });
   },
 
   setFileTreeMode: (fileTreeMode) => {
@@ -49,6 +51,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   setFileSortMode: (fileSortMode) => {
     set({ fileSortMode });
+  },
+
+  setWorkspaceTreeScope: (workspaceTreeScope) => {
+    set({ workspaceTreeScope });
   },
 
   toggleSidebar: () => {

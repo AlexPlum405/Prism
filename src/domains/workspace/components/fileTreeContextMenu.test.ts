@@ -40,6 +40,8 @@ describe('file tree context menu actions', () => {
       'newFolder',
       'viewTree',
       'viewList',
+      'viewCurrentLevel',
+      'viewRecursive',
       'sortByName',
       'sortByModified',
       'sortByCreated',
@@ -49,6 +51,20 @@ describe('file tree context menu actions', () => {
       'openRootLocation',
     ]));
     expect(actions.filter((action) => !isSupportedFileActionCommand(action))).toEqual([]);
+  });
+
+  it('marks the active workspace tree scope in workspace background menus', () => {
+    const items = createFileTreeContextMenuItems({
+      fileTreeMode: 'tree',
+      fileSortMode: 'name',
+      workspaceTreeScope: 'recursive',
+    });
+    const scopeMenu = items.find((item) => item.label === '显示范围');
+
+    expect(scopeMenu?.children).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'viewCurrentLevel', checked: false, label: '当前层级' }),
+      expect.objectContaining({ action: 'viewRecursive', checked: true, label: '递归子目录' }),
+    ]));
   });
 
   it('uses only supported file actions for file and folder item menus', () => {

@@ -85,6 +85,7 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
   const rootPath = useWorkspaceStore((s) => s.rootPath);
   const fileTreeMode = useWorkspaceStore((s) => s.fileTreeMode);
   const fileSortMode = useWorkspaceStore((s) => s.fileSortMode);
+  const workspaceTreeScope = useWorkspaceStore((s) => s.workspaceTreeScope);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, items: ContextMenuItem[] } | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set());
@@ -129,7 +130,12 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
   };
 
   const makeContextItems = (node?: FileNode): ContextMenuItem[] => {
-    return createFileTreeContextMenuItems({ node, fileTreeMode, fileSortMode });
+    return createFileTreeContextMenuItems({
+      node,
+      fileTreeMode,
+      fileSortMode,
+      workspaceTreeScope,
+    });
   };
 
   const handleContextMenu = (event: React.MouseEvent, node?: FileNode) => {

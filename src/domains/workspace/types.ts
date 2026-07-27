@@ -2,6 +2,7 @@ export type WorkspaceMode = 'single' | 'folder';
 export type SidebarTab = 'files' | 'outline' | 'search';
 export type FileTreeMode = 'tree' | 'list';
 export type FileSortMode = 'name' | 'modified' | 'created' | 'size';
+export type WorkspaceTreeScope = 'currentLevel' | 'recursive';
 
 export interface FileNode {
   path: string;
@@ -20,6 +21,7 @@ export interface WorkspaceState {
   fileTree: FileNode[];
   fileTreeMode: FileTreeMode;
   fileSortMode: FileSortMode;
+  workspaceTreeScope: WorkspaceTreeScope;
   sidebarVisible: boolean;
   sidebarTab: SidebarTab;
   focusMode: boolean;

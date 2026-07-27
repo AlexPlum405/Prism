@@ -286,13 +286,6 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&PredefinedMenuItem::fullscreen(handle, Some("进入全屏"))?)
         .separator()
         .item(&command_menu_item(handle, "alwaysOnTop", "窗口置顶", None)?)
-        .separator()
-        .item(&command_menu_item(
-            handle,
-            "newWindow",
-            "新建窗口",
-            Some("CmdOrCtrl+Shift+KeyN"),
-        )?)
         .build()?;
 
     let help_menu = SubmenuBuilder::with_id(handle, HELP_SUBMENU_ID, "Help")
@@ -404,13 +397,16 @@ fn handle_macos_window_lifecycle(app: &tauri::AppHandle, event: &tauri::RunEvent
 }
 
 fn seed_initial_documents(app: &mut tauri::App) {
-    let resource_dir = match app.path().resource_dir() {
+    let resources_root = match app.path().resource_dir() {
         Ok(path) => path.join("Initial"),
         Err(error) => {
             eprintln!("[initial_documents] Failed to resolve resource directory: {error}");
             return;
         }
     };
+    let install_id_path = resources_root
+        .parent()
+        .map(|path| path.join("PrismInstallID"));
     let documents_dir = match app.path().document_dir() {
         Ok(path) => path,
         Err(error) => {
@@ -425,11 +421,16 @@ fn seed_initial_documents(app: &mut tauri::App) {
             return;
         }
     };
+    let install_id = install_id_path
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
 
     match domain::initial_documents::seed_initial_documents_at(
-        &resource_dir,
+        &resources_root,
         &documents_dir,
         &app_data_dir,
+        install_id.as_deref(),
     ) {
         Ok(Some(result)) => {
             if commands::startup_files::has_pending_files(app) {

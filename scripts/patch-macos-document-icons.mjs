@@ -1,4 +1,5 @@
 import { execFileSync } from 'child_process';
+import { randomUUID } from 'crypto';
 import { access, copyFile, mkdtemp, rm, writeFile } from 'fs/promises';
 import os from 'os';
 import path from 'path';
@@ -52,6 +53,17 @@ const sourceIconPath = path.join(repoRoot, 'src-tauri', 'icons', 'document-markd
 const sourceTextIconPath = path.join(repoRoot, 'src-tauri', 'icons', 'document-text.icns');
 const bundledIconPath = path.join(resourcesDir, documentIconFile);
 const bundledTextIconPath = path.join(resourcesDir, textIconFile);
+const installIdPath = path.join(resourcesDir, 'PrismInstallID');
+const macosCodesignIdentity = process.env.PRISM_MACOS_CODESIGN_IDENTITY || '-';
+
+async function ensureInstallId() {
+  try {
+    await access(installIdPath);
+    return;
+  } catch {
+    await writeFile(installIdPath, `${randomUUID()}\n`, 'utf8');
+  }
+}
 
 function readPlistJson(plistPath) {
   const json = execFileSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plistPath], {
@@ -98,6 +110,20 @@ async function writePlistJson(plistPath, plist) {
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
+}
+
+function repairMacosCodeSignature(targetAppPath) {
+  if (os.platform() !== 'darwin') return;
+
+  execFileSync('/usr/bin/codesign', [
+    '--force',
+    '--deep',
+    '--sign',
+    macosCodesignIdentity,
+    targetAppPath,
+  ], {
+    stdio: 'inherit',
+  });
 }
 
 function ensureMarkdownDocumentType(info) {
@@ -304,6 +330,7 @@ function ensurePrismTextUtiDeclaration(info) {
 await ensureReadableFile(infoPlistPath, 'Info.plist');
 await ensureReadableFile(sourceIconPath, 'Markdown document icon');
 await ensureReadableFile(sourceTextIconPath, 'Text document icon');
+await ensureInstallId();
 
 await copyFile(sourceIconPath, bundledIconPath);
 await copyFile(sourceTextIconPath, bundledTextIconPath);
@@ -316,7 +343,9 @@ ensureMarkdownAliasUtiDeclarations(info);
 ensureTextDocumentType(info);
 ensurePrismTextUtiDeclaration(info);
 await writePlistJson(infoPlistPath, info);
+repairMacosCodeSignature(appPath);
 
 console.log(`Copied ${documentIconFile} to ${bundledIconPath}`);
 console.log(`Copied ${textIconFile} to ${bundledTextIconPath}`);
 console.log(`Patched Markdown and Text document icons in ${infoPlistPath}`);
+console.log(`Re-signed ${appPath} with ${macosCodesignIdentity === '-' ? 'ad-hoc identity' : macosCodesignIdentity}`);

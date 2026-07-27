@@ -24,10 +24,6 @@ vi.mock('@tauri-apps/api/window', () => ({
   }),
 }));
 
-vi.mock('@tauri-apps/api/path', () => ({
-  documentDir: vi.fn(),
-}));
-
 vi.mock('../domains/workspace/lib/loadFolderTree', () => ({
   loadFolderTree: vi.fn(),
 }));
@@ -37,7 +33,6 @@ vi.mock('../lib/openWindow', () => ({
 }));
 
 import { invoke } from '@tauri-apps/api/core';
-import { documentDir } from '@tauri-apps/api/path';
 import { exists, readTextFile, stat } from '@tauri-apps/plugin-fs';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
 import { openPrismWindow } from '../lib/openWindow';
@@ -65,7 +60,6 @@ beforeEach(() => {
   window.history.replaceState({}, '', '?file=C:/docs/bootstrap.md');
   vi.clearAllMocks();
   (exists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-  (documentDir as ReturnType<typeof vi.fn>).mockResolvedValue('C:/Users/Alex/Documents');
   (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 12, mtime: new Date(1000) });
   (invoke as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 });
@@ -307,6 +301,44 @@ describe('useBootstrap', () => {
     expect(openPrismWindow).not.toHaveBeenCalled();
   });
 
+  it('opens encoded explicit workspace folder before an explicit document when both are provided', async () => {
+    const explicitFolder = 'C:/Users/Alex/Documents/Prism';
+    const explicitPath = `${explicitFolder}/Examples/Prism Markdown 语法指南.md`;
+    const explicitTree = [
+      {
+        name: 'Examples',
+        path: `${explicitFolder}/Examples`,
+        children: [
+          { name: 'Prism Markdown 语法指南.md', path: explicitPath },
+        ],
+      },
+    ];
+    window.history.replaceState(
+      {},
+      '',
+      `/?file=${encodeURIComponent(explicitPath)}&folder=${encodeURIComponent(explicitFolder)}`,
+    );
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue(['C:/docs/opened.md']);
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# guide');
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue(explicitTree);
+
+    renderHook(() => useBootstrap(true));
+
+    await waitFor(() => {
+      expect(useDocumentStore.getState().currentDocument?.path).toBe(explicitPath);
+    });
+
+    expect(useWorkspaceStore.getState().rootPath).toBe(explicitFolder);
+    expect(useWorkspaceStore.getState().fileTree).toEqual(explicitTree);
+    expect(loadFolderTree).toHaveBeenCalledWith(explicitFolder);
+    expect(readTextFile).toHaveBeenCalledWith(explicitPath);
+    expect(nativeCommandCallCount('grant_workspace_directory_scope')).toBe(1);
+    expect(nativeCommandCallCount('grant_markdown_file_scope')).toBe(0);
+    expect(invoke).not.toHaveBeenCalledWith('get_pending_files');
+    expect(openPrismWindow).not.toHaveBeenCalled();
+    expect(revealWindowCallCount()).toBe(1);
+  });
+
   it('opens encoded explicit workspace folders before pending files and last session', async () => {
     const explicitFolder = 'C:/Users/Alex/Documents/Prism 测试';
     const explicitTree = [
@@ -431,17 +463,8 @@ describe('useBootstrap', () => {
     }
   });
 
-  it('authorizes and opens the default Prism workspace and guide for plain window launches', async () => {
+  it('restores the last session for plain window launches after pending files are checked', async () => {
     window.history.replaceState({}, '', '/');
-    const workspacePath = 'C:/Users/Alex/Documents/Prism';
-    const guidePath = `${workspacePath}/Examples/Prism Markdown 语法指南.md`;
-    const workspaceTree = [
-      {
-        name: 'Examples',
-        path: `${workspacePath}/Examples`,
-        children: [{ name: 'Prism Markdown 语法指南.md', path: guidePath }],
-      },
-    ];
     useSettingsStore.setState({
       restoreLastSession: true,
       lastSession: {
@@ -453,91 +476,38 @@ describe('useBootstrap', () => {
       saveSettings: vi.fn(),
     });
     (invoke as ReturnType<typeof vi.fn>).mockResolvedValue([]);
-    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# guide');
-    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue(workspaceTree);
-
-    renderHook(() => useBootstrap(true));
-
-    await waitFor(() => {
-      expect(useDocumentStore.getState().currentDocument?.path).toBe(guidePath);
-    });
-
-    expect(useWorkspaceStore.getState().rootPath).toBe(workspacePath);
-    expect(useWorkspaceStore.getState().fileTree).toEqual(workspaceTree);
-    expect(readTextFile).toHaveBeenCalledWith(guidePath);
-    expect(nativeCommandCallCount('grant_markdown_file_scope')).toBe(0);
-    expect(nativeCommandCallCount('grant_workspace_directory_scope')).toBe(1);
-    expect(revealWindowCallCount()).toBe(1);
-  });
-
-  it('does not reveal the native window until the default guide has opened', async () => {
-    window.history.replaceState({}, '', '/');
-    const workspacePath = 'C:/Users/Alex/Documents/Prism';
-    const guidePath = `${workspacePath}/Examples/Prism Markdown 语法指南.md`;
-    let resolveRead!: (value: string) => void;
-
-    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue([]);
-    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([
-      {
-        name: 'Examples',
-        path: `${workspacePath}/Examples`,
-        children: [{ name: 'Prism Markdown 语法指南.md', path: guidePath }],
-      },
-    ]);
-    (readTextFile as ReturnType<typeof vi.fn>).mockReturnValue(new Promise<string>((resolve) => {
-      resolveRead = resolve;
-    }));
-
-    renderHook(() => useBootstrap(true));
-
-    await waitFor(() => {
-      expect(readTextFile).toHaveBeenCalledWith(guidePath);
-    });
-    expect(revealWindowCallCount()).toBe(0);
-
-    await act(async () => {
-      resolveRead('# guide');
-      await Promise.resolve();
-    });
-
-    await waitFor(() => {
-      expect(useDocumentStore.getState().currentDocument?.path).toBe(guidePath);
-      expect(revealWindowCallCount()).toBe(1);
-    });
-  });
-
-  it('falls back to last session restore when the default guide cannot be opened', async () => {
-    window.history.replaceState({}, '', '/');
-    useSettingsStore.setState({
-      restoreLastSession: true,
-      lastSession: {
-        filePath: 'C:/docs/last.md',
-        viewMode: 'split',
-        scrollState: { editorRatio: 0.35, previewRatio: 0.6 },
-        updatedAt: 1,
-      },
-      recentFiles: [],
-      saveSettings: vi.fn(),
-    });
-    (readTextFile as ReturnType<typeof vi.fn>).mockImplementation(async (path: string) => {
-      if (path.includes('Documents/Prism')) {
-        throw new Error('default guide unavailable');
-      }
-      return 'last session content';
-    });
+    (readTextFile as ReturnType<typeof vi.fn>).mockResolvedValue('# last session');
     (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
     renderHook(() => useBootstrap(true));
 
+    await waitFor(() => {
+      expect(useDocumentStore.getState().currentDocument?.path).toBe('C:/docs/last.md');
+    });
+
+    expect(readTextFile).toHaveBeenCalledWith('C:/docs/last.md');
+    expect(nativeCommandCallCount('grant_markdown_file_scope')).toBe(1);
+    expect(revealWindowCallCount()).toBe(1);
+  });
+
+  it('does not open the default guide for a plain window launch without a session', async () => {
+    window.history.replaceState({}, '', '/');
+    useSettingsStore.setState({
+      restoreLastSession: true,
+      lastSession: null,
+      recentFiles: [],
+      saveSettings: vi.fn(),
+    });
+
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    renderHook(() => useBootstrap(true));
+
     await act(async () => {
-      await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(useDocumentStore.getState().currentDocument).toMatchObject({
-      path: 'C:/docs/last.md',
-      viewMode: 'split',
-      scrollState: { editorRatio: 0.35, previewRatio: 0.6 },
-    });
+    expect(readTextFile).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().currentDocument).toBeNull();
   });
 });

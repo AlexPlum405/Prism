@@ -16,6 +16,7 @@ beforeEach(() => {
     fileTree: [],
     fileTreeMode: 'tree',
     fileSortMode: 'name',
+    workspaceTreeScope: 'currentLevel',
     sidebarVisible: true,
     sidebarTab: 'files',
     focusMode: false,
@@ -44,7 +45,7 @@ describe('useWorkspaceFocusRefresh', () => {
       await Promise.resolve();
     });
 
-    expect(loadFolderTree).toHaveBeenCalledWith('/workspace');
+    expect(loadFolderTree).toHaveBeenCalledWith('/workspace', { scope: 'currentLevel' });
     expect(useWorkspaceStore.getState().fileTree).toEqual([
       { name: 'note.md', path: '/workspace/note.md', isDirectory: false },
     ]);
@@ -79,7 +80,7 @@ describe('useWorkspaceFocusRefresh', () => {
       await Promise.resolve();
     });
 
-    expect(loadFolderTree).toHaveBeenCalledWith('/old');
+    expect(loadFolderTree).toHaveBeenCalledWith('/old', { scope: 'currentLevel' });
     expect(useWorkspaceStore.getState().fileTree).toEqual([]);
   });
 
@@ -95,9 +96,26 @@ describe('useWorkspaceFocusRefresh', () => {
       await Promise.resolve();
     });
 
-    expect(loadFolderTree).toHaveBeenCalledWith('/workspace');
+    expect(loadFolderTree).toHaveBeenCalledWith('/workspace', { scope: 'currentLevel' });
     expect(useWorkspaceStore.getState().fileTree).toEqual([
       { name: 'visible.md', path: '/workspace/visible.md', isDirectory: false },
     ]);
+  });
+
+  it('uses the recursive scope when focus refreshing recursive workspace trees', async () => {
+    useWorkspaceStore.getState().setRootPath('/workspace');
+    useWorkspaceStore.getState().setWorkspaceTreeScope('recursive');
+    (loadFolderTree as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { name: 'nested.md', path: '/workspace/docs/nested.md', isDirectory: false },
+    ]);
+
+    renderHook(() => useWorkspaceFocusRefresh(true));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+
+    expect(loadFolderTree).toHaveBeenCalledWith('/workspace', { scope: 'recursive' });
   });
 });

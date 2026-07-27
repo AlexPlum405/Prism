@@ -248,6 +248,7 @@ function App() {
     createCommandContext,
     fileSortMode: workspace.fileSortMode,
     fileTreeMode: workspace.fileTreeMode,
+    workspaceTreeScope: workspace.workspaceTreeScope,
     handleCommandAction,
     handleFileAction,
   });

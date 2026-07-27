@@ -80,6 +80,7 @@ function getCommandDisabledReason(command: CommandId, context: CommandContext): 
 const menuModel: MenuModel = {
   file: [
     { command: 'new' },
+    { command: 'newWindow' },
     { type: 'separator' },
     { command: 'open' },
     { command: 'openFolder' },
@@ -272,8 +273,6 @@ const menuModel: MenuModel = {
     { command: 'minimize' },
     { command: 'fullscreen' },
     { command: 'alwaysOnTop' },
-    { type: 'separator' },
-    { command: 'newWindow' },
   ],
   help: [
     { command: 'showShortcuts' },

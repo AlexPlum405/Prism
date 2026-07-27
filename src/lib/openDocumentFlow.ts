@@ -188,7 +188,16 @@ export async function syncWorkspaceForOpenedDocument(
   }
 
   if (!fileTreeContainsPath(context, path)) {
-    const tree = await loadFolderTree(rootPath);
+    if (context.workspaceStore.workspaceTreeScope !== 'recursive') {
+      const parentDir = dirname(path);
+      const tree = await loadFolderTree(parentDir);
+      context.workspaceStore.setWorkspace(parentDir, tree);
+      return;
+    }
+
+    const tree = await loadFolderTree(rootPath, {
+      scope: context.workspaceStore.workspaceTreeScope ?? 'currentLevel',
+    });
     context.workspaceStore.setFileTree(tree);
   }
 }
@@ -197,6 +206,7 @@ async function saveDirtyDocumentBeforeSwitch(
   document: OpenDocument,
   action: Extract<DirtyDocumentSwitchAction, 'save' | 'saveAs'>,
   context: OpenDocumentFlowContext,
+  openingTargetPath: string,
 ): Promise<boolean> {
   let targetPath = action === 'save' ? document.path : '';
 
@@ -211,6 +221,13 @@ async function saveDirtyDocumentBeforeSwitch(
     });
     if (!chosen) return false;
     targetPath = chosen;
+  }
+
+  if (!document.path || !isSamePath(document.path, targetPath)) {
+    if (isSamePath(targetPath, openingTargetPath)) {
+      context.showToast?.(t('file.cannotSaveOverOpeningTarget'));
+      return false;
+    }
   }
 
   context.documentStore.markSaving(document.path || undefined);
@@ -270,7 +287,7 @@ async function ensureCanSwitchDocument(path: string, context: OpenDocumentFlowCo
 
   if (action === 'cancel') return false;
   if (action === 'discard') return true;
-  return saveDirtyDocumentBeforeSwitch(document, action, context);
+  return saveDirtyDocumentBeforeSwitch(document, action, context, path);
 }
 
 export async function openDocumentInCurrentWindow(

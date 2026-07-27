@@ -31,6 +31,8 @@ export const SUPPORTED_FILE_ACTION_COMMANDS = [
   'refreshFolder',
   'viewList',
   'viewTree',
+  'viewCurrentLevel',
+  'viewRecursive',
   'sortByName',
   'sortByModified',
   'sortByCreated',

@@ -2,19 +2,16 @@ import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 import { exists } from '../platform/tauri/fileSystem';
-import { documentDir } from '../platform/tauri/path';
 import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
-import { getRuntimePlatform, joinPath } from '../domains/workspace/services';
+import { getRuntimePlatform } from '../domains/workspace/services';
 import { grantWorkspaceDirectoryScope } from '../lib/fileSystemScope';
 import { openDocumentInCurrentWindow, openDocumentInNewWindow } from '../lib/openDocumentFlow';
 
 const MACOS_PENDING_FILE_POLL_DELAYS = [0, 200, 800, 1600] as const;
 const DEFAULT_PENDING_FILE_POLL_DELAYS = [0] as const;
-const DEFAULT_INITIAL_WORKSPACE_NAME = 'Prism';
-const DEFAULT_INITIAL_GUIDE_PARTS = ['Examples', 'Prism Markdown 语法指南.md'] as const;
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -41,16 +38,6 @@ function getDefaultPendingFilePollDelays() {
   return getRuntimePlatform() === 'mac'
     ? MACOS_PENDING_FILE_POLL_DELAYS
     : DEFAULT_PENDING_FILE_POLL_DELAYS;
-}
-
-async function getDefaultInitialTarget() {
-  const root = joinPath(await documentDir(), DEFAULT_INITIAL_WORKSPACE_NAME);
-  const guide = DEFAULT_INITIAL_GUIDE_PARTS.reduce(
-    (path, part) => joinPath(path, part),
-    root,
-  );
-
-  return { guide, root };
 }
 
 export interface UseBootstrapOptions {
@@ -97,6 +84,7 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
     const params = new URLSearchParams(window.location.search);
     const filePath = params.get('file');
     const folderPath = params.get('folder');
+    const isNewWindow = params.get('newWindow') === '1';
 
     const openFile = async (
       path: string,
@@ -126,19 +114,6 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
       if (cancelled) return true;
       setWorkspace(path, tree);
       return true;
-    };
-
-    const openDefaultInitialWorkspace = async () => {
-      const target = await getDefaultInitialTarget();
-      const openedWorkspace = await openFolder(target.root).catch((err) => {
-        console.error('[useBootstrap] Failed to load default Prism workspace tree:', err);
-        return false;
-      });
-      const openedGuide = await openFile(target.guide, undefined, undefined, {
-        skipFileScopeGrant: openedWorkspace,
-        skipWorkspaceSync: true,
-      });
-      return openedGuide;
     };
 
     const openPendingStartupFile = async () => {
@@ -195,7 +170,11 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
       try {
         if (filePath) {
           try {
-            await openFile(filePath);
+            const openedWorkspace = folderPath ? await openFolder(folderPath) : false;
+            await openFile(filePath, undefined, undefined, {
+              skipFileScopeGrant: openedWorkspace,
+              skipWorkspaceSync: openedWorkspace,
+            });
           } catch (err) {
             console.error('[useBootstrap] Failed to load file:', err);
           }
@@ -211,11 +190,7 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
 
         if (await openPendingStartupFileBeforeSessionRestore()) return;
 
-        try {
-          if (await openDefaultInitialWorkspace()) return;
-        } catch (err) {
-          console.error('[useBootstrap] Failed to load default Prism workspace:', err);
-        }
+        if (isNewWindow) return;
 
         if (!restoreLastSession || !lastSession) return;
 
@@ -236,7 +211,8 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
           useDocumentStore.getState().currentDocument
           || useWorkspaceStore.getState().rootPath
           || filePath
-          || folderPath,
+          || folderPath
+          || isNewWindow,
         );
         if (!cancelled && hasVisibleStartupTarget) await revealCurrentWindow();
       }
