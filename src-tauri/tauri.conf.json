@@ -28,7 +28,8 @@
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "visible": false,
-        "devtools": true
+        "devtools": true,
+        "dragDropEnabled": true
       }
     ],
     "security": {
@@ -70,7 +71,10 @@
     },
     "fileAssociations": [
       {
-        "ext": ["md", "markdown"],
+        "ext": [
+          "md",
+          "markdown"
+        ],
         "contentTypes": [
           "com.prism.editor.markdown",
           "net.daringfireball.markdown",
@@ -85,7 +89,9 @@
         "rank": "Owner",
         "exportedType": {
           "identifier": "com.prism.editor.markdown",
-          "conformsTo": ["public.text"]
+          "conformsTo": [
+            "public.text"
+          ]
         }
       },
       {
@@ -125,7 +131,9 @@
         "rank": "Default",
         "exportedType": {
           "identifier": "com.prism.editor.text",
-          "conformsTo": ["public.text"]
+          "conformsTo": [
+            "public.text"
+          ]
         }
       }
     ]

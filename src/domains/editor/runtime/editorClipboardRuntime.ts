@@ -5,6 +5,7 @@ import {
   isSupportedImageFile,
   saveClipboardImage,
 } from '../extensions/imagePaste';
+import { convertHtmlToMarkdown, getClipboardHtml } from '../extensions/htmlToMarkdown';
 
 export interface EditorClipboardDocument {
   name: string;
@@ -112,6 +113,23 @@ export async function handleEditorClipboardImagePaste(
   view: EditorView,
   deps: EditorImageClipboardDeps,
 ) {
+  // 优先处理 HTML 富文本
+  const html = getClipboardHtml(event);
+  if (html && html.trim()) {
+    try {
+      const markdown = convertHtmlToMarkdown(html);
+      if (markdown) {
+        event.preventDefault();
+        event.stopPropagation();
+        insertTextAtSelection(view, markdown);
+        return true;
+      }
+    } catch (error) {
+      // HTML 转换失败，继续尝试其他格式
+      console.warn('HTML to Markdown conversion failed:', error);
+    }
+  }
+
   let imageFile = getClipboardImageFile(event);
   if (!imageFile) {
     if (!clipboardHasImagePayload(event)) {
