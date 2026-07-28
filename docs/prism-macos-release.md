@@ -192,7 +192,7 @@ npm run release:manifest:check
 git diff --check
 ```
 
-如果 `tauri:build` 在 DMG 阶段报 Finder AppleScript 超时 `(-1712)`，可先验证 `.app` bundle 并使用无 Finder 美化的 DMG fallback：
+`npm run tauri:build` 不再产出 DMG：bundle targets 已改为 app-only（macOS），因为 create-dmg 的 Finder 美化 AppleScript 会抢占全局键盘鼠标输入焦点，且此前多次出现超时 `(-1712)`。DMG 统一使用无 Finder 自动化的路径产出：
 
 ```bash
 npm run tauri -- build --bundles app
@@ -200,7 +200,7 @@ npm run release:mac-dmg:skip-finder
 hdiutil verify src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg
 ```
 
-此 fallback 使用 Tauri 生成的 `bundle_dmg.sh --skip-jenkins`，会跳过 Finder 中的图标定位 / 美化 AppleScript，因此 DMG 视觉布局不作为验收项；签名、公证、updater `.sig` 与 `latest.json` 仍按上文要求执行。
+此路径使用 Tauri 生成的 `bundle_dmg.sh --skip-jenkins`，会跳过 Finder 中的图标定位 / 美化 AppleScript，因此 DMG 视觉布局不作为验收项；签名、公证、updater `.sig` 与 `latest.json` 仍按上文要求执行。
 
 发布前人工确认：
 

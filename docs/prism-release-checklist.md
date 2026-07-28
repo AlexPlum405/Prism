@@ -28,20 +28,24 @@ npm run release:manifest:check
 本地运行时 smoke 可使用不生成 updater artifacts 的 App-only 构建，避免把 UI 验证阻塞在 updater 私钥或 DMG Finder 自动化上：
 
 ```bash
-npm run tauri:build:app-smoke
+npm run macos:build-smoke
 ```
 
-该命令只用于本机打开 `.app` 做功能验证，不替代正式发布构建。正式 release 仍必须使用带 updater 私钥的 `npm run tauri:build`，并检查 `.app.tar.gz` / `.sig` / `latest.json`。
+该命令只用于本机打开 `.app` 做功能验证，不替代正式发布构建。注意：smoke 脚本会向系统注入真实键盘鼠标事件（CGEvent / System Events），运行期间不要操作本机；任何构建命令都不再隐式触发 smoke，必须显式运行 `macos:build-smoke` 或 `macos:smoke`。正式 release 仍必须使用带 updater 私钥的 `npm run tauri:build`，并检查 `.app.tar.gz` / `.sig` / `latest.json`。
 
-macOS 本机若 DMG 阶段失败于 Finder AppleScript 超时 `(-1712)`，先不要改运行时代码；这是 create-dmg 布局脚本与 Finder 自动化的打包环境问题。可用以下 fallback 产出一个无自定义图标布局的 DMG：
+`npm run tauri:build` 不再产出 DMG（macOS bundle targets 已改为 app-only，避免 create-dmg 的 Finder AppleScript 抢占全局输入焦点）。DMG 统一通过无 Finder 自动化的脚本产出：
 
 ```bash
-npm run tauri -- build --bundles app
 npm run release:mac-dmg:skip-finder
+```
+
+macOS 历史问题备注：早期 `tauri:build` 会在 DMG 阶段跑 create-dmg 的 Finder AppleScript，出现过超时 `(-1712)` 和抢占全局键盘鼠标输入的问题。现在 bundle targets 已排除 dmg，上述 `release:mac-dmg:skip-finder` 是唯一的 DMG 产出路径。验收可用：
+
+```bash
 hdiutil verify src-tauri/target/release/bundle/macos/Prism_1.4.0_aarch64.dmg
 ```
 
-该 fallback 只跳过 DMG 美化布局，不替代签名、公证和 updater 资产检查。
+该脚本只跳过 DMG 美化布局，不替代签名、公证和 updater 资产检查。
 
 ## 3. 产物检查
 

@@ -47,7 +47,7 @@
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
-    "targets": "all",
+    "targets": ["app", "msi", "nsis"],
     "windows": {
       "wix": {
         "language": {
