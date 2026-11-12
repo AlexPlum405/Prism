@@ -1,9 +1,9 @@
 import type { MouseEventHandler, RefObject } from 'react';
+import { ContextMenu } from '../../components/shell/ContextMenu';
 import { DocumentView } from '../../domains/document/components/DocumentView';
 import type { EditorPaneHandle } from '../../domains/editor/components/EditorPane';
 import type { OpenDocument } from '../../domains/document/types';
-import type { WorkspaceContextMenuState } from './WorkspaceController';
-import { WorkspaceController } from './WorkspaceController';
+import type { WorkspaceContextMenuState } from './workspaceContextMenu';
 import type { FileActionInput } from '../../lib/fileActions';
 import type { ExportFeedbackState } from '../../hooks/useExportTaskUi';
 import {
@@ -12,7 +12,18 @@ import {
   type WritingStats,
 } from '../../domains/workspace/services';
 import type { useWorkspaceStore } from '../../domains/workspace/store';
+import { Sidebar } from '../../domains/workspace/components/Sidebar';
+import { StatusBar } from '../../domains/workspace/components/StatusBar';
 
+/**
+ * 工作区视图控制器。
+ *
+ * 这里曾经套了两层：AppWorkspaceViewController 把 36 个 props 透给
+ * WorkspaceController，后者再把 45 个 props 铺给 Sidebar / DocumentView /
+ * StatusBar，两层加起来 884 行、156 个 props、零业务逻辑。合并成一层后只剩
+ * 必要的派生（documentContent、hasDocumentRelations、statusBarVisible），
+ * 新增一个状态栏字段从改三个文件变成改一个。
+ */
 interface AppWorkspaceViewControllerProps {
   activePath?: string | null;
   actionableIssueCount: number;
@@ -100,14 +111,26 @@ export function AppWorkspaceViewController({
   );
 
   return (
-    <WorkspaceController
-      activePath={activePath}
-      actionableIssueCount={actionableIssueCount}
-      backlinkCount={backlinkCount}
-      cursor={cursor}
-      documentContent={currentDocument?.content ?? ''}
-      documentProfileKind={currentDocument?.profile?.kind}
-      documentView={(
+    <>
+      <div className="app-main" style={{ flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
+        {workspace.sidebarVisible && (
+          <div
+            className="app-sidebar"
+            onMouseEnter={() => onSetSidebarHovered(true)}
+            onMouseLeave={() => onSetSidebarHovered(false)}
+            style={{ display: 'flex', flexDirection: 'column' }}
+          >
+            <Sidebar
+              fileTree={workspace.fileTree}
+              sidebarTab={workspace.sidebarTab}
+              setSidebarTab={workspace.setSidebarTab}
+              documentContent={currentDocument?.content ?? ''}
+              activePath={activePath}
+              onFileClick={onFileClick}
+              onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
+            />
+          </div>
+        )}
         <DocumentView
           key={currentDocument?.path || 'new-doc'}
           ref={editorRef}
@@ -118,46 +141,54 @@ export function AppWorkspaceViewController({
           workspaceIndex={workspaceIndex}
           workspaceIndexJobId={workspaceIndexJobId}
         />
+      </div>
+
+      {currentDocument && workspace.statusBarVisible && (
+        <div className="app-statusbar">
+          <StatusBar
+            writingStats={writingStats}
+            selectionStats={selectionWritingStats}
+            cursor={cursor}
+            sidebarVisible={workspace.sidebarVisible}
+            isSidebarHovered={isSidebarHovered}
+            onMouseEnter={() => onSetSidebarHovered(true)}
+            onMouseLeave={() => onSetSidebarHovered(false)}
+            onExportMenu={onExportMenu}
+            onToggleFocusMode={() => workspace.toggleFocusMode()}
+            onToggleSidebar={() => workspace.toggleSidebar()}
+            onFolderContextMenu={onFolderContextMenu}
+            onNewFile={() => onFileAction('newFile')}
+            onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
+            linkIssueCount={actionableIssueCount}
+            linkIssueTitle={firstActionableMessage}
+            onLinkDiagnosticsClick={onLinkDiagnosticsClick}
+            backlinkCount={backlinkCount}
+            onBacklinksClick={onBacklinksClick}
+            typographyIssueCount={typographyIssueCount}
+            typographyIssueTitle={firstTypographyMessage}
+            onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
+            onRelationGraphClick={onRelationGraphClick}
+            hasDocumentRelations={hasDocumentRelations}
+            exportFeedback={exportFeedback}
+            exportProgress={exportProgress}
+            exportProgressInBackground={exportProgressInBackground}
+            documentProfileKind={currentDocument.profile?.kind}
+            onShowExportFailure={onShowExportFailure}
+            onShowExportProgress={onShowExportProgress}
+            onCancelExport={onCancelExport}
+          />
+        </div>
       )}
-      exportProgress={exportProgress}
-      exportProgressInBackground={exportProgressInBackground}
-      exportFeedback={exportFeedback}
-      fileTree={workspace.fileTree}
-      firstActionableMessage={firstActionableMessage}
-      firstTypographyMessage={firstTypographyMessage}
-      globalContextMenu={globalContextMenu}
-      hasDocumentRelations={hasDocumentRelations}
-      isSidebarHovered={isSidebarHovered}
-      selectionWritingStats={selectionWritingStats}
-      sidebarTab={workspace.sidebarTab}
-      sidebarVisible={workspace.sidebarVisible}
-      statusBarVisible={Boolean(currentDocument && workspace.statusBarVisible)}
-      typographyIssueCount={typographyIssueCount}
-      workspaceIndex={workspaceIndex}
-      writingStats={writingStats}
-      onBacklinksClick={onBacklinksClick}
-      onCloseContextMenu={onCloseContextMenu}
-      onContextMenuAction={onContextMenuAction}
-      onCursorChange={onCursorChange}
-      onExportMenu={onExportMenu}
-      onFileClick={onFileClick}
-      onFolderContextMenu={onFolderContextMenu}
-      onLinkDiagnosticsClick={onLinkDiagnosticsClick}
-      onNewFile={() => onFileAction('newFile')}
-      onNotice={onNotice}
-      onOpenDocumentLink={onOpenDocumentLink}
-      onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
-      onRelationGraphClick={onRelationGraphClick}
-      onSelectionTextChange={onSelectionTextChange}
-      onSetSidebarHovered={onSetSidebarHovered}
-      onSetSidebarTab={workspace.setSidebarTab}
-      onShowExportFailure={onShowExportFailure}
-      onShowExportProgress={onShowExportProgress}
-      onCancelExport={onCancelExport}
-      onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
-      onToggleFocusMode={() => workspace.toggleFocusMode()}
-      onToggleSidebar={() => workspace.toggleSidebar()}
-      onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
-    />
+
+      {globalContextMenu && (
+        <ContextMenu
+          x={globalContextMenu.x}
+          y={globalContextMenu.y}
+          items={globalContextMenu.items}
+          onAction={(action) => onContextMenuAction(action, globalContextMenu.kind)}
+          onClose={onCloseContextMenu}
+        />
+      )}
+    </>
   );
 }

@@ -11,18 +11,23 @@ import {
   TEXT_DOCUMENT_PROFILE,
 } from '../../domains/workspace/services';
 
-const workspaceControllerMock = vi.hoisted(() => vi.fn((props: any) => (
-  <div>
-    <div data-testid="document-slot">{props.documentView}</div>
-    <button onClick={props.onNewFile}>new-file</button>
-    <button onClick={props.onToggleFileTreeMode}>toggle-file-tree-mode</button>
+const sidebarMock = vi.hoisted(() => vi.fn((props: any) => (
+  <div data-testid="sidebar">
+    <span data-testid="sidebar-tab">{props.sidebarTab}</span>
     <button onClick={() => props.onOutlineClick(12)}>outline</button>
   </div>
 )));
 
-vi.mock('./WorkspaceController', () => ({
-  WorkspaceController: workspaceControllerMock,
-}));
+const statusBarMock = vi.hoisted(() => vi.fn((props: any) => (
+  <div data-testid="status-bar" data-relations={String(props.hasDocumentRelations)}>
+    <button onClick={() => props.onNewFile()}>new-file</button>
+    <button onClick={() => props.onToggleFileTreeMode()}>toggle-file-tree-mode</button>
+    {props.onCancelExport && <button onClick={() => props.onCancelExport()}>cancel-export</button>}
+  </div>
+)));
+
+vi.mock('../../domains/workspace/components/Sidebar', () => ({ Sidebar: sidebarMock }));
+vi.mock('../../domains/workspace/components/StatusBar', () => ({ StatusBar: statusBarMock }));
 
 vi.mock('../../domains/document/components/DocumentView', () => ({
   DocumentView: forwardRef(({ onCursorChange }: { onCursorChange: (cursor: { line: number; column: number }) => void }, _ref) => (
@@ -74,35 +79,7 @@ function renderController(overrides: Partial<Parameters<typeof AppWorkspaceViewC
     isSidebarHovered: false,
     selectionWritingStats: null,
     typographyIssueCount: 0,
-    workspace: {
-      fileTree: [],
-      fileTreeMode: 'tree',
-      fileSortMode: 'name',
-      workspaceTreeScope: 'currentLevel',
-      focusMode: false,
-      isAlwaysOnTop: false,
-      isFullscreen: false,
-      mode: 'folder',
-      rootPath: '/repo',
-      sidebarTab: 'files',
-      sidebarVisible: true,
-      statusBarVisible: true,
-      typewriterMode: false,
-      setAlwaysOnTop: vi.fn(),
-      setFileSortMode: vi.fn(),
-      setFileTree: vi.fn(),
-      setFileTreeMode: vi.fn(),
-      setFullscreen: vi.fn(),
-      setRootPath: vi.fn(),
-      setWorkspace: vi.fn(),
-      setWorkspaceTreeScope: vi.fn(),
-      setSidebarTab: vi.fn(),
-      setSidebarVisible: vi.fn(),
-      toggleFocusMode: vi.fn(),
-      toggleSidebar: vi.fn(),
-      toggleStatusBar: vi.fn(),
-      toggleTypewriterMode: vi.fn(),
-    },
+    workspace: createWorkspaceState(),
     workspaceIndex: null,
     writingStats,
     onBacklinksClick: vi.fn(),
@@ -142,27 +119,52 @@ function buildRelationIndex(documents: Array<{ content: string; path: string }>)
   });
 }
 
+function lastStatusBarProps() {
+  const calls = statusBarMock.mock.calls;
+  return calls[calls.length - 1]?.[0] as Record<string, any>;
+}
+
 describe('AppWorkspaceViewController', () => {
   beforeEach(() => {
-    workspaceControllerMock.mockClear();
+    sidebarMock.mockClear();
+    statusBarMock.mockClear();
   });
 
-  it('renders DocumentView inside WorkspaceController and forwards cursor changes', () => {
+  it('renders the sidebar, document view and status bar in one layer', () => {
     const props = renderController();
 
     fireEvent.click(screen.getByText('document-view'));
 
-    expect(screen.getByTestId('document-slot')).toBeInTheDocument();
+    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
+    expect(screen.getByTestId('status-bar')).toBeInTheDocument();
     expect(props.onCursorChange).toHaveBeenCalledWith({ line: 4, column: 2 });
-    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
+    expect(sidebarMock.mock.calls[0][0]).toMatchObject({
       activePath: '/repo/current.md',
       documentContent: '# Current',
-      hasDocumentRelations: false,
-      statusBarVisible: true,
+      sidebarTab: 'files',
     });
   });
 
-  it('shows the status bar graph entry for current markdown outgoing links', () => {
+  it('skips the sidebar and status bar when they are hidden', () => {
+    renderController({
+      workspace: {
+        ...createWorkspaceState(),
+        sidebarVisible: false,
+        statusBarVisible: false,
+      },
+    });
+
+    expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('status-bar')).not.toBeInTheDocument();
+  });
+
+  it('hides the status bar when no document is open', () => {
+    renderController({ currentDocument: null });
+
+    expect(screen.queryByTestId('status-bar')).not.toBeInTheDocument();
+  });
+
+  it('shows the graph entry for current markdown outgoing links', () => {
     const workspaceIndex = buildRelationIndex([
       { path: '/repo/current.md', content: '# Current\n\n[Target](target.md)' },
       { path: '/repo/target.md', content: '# Target' },
@@ -170,12 +172,10 @@ describe('AppWorkspaceViewController', () => {
 
     renderController({ workspaceIndex });
 
-    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
-      hasDocumentRelations: true,
-    });
+    expect(lastStatusBarProps().hasDocumentRelations).toBe(true);
   });
 
-  it('shows the status bar graph entry for backlinks to the current markdown document', () => {
+  it('shows the graph entry for backlinks to the current document', () => {
     const workspaceIndex = buildRelationIndex([
       { path: '/repo/current.md', content: '# Current' },
       { path: '/repo/source.md', content: '# Source\n\n[Current](current.md)' },
@@ -183,12 +183,10 @@ describe('AppWorkspaceViewController', () => {
 
     renderController({ workspaceIndex });
 
-    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
-      hasDocumentRelations: true,
-    });
+    expect(lastStatusBarProps().hasDocumentRelations).toBe(true);
   });
 
-  it('hides the status bar graph entry without resolved document relations', () => {
+  it('hides the graph entry without resolved relations', () => {
     const workspaceIndex = buildRelationIndex([
       { path: '/repo/current.md', content: '# Current\n\n[Web](https://example.com)\n\n[Missing](missing.md)' },
       { path: '/repo/target.md', content: '# Target' },
@@ -196,12 +194,10 @@ describe('AppWorkspaceViewController', () => {
 
     renderController({ workspaceIndex });
 
-    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
-      hasDocumentRelations: false,
-    });
+    expect(lastStatusBarProps().hasDocumentRelations).toBe(false);
   });
 
-  it('hides the status bar graph entry for text documents', () => {
+  it('hides the graph entry for text documents', () => {
     const workspaceIndex = buildRelationIndex([
       { path: '/repo/query.sql', content: 'select "[[target]]";' },
       { path: '/repo/target.md', content: '# Target' },
@@ -218,7 +214,7 @@ describe('AppWorkspaceViewController', () => {
       workspaceIndex,
     });
 
-    expect(workspaceControllerMock.mock.calls[0][0]).toMatchObject({
+    expect(lastStatusBarProps()).toMatchObject({
       hasDocumentRelations: false,
       documentProfileKind: 'text',
     });
@@ -244,4 +240,45 @@ describe('AppWorkspaceViewController', () => {
     expect(props.onFileAction).toHaveBeenCalledWith('viewList');
     expect(jumpToLine).toHaveBeenCalledWith(12);
   });
+
+  it('forwards export cancellation to the status bar', () => {
+    const onCancelExport = vi.fn();
+    renderController({ exportProgress: '导出中', onCancelExport });
+
+    fireEvent.click(screen.getByText('cancel-export'));
+
+    expect(onCancelExport).toHaveBeenCalledTimes(1);
+  });
 });
+
+function createWorkspaceState() {
+  return {
+    fileTree: [],
+    fileTreeMode: 'tree' as const,
+    fileSortMode: 'name' as const,
+    workspaceTreeScope: 'currentLevel' as const,
+    focusMode: false,
+    isAlwaysOnTop: false,
+    isFullscreen: false,
+    mode: 'folder' as const,
+    rootPath: '/repo',
+    sidebarTab: 'files' as const,
+    sidebarVisible: true,
+    statusBarVisible: true,
+    typewriterMode: false,
+    setAlwaysOnTop: vi.fn(),
+    setFileSortMode: vi.fn(),
+    setFileTree: vi.fn(),
+    setFileTreeMode: vi.fn(),
+    setFullscreen: vi.fn(),
+    setRootPath: vi.fn(),
+    setWorkspace: vi.fn(),
+    setWorkspaceTreeScope: vi.fn(),
+    setSidebarTab: vi.fn(),
+    setSidebarVisible: vi.fn(),
+    toggleFocusMode: vi.fn(),
+    toggleSidebar: vi.fn(),
+    toggleStatusBar: vi.fn(),
+    toggleTypewriterMode: vi.fn(),
+  };
+}

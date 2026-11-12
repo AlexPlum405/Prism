@@ -2,7 +2,7 @@ import { useCallback, useState, type MouseEvent } from 'react';
 import type { ContextMenuItem } from '../components/shell/ContextMenu';
 import {
   type WorkspaceContextMenuState,
-} from './controllers/WorkspaceController';
+} from './controllers/workspaceContextMenu';
 import { getCommandMenuItems, type CommandContext } from '../domains/commands';
 import { createFileTreeContextMenuItems } from '../domains/workspace/components/fileTreeContextMenu';
 import type { FileSortMode, FileTreeMode, WorkspaceTreeScope } from '../domains/workspace/types';
