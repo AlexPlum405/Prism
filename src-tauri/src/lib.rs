@@ -157,6 +157,12 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
             "在访达中显示",
             None,
         )?)
+        .item(&command_menu_item(
+            handle,
+            "copyCurrentFilePath",
+            "复制当前文件路径",
+            None,
+        )?)
         .separator()
         .item(&command_menu_item(
             handle,
@@ -192,12 +198,10 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
             "复制",
             Some("CmdOrCtrl+KeyC"),
         )?)
-        .item(&command_menu_item(
-            handle,
-            "paste",
-            "粘贴",
-            Some("CmdOrCtrl+KeyV"),
-        )?)
+        // 粘贴必须交给系统预定义项：自定义菜单项的 Cmd+V 加速键会截获按键，
+        // WKWebView 收不到 paste 事件，前端只能退化到 navigator.clipboard.readText，
+        // 既触发系统授权弹窗又丢失 text/html 结构。
+        .item(&PredefinedMenuItem::paste(handle, Some("粘贴"))?)
         .item(&command_menu_item(
             handle,
             "pastePlain",
@@ -335,6 +339,7 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
                 "save" => emit_frontend_command(app, "save"),
                 "saveAs" => emit_frontend_command(app, "saveAs"),
                 "openCurrentLocation" => emit_frontend_command(app, "openCurrentLocation"),
+                "copyCurrentFilePath" => emit_frontend_command(app, "copyCurrentFilePath"),
                 "closeDocument" => emit_frontend_command(app, "closeDocument"),
                 "preferences" => emit_frontend_command(app, "preferences"),
                 "undo" => emit_frontend_command(app, "undo"),
@@ -522,6 +527,8 @@ pub fn run() {
             commands::system_open::open_path_with_system,
             commands::pdf_capture::get_pdf_capture_capability,
             commands::pdf_capture::capture_current_webview_pdf,
+            commands::clipboard::write_clipboard_rich,
+            commands::clipboard::read_clipboard_payload,
             commands::settings_store::read_settings_file,
             commands::settings_store::write_settings_file,
             commands::theme_store::get_themes_directory,

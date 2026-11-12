@@ -5,7 +5,7 @@ import {
   isSupportedImageFile,
   saveClipboardImage,
 } from '../extensions/imagePaste';
-import { convertHtmlToMarkdown, getClipboardHtml } from '../extensions/htmlToMarkdown';
+import { convertHtmlToMarkdown, getClipboardHtml, getClipboardText } from '../extensions/htmlToMarkdown';
 
 export interface EditorClipboardDocument {
   name: string;
@@ -108,27 +108,44 @@ async function saveImageIntoDocument(
   return true;
 }
 
+/**
+ * 把剪贴板里的 text/html 转成 Markdown，失败或结果为空时返回 null。
+ * 调用方据此决定是否接管此次粘贴，未接管则交回浏览器原生粘贴。
+ */
+export function convertClipboardHtmlToMarkdown(html: string): string | null {
+  const trimmed = html.trim();
+  if (!trimmed) return null;
+
+  try {
+    const markdown = convertHtmlToMarkdown(trimmed);
+    return markdown ? markdown : null;
+  } catch (error) {
+    console.warn('HTML to Markdown conversion failed:', error);
+    return null;
+  }
+}
+
 export async function handleEditorClipboardImagePaste(
   event: ClipboardEvent,
   view: EditorView,
   deps: EditorImageClipboardDeps,
 ) {
-  // 优先处理 HTML 富文本
-  const html = getClipboardHtml(event);
-  if (html && html.trim()) {
-    try {
-      const markdown = convertHtmlToMarkdown(html);
-      if (markdown) {
-        event.preventDefault();
-        event.stopPropagation();
-        insertTextAtSelection(view, markdown);
-        return true;
-      }
-    } catch (error) {
-      // HTML 转换失败，继续尝试其他格式
-      console.warn('HTML to Markdown conversion failed:', error);
-    }
+  // 已被其他处理器接管的粘贴不再重复插入。
+  if (event.defaultPrevented) return false;
+  // 捕获阶段先于 CodeMirror 执行，只读限制需要自己守。
+  if (view.state.readOnly) return false;
+
+  const markdown = convertClipboardHtmlToMarkdown(getClipboardHtml(event) ?? '');
+  if (markdown) {
+    event.preventDefault();
+    event.stopPropagation();
+    insertTextAtSelection(view, markdown);
+    return true;
   }
+
+  // 剪贴板里有文本时一律交回原生粘贴：既保住 text/plain 的原始换行，
+  // 也避免为了探测图片去调 navigator.clipboard.read 触发系统授权弹窗。
+  if (getClipboardText(event).trim()) return false;
 
   let imageFile = getClipboardImageFile(event);
   if (!imageFile) {

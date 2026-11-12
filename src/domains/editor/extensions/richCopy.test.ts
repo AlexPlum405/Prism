@@ -58,7 +58,7 @@ describe('rich clipboard copy', () => {
     expect(writeText).toHaveBeenCalledWith('Body');
   });
 
-  it('can fall back to html source for explicit HTML copy', async () => {
+  it('never falls back to raw html source for explicit HTML copy', async () => {
     const writeText = vi.fn(async () => undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -71,7 +71,7 @@ describe('rich clipboard copy', () => {
 
     await writeRichClipboard(previewHtmlToRichClipboardInput('<p>Body</p>', 'Body'), { fallback: 'html' });
 
-    expect(writeText).toHaveBeenCalledWith('<p>Body</p>');
+    expect(writeText).toHaveBeenCalledWith('Body');
   });
 
   it('converts markdown selections to rendered html and plain text', async () => {

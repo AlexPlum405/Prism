@@ -346,10 +346,12 @@ export function useEditorRuntimeModel({
     };
 
     view.dom.addEventListener('contextmenu', handleContextMenu);
+    // 用捕获阶段接管：CodeMirror 在 contentDOM 的冒泡阶段会把 text/plain 直接插入，
+    // 晚于它就只能拿到已经落地的纯文本，格式无从还原。
     const handlePaste = (event: ClipboardEvent) => {
       void clipboardController.handlePaste(event, view);
     };
-    view.dom.addEventListener('paste', handlePaste);
+    view.dom.addEventListener('paste', handlePaste, true);
     const handleDragOver = (event: DragEvent) => {
       clipboardController.handleDragOver(event);
     };
@@ -384,7 +386,7 @@ export function useEditorRuntimeModel({
 
     return () => {
       view.dom.removeEventListener('contextmenu', handleContextMenu);
-      view.dom.removeEventListener('paste', handlePaste);
+      view.dom.removeEventListener('paste', handlePaste, true);
       view.dom.removeEventListener('dragover', handleDragOver);
       view.dom.removeEventListener('drop', handleDrop);
       view.scrollDOM.removeEventListener('scroll', handleScroll);

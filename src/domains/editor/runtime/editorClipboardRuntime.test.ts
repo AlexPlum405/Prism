@@ -80,6 +80,29 @@ function createDropEvent(files: File[], altKey = false) {
   } as unknown as DragEvent;
 }
 
+function createRichClipboardEvent(
+  payload: { html?: string; text?: string },
+  options: { defaultPrevented?: boolean } = {},
+) {
+  const html = payload.html ?? '';
+  const text = payload.text ?? '';
+
+  return {
+    clipboardData: {
+      files: [],
+      items: [],
+      getData: (type: string) => {
+        if (type === 'text/html') return html;
+        if (type === 'text/plain') return text;
+        return '';
+      },
+    },
+    defaultPrevented: options.defaultPrevented ?? false,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+  } as unknown as ClipboardEvent;
+}
+
 describe('editorClipboardRuntime', () => {
   it('inserts text at the current selection', () => {
     const { view, destroy } = createView('hello');
@@ -88,6 +111,60 @@ describe('editorClipboardRuntime', () => {
       insertTextAtSelection(view, ' world');
       expect(view.state.doc.toString()).toBe('hello world');
       expect(view.state.selection.main.from).toBe(11);
+    } finally {
+      destroy();
+    }
+  });
+
+  it('converts clipboard html into markdown and takes over the paste', async () => {
+    const { view, destroy } = createView('');
+    const event = createRichClipboardEvent({
+      html: '<h1>标题</h1><p>正文<strong>加粗</strong>与<em>斜体</em></p>',
+      text: '标题\n正文加粗与斜体',
+    });
+
+    try {
+      const handled = await handleEditorClipboardImagePaste(event, view, createDeps());
+
+      expect(handled).toBe(true);
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+      expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+      const doc = view.state.doc.toString();
+      expect(doc).toContain('# 标题');
+      expect(doc).toContain('**加粗**');
+      expect(doc).toContain('*斜体*');
+    } finally {
+      destroy();
+    }
+  });
+
+  it('defers to native paste when the clipboard only carries text', async () => {
+    const { view, destroy } = createView('');
+    const event = createRichClipboardEvent({ text: '纯文本内容' });
+
+    try {
+      const handled = await handleEditorClipboardImagePaste(event, view, createDeps());
+
+      expect(handled).toBe(false);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(view.state.doc.toString()).toBe('');
+    } finally {
+      destroy();
+    }
+  });
+
+  it('skips handling when an earlier handler already prevented the paste', async () => {
+    const { view, destroy } = createView('');
+    const event = createRichClipboardEvent(
+      { html: '<h1>标题</h1>', text: '标题' },
+      { defaultPrevented: true },
+    );
+
+    try {
+      const handled = await handleEditorClipboardImagePaste(event, view, createDeps());
+
+      expect(handled).toBe(false);
+      expect(view.state.doc.toString()).toBe('');
     } finally {
       destroy();
     }

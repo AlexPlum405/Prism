@@ -1,3 +1,4 @@
+pub mod clipboard;
 pub mod document_io;
 pub mod export_jobs;
 pub mod export_resources;

@@ -53,3 +53,8 @@ export function getClipboardHtml(event: ClipboardEvent): string | null {
   if (!event.clipboardData?.getData) return null;
   return event.clipboardData.getData('text/html') || null;
 }
+
+export function getClipboardText(event: ClipboardEvent): string {
+  if (!event.clipboardData?.getData) return '';
+  return event.clipboardData.getData('text/plain') || '';
+}

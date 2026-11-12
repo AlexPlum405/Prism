@@ -35,3 +35,4 @@ block2 = "0.6.2"
 objc2-core-foundation = "0.3.2"
 objc2-foundation = { version = "0.3.2", features = ["NSData", "NSError", "NSObject", "NSString"] }
 objc2-web-kit = { version = "0.3.2", features = ["WKPDFConfiguration", "WKWebView", "block2"] }
+objc2-app-kit = { version = "0.3", features = ["NSPasteboard"] }

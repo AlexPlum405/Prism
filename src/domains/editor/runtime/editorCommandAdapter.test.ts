@@ -116,8 +116,8 @@ describe('editorCommandAdapter', () => {
     view.destroy();
   });
 
-  it('pastes images before falling back to plain text for the paste command', async () => {
-    const readText = vi.fn().mockResolvedValue('Prism');
+  it('probes images when the clipboard carries no text', async () => {
+    const readText = vi.fn().mockResolvedValue('');
     const handleImagePaste = vi.fn(async () => true);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -133,8 +133,28 @@ describe('editorCommandAdapter', () => {
     await vi.waitFor(() => {
       expect(handleImagePaste).toHaveBeenCalledWith(view);
     });
-    expect(readText).not.toHaveBeenCalled();
     expect(view.state.doc.toString()).toBe('hello world');
+
+    view.destroy();
+  });
+
+  it('does not probe images when the clipboard has text', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { readText: vi.fn().mockResolvedValue('Prism') },
+    });
+    const handleImagePaste = vi.fn(async () => true);
+    const view = createView('hello world');
+    view.dispatch({ selection: EditorSelection.range(0, 5) });
+
+    expect(runBasicEditorCommand('paste', view, {
+      handleImagePaste,
+      handleTablePasteText: vi.fn(() => false),
+    })).toBe(true);
+    await vi.waitFor(() => {
+      expect(view.state.doc.toString()).toBe('Prism world');
+    });
+    expect(handleImagePaste).not.toHaveBeenCalled();
 
     view.destroy();
   });

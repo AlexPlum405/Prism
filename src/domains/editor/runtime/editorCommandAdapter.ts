@@ -2,6 +2,8 @@ import { redo, undo } from '@codemirror/commands';
 import { foldable } from '@codemirror/language';
 import type { EditorView } from '@codemirror/view';
 import { markdownSelectionToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
+import { isTauriClipboardRuntime, readClipboardPayloadNative } from '../../../platform/tauri/clipboardRich';
+import { convertClipboardHtmlToMarkdown } from './editorClipboardRuntime';
 import { formatMarkdownDocument } from './markdownAutoFormat';
 
 interface BasicEditorCommandDeps {
@@ -32,6 +34,24 @@ async function writePlainTextClipboard(text: string): Promise<void> {
 async function readPlainTextClipboard(): Promise<string> {
   if (!navigator.clipboard?.readText) return '';
   return navigator.clipboard.readText();
+}
+
+/**
+ * 读取剪贴板的 html 与 text。
+ * Tauri 环境走 NSPasteboard 原生命令：菜单触发的命令没有瞬时用户手势，
+ * navigator.clipboard 会弹系统授权框或直接失败；Web 环境退回只读纯文本。
+ */
+async function readClipboardPayload(): Promise<{ html: string; text: string }> {
+  if (isTauriClipboardRuntime()) {
+    try {
+      const payload = await readClipboardPayloadNative();
+      return { html: payload.html ?? '', text: payload.text ?? '' };
+    } catch {
+      // 原生读取失败时退回 Web API。
+    }
+  }
+
+  return { html: '', text: await readPlainTextClipboard() };
 }
 
 function getSelectionText(view: EditorView) {
@@ -98,7 +118,7 @@ export function runBasicEditorCommand(
       const selection = view.state.selection.main;
       const text = view.state.doc.sliceString(selection.from, selection.to);
       if (text) {
-        void markdownSelectionToRichClipboardInput(text).then((input) => writeRichClipboard(input, { fallback: 'html' }));
+        void markdownSelectionToRichClipboardInput(text).then((input) => writeRichClipboard(input));
       }
       return true;
     }
@@ -108,16 +128,34 @@ export function runBasicEditorCommand(
     case 'paste':
     case 'pastePlain':
       void (async () => {
+        const payload = await readClipboardPayload();
+        const markdown =
+          command === 'paste' ? convertClipboardHtmlToMarkdown(payload.html) : null;
+
+        if (markdown) {
+          const selection = view.state.selection.main;
+          view.dispatch({
+            changes: { from: selection.from, to: selection.to, insert: markdown },
+            selection: { anchor: selection.from + markdown.length },
+            scrollIntoView: true,
+          });
+          view.focus();
+          return;
+        }
+
+        if (payload.text) {
+          const selection = view.state.selection.main;
+          if (deps.handleTablePasteText(view, payload.text)) return;
+          view.dispatch({
+            changes: { from: selection.from, to: selection.to, insert: payload.text },
+            selection: { anchor: selection.from + payload.text.length },
+            scrollIntoView: true,
+          });
+          view.focus();
+          return;
+        }
+
         if (command === 'paste' && deps.handleImagePaste && await deps.handleImagePaste(view)) return;
-        const text = await readPlainTextClipboard();
-        if (!text) return;
-        if (deps.handleTablePasteText(view, text)) return;
-        view.dispatch({
-          changes: { from: view.state.selection.main.from, to: view.state.selection.main.to, insert: text },
-          selection: { anchor: view.state.selection.main.from + text.length },
-          scrollIntoView: true,
-        });
-        view.focus();
       })();
       return true;
     case 'clearFormat': {
