@@ -55,6 +55,9 @@
   /* —— 尺寸 —— */
   --gutter: 16px;
   --window-pad: 18px;
+  /* 纵向留白单独一档：与横向同值时（18），岛顶到标题栏、岛底到状态栏都隔得太远，
+     整屏读起来像被切成两块。纵向收到 10，横向仍保持 18。 */
+  --window-pad-y: 10px;
   --island-titlebar-h: 52px;
   --island-statusbar-h: 38px;
 }
@@ -100,7 +103,7 @@ body.dark {
   gap: 0;
   min-height: 0;
   min-width: 0;
-  padding: var(--window-pad);
+  padding: var(--window-pad-y) var(--window-pad);
   background: var(--island-canvas);
 }
 
@@ -235,8 +238,8 @@ body.dark {
   position: absolute;
   /* 虚影贯穿的是「岛高」而不是主区域高：主区域比岛多出上下各 18px 的留白，
      不内缩的话点线会顶到标题栏、尾巴伸进状态栏。 */
-  top: var(--window-pad);
-  bottom: var(--window-pad);
+  top: var(--window-pad-y);
+  bottom: var(--window-pad-y);
   width: 1px;
   pointer-events: none;
   z-index: 5;

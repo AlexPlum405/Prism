@@ -243,7 +243,7 @@ export function TitleBar({
     return (
       <div className={styles.inlineMenu} ref={inlineMenuRef}>
         {Object.keys(menuSections).map((menuName) => (
-          <div key={menuName} className={styles.windowsMenuItemWrapper}>
+          <div key={menuName} className={styles.inlineMenuItemWrapper}>
             <button
               type="button"
               className={`${styles.inlineMenuItem} ${activeMenu === menuName ? styles.active : ''}`}

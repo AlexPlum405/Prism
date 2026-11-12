@@ -233,6 +233,28 @@ describe('StatusBar', () => {
     expect(screen.queryByText('未保存')).not.toBeInTheDocument();
   });
 
+  it('offers an expand affordance only when the sidebar is collapsed', () => {
+    const onExpandSidebar = vi.fn();
+    const { unmount } = render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+      />
+    );
+    expect(screen.queryByRole('button', { name: '展开侧边栏' })).toBeNull();
+    unmount();
+
+    render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        onExpandSidebar={onExpandSidebar}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: '展开侧边栏' }));
+    expect(onExpandSidebar).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps export failure visible and clickable for details', () => {
     const onShowExportFailure = vi.fn();
     render(

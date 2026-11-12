@@ -196,6 +196,7 @@ export function AppWorkspaceViewController({
             writingStats={writingStats}
             selectionStats={selectionWritingStats}
             cursor={cursor}
+            onExpandSidebar={sidebarVisible ? undefined : () => workspace.toggleSidebar()}
             onExportMenu={onExportMenu}
             onToggleFocusMode={() => workspace.toggleFocusMode()}
             linkIssueCount={actionableIssueCount}

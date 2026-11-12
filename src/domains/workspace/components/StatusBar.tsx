@@ -4,6 +4,12 @@ import type { DocumentProfileKind, WritingStats } from '../services';
 import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
+const IconExpandSidebar = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M13.92 3.72c-.4 0-.72.32-.72.72v11.12a.72.72 0 1 0 1.44 0V4.44c0-.4-.32-.72-.72-.72ZM5.58 5.74a.72.72 0 0 0 0 1.02L8.82 10l-3.24 3.24a.72.72 0 0 0 1.02 1.02l3.75-3.76a.72.72 0 0 0 0-1.02L6.6 5.74a.72.72 0 0 0-1.02 0Z" />
+  </svg>
+);
+
 const IconFocus = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M10 2.85a7.15 7.15 0 1 1 0 14.3 7.15 7.15 0 0 1 0-14.3Zm0 1.36a5.79 5.79 0 1 0 0 11.58 5.79 5.79 0 0 0 0-11.58Zm0 2.82a2.97 2.97 0 1 1 0 5.94 2.97 2.97 0 0 1 0-5.94Zm0 1.32a1.65 1.65 0 1 0 0 3.3 1.65 1.65 0 0 0 0-3.3Z" />
@@ -33,6 +39,8 @@ interface StatusBarProps {
   writingStats: WritingStats;
   selectionStats?: WritingStats | null;
   cursor: { line: number; column: number };
+  /** 侧栏收起后，这里要留一个展开入口——« 按钮在侧栏页脚里，会随岛一起消失。 */
+  onExpandSidebar?: () => void;
   onExportMenu?: (e: React.MouseEvent) => void;
   onToggleFocusMode?: () => void;
   linkIssueCount?: number;
@@ -64,6 +72,7 @@ export function StatusBar({
   writingStats,
   selectionStats,
   cursor,
+  onExpandSidebar,
   onExportMenu,
   onToggleFocusMode,
   linkIssueCount = 0,
@@ -105,6 +114,17 @@ export function StatusBar({
 
   return (
     <div className={`${styles.statusbar} app-statusbar`}>
+      {onExpandSidebar && (
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.iconBtn} ${styles.expandSidebar}`}
+          title={t('status.expandSidebar')}
+          aria-label={t('status.expandSidebar')}
+          onClick={onExpandSidebar}
+        >
+          <IconExpandSidebar />
+        </button>
+      )}
       {/* 字数条绝对定位在 x=770，既不是居中也不靠左：它要落在编辑岛下方 */}
       <div className={styles.center} title={statsTitle}>
         <span className={styles.statText}>{statusText}</span>
