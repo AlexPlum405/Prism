@@ -9,7 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
-const sourceIconPath = path.join(repoRoot, 'docs', 'assets', 'prism-icon-red-panda-app-icon.png');
+const sourceIconPath = path.resolve(
+  repoRoot,
+  process.argv[2] ?? 'docs/assets/prism-icon-app-icon.png',
+);
 const appIconPath = path.join(repoRoot, 'src-tauri', 'app-icon.png');
 const iconsDir = path.join(repoRoot, 'src-tauri', 'icons');
 const outputIcnsPath = path.join(iconsDir, 'icon.icns');
@@ -103,6 +106,27 @@ async function readSourceMetadata() {
   return metadata;
 }
 
+// 只有白底源图才需要把近白像素透明化；深色底的图标如果照做，
+// 明亮的图形主体会被一起打穿，所以在处理前先探测四角。
+async function hasWhiteBackdrop(buffer) {
+  const { width, height, channels } = await sharp(buffer).metadata();
+  const raw = await sharp(buffer).raw().toBuffer();
+  const points = [
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1],
+    [Math.floor(width / 2), 0],
+    [0, Math.floor(height / 2)],
+  ];
+
+  return points.every(([x, y]) => {
+    const i = (y * width + x) * channels;
+    const alpha = channels === 4 ? raw[i + 3] : 255;
+    return alpha === 255 && raw[i] >= 248 && raw[i + 1] >= 248 && raw[i + 2] >= 248;
+  });
+}
+
 // Trim whitespace/near-white borders from the source image by detecting
 // the bounding box of non-white content, then cropping to a square that
 // fully contains that content.
@@ -166,6 +190,14 @@ async function getTrimmedSource() {
       height: squareSize,
     })
     .toBuffer();
+
+  if (!(await hasWhiteBackdrop(trimmed))) {
+    console.log('Source has no white backdrop; keeping near-white pixels opaque.');
+    return sharp(trimmed)
+      .ensureAlpha()
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toBuffer();
+  }
 
   // Make near-white pixels transparent so macOS squircle cropping
   // doesn't show a white border around the icon.
