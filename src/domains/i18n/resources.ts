@@ -1155,6 +1155,22 @@ export const zhCN = {
   'export.format.pdf': 'PDF',
   'export.format.docx': 'Word',
   'export.format.png': 'PNG 图像',
+
+  'errors.externalModified': '文件已在磁盘上被修改',
+  'errors.externalDeleted': '文件已在磁盘上被删除',
+  'errors.fileNotFound': '文件不存在',
+  'errors.notAFile': '目标不是文件',
+  'errors.notADirectory': '目标不是文件夹',
+  'errors.invalidPath': '路径无效',
+  'errors.permissionDenied': '没有访问权限',
+  'errors.unsupportedFileType': '只支持 Markdown 与纯文本文档',
+  'errors.invalidWorkspace': '系统目录不能作为工作区打开',
+  'errors.writeFailed': '写入文件失败',
+  'errors.invalidThemeId': '主题标识无效',
+  'errors.exportFailed': '导出失败',
+  'errors.exportJobNotFound': '导出任务不存在',
+  'errors.workspaceIndexCancelled': '工作区索引已取消',
+  'errors.workspaceIndexNotReady': '工作区索引尚未完成',
 } as const;
 
 export type I18nKey = keyof typeof zhCN;
@@ -2298,6 +2314,22 @@ const enUS: Record<I18nKey, string> = {
   'export.format.pdf': 'PDF',
   'export.format.docx': 'Word',
   'export.format.png': 'PNG Image',
+
+  'errors.externalModified': 'File changed on disk',
+  'errors.externalDeleted': 'File deleted on disk',
+  'errors.fileNotFound': 'File does not exist',
+  'errors.notAFile': 'Target is not a file',
+  'errors.notADirectory': 'Target is not a folder',
+  'errors.invalidPath': 'Invalid path',
+  'errors.permissionDenied': 'Permission denied',
+  'errors.unsupportedFileType': 'Only Markdown and plain text documents are supported',
+  'errors.invalidWorkspace': 'System folders cannot be opened as a workspace',
+  'errors.writeFailed': 'Failed to write the file',
+  'errors.invalidThemeId': 'Invalid theme id',
+  'errors.exportFailed': 'Export failed',
+  'errors.exportJobNotFound': 'Export job does not exist',
+  'errors.workspaceIndexCancelled': 'Workspace index was cancelled',
+  'errors.workspaceIndexNotReady': 'Workspace index is not ready yet',
 };
 
 const jaJP: Record<I18nKey, string> = {
@@ -3434,6 +3466,22 @@ const jaJP: Record<I18nKey, string> = {
   'export.format.pdf': 'PDF',
   'export.format.docx': 'Word',
   'export.format.png': 'PNG 画像',
+
+  'errors.externalModified': 'ファイルがディスク上で変更されています',
+  'errors.externalDeleted': 'ファイルがディスク上で削除されています',
+  'errors.fileNotFound': 'ファイルが存在しません',
+  'errors.notAFile': '対象がファイルではありません',
+  'errors.notADirectory': '対象がフォルダーではありません',
+  'errors.invalidPath': 'パスが無効です',
+  'errors.permissionDenied': 'アクセス権限がありません',
+  'errors.unsupportedFileType': 'Markdown とテキスト文書のみ対応しています',
+  'errors.invalidWorkspace': 'システムフォルダーはワークスペースとして開けません',
+  'errors.writeFailed': 'ファイルの書き込みに失敗しました',
+  'errors.invalidThemeId': 'テーマ ID が無効です',
+  'errors.exportFailed': 'エクスポートに失敗しました',
+  'errors.exportJobNotFound': 'エクスポートジョブが存在しません',
+  'errors.workspaceIndexCancelled': 'ワークスペース索引はキャンセルされました',
+  'errors.workspaceIndexNotReady': 'ワークスペース索引がまだ完了していません',
 };
 
 export const resources: Record<AppLocale, Record<I18nKey, string>> = {
