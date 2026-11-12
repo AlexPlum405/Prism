@@ -25,8 +25,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 12, column: 8 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
       />
     );
 
@@ -35,8 +33,8 @@ describe('StatusBar', () => {
     expect(screen.queryByText('已保存')).not.toBeInTheDocument();
     expect(screen.queryByText('LN')).not.toBeInTheDocument();
     expect(screen.queryByText('COL')).not.toBeInTheDocument();
-    expect(screen.getByTitle('新建文件')).toBeInTheDocument();
-    expect(screen.getByTitle('切换到文档列表')).toBeInTheDocument();
+    // 新建文件与树/列表切换已搬到侧栏岛页脚，状态栏只剩字数与右侧诊断组
+    expect(screen.queryByTitle('新建文件')).not.toBeInTheDocument();
   });
 
   it('shows selected text stats when a selection is active', () => {
@@ -45,8 +43,6 @@ describe('StatusBar', () => {
         writingStats={writingStats}
         selectionStats={selectionStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
       />,
     );
 
@@ -59,8 +55,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 3, column: 5 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         documentProfileKind="markdown"
       />,
     );
@@ -72,8 +66,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 3, column: 5 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         documentProfileKind="text"
       />,
     );
@@ -88,8 +80,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         linkIssueCount={2}
         linkIssueTitle="未找到链接文件 missing.md"
         onLinkDiagnosticsClick={onDiagnosticsClick}
@@ -112,8 +102,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         documentProfileKind="markdown"
         typographyIssueCount={3}
         typographyIssueTitle="中英文之间缺少空格"
@@ -134,8 +122,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         documentProfileKind="text"
         typographyIssueCount={3}
         onTypographyDiagnosticsClick={vi.fn()}
@@ -152,8 +138,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         backlinkCount={4}
         onBacklinksClick={onBacklinksClick}
       />
@@ -169,8 +153,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         hasDocumentRelations={false}
         onRelationGraphClick={onRelationGraphClick}
       />
@@ -182,8 +164,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         hasDocumentRelations={true}
         onRelationGraphClick={onRelationGraphClick}
       />
@@ -200,8 +180,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         onDocumentPropertiesClick={onDocumentPropertiesClick}
       />
     );
@@ -216,8 +194,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         exportProgress="正在生成 PDF 页面 2 / 49"
         exportProgressInBackground={true}
         onShowExportProgress={onShowExportProgress}
@@ -237,8 +213,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         exportFeedback={{ status: 'success', title: 'PDF 导出完成', message: 'report.pdf' }}
       />
     );
@@ -251,8 +225,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         exportFeedback={{ status: 'cancelled', title: '导出已取消' }}
       />
     );
@@ -267,8 +239,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        sidebarVisible={true}
-        isSidebarHovered={false}
         exportFeedback={{ status: 'failed', title: 'PDF 导出失败', message: 'disk full' }}
         onShowExportFailure={onShowExportFailure}
       />

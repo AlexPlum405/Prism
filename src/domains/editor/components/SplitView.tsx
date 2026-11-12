@@ -28,6 +28,8 @@ import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 import { hasPresentationSlides } from '../extensions/presentation';
 import { PresentationOverlay } from './PresentationOverlay';
 import { PREVIEW_SOURCE_FLASH_MS } from '../../../lib/feedbackTiming';
+import { IslandGutter } from '../../workspace/components/IslandGutter';
+import { ISLAND_LIMITS } from '../../workspace/layout/islandLayout';
 import {
   createPreviewScrollMapCache,
   findPreviewElementForSourceLine,
@@ -45,11 +47,25 @@ export {
 const EditorPane = lazy(() => import('./EditorPane')
   .then((module) => ({ default: module.EditorPane })));
 
+interface SplitViewIslandLayout {
+  editorWidth: number;
+  previewWidth: number;
+  onResizeStart: () => void;
+  onResize: (nextEditorWidth: number) => void;
+  onResizeEnd: () => void;
+  onReset: () => void;
+}
+
 interface SplitViewProps {
   content: string;
   documentPath?: string;
   scrollState?: DocumentScrollState;
   viewMode: 'edit' | 'split' | 'preview';
+  /**
+   * 浮岛外壳传入的宽度与拖拽回调。不传时退回「两块各占一半」的老行为，
+   * 这样只测排版逻辑的用例不必搭一套布局。
+   */
+  island?: SplitViewIslandLayout;
   onChange: (content: string) => void;
   onCursorChange?: (cursor: { line: number; column: number }) => void;
   onSelectionTextChange?: (text: string) => void;
@@ -485,6 +501,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     documentPath,
     scrollState,
     viewMode,
+    island,
     onChange,
     onCursorChange,
     onSelectionTextChange,
@@ -1375,19 +1392,29 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     return (
       <div
         ref={splitSurfaceRef}
-        style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0, backgroundColor: 'transparent', position: 'relative' }}
+        style={{
+          display: 'flex',
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          backgroundColor: 'transparent',
+          position: 'relative',
+          alignItems: 'stretch',
+        }}
       >
         {shouldRenderEditor && (
           <div
             aria-hidden={isPreviewOnly}
+            className={island ? 'island island--editor' : undefined}
             style={{
-              flex: isSplit ? 1 : '1 1 auto',
+              flex: island ? '0 0 auto' : isSplit ? 1 : '1 1 auto',
+              width: island ? island.editorWidth : undefined,
               minWidth: 0,
               display: isPreviewOnly ? 'none' : 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
-              borderRight: isSplit ? '1px solid var(--border-color)' : '0',
-              background: 'var(--bg-editor)',
+              borderRight: '0',
+              background: island ? undefined : 'var(--bg-editor)',
             }}
           >
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -1409,18 +1436,35 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           </div>
         )}
 
+        {island && isSplit && (
+          <IslandGutter
+            label="调整源码与预览的宽度"
+            value={island.editorWidth}
+            valueMin={ISLAND_LIMITS.editor.min}
+            valueMax={ISLAND_LIMITS.editor.max}
+            startName="源文"
+            endName="预览"
+            partnerValue={island.previewWidth}
+            onResizeStart={island.onResizeStart}
+            onResize={island.onResize}
+            onResizeEnd={island.onResizeEnd}
+            onReset={island.onReset}
+          />
+        )}
+
         {showPreview && (
           <div
-            className="prism-scrollbar-host"
+            className={island ? 'prism-scrollbar-host island island--preview' : 'prism-scrollbar-host'}
             style={{
-              flex: 1,
+              flex: island ? '0 0 auto' : 1,
+              width: island ? island.previewWidth : undefined,
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
               overflow: 'hidden',
               position: 'relative',
-              background: 'var(--bg-preview)',
+              background: island ? undefined : 'var(--bg-preview)',
             }}
           >
             <div

@@ -21,8 +21,6 @@ import { AppWorkspaceViewController } from './app/controllers/AppWorkspaceViewCo
 import type { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
-import { MenuBar } from './components/shell/MenuBar';
-import { getRuntimePlatform } from './domains/workspace/services';
 
 export { shouldShowRecoveryPrompt };
 
@@ -49,7 +47,6 @@ function resolveTitlebarRenameName(currentName: string, nextVisibleName: string)
 }
 
 function App() {
-  const isWindows = getRuntimePlatform() === 'windows';
   const {
     currentDocument,
     locale,
@@ -63,7 +60,6 @@ function App() {
   useNativeMenuLabels();
 
   const editorRef = useRef<EditorPaneHandle>(null);
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<'general' | 'writing' | 'appearance' | 'export' | 'citation' | 'files'>('general');
   const {
@@ -269,7 +265,6 @@ function App() {
         saveError={currentDocument?.saveError ?? null}
         saveStatus={currentDocument?.saveStatus}
       />
-      {!isWindows && <MenuBar sections={menuSections} onAction={handleCommandAction} />}
       <AppWorkspaceViewController
         activePath={currentDocument?.path}
         actionableIssueCount={documentInsight.actionableDiagnostics.length}
@@ -284,7 +279,6 @@ function App() {
         firstActionableMessage={documentInsight.firstActionableDiagnostic?.message}
         firstTypographyMessage={documentInsight.firstTypographyDiagnostic?.message}
         globalContextMenu={globalContextMenu}
-        isSidebarHovered={isSidebarHovered}
         selectionWritingStats={selectionWritingStats}
         typographyIssueCount={documentInsight.typographyDiagnostics.length}
         workspace={workspace}
@@ -304,7 +298,6 @@ function App() {
         onOpenDocumentLink={documentInsight.openDocumentLink}
         onRelationGraphClick={documentInsight.openRelationGraph}
         onSelectionTextChange={setSelectionText}
-        onSetSidebarHovered={setIsSidebarHovered}
         onShowExportProgress={showBackgroundExportProgress}
         onShowExportFailure={showExportFailureDetails}
         onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}

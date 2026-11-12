@@ -1,4 +1,5 @@
 import type { MouseEventHandler, RefObject } from 'react';
+import { useMemo } from 'react';
 import { ContextMenu } from '../../components/shell/ContextMenu';
 import { DocumentView } from '../../domains/document/components/DocumentView';
 import type { EditorPaneHandle } from '../../domains/editor/components/EditorPane';
@@ -14,6 +15,9 @@ import {
 import type { useWorkspaceStore } from '../../domains/workspace/store';
 import { Sidebar } from '../../domains/workspace/components/Sidebar';
 import { StatusBar } from '../../domains/workspace/components/StatusBar';
+import { IslandGhost, IslandGutter } from '../../domains/workspace/components/IslandGutter';
+import { useIslandLayout } from '../../domains/workspace/layout/useIslandLayout';
+import type { DocumentPaneCount } from '../../domains/workspace/layout/islandLayout';
 
 /**
  * 工作区视图控制器。
@@ -23,6 +27,9 @@ import { StatusBar } from '../../domains/workspace/components/StatusBar';
  * StatusBar，两层加起来 884 行、156 个 props、零业务逻辑。合并成一层后只剩
  * 必要的派生（documentContent、hasDocumentRelations、statusBarVisible），
  * 新增一个状态栏字段从改三个文件变成改一个。
+ *
+ * 布局上它是「浮岛」外壳的唯一入口：三块岛与两条可拖拽的缝都在这里摆，
+ * 宽度由 useIslandLayout 统一维护，避免岛自己 flex 导致读数与实际不符。
  */
 interface AppWorkspaceViewControllerProps {
   activePath?: string | null;
@@ -37,7 +44,6 @@ interface AppWorkspaceViewControllerProps {
   firstActionableMessage?: string;
   firstTypographyMessage?: string;
   globalContextMenu: WorkspaceContextMenuState | null;
-  isSidebarHovered: boolean;
   selectionWritingStats: WritingStats | null;
   typographyIssueCount: number;
   workspace: ReturnType<typeof useWorkspaceStore.getState>;
@@ -57,7 +63,6 @@ interface AppWorkspaceViewControllerProps {
   onOpenDocumentLink: Parameters<typeof DocumentView>[0]['onOpenDocumentLink'];
   onRelationGraphClick: () => void;
   onSelectionTextChange: (text: string) => void;
-  onSetSidebarHovered: (hovered: boolean) => void;
   onShowExportFailure: () => void;
   onShowExportProgress: () => void;
   onCancelExport?: () => void;
@@ -77,7 +82,6 @@ export function AppWorkspaceViewController({
   firstActionableMessage,
   firstTypographyMessage,
   globalContextMenu,
-  isSidebarHovered,
   selectionWritingStats,
   typographyIssueCount,
   workspace,
@@ -97,7 +101,6 @@ export function AppWorkspaceViewController({
   onOpenDocumentLink,
   onRelationGraphClick,
   onSelectionTextChange,
-  onSetSidebarHovered,
   onShowExportFailure,
   onShowExportProgress,
   onCancelExport,
@@ -110,27 +113,60 @@ export function AppWorkspaceViewController({
     && hasWorkspaceIndexDocumentRelations(workspaceIndex, currentDocument.path),
   );
 
+  const paneCount: DocumentPaneCount = currentDocument
+    ? (currentDocument.viewMode === 'split' ? 2 : 1)
+    : 0;
+  const sidebarVisible = Boolean(workspace.sidebarVisible) && Boolean(currentDocument);
+
+  const layout = useIslandLayout({ paneCount, sidebarVisible });
+
+  const workspaceLabel = useMemo(() => {
+    const root = workspace.rootPath;
+    if (!root) return 'Examples';
+    return root.split(/[\\/]/).filter(Boolean).pop() || 'Examples';
+  }, [workspace.rootPath]);
+
   return (
     <>
-      <div className="app-main" style={{ flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
-        {workspace.sidebarVisible && (
-          <div
-            className="app-sidebar"
-            onMouseEnter={() => onSetSidebarHovered(true)}
-            onMouseLeave={() => onSetSidebarHovered(false)}
-            style={{ display: 'flex', flexDirection: 'column' }}
-          >
-            <Sidebar
-              fileTree={workspace.fileTree}
-              sidebarTab={workspace.sidebarTab}
-              setSidebarTab={workspace.setSidebarTab}
-              documentContent={currentDocument?.content ?? ''}
-              activePath={activePath}
-              onFileClick={onFileClick}
-              onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
+      <div className="island-main" ref={layout.containerRef}>
+        {sidebarVisible && (
+          <>
+            <aside
+              className="island island--sidebar"
+              style={{ width: layout.widths.sidebar }}
+            >
+              <Sidebar
+                fileTree={workspace.fileTree}
+                sidebarTab={workspace.sidebarTab}
+                setSidebarTab={workspace.setSidebarTab}
+                documentContent={currentDocument?.content ?? ''}
+                activePath={activePath}
+                onFileClick={onFileClick}
+                onOutlineClick={(line) => editorRef.current?.jumpToLine(line)}
+                onNewFile={() => onFileAction('newFile')}
+                onFolderContextMenu={onFolderContextMenu}
+                onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
+                fileTreeMode={workspace.fileTreeMode}
+                onCollapse={() => workspace.toggleSidebar()}
+                footerLabel={workspaceLabel}
+              />
+            </aside>
+            <IslandGutter
+              label="调整侧栏宽度"
+              value={layout.widths.sidebar}
+              valueMin={layout.limits.sidebar.min}
+              valueMax={layout.limits.sidebar.max}
+              startName="侧栏"
+              endName="源文"
+              partnerValue={layout.widths.editor}
+              onResizeStart={layout.startSidebarDrag}
+              onResize={layout.resizeSidebarTo}
+              onResizeEnd={layout.endDrag}
+              onReset={layout.reset}
             />
-          </div>
+          </>
         )}
+
         <DocumentView
           key={currentDocument?.path || 'new-doc'}
           ref={editorRef}
@@ -140,7 +176,17 @@ export function AppWorkspaceViewController({
           onNotice={onNotice}
           workspaceIndex={workspaceIndex}
           workspaceIndexJobId={workspaceIndexJobId}
+          island={{
+            editorWidth: layout.widths.editor,
+            previewWidth: layout.widths.preview,
+            onResizeStart: layout.startDocumentDrag,
+            onResize: layout.resizeEditorTo,
+            onResizeEnd: layout.endDrag,
+            onReset: layout.reset,
+          }}
         />
+
+        {layout.ghost && <IslandGhost x={layout.ghost.x} label={layout.ghost.label} />}
       </div>
 
       {currentDocument && workspace.statusBarVisible && (
@@ -149,16 +195,8 @@ export function AppWorkspaceViewController({
             writingStats={writingStats}
             selectionStats={selectionWritingStats}
             cursor={cursor}
-            sidebarVisible={workspace.sidebarVisible}
-            isSidebarHovered={isSidebarHovered}
-            onMouseEnter={() => onSetSidebarHovered(true)}
-            onMouseLeave={() => onSetSidebarHovered(false)}
             onExportMenu={onExportMenu}
             onToggleFocusMode={() => workspace.toggleFocusMode()}
-            onToggleSidebar={() => workspace.toggleSidebar()}
-            onFolderContextMenu={onFolderContextMenu}
-            onNewFile={() => onFileAction('newFile')}
-            onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
             linkIssueCount={actionableIssueCount}
             linkIssueTitle={firstActionableMessage}
             onLinkDiagnosticsClick={onLinkDiagnosticsClick}

@@ -1,19 +1,22 @@
 .titlebar {
-  height: 40px;
+  height: var(--island-titlebar-h);
   display: flex;
   align-items: center;
-  padding-left: 16px;
+  padding-left: 22px;
+  padding-right: 52px;
+  font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 500;
-  color: var(--c-void);
+  color: var(--island-text);
   user-select: none;
-  border-bottom: 1px solid var(--c-fog);
-  background: var(--c-canvas);
+  border-bottom: 0;
+  background: var(--island-canvas);
 }
 
 .titlebar.macos {
-  padding-left: 84px;
-  padding-right: 16px;
+  /* 不隐藏原生红绿灯，所以左内边距要让出它们占的宽度（设计稿是 52）。 */
+  padding-left: 86px;
+  padding-right: 52px;
 }
 
 .titlebar.windows {
@@ -27,6 +30,23 @@
 .titlebar.linux {
   gap: 10px;
   padding-left: 10px;
+}
+
+.macosTitleGroup {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-right: 22px;
+  flex: 0 0 auto;
+  max-width: 260px;
+}
+
+.titlebarActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex: 0 0 auto;
 }
 
 .brand {
@@ -178,34 +198,34 @@
   app-region: no-drag;
 }
 
-.windowsInlineMenu {
+.inlineMenu {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 18px;
   height: 100%;
   min-width: 0;
   overflow: visible;
 }
 
-.windowsMenuItemWrapper {
+.inlineMenuItemWrapper {
   position: relative;
   display: flex;
   align-items: center;
   height: 100%;
 }
 
-.windowsMenuItem {
-  height: 26px;
-  padding: 0 8px;
+.inlineMenuItem {
+  height: auto;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
-  color: var(--c-graphite);
+  border-radius: 0;
+  color: var(--island-text-secondary);
   background: transparent;
   font: inherit;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 400;
   letter-spacing: 0;
-  line-height: 26px;
+  line-height: 1.2;
   cursor: pointer;
   transition:
     background var(--duration-hover) var(--ease-out),
@@ -214,10 +234,11 @@
   app-region: no-drag;
 }
 
-.windowsMenuItem:hover,
-.windowsMenuItem.active {
-  background: var(--c-chalk);
-  color: var(--c-void);
+.inlineMenuItem:hover,
+.inlineMenuItem.active {
+  /* 设计稿的菜单项没有药丸底，只靠字色深浅变化，避免在 52px 行里压出块状。 */
+  color: var(--island-text);
+  background: transparent;
 }
 
 .windowsCenterTitle {
@@ -332,22 +353,40 @@
 }
 
 :global(html[data-content-theme='miaoyan']) .titlebar {
-  height: 28px;
-  padding-left: 16px;
+  /* 浮岛外壳：标题栏与画布同色，高度固定 52，字号跟着 UI 走而不是正文主题 */
+  height: var(--island-titlebar-h);
+  padding-left: 22px;
   border-bottom: 0;
-  background: var(--miaoyan-main-bg);
-  color: var(--miaoyan-text);
-  font-family: var(--miaoyan-font);
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
+  background: var(--island-canvas);
+  color: var(--island-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 :global(html[data-content-theme='miaoyan']) .titlebar.macos {
-  padding-left: 78px;
+  padding-left: 86px;
 }
 
-:global(html[data-content-theme='miaoyan']) .brand {
+:global(html[data-content-theme='miaoyan']) .macosTitleGroup {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-right: 22px;
+  flex: 0 0 auto;
+  max-width: 260px;
+}
+
+.titlebarActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex: 0 0 auto;
+}
+
+.brand {
   gap: 8px;
 }
 
@@ -439,29 +478,48 @@
 :global(html[data-content-theme='inkstone']) .titlebar,
 :global(html[data-content-theme='slate']) .titlebar,
 :global(html[data-content-theme='mono']) .titlebar,
-:global(html[data-content-theme='nocturne']) .titlebar {
-  height: 28px;
-  padding-left: 16px;
+:global(html[data-content-theme='nocturne']) .titlebar,
+:global(html[data-content-theme='carbon']) .titlebar {
+  height: var(--island-titlebar-h);
+  padding-left: 22px;
   border-bottom: 0;
-  background: var(--theme-main-bg);
-  color: var(--theme-text);
-  font-family: var(--theme-font);
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
+  background: var(--island-canvas);
+  color: var(--island-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 :global(html[data-content-theme='inkstone']) .titlebar.macos,
 :global(html[data-content-theme='slate']) .titlebar.macos,
 :global(html[data-content-theme='mono']) .titlebar.macos,
-:global(html[data-content-theme='nocturne']) .titlebar.macos {
-  padding-left: 78px;
+:global(html[data-content-theme='nocturne']) .titlebar.macos,
+:global(html[data-content-theme='carbon']) .titlebar.macos {
+  padding-left: 86px;
 }
 
 :global(html[data-content-theme='inkstone']) .brand,
 :global(html[data-content-theme='slate']) .brand,
 :global(html[data-content-theme='mono']) .brand,
-:global(html[data-content-theme='nocturne']) .brand {
+:global(html[data-content-theme='nocturne']) .macosTitleGroup {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-right: 22px;
+  flex: 0 0 auto;
+  max-width: 260px;
+}
+
+.titlebarActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex: 0 0 auto;
+}
+
+.brand {
   gap: 0;
 }
 
@@ -571,7 +629,7 @@
   letter-spacing: 0;
 }
 
-:global(html[data-platform='windows']) .windowsMenuItem,
+:global(html[data-platform='windows']) .inlineMenuItem,
 :global(html[data-platform='windows']) .windowsTitle {
   letter-spacing: 0;
 }
@@ -581,13 +639,13 @@
   font-size: 12px;
 }
 
-:global(html[data-platform='windows']) .windowsMenuItem {
+:global(html[data-platform='windows']) .inlineMenuItem {
   color: color-mix(in srgb, var(--c-void) 88%, var(--c-graphite));
   font-weight: 550;
 }
 
-:global(html[data-platform='windows']) .windowsMenuItem:hover,
-:global(html[data-platform='windows']) .windowsMenuItem.active {
+:global(html[data-platform='windows']) .inlineMenuItem:hover,
+:global(html[data-platform='windows']) .inlineMenuItem.active {
   background: var(--c-chalk);
   color: var(--c-void);
 }
@@ -619,14 +677,14 @@
   font-weight: 400;
 }
 
-:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsMenuItem {
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .inlineMenuItem {
   color: color-mix(in srgb, var(--miaoyan-text) 86%, var(--miaoyan-secondary-text));
   font-family: var(--miaoyan-font);
   font-weight: 430;
 }
 
-:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsMenuItem:hover,
-:global(html[data-platform='windows'][data-content-theme='miaoyan']) .windowsMenuItem.active {
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .inlineMenuItem:hover,
+:global(html[data-platform='windows'][data-content-theme='miaoyan']) .inlineMenuItem.active {
   background: var(--miaoyan-panel-secondary);
   color: var(--miaoyan-text);
 }
@@ -648,14 +706,14 @@
   font-weight: 400;
 }
 
-:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsMenuItem {
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .inlineMenuItem {
   color: color-mix(in srgb, var(--theme-text) 86%, var(--theme-secondary-text));
   font-family: var(--theme-font);
   font-weight: 500;
 }
 
-:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsMenuItem:hover,
-:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .windowsMenuItem.active {
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .inlineMenuItem:hover,
+:global(html[data-platform='windows']:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon'])) .inlineMenuItem.active {
   background: var(--theme-panel-secondary);
   color: var(--theme-text);
 }
@@ -679,4 +737,25 @@
   :global(html[data-content-theme='nocturne']) .btn {
     transition-duration: 1ms;
   }
+}
+
+/* 设计稿里第一个菜单项（文件）是 600 + 主色，其余 400 + 次色 */
+.inlineMenuItemWrapper:first-child .inlineMenuItem {
+  font-weight: 600;
+  color: var(--island-text);
+}
+
+/* 标题文本：设计稿是 Inter 13 / 500 / 次级色（主题里的 14px 正文衬线不适用于外壳） */
+:global(.app-titlebar) .title,
+:global(.app-titlebar) .docName,
+:global(.app-titlebar) .docNameButton {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--island-text-secondary);
+}
+
+:global(.app-titlebar) .docNameButton:hover {
+  color: var(--island-text);
 }

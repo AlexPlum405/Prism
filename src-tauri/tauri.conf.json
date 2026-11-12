@@ -14,9 +14,9 @@
     "windows": [
       {
         "title": "Prism",
-        "width": 1100,
-        "height": 760,
-        "minWidth": 900,
+        "width": 1440,
+        "height": 1000,
+        "minWidth": 980,
         "minHeight": 620,
         "resizable": true,
         "maximizable": true,

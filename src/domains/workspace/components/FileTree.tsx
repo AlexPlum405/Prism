@@ -168,7 +168,7 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
     );
   };
 
-  const renderFileNode = (node: FileNode, depth: number, index: number, folderLabel?: string) => {
+  const renderFileNode = (node: FileNode, depth: number, folderLabel?: string) => {
     const isActive = activePath === node.path;
 
     return (
@@ -179,27 +179,26 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
         title={node.path}
         data-active={isActive ? 'true' : undefined}
         style={{
-          padding: '8px 14px',
-          margin: '2px 8px',
-          marginLeft: fileTreeMode === 'tree' ? `${8 + depth * 14}px` : '8px',
+          padding: '11px 10px',
+          margin: '0',
+          marginLeft: fileTreeMode === 'tree' ? `${depth * 14}px` : '0',
           cursor: 'pointer',
-          borderRadius: 'var(--radius-md)',
-          background: isActive ? 'var(--bg-hover)' : 'transparent',
+          borderRadius: 'var(--island-radius-md)',
+          background: 'transparent',
           boxShadow: 'none',
           transform: 'scale(1)',
           position: 'relative',
-          transition: 'background var(--duration-feedback) var(--ease-out), border-left-color var(--duration-feedback) var(--ease-out), padding-left var(--duration-feedback) var(--ease-out)',
+          transition: 'background var(--duration-feedback) var(--ease-out), padding-left var(--duration-feedback) var(--ease-out)',
           display: 'flex',
           flexDirection: 'column',
           gap: '3px',
           zIndex: isActive ? 10 : 1,
-          animation: 'fileItemEntry var(--duration-slow) var(--ease-spring) backwards',
-          animationDelay: `calc(${Math.min(index, 24)} * var(--duration-fast) / 6)`,
-          minHeight: '32px',
+          minHeight: '0',
         }}
         className={`file-tree-item ${isActive ? 'is-active' : ''}`}
       >
         {renderFileName(node, isActive)}
+        {isActive && <span className="file-tree-active-dot" aria-hidden="true" />}
 
         {folderLabel && (
           <div className="file-tree-folder-label">{folderLabel}</div>
@@ -249,10 +248,10 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
         </div>
         {expanded && (
           <div>
-            {(node.children ?? []).map((child, index) => (
+            {(node.children ?? []).map((child) => (
               isDirectoryNode(child)
                 ? renderDirectoryNode(child, depth + 1)
-                : renderFileNode(child, depth + 1, index)
+                : renderFileNode(child, depth + 1)
             ))}
           </div>
         )}
@@ -270,12 +269,12 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
       {isEmpty ? (
         <div className="file-tree-empty" aria-hidden="true" />
       ) : fileTreeMode === 'list' ? (
-        flatFiles.map(({ node, folderLabel }, index) => renderFileNode(node, 0, index, folderLabel))
+        flatFiles.map(({ node, folderLabel }) => renderFileNode(node, 0, folderLabel))
       ) : (
-        sortedNodes.map((node, index) => (
+        sortedNodes.map((node) => (
           isDirectoryNode(node)
             ? renderDirectoryNode(node, 0)
-            : renderFileNode(node, 0, index)
+            : renderFileNode(node, 0)
         ))
       )}
 

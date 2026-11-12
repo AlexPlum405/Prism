@@ -15,7 +15,7 @@ describe('TitleBar drag region styling', () => {
 
   it('lets Windows menu flyouts escape the titlebar menu containers', () => {
     const leftCluster = css.match(/\.windowsLeftCluster\s*\{[^}]*\}/)?.[0] ?? '';
-    const inlineMenu = css.match(/\.windowsInlineMenu\s*\{[^}]*\}/)?.[0] ?? '';
+    const inlineMenu = css.match(/\.inlineMenu\s*\{[^}]*\}/)?.[0] ?? '';
 
     expect(leftCluster).toContain('overflow: visible');
     expect(inlineMenu).toContain('overflow: visible');
@@ -24,8 +24,8 @@ describe('TitleBar drag region styling', () => {
   });
 
   it('uses darker Windows menu text than the secondary title text', () => {
-    const windowsMenuRule = css.match(/:global\(html\[data-platform='windows'\]\) \.windowsMenuItem\s*\{[^}]*\}/)?.[0] ?? '';
-    const themedMenuRule = css.match(/:global\(html\[data-platform='windows'\]:is\(\[data-content-theme='inkstone'\][^)]*\)\) \.windowsMenuItem\s*\{[^}]*\}/)?.[0] ?? '';
+    const windowsMenuRule = css.match(/:global\(html\[data-platform='windows'\]\) \.inlineMenuItem\s*\{[^}]*\}/)?.[0] ?? '';
+    const themedMenuRule = css.match(/:global\(html\[data-platform='windows'\]:is\(\[data-content-theme='inkstone'\][^)]*\)\) \.inlineMenuItem\s*\{[^}]*\}/)?.[0] ?? '';
 
     expect(windowsMenuRule).toContain('var(--c-void) 88%');
     expect(themedMenuRule).toContain('var(--theme-text) 86%');

@@ -232,16 +232,21 @@ export function TitleBar({
     </div>
   );
 
-  const renderWindowsInlineMenu = () => {
+  /**
+   * 标题栏内联菜单。原先是 Windows 专用（macOS 走原生菜单栏），但浮岛方案
+   * 要求标题栏只有 52px 一行，菜单必须收进这一行，否则三岛的高度会被挤掉
+   * 一整行。macOS 下菜单仍由同一份 menuSections 驱动，行为不变。
+   */
+  const renderInlineMenu = () => {
     if (!menuSections || !onMenuAction) return null;
 
     return (
-      <div className={styles.windowsInlineMenu} ref={inlineMenuRef}>
+      <div className={styles.inlineMenu} ref={inlineMenuRef}>
         {Object.keys(menuSections).map((menuName) => (
           <div key={menuName} className={styles.windowsMenuItemWrapper}>
             <button
               type="button"
-              className={`${styles.windowsMenuItem} ${activeMenu === menuName ? styles.active : ''}`}
+              className={`${styles.inlineMenuItem} ${activeMenu === menuName ? styles.active : ''}`}
               aria-haspopup="menu"
               aria-expanded={activeMenu === menuName}
               onClick={() => setActiveMenu(activeMenu === menuName ? null : menuName)}
@@ -275,17 +280,18 @@ export function TitleBar({
     >
       {IS_MACOS ? (
         <>
-          <div className={styles.brand}>
-            <div className={styles.titleGroup}>
-              {renderTitleContent()}
-            </div>
+          <div className={styles.macosTitleGroup}>
+            {renderTitleContent()}
           </div>
-          <ViewModeSwitch />
+          {renderInlineMenu()}
+          <div className={styles.titlebarActions}>
+            <ViewModeSwitch variant="titlebarBorderless" />
+          </div>
         </>
       ) : IS_WINDOWS ? (
         <>
           <div className={styles.windowsLeftCluster} data-titlebar-section="windows-left-cluster">
-            {renderWindowsInlineMenu()}
+            {renderInlineMenu()}
           </div>
           <div className={styles.windowsCenterTitle} data-titlebar-section="windows-center-title" data-tauri-drag-region>
             <div className={`${styles.titleGroup} ${styles.windowsTitleGroup}`}>

@@ -1,14 +1,16 @@
 .windowShell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background: var(--c-canvas);
+  /* 浮岛外壳：52 / 1fr / 38 三段。中间那段是画布色，三块岛浮在上面。 */
+  display: grid;
+  grid-template-rows: var(--island-titlebar-h, 52px) 1fr var(--island-statusbar-h, 38px);
+  height: 100vh;
+  min-height: 0;
+  background: var(--island-canvas, #f3f1ec);
   border-radius: 0;
   overflow: hidden;
 }
 
 :global(html[data-content-theme='miaoyan']) .windowShell {
-  background: var(--miaoyan-main-bg);
+  background: var(--island-canvas);
   color: var(--miaoyan-text);
   font-family: var(--miaoyan-font);
   letter-spacing: 0.6px;
@@ -18,7 +20,7 @@
 :global(html[data-content-theme='slate']) .windowShell,
 :global(html[data-content-theme='mono']) .windowShell,
 :global(html[data-content-theme='nocturne']) .windowShell {
-  background: var(--theme-main-bg);
+  background: var(--island-canvas);
   color: var(--theme-text);
   font-family: var(--theme-font);
   letter-spacing: 0.6px;

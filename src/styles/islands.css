@@ -1,0 +1,483 @@
+/* ============================================================
+   方案 A「浮岛」外壳
+   ------------------------------------------------------------
+   三栏不再用 1px 通高竖线分区，改为三块圆角浮岛浮在暖灰画布上：
+   分区只靠「16px 画布色缝 + 18px 圆角 + 唯一轻投影」。
+
+   硬规则（改这个文件前先读）：
+   1. 这里不许出现任何用于分区的 border。唯一的 border 属于
+      拖拽抓手（--border-grip）、读数条（--accent）与文档内 <hr>。
+   2. 岛色只走 --island-* 令牌，别处不许再写死 #FFF / #F3F1EC。
+   3. 圆角只有 18 / 9 / 8 / 5 四档，投影只有三档。
+   ============================================================ */
+
+:root {
+  /* —— 画布与岛 —— */
+  --island-canvas: #f3f1ec; /* 窗口底色，也是"缝"的颜色 */
+  --island-surface: #ffffff; /* 编辑 / 预览岛 */
+  --island-sidebar: #f6f4ef; /* 侧栏岛，比正文暗一档 */
+  --island-hover: #efede6;
+  --island-chip: #f2f0ea; /* 行内代码片 */
+  --island-code: #f7f5f0; /* 预览里的代码块 */
+  --island-segment: #e5e1d8; /* 分段控件槽底 */
+
+  /* —— 线（只允许出现在抓手/读数条/文档 hr） —— */
+  --island-hairline: #e4e0d8;
+  --island-grip: #d8d2c4;
+  --island-ghost: #cfc9bc;
+
+  /* —— 文字 —— */
+  --island-text: #1b1a17;
+  --island-text-secondary: #5f5c55;
+  --island-text-muted: #9c978e;
+
+  /* —— 强调 —— */
+  --island-accent: #d1501d;
+
+  /* —— 语法（源码岛） —— */
+  --island-syntax-heading: #7a45d6;
+  --island-syntax-keyword: #c2410c;
+  --island-syntax-code: #b45309;
+  --island-syntax-marker: #a8a29a;
+  --island-syntax-comment: #9c978e;
+
+  /* —— 形状 —— */
+  --island-radius: 18px;
+  --island-radius-md: 9px;
+  --island-radius-sm: 8px;
+  --island-radius-chip: 5px;
+
+  /* —— 投影（唯一的层级手段） —— */
+  --island-shadow: 0 6px 18px rgba(42, 36, 28, 0.08);
+  --island-shadow-soft: 0 2px 6px rgba(42, 36, 28, 0.07);
+  --island-shadow-float: 0 4px 14px rgba(42, 36, 28, 0.15);
+
+  /* —— 尺寸 —— */
+  --gutter: 16px;
+  --window-pad: 18px;
+  --island-titlebar-h: 52px;
+  --island-statusbar-h: 38px;
+}
+
+/* 深色模式：浅色岛配深色画布会刺眼，整体压到同一明度带。 */
+body.dark {
+  --island-canvas: #121110;
+  --island-surface: #1b1a18;
+  --island-sidebar: #171614;
+  --island-hover: #232120;
+  --island-chip: #262421;
+  --island-code: #201e1c;
+  --island-segment: #2b2926;
+  --island-hairline: #34312d;
+  --island-grip: #3b3833;
+  --island-ghost: #3f3b35;
+  --island-text: #f2efe9;
+  --island-text-secondary: #b8b3a9;
+  --island-text-muted: #857f76;
+  --island-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  --island-shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.32);
+  --island-shadow-float: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+/* ---- 外壳骨架：52 / 1fr / 38 ---- */
+
+.island-app {
+  display: grid;
+  grid-template-rows: var(--island-titlebar-h) 1fr var(--island-statusbar-h);
+  height: 100%;
+  min-height: 0;
+  background: var(--island-canvas);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.island-main {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 0;
+  min-width: 0;
+  padding: var(--window-pad);
+  background: var(--island-canvas);
+}
+
+/* ---- 岛 ---- */
+
+.island {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--island-surface);
+  border: 0;
+  border-radius: var(--island-radius);
+  box-shadow: var(--island-shadow);
+  overflow: hidden;
+  flex: 0 0 auto;
+  height: 100%;
+}
+
+.island--sidebar {
+  background: var(--island-sidebar);
+}
+
+.island--fill {
+  flex: 1 1 auto;
+}
+
+/* ---- 栏缝：16px 留白本身，绝对定位的命中区在缝上 ---- */
+
+.island-gutter {
+  position: relative;
+  flex: 0 0 var(--gutter);
+  width: var(--gutter);
+  height: 100%;
+  align-self: stretch;
+  touch-action: none;
+  cursor: col-resize;
+  user-select: none;
+  background: transparent;
+}
+
+/* 命中区扩到 24px（缝 16 + 两侧各 4），不改变视觉宽度 */
+.island-gutter__hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  cursor: col-resize;
+}
+
+.island-gutter__hit:focus-visible {
+  outline: 2px solid var(--island-accent);
+  outline-offset: -1px;
+  border-radius: var(--island-radius-sm);
+}
+
+/* ---- 抓手：14×64，悬停淡入 ---- */
+
+.island-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 64px;
+  margin: -32px 0 0 -7px;
+  border-radius: 7px;
+  background: var(--island-surface);
+  border: 1px solid var(--island-grip);
+  box-shadow: var(--island-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.island-grip span {
+  width: 6px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: #a8a192;
+}
+
+.island-gutter:hover .island-grip,
+.island-gutter[data-dragging='true'] .island-grip {
+  opacity: 1;
+}
+
+/* ---- 拖动读数条：204×30，强调色描边 ---- */
+
+.island-readout {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--island-radius-sm);
+  background: var(--island-surface);
+  border: 1px solid var(--island-accent);
+  box-shadow: var(--island-shadow-float);
+  font: 500 10.5px/1 var(--font-sans);
+  color: var(--island-text);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.island-readout__icon {
+  width: 12px;
+  height: 12px;
+  color: var(--island-accent);
+  flex: 0 0 auto;
+}
+
+.island-readout__delta {
+  font: 400 9px/1 var(--font-mono);
+  color: var(--island-accent);
+}
+
+/* ---- 旧边界虚影：1×6 点、间距 14，贯穿岛高 ---- */
+
+.island-ghost {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  z-index: 5;
+  background-image: linear-gradient(
+    to bottom,
+    var(--island-ghost) 0,
+    var(--island-ghost) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  background-size: 1px 14px;
+  background-repeat: repeat-y;
+}
+
+.island-ghost__label {
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  font: 400 9.5px/1 var(--font-sans);
+  color: var(--island-text-muted);
+  white-space: nowrap;
+}
+
+/* 拖动期间禁掉全局选中与光标抖动 */
+body.island-resizing,
+body.island-resizing * {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
+
+/* ---- 行内代码片 ---- */
+
+.island-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--island-radius-chip);
+  background: var(--island-chip);
+  font: 400 12.5px/1.4 var(--font-mono);
+  color: var(--island-syntax-code);
+}
+
+/* ============================================================
+   侧栏岛内部（SPEC 5.2）
+   ------------------------------------------------------------
+   这里的类名全是新的（island-sidebar__*），刻意不使用主题 CSS 里
+   那套 .sidebar / .sidebar-tabs / .file-tree-item 的旧排版——那些规则
+   用 !important 写死了 13px 内边距与 14px 字号，浮岛要的是另一套数字。
+   ============================================================ */
+
+.island-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+  padding: 14px 12px;
+  background: var(--island-sidebar);
+  color: var(--island-text);
+  font-family: var(--font-sans);
+}
+
+.island-sidebar__segment {
+  display: flex;
+  gap: 2px;
+  height: 36px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--island-segment);
+}
+
+.island-sidebar__segment-item {
+  flex: 1;
+  height: 30px;
+  border: 0;
+  border-radius: var(--island-radius-md);
+  background: transparent;
+  color: var(--island-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.island-sidebar__segment-item[data-active='true'] {
+  background: var(--island-surface);
+  box-shadow: var(--island-shadow-soft);
+  color: var(--island-text);
+  font-weight: 600;
+}
+
+.island-sidebar__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.island-sidebar__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  height: 26px;
+}
+
+.island-sidebar__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--island-radius-sm);
+  background: var(--island-surface);
+  color: var(--island-text-secondary);
+  box-shadow: var(--island-shadow-soft);
+  cursor: pointer;
+}
+
+.island-sidebar__add svg {
+  width: 13px;
+  height: 13px;
+}
+
+.island-sidebar__footer-label {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--island-text-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.island-sidebar__spacer {
+  flex: 1;
+}
+
+.island-sidebar__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--island-text-secondary);
+  cursor: pointer;
+}
+
+/* 网格 14、收起 13（SPEC 5.6 的第 5、6 个图标） */
+.island-sidebar__icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.island-sidebar__icon-btn:last-child svg {
+  width: 13px;
+  height: 13px;
+}
+
+.island-sidebar__icon-btn[data-active='true'] {
+  color: var(--island-text);
+}
+
+/* ---- 文件行（覆盖主题里那套 13px/14px 的旧排版） ---- */
+
+html[data-content-theme] .file-tree-item {
+  border: 0 !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  margin-bottom: 2px;
+}
+
+html[data-content-theme] .file-tree-item .file-tree-file-name,
+html[data-content-theme] .file-tree-item [class*='file-name'] {
+  display: block;
+  font-family: var(--font-sans) !important;
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  color: var(--island-text-secondary) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 !important;
+}
+
+html[data-content-theme] .file-tree-item[data-active='true'] {
+  background: var(--island-surface) !important;
+  box-shadow: var(--island-shadow-soft) !important;
+}
+
+html[data-content-theme] .file-tree-item[data-active='true'] .file-tree-file-name,
+html[data-content-theme] .file-tree-item[data-active='true'] [class*='file-name'] {
+  font-weight: 600 !important;
+  color: var(--island-text) !important;
+}
+
+html[data-content-theme] .file-tree-item:hover:not([data-active='true']) {
+  background: var(--island-hover) !important;
+}
+
+/* 当前项末尾的 6px 橙点：形状，不是图标 */
+.file-tree-active-dot {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--island-accent);
+}
+
+/* ============================================================
+   编辑岛 / 预览岛内部留白（SPEC 5.3 / 5.4）
+   ============================================================ */
+
+.island--editor .cm-editor,
+.island--editor .cm-scroller {
+  padding: 0;
+}
+
+.island--editor .cm-content {
+  /* 设计稿的源码岛内边距 26/24；横向 24 已由主题提供，这里只补纵向。 */
+  padding-top: 26px !important;
+}
+
+/* 预览岛内边距 30/34：主题给 #write 的是 0 28px 80px，横向差 6px，纵向没有留白 */
+.island--preview #write {
+  padding: 30px 34px 60px !important;
+}

@@ -1,58 +1,28 @@
+/* 状态栏：浮岛外壳的最后一行，只有一条画布色的底，没有上边框。
+   字数条绝对定位在 x=770（设计稿指定的位置，既不居中也不靠左），
+   右侧三件组靠 padding-right 52 贴齐窗口右缘。 */
 .statusbar {
   display: flex;
-  align-items: stretch;
-  border-top: 1px solid var(--c-fog);
-  font-size: 11px;
-  color: var(--c-graphite);
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  height: var(--island-statusbar-h);
+  padding: 0 52px;
+  border-top: 0;
+  background: var(--island-canvas);
+  font-size: 11.5px;
+  color: var(--island-text-muted);
   user-select: none;
   position: relative;
-  height: 28px;
-  background: var(--c-canvas);
-}
-
-/* 侧栏 zone：仅在侧栏可见时显示，hover 淡入 */
-.sidebarZone {
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 0 6px 0 8px;
-  box-shadow: 1px 0 0 var(--c-fog);
-  opacity: 0;
-  transition: opacity var(--duration-feedback) var(--ease-out);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.sidebarZone.visible {
-  opacity: 1;
-}
-
-.main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  position: relative;
-  min-width: 0;
-}
-
-.left {
-  display: flex;
-  align-items: center;
-  gap: 2px;
 }
 
 .center {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 770px;
+  top: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
-  max-width: calc(100% - 132px);
   overflow: hidden;
   pointer-events: none;
   white-space: nowrap;
@@ -62,7 +32,7 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 16px;
 }
 
 .documentType {
@@ -354,33 +324,13 @@ button.exportStatus:hover {
 }
 
 :global(html[data-content-theme='miaoyan']) .statusbar {
-  height: 26px;
-  border-top: 1px solid var(--miaoyan-hairline);
-  background: var(--miaoyan-pane-bg);
-  color: var(--miaoyan-secondary-text);
-  font-family: var(--miaoyan-font);
-  font-size: 11px;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='miaoyan']) .sidebarZone {
-  width: var(--sidebar-w);
-  gap: 4px;
-  padding: 0 7px;
-  border-right: 1px solid var(--miaoyan-hairline);
-  box-shadow: none;
-  box-sizing: border-box;
-  opacity: 1;
-  transition: none;
-}
-
-:global(html[data-content-theme='miaoyan']) .main {
-  padding: 0 7px;
-}
-
-:global(html[data-content-theme='miaoyan']) .left,
-:global(html[data-content-theme='miaoyan']) .right {
-  gap: 6px;
+  height: var(--island-statusbar-h);
+  border-top: 0;
+  background: var(--island-canvas);
+  color: var(--island-text-muted);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  letter-spacing: 0;
 }
 
 :global(html[data-content-theme='miaoyan']) .documentType {
@@ -425,10 +375,6 @@ button.exportStatus:hover {
 
 :global(html[data-content-theme='miaoyan']) .exportStatusFailed {
   color: color-mix(in srgb, #b42318 82%, var(--miaoyan-text));
-}
-
-:global(html[data-content-theme='miaoyan']) .main .left > .sep:first-of-type {
-  display: none;
 }
 
 :global(html[data-content-theme='miaoyan']) .btn,
@@ -513,9 +459,9 @@ button.exportStatus:hover {
 }
 
 :global(html[data-content-theme='miaoyan']) .statText {
-  color: var(--miaoyan-secondary-text);
-  font-family: var(--miaoyan-code-font);
-  font-size: 11px;
+  color: var(--island-text-muted);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -563,52 +509,13 @@ button.exportStatus:hover {
 :global(html[data-content-theme='slate']) .statusbar,
 :global(html[data-content-theme='mono']) .statusbar,
 :global(html[data-content-theme='nocturne']) .statusbar {
-  height: 26px;
-  border-top: 1px solid var(--theme-hairline);
-  background: var(--theme-pane-bg);
-  color: var(--theme-secondary-text);
-  font-family: var(--theme-font);
-  font-size: 11px;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='inkstone']) .sidebarZone,
-:global(html[data-content-theme='slate']) .sidebarZone,
-:global(html[data-content-theme='mono']) .sidebarZone,
-:global(html[data-content-theme='nocturne']) .sidebarZone {
-  width: var(--sidebar-w);
-  gap: 4px;
-  padding: 0 7px;
-  border-right: 1px solid var(--theme-hairline);
-  box-shadow: none;
-  box-sizing: border-box;
-  opacity: 1;
-  transition: none;
-}
-
-:global(html[data-content-theme='inkstone']) .main,
-:global(html[data-content-theme='slate']) .main,
-:global(html[data-content-theme='mono']) .main,
-:global(html[data-content-theme='nocturne']) .main {
-  padding: 0 7px;
-}
-
-:global(html[data-content-theme='inkstone']) .left,
-:global(html[data-content-theme='inkstone']) .right,
-:global(html[data-content-theme='slate']) .left,
-:global(html[data-content-theme='slate']) .right,
-:global(html[data-content-theme='mono']) .left,
-:global(html[data-content-theme='mono']) .right,
-:global(html[data-content-theme='nocturne']) .left,
-:global(html[data-content-theme='nocturne']) .right {
-  gap: 6px;
-}
-
-:global(html[data-content-theme='inkstone']) .main .left > .sep:first-of-type,
-:global(html[data-content-theme='slate']) .main .left > .sep:first-of-type,
-:global(html[data-content-theme='mono']) .main .left > .sep:first-of-type,
-:global(html[data-content-theme='nocturne']) .main .left > .sep:first-of-type {
-  display: none;
+  height: var(--island-statusbar-h);
+  border-top: 0;
+  background: var(--island-canvas);
+  color: var(--island-text-muted);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  letter-spacing: 0;
 }
 
 :global(html[data-content-theme='inkstone']) .btn,
@@ -744,9 +651,9 @@ button.exportStatus:hover {
 :global(html[data-content-theme='slate']) .statText,
 :global(html[data-content-theme='mono']) .statText,
 :global(html[data-content-theme='nocturne']) .statText {
-  color: var(--theme-secondary-text);
-  font-family: var(--theme-code-font);
-  font-size: 11px;
+  color: var(--island-text-muted);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -813,7 +720,6 @@ button.exportStatus:hover {
     animation: none;
   }
 
-  .sidebarZone,
   .exportStatus,
   .btn,
   .modeBtn {

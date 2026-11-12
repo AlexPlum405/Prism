@@ -3,6 +3,24 @@ import { FileTree } from './FileTree';
 import { OutlinePanel } from './OutlinePanel';
 import { useI18n } from '../../i18n';
 
+const IconPlus = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M9.32 3.35a.68.68 0 0 1 1.36 0v5.97h5.97a.68.68 0 1 1 0 1.36h-5.97v5.97a.68.68 0 1 1-1.36 0v-5.97H3.35a.68.68 0 1 1 0-1.36h5.97V3.35Z" />
+  </svg>
+);
+
+const IconGrid = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M5.2 3.35h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05H5.2A1.05 1.05 0 0 1 4.15 7.5V4.4c0-.58.47-1.05 1.05-1.05Zm6.5 0h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05h-3.1a1.05 1.05 0 0 1-1.05-1.05V4.4c0-.58.47-1.05 1.05-1.05Zm-6.5 8.1h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05H5.2a1.05 1.05 0 0 1-1.05-1.05v-3.1c0-.58.47-1.05 1.05-1.05Zm6.5 0h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05h-3.1a1.05 1.05 0 0 1-1.05-1.05v-3.1c0-.58.47-1.05 1.05-1.05Z" />
+  </svg>
+);
+
+const IconChevronsLeft = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M6.08 3.72c.4 0 .72.32.72.72v11.12a.72.72 0 0 1-1.44 0V4.44c0-.4.32-.72.72-.72Zm8.34 2.02c.28.28.28.74 0 1.02L11.18 10l3.24 3.24a.72.72 0 0 1-1.02 1.02L9.65 10.5a.72.72 0 0 1 0-1.02l3.75-3.74c.28-.28.74-.28 1.02 0Z" />
+  </svg>
+);
+
 interface SidebarProps {
   fileTree: FileNode[];
   sidebarTab: SidebarTab;
@@ -11,8 +29,26 @@ interface SidebarProps {
   activePath?: string | null;
   onFileClick?: (path: string) => void;
   onOutlineClick?: (line: number) => void;
+  /** 页脚：新建文件。 */
+  onNewFile?: () => void;
+  /** 页脚：文件夹/工作区操作菜单。 */
+  onFolderContextMenu?: React.MouseEventHandler;
+  /** 页脚：树 / 列表切换。 */
+  onToggleFileTreeMode?: () => void;
+  fileTreeMode?: 'tree' | 'list';
+  /** 页脚最右：收起侧栏。 */
+  onCollapse?: () => void;
+  /** 页脚中间那行说明文字，默认取工作区目录名。 */
+  footerLabel?: string;
 }
 
+/**
+ * 侧栏岛。
+ *
+ * 页脚的 `+ / Examples / 网格 / «` 原本在状态栏左侧。挪进来是「浮岛」结构
+ * 相对旧分栏的结构性差异：那簇按钮管的是侧栏自己，挂在跨三栏的状态栏上
+ * 会让「谁属于谁」变得含糊。
+ */
 export function Sidebar({
   fileTree,
   sidebarTab,
@@ -21,102 +57,94 @@ export function Sidebar({
   activePath,
   onFileClick,
   onOutlineClick,
+  onNewFile,
+  onFolderContextMenu,
+  onToggleFileTreeMode,
+  fileTreeMode = 'list',
+  onCollapse,
+  footerLabel,
 }: SidebarProps) {
   const { t } = useI18n();
+  const tabs = [
+    { key: 'files' as SidebarTab, label: t('workspace.sidebar.files') },
+    { key: 'outline' as SidebarTab, label: t('workspace.sidebar.outline') },
+  ];
+
   return (
-    <div
-      className="sidebar"
-      style={{
-        width: 'clamp(240px, 26vw, 300px)',
-        minWidth: '240px',
-        flexShrink: 0,
-        borderRight: '1px solid var(--theme-divider, var(--border-color))',
-        background: 'var(--bg-sidebar)',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        flex: 1,
-      }}
-    >
-      {/* 选项卡容器 */}
-      <div
-        className="sidebar-tabs"
-        style={{
-          display: 'flex',
-          padding: '12px 16px 4px',
-          gap: '12px',
-          position: 'relative',
-          background: 'transparent',
-        }}
-      >
-        {[
-          { key: 'files', label: t('workspace.sidebar.files') },
-          { key: 'outline', label: t('workspace.sidebar.outline') },
-        ].map((tab) => {
+    <div className="island-sidebar">
+      <div className="island-sidebar__segment" role="tablist">
+        {tabs.map((tab) => {
           const isActive = sidebarTab === tab.key;
           return (
             <button
               key={tab.key}
-              className="sidebar-tab-button"
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className="island-sidebar__segment-item"
               data-active={isActive ? 'true' : undefined}
-              onClick={() => setSidebarTab(tab.key as SidebarTab)}
-              style={{
-                flex: 1,
-                padding: '10px 4px',
-                fontSize: '13px',
-                fontWeight: isActive ? 600 : 500,
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                background: isActive ? 'var(--bg-surface-solid)' : 'transparent',
-                boxShadow: isActive ? 'var(--elevation-card)' : 'none',
-                color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                cursor: 'pointer',
-                transition: 'background var(--duration-feedback) var(--ease-out), color var(--duration-feedback) var(--ease-out), box-shadow var(--duration-feedback) var(--ease-out), transform var(--duration-feedback) var(--ease-out)',
-                zIndex: 1,
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transform: isActive ? 'scale(1.02)' : 'scale(1)',
-                margin: '0 4px',
-              }}
+              onClick={() => setSidebarTab(tab.key)}
             >
               {tab.label}
-              {isActive && (
-                <div 
-                  style={{ 
-                    position: 'absolute', 
-                    bottom: '4px', 
-                    left: '42%', 
-                    right: '42%', 
-                    height: '3px', 
-                    background: 'var(--accent)',
-                    borderRadius: '4px',
-                    boxShadow: '0 1px 3px var(--accent-tint-strong)'
-                  }} 
-                />
-              )}
             </button>
           );
         })}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {sidebarTab === 'files' && (
-          <div style={{ padding: '0 8px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <FileTree
-              nodes={fileTree}
-              activePath={activePath}
-              onFileClick={onFileClick || (() => {})}
-            />
-          </div>
-        )}
-        {sidebarTab === 'outline' && (
+      <div className="island-sidebar__body">
+        {sidebarTab === 'files' ? (
+          <FileTree
+            nodes={fileTree}
+            activePath={activePath}
+            onFileClick={onFileClick || (() => {})}
+          />
+        ) : (
           <OutlinePanel
             content={documentContent}
             onHeadingClick={onOutlineClick}
           />
         )}
+      </div>
+
+      <div className="island-sidebar__footer">
+        <button
+          type="button"
+          className="island-sidebar__add"
+          title={t('status.newFile')}
+          aria-label={t('status.newFile')}
+          onClick={onNewFile}
+        >
+          <IconPlus />
+        </button>
+        <button
+          type="button"
+          className="island-sidebar__footer-label"
+          title={t('status.workspaceActions')}
+          onClick={onFolderContextMenu}
+          onContextMenu={onFolderContextMenu}
+        >
+          {footerLabel}
+        </button>
+        <span className="island-sidebar__spacer" />
+        <button
+          type="button"
+          className="island-sidebar__icon-btn"
+          data-active={fileTreeMode === 'tree' ? 'true' : undefined}
+          title={fileTreeMode === 'tree' ? t('status.switchToList') : t('status.switchToTree')}
+          aria-label={fileTreeMode === 'tree' ? t('status.switchToList') : t('status.switchToTree')}
+          onClick={onToggleFileTreeMode}
+        >
+          <IconGrid />
+        </button>
+        <button
+          type="button"
+          className="island-sidebar__icon-btn"
+          title={t('status.collapseSidebar')}
+          aria-label={t('status.collapseSidebar')}
+          onClick={onCollapse}
+        >
+          <IconChevronsLeft />
+        </button>
       </div>
     </div>
   );

@@ -4,6 +4,16 @@ import { SplitView } from '../../editor/components/SplitView';
 import type { EditorPaneHandle } from '../../editor/components/EditorPane';
 import type { WorkspaceIndex } from '../../workspace/services';
 
+/** 浮岛外壳传给编辑/预览两岛的宽度与拖拽回调。 */
+export interface DocumentViewIslandLayout {
+  editorWidth: number;
+  previewWidth: number;
+  onResizeStart: () => void;
+  onResize: (nextEditorWidth: number) => void;
+  onResizeEnd: () => void;
+  onReset: () => void;
+}
+
 interface DocumentViewProps {
   onCursorChange?: (cursor: { line: number; column: number }) => void;
   onOpenDocumentLink?: (
@@ -14,6 +24,7 @@ interface DocumentViewProps {
   onNotice?: (message: string) => void;
   workspaceIndex?: WorkspaceIndex | null;
   workspaceIndexJobId?: string | null;
+  island?: DocumentViewIslandLayout;
 }
 
 export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
@@ -24,6 +35,7 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
     onNotice,
     workspaceIndex,
     workspaceIndexJobId,
+    island,
   }, ref) {
     const currentDocument = useDocumentStore((s) => s.currentDocument);
     const updateContent = useDocumentStore((s) => s.updateContent);
@@ -58,6 +70,7 @@ export const DocumentView = forwardRef<EditorPaneHandle, DocumentViewProps>(
           onScrollStateChange={updateScrollState}
           workspaceIndex={workspaceIndex}
           workspaceIndexJobId={workspaceIndexJobId}
+          island={island}
         />
       </div>
     );

@@ -15,13 +15,13 @@ const sidebarMock = vi.hoisted(() => vi.fn((props: any) => (
   <div data-testid="sidebar">
     <span data-testid="sidebar-tab">{props.sidebarTab}</span>
     <button onClick={() => props.onOutlineClick(12)}>outline</button>
+    <button onClick={() => props.onNewFile()}>new-file</button>
+    <button onClick={() => props.onToggleFileTreeMode()}>toggle-file-tree-mode</button>
   </div>
 )));
 
 const statusBarMock = vi.hoisted(() => vi.fn((props: any) => (
   <div data-testid="status-bar" data-relations={String(props.hasDocumentRelations)}>
-    <button onClick={() => props.onNewFile()}>new-file</button>
-    <button onClick={() => props.onToggleFileTreeMode()}>toggle-file-tree-mode</button>
     {props.onCancelExport && <button onClick={() => props.onCancelExport()}>cancel-export</button>}
   </div>
 )));
@@ -76,7 +76,6 @@ function renderController(overrides: Partial<Parameters<typeof AppWorkspaceViewC
     firstActionableMessage: undefined,
     firstTypographyMessage: undefined,
     globalContextMenu: null,
-    isSidebarHovered: false,
     selectionWritingStats: null,
     typographyIssueCount: 0,
     workspace: createWorkspaceState(),
@@ -95,7 +94,6 @@ function renderController(overrides: Partial<Parameters<typeof AppWorkspaceViewC
     onOpenDocumentLink: vi.fn(),
     onRelationGraphClick: vi.fn(),
     onSelectionTextChange: vi.fn(),
-    onSetSidebarHovered: vi.fn(),
     onShowExportFailure: vi.fn(),
     onShowExportProgress: vi.fn(),
     onTypographyDiagnosticsClick: vi.fn(),

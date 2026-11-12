@@ -19,22 +19,7 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
   font-weight: 400;
 }
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .app-sidebar {
-  flex: 0 0 var(--sidebar-w) !important;
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-min-w) !important;
-  background: var(--theme-pane-bg) !important;
-  border-right: 1px solid var(--theme-hairline);
-  box-sizing: border-box;
-}
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar {
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-min-w) !important;
-  background: var(--theme-pane-bg) !important;
-  border-right: 0 !important;
-  color: var(--theme-text);
-}
 
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs {
   padding: 13px 12px 8px !important;
@@ -226,22 +211,7 @@ html[data-content-theme='miaoyan'] button {
   font-weight: 400;
 }
 
-html[data-content-theme='miaoyan'] .app-sidebar {
-  flex: 0 0 var(--sidebar-w) !important;
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-min-w) !important;
-  background: var(--miaoyan-pane-bg) !important;
-  border-right: 1px solid var(--miaoyan-hairline);
-  box-sizing: border-box;
-}
 
-html[data-content-theme='miaoyan'] .sidebar {
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-min-w) !important;
-  background: var(--miaoyan-pane-bg) !important;
-  border-right: 0 !important;
-  color: var(--miaoyan-text);
-}
 
 html[data-content-theme='miaoyan'] .sidebar-tabs {
   padding: 13px 12px 8px !important;
