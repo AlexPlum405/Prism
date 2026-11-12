@@ -55,12 +55,55 @@ describe('htmlToMarkdown', () => {
     expect(convertHtmlToMarkdown('<code>inline</code>')).toBe('`inline`');
   });
 
-  it('preserves tables', () => {
-    const html = '<table><tr><th>Header</th></tr><tr><td>Cell</td></tr></table>';
+  it('converts tables to GFM instead of keeping raw HTML', () => {
+    const html = '<table><tr><th>Header</th><th>Second</th></tr><tr><td>Cell</td><td>Other</td></tr></table>';
+    expect(convertHtmlToMarkdown(html)).toBe([
+      '| Header | Second |',
+      '| --- | --- |',
+      '| Cell | Other |',
+    ].join('\n'));
+  });
+
+  it('treats the first row as header when the table has no thead', () => {
+    const html = '<table><tbody><tr><td>A</td><td>B</td></tr><tr><td>1</td><td>2</td></tr></tbody></table>';
+    expect(convertHtmlToMarkdown(html)).toBe([
+      '| A | B |',
+      '| --- | --- |',
+      '| 1 | 2 |',
+    ].join('\n'));
+  });
+
+  it('pads ragged rows so the table stays rectangular', () => {
+    const html = '<table><tr><th>A</th><th>B</th></tr><tr><td>1</td></tr></table>';
+    expect(convertHtmlToMarkdown(html)).toBe([
+      '| A | B |',
+      '| --- | --- |',
+      '| 1 |  |',
+    ].join('\n'));
+  });
+
+  it('escapes pipes inside cells', () => {
+    const html = '<table><tr><th>a|b</th></tr><tr><td>c</td></tr></table>';
+    expect(convertHtmlToMarkdown(html)).toContain('| a\\|b |');
+  });
+
+  it('does not fold a nested table into the outer one', () => {
+    const html = [
+      '<table><tr><th>Outer</th></tr><tr><td>',
+      '<table><tr><th>Inner</th></tr><tr><td>x</td></tr></table>',
+      '</td></tr></table>',
+    ].join('');
     const result = convertHtmlToMarkdown(html);
-    expect(result).toContain('<tbody>');
-    expect(result).toContain('Header');
-    expect(result).toContain('Cell');
+    expect(result).toContain('| Outer |');
+    expect(result).toContain('| Inner |');
+  });
+
+  it('converts strikethrough and task list items', () => {
+    expect(convertHtmlToMarkdown('<p><del>gone</del></p>')).toBe('~~gone~~');
+    const html = '<ul><li><input type="checkbox" checked>done</li><li><input type="checkbox">todo</li></ul>';
+    const result = convertHtmlToMarkdown(html);
+    expect(result).toContain('[x] done');
+    expect(result).toContain('[ ] todo');
   });
 
   it('handles complex nested content from ChatGPT', () => {
