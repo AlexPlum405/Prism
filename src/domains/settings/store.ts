@@ -20,6 +20,7 @@ import {
   PandocSettings,
   PdfMargin,
   PdfPaper,
+  PreviewChartCopyDefault,
   RecentFileEntry,
 } from './types';
 import { applyLocaleRuntime, t } from '../i18n';
@@ -210,6 +211,7 @@ interface SettingsStore extends SettingsState {
   setAutoSaveStrategy: (strategy: AutoSaveStrategy) => void;
   setShowLineNumbers: (show: boolean) => void;
   setWordWrap: (wordWrap: boolean) => void;
+  setPreviewChartCopyDefault: (mode: PreviewChartCopyDefault) => void;
   addRecentFile: (path: string, name: string) => void;
   clearRecentFiles: () => void;
   setRecentFilesLimit: (limit: number) => void;
@@ -531,6 +533,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     get().saveSettings();
   },
 
+  setPreviewChartCopyDefault: (previewChartCopyDefault) => {
+    set({ previewChartCopyDefault });
+    get().saveSettings();
+  },
+
   addRecentFile: (path, name) => {
     set((state) => {
       const recentFiles = normalizeRecentFiles([
@@ -703,6 +710,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         autoSaveStrategy,
         showLineNumbers,
         wordWrap,
+        previewChartCopyDefault,
         customFonts,
         editorFontSource,
         previewFontSource,
@@ -734,6 +742,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           autoSaveStrategy,
           showLineNumbers,
           wordWrap,
+          previewChartCopyDefault,
           customFonts,
           editorFontSource,
           previewFontSource,

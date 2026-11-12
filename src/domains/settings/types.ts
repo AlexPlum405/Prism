@@ -12,6 +12,7 @@ export type ExportTemplateId = 'theme' | 'business' | 'plain' | 'academic';
 export type ExportDefaultLocation = 'ask' | 'document' | 'downloads' | 'custom';
 export type DocxFontPolicy = 'theme' | 'preview' | 'custom';
 export type FontSourceKind = 'theme' | 'builtin' | 'system' | 'custom';
+export type PreviewChartCopyDefault = 'image' | 'source';
 
 export const CONTENT_THEMES = ['miaoyan', 'inkstone', 'slate', 'mono', 'nocturne', 'carbon'] as const;
 export const CURRENT_SETTINGS_VERSION = 1;
@@ -140,6 +141,7 @@ export interface SettingsState {
   autoSaveStrategy: AutoSaveStrategy;
   showLineNumbers: boolean;
   wordWrap: boolean;
+  previewChartCopyDefault: PreviewChartCopyDefault;
   customFonts: CustomFont[];
   editorFontSource: FontSource;
   previewFontSource: FontSource;
@@ -193,6 +195,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   autoSaveStrategy: 'balanced',
   showLineNumbers: false,
   wordWrap: true,
+  previewChartCopyDefault: 'image',
   customFonts: [],
   editorFontSource: { kind: 'theme', value: '' },
   previewFontSource: { kind: 'theme', value: '' },

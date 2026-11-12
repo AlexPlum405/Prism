@@ -3,7 +3,7 @@ import {
   exists,
   mkdir,
   readFile,
-  remove,
+  removeAppDataPath,
   rename,
   stat,
 } from '../../platform/tauri/fileSystem';
@@ -98,7 +98,10 @@ async function stageThemeFromPath(sourcePath: string, stagingDirectory: string) 
 
 async function safeRemove(path: string) {
   try {
-    if (await exists(path)) await remove(path, { recursive: true });
+    if (await exists(path)) await removeAppDataPath(path, {
+      recursive: true,
+      reason: 'theme-install-cleanup',
+    });
   } catch {
     // Cleanup failures should not hide the primary import error.
   }

@@ -17,6 +17,7 @@ vi.mock('../../platform/tauri/fileSystem', () => ({
   readFile: vi.fn(),
   readTextFile: vi.fn(),
   remove: vi.fn(),
+  removeAppDataPath: vi.fn(),
   stat: vi.fn(),
   writeFile: vi.fn(),
 }));

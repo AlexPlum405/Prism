@@ -17,6 +17,7 @@ import {
   type PandocSettings,
   type PdfMargin,
   type PdfPaper,
+  type PreviewChartCopyDefault,
   type RecentFileEntry,
   type SettingsState,
   type ShortcutStyle,
@@ -34,6 +35,10 @@ function isDefaultViewMode(value: unknown): value is DefaultViewMode {
 
 function isShortcutStyle(value: unknown): value is ShortcutStyle {
   return value === 'auto' || value === 'mac' || value === 'windows';
+}
+
+function isPreviewChartCopyDefault(value: unknown): value is PreviewChartCopyDefault {
+  return value === 'image' || value === 'source';
 }
 
 function isAutoSaveStrategy(value: unknown): value is AutoSaveStrategy {
@@ -453,6 +458,9 @@ export function normalizeSettings(saved: Partial<SettingsState>): SettingsState 
       : inferAutoSaveStrategy(autoSaveInterval),
     showLineNumbers: booleanOrDefault(saved.showLineNumbers, DEFAULT_SETTINGS.showLineNumbers),
     wordWrap: booleanOrDefault(saved.wordWrap, DEFAULT_SETTINGS.wordWrap),
+    previewChartCopyDefault: isPreviewChartCopyDefault(saved.previewChartCopyDefault)
+      ? saved.previewChartCopyDefault
+      : DEFAULT_SETTINGS.previewChartCopyDefault,
     customFonts: normalizeCustomFonts(saved.customFonts),
     editorFontSource: migrateEditorFontSource(saved),
     previewFontSource: migratePreviewFontSource(saved),

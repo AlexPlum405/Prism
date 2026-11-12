@@ -5,7 +5,7 @@ import {
   readDir,
   readFile,
   readTextFile,
-  remove,
+  removeAppDataPath,
   stat,
   writeFile,
 } from '../../platform/tauri/fileSystem';
@@ -303,7 +303,10 @@ export async function removeThemeDirectory(themeId: string) {
   const themesDir = await ensureThemesDirectory();
   const target = joinPath(themesDir, themeId);
   if (await exists(target)) {
-    await remove(target, { recursive: true });
+    await removeAppDataPath(target, {
+      recursive: true,
+      reason: 'theme-directory-delete',
+    });
   }
 }
 

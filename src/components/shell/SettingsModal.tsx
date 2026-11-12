@@ -11,6 +11,7 @@ import type {
   LocalePreference,
   PdfMargin,
   PdfPaper,
+  PreviewChartCopyDefault,
   ShortcutStyle,
 } from '../../domains/settings/types';
 import { LOCALE_PREFERENCES, t as translate, useI18n, type I18nKey } from '../../domains/i18n';
@@ -560,6 +561,20 @@ export function SettingsModal({ initialSection = 'general', visible, onClose }: 
                 onChange={(e) => settings.setEditorLineHeight(Number(e.target.value))}
                 style={{ width: 160 }}
               />
+            </div>
+            <div className="settings-row">
+              <div>
+                <div className="row-label">{t('settings.chartCopyDefault.label')}</div>
+                <div className="row-hint">{t('settings.chartCopyDefault.hint')}</div>
+              </div>
+              <select
+                value={settings.previewChartCopyDefault}
+                onChange={(e) => settings.setPreviewChartCopyDefault(e.target.value as PreviewChartCopyDefault)}
+                style={selectStyle}
+              >
+                <option value="image">{t('settings.chartCopyDefault.image')}</option>
+                <option value="source">{t('settings.chartCopyDefault.source')}</option>
+              </select>
             </div>
           </div>
           )}

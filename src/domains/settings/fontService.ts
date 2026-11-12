@@ -1,6 +1,6 @@
 import { openDialog } from '../../platform/tauri/dialogs';
 import { appDataDir } from '../../platform/tauri/path';
-import { copyFile, exists, mkdir, readFile, remove } from '../../platform/tauri/fileSystem';
+import { copyFile, exists, mkdir, readFile, removeAppDataPath } from '../../platform/tauri/fileSystem';
 import type { CustomFont, FontSource } from './types';
 import { joinPath } from '../workspace/services/path';
 import { t, type I18nKey } from '../i18n';
@@ -157,7 +157,9 @@ export async function registerCustomFonts(fonts: CustomFont[]) {
 
 export async function deleteCustomFontFile(font: CustomFont) {
   try {
-    if (await exists(font.path)) await remove(font.path);
+    if (await exists(font.path)) await removeAppDataPath(font.path, {
+      reason: 'custom-font-delete',
+    });
   } catch (err) {
     console.error('[FontService] Failed to delete font:', font.path, err);
   }

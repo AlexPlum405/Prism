@@ -17,6 +17,7 @@ vi.mock('../../platform/tauri/fileSystem', () => ({
   mkdir: vi.fn(),
   readFile: vi.fn(),
   remove: vi.fn(),
+  removeAppDataPath: vi.fn(),
 }));
 
 describe('fontService', () => {
