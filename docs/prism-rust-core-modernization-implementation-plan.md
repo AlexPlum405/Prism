@@ -1,7 +1,11 @@
 # Prism Rust Core Modernization 实施计划
 
-> 状态：待实施
+> 状态：已实施（2026-11-12 核对）
 > 日期：2026-05-28
+> 核对结论：Phase 1–9 的目标目录与命令在代码中已就位——`src-tauri/src/domain/` 11 个模块、
+> `src-tauri/src/commands/` 17 个命令文件、`src/platform/tauri/` 18 个适配层文件均已存在；
+> 业务代码中已无直连 `@tauri-apps/plugin-fs|api/core`，剩余 12 处为窗口 / WebView / 事件 / 更新器。
+> Phase 10 大部分完成：`App.tsx` 409 行（目标 ≤350）、`EditorPane.tsx` 607 行（目标 ≤500）。
 > 范围：Prism 本地能力层 Rust 化，不做 Rust 原生 UI 重写
 > 目标：React / CodeMirror 继续负责写作体验，Rust / Tauri 接管文件系统、工作区索引、搜索、反链/图谱数据、导出任务、PDF capture、资源读取、系统集成和错误诊断。
 
