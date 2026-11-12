@@ -340,6 +340,7 @@ describe('executeFileAction openFile workspace sync', () => {
     expect(readTextFile).not.toHaveBeenCalled();
     expect(showToast).toHaveBeenCalledWith(
       expect.stringContaining('.sql'),
+      'error',
     );
     const message = showToast.mock.calls[0]?.[0] ?? '';
     expect(message).not.toContain('.tsx');
@@ -581,7 +582,7 @@ describe('executeFileAction openFile workspace sync', () => {
     expect(useWorkspaceStore.getState().fileTree).toEqual([
       { kind: 'file', name: 'other.md', path: '/repo/other.md' },
     ]);
-    expect(showToast).toHaveBeenCalledWith('已移到系统废纸篓');
+    expect(showToast).toHaveBeenCalledWith('已移到系统废纸篓', 'success');
   });
 
   it('renames the current document parent folder and updates the open document path', async () => {
@@ -632,7 +633,7 @@ describe('executeFileAction openFile workspace sync', () => {
         children: [{ kind: 'file', name: 'current.md', path: '/repo/renamed/current.md' }],
       },
     ]);
-    expect(showToast).toHaveBeenCalledWith('重命名完成');
+    expect(showToast).toHaveBeenCalledWith('重命名完成', 'success');
   });
 });
 
@@ -658,7 +659,7 @@ describe('executeFileAction workspace tree scope', () => {
     expect(useWorkspaceStore.getState().workspaceTreeScope).toBe('recursive');
     expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'recursive' });
     expect(useWorkspaceStore.getState().fileTree).toEqual(recursiveTree);
-    expect(showToast).toHaveBeenCalledWith('已递归显示子目录');
+    expect(showToast).toHaveBeenCalledWith('已递归显示子目录', 'success');
   });
 
   it('switches back to current-level scope and refreshes only that level', async () => {
@@ -682,7 +683,7 @@ describe('executeFileAction workspace tree scope', () => {
     expect(useWorkspaceStore.getState().workspaceTreeScope).toBe('currentLevel');
     expect(loadFolderTree).toHaveBeenCalledWith('/repo', { scope: 'currentLevel' });
     expect(useWorkspaceStore.getState().fileTree).toEqual(currentLevelTree);
-    expect(showToast).toHaveBeenCalledWith('已切换为当前层级');
+    expect(showToast).toHaveBeenCalledWith('已切换为当前层级', 'success');
   });
 });
 
@@ -728,5 +729,19 @@ describe('executeFileAction reveal location', () => {
 
     expect(revealItemInDir).toHaveBeenCalledWith('/Users/Alex/hermes-test/spark/prompt3');
     expect(openPath).not.toHaveBeenCalled();
+  });
+
+  it('writes the file path to the clipboard and confirms it with a toast', async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const context = fileActionContext();
+    await executeFileAction('copyPath:/repo/notes/report.md', context);
+
+    expect(writeText).toHaveBeenCalledWith('/repo/notes/report.md');
+    expect(context.showToast).toHaveBeenCalledWith('路径已复制到剪贴板', 'success');
   });
 });

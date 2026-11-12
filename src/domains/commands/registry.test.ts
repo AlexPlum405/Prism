@@ -158,6 +158,7 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       setAutoSaveStrategy: vi.fn(),
       setShowLineNumbers: vi.fn(),
       setWordWrap: vi.fn(),
+      setPreviewChartCopyDefault: vi.fn(),
       addRecentFile: vi.fn(),
       clearRecentFiles: vi.fn(),
       setRecentFilesLimit: vi.fn(),
@@ -230,6 +231,13 @@ describe('command registry', () => {
     const ids = commandRegistry.map((command) => command.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(commandRegistryById.size).toBe(commandRegistry.length);
+  });
+
+  it('keeps redo available through both Shift+Mod+Z and Mod+Y', () => {
+    expect(commandRegistryById.get('redo')?.shortcuts).toEqual([
+      { code: 'KeyZ', mod: true, shift: true },
+      { code: 'KeyY', mod: true },
+    ]);
   });
 
   it('maps registered commands into the product command palette groups', () => {
@@ -727,11 +735,11 @@ describe('command registry', () => {
 
     await runCommand('templatePrd', context);
     expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# PRD：PRD'), 'prd.md');
-    expect(showToast).toHaveBeenCalledWith('已创建 PRD 模板');
+    expect(showToast).toHaveBeenCalledWith('已创建 PRD 模板', 'success');
 
     await runCommand('templatePaperDraft', context);
     expect(createNewDocument).toHaveBeenCalledWith(expect.stringContaining('# 论文草稿'), 'paper-draft.md');
-    expect(showToast).toHaveBeenCalledWith('已创建 论文草稿 模板');
+    expect(showToast).toHaveBeenCalledWith('已创建 论文草稿 模板', 'success');
   });
 
   it('exposes selection transforms from the Format menu without paragraph maintenance clutter', () => {
@@ -1620,6 +1628,6 @@ describe('command registry', () => {
     expect(fsMock.writeTextFile).not.toHaveBeenCalled();
     expect(recoveryMock.clearRecoverySnapshotsForDocument).not.toHaveBeenCalled();
     expect(markSaveFailed).not.toHaveBeenCalled();
-    expect(showToast).toHaveBeenCalledWith('操作失败: 文件已在磁盘上被外部修改，请先重新加载或另存为。');
+    expect(showToast).toHaveBeenCalledWith('操作失败: 文件已在磁盘上被外部修改，请先重新加载或另存为。', 'error');
   });
 });

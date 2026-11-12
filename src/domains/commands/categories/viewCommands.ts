@@ -51,7 +51,7 @@ export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
       run: (context) => {
         const content = context.documentStore.currentDocument?.content ?? '';
         if (!hasPresentationSlides(content)) {
-          context.showToast?.(t('presentation.requiresSlides'));
+          context.showToast?.(t('presentation.requiresSlides'), 'warning');
           return;
         }
         emitAppEvent('presentation.open', {});

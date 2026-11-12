@@ -2,7 +2,7 @@ import {
   exists,
   mkdir,
   readTextFile,
-  remove,
+  removeConfirmedUserPathPermanently,
   rename,
   stat,
   writeTextFile,
@@ -78,6 +78,13 @@ function formatError(err: unknown): string {
 
 async function movePathToTrash(path: string): Promise<void> {
   await invokeNativeCommand('move_path_to_trash', { path });
+}
+
+async function permanentlyRemoveUserPath(path: string, options: { recursive: boolean }): Promise<void> {
+  await removeConfirmedUserPathPermanently(path, {
+    ...options,
+    reason: 'confirmed-permanent-delete',
+  });
 }
 
 export async function deletePathWithTrashFallback({
@@ -204,7 +211,7 @@ function getWorkspaceTargetDir(context: FileActionContext, requestedPath?: strin
   if (requestedPath) return requestedPath;
   if (context.workspaceStore.rootPath) return context.workspaceStore.rootPath;
 
-  context.showToast?.(t('app.openWorkspaceFirst'));
+  context.showToast?.(t('app.openWorkspaceFirst'), 'warning');
   return null;
 }
 
@@ -237,7 +244,7 @@ async function handleNewFile(parentPath: string | undefined, context: FileAction
   addRecentFile(filePath, basename(filePath));
   await refreshWorkspace(context);
   requestInlineRename(filePath);
-  context.showToast?.(t('file.createdNewFile'));
+  context.showToast?.(t('file.createdNewFile'), 'success');
 }
 
 async function handleNewFolder(parentPath: string | undefined, context: FileActionContext): Promise<void> {
@@ -249,17 +256,17 @@ async function handleNewFolder(parentPath: string | undefined, context: FileActi
   context.workspaceStore.setFileTreeMode('tree');
   await refreshWorkspace(context);
   requestInlineRename(folderPath);
-  context.showToast?.(t('file.createdNewFolder'));
+  context.showToast?.(t('file.createdNewFolder'), 'success');
 }
 
 async function handleCommitRename(path: string, newName: string, context: FileActionContext): Promise<void> {
   const safeName = newName.trim();
   if (!safeName) {
-    context.showToast?.(t('file.nameRequired'));
+    context.showToast?.(t('file.nameRequired'), 'warning');
     return;
   }
   if (/[\\/]/.test(safeName)) {
-    context.showToast?.(t('file.nameCannotContainSeparator'));
+    context.showToast?.(t('file.nameCannotContainSeparator'), 'warning');
     return;
   }
 
@@ -268,7 +275,7 @@ async function handleCommitRename(path: string, newName: string, context: FileAc
   if (isSamePath(path, targetPath)) return;
 
   if ((await exists(targetPath)) && !isSamePath(path, targetPath)) {
-    context.showToast?.(t('file.nameAlreadyExists', { name: safeName }));
+    context.showToast?.(t('file.nameAlreadyExists', { name: safeName }), 'warning');
     return;
   }
 
@@ -285,7 +292,7 @@ async function handleCommitRename(path: string, newName: string, context: FileAc
   }
 
   await refreshWorkspace(context);
-  context.showToast?.(t('file.renameDone'));
+  context.showToast?.(t('file.renameDone'), 'success');
 
   if (oldInfo.isFile) {
     await updateIncomingLinksAfterMove(path, targetPath, context);
@@ -348,23 +355,23 @@ async function updateIncomingLinksAfterMove(
     }
 
     if (result.written.length > 0) {
-      context.showToast?.(t('file.linkRewriteDone', { count: result.written.length }));
+      context.showToast?.(t('file.linkRewriteDone', { count: result.written.length }), 'success');
     }
     if (result.failed.length > 0) {
       context.showToast?.(t('file.linkRewriteFailed', {
         count: result.failed.length,
         error: result.failed[0].error,
-      }));
+      }), 'error');
     }
   } catch (err) {
-    context.showToast?.(t('file.linkRewriteFailed', { count: 0, error: formatError(err) }));
+    context.showToast?.(t('file.linkRewriteFailed', { count: 0, error: formatError(err) }), 'error');
   }
 }
 
 async function handleDuplicate(path: string, context: FileActionContext): Promise<void> {
   const info = await stat(path);
   if (!info.isFile) {
-    context.showToast?.(t('file.duplicateFileOnly'));
+    context.showToast?.(t('file.duplicateFileOnly'), 'warning');
     return;
   }
 
@@ -372,7 +379,7 @@ async function handleDuplicate(path: string, context: FileActionContext): Promis
   const targetPath = await getUniqueCopyPath(path);
   await writeTextFile(targetPath, content, { createNew: true });
   await refreshWorkspace(context);
-  context.showToast?.(t('file.duplicateDone', { name: basename(targetPath) }));
+  context.showToast?.(t('file.duplicateDone', { name: basename(targetPath) }), 'success');
 }
 
 async function handleDelete(path: string, context: FileActionContext): Promise<void> {
@@ -383,7 +390,7 @@ async function handleDelete(path: string, context: FileActionContext): Promise<v
     isDirectory: info.isDirectory,
     moveToTrash: movePathToTrash,
     path,
-    permanentDelete: remove,
+    permanentDelete: permanentlyRemoveUserPath,
   });
 
   if (!result.deleted) {
@@ -397,7 +404,7 @@ async function handleDelete(path: string, context: FileActionContext): Promise<v
   }
 
   await refreshWorkspace(context);
-  context.showToast?.(result.mode === 'trash' ? t('file.movedToTrash') : t('file.permanentlyDeleted'));
+  context.showToast?.(result.mode === 'trash' ? t('file.movedToTrash') : t('file.permanentlyDeleted'), 'success');
 }
 
 async function handleOpenLocation(path: string): Promise<void> {
@@ -406,7 +413,7 @@ async function handleOpenLocation(path: string): Promise<void> {
 
 async function handleCopyPath(path: string, context: FileActionContext): Promise<void> {
   await copyText(path);
-  context.showToast?.(t('file.pathCopied'));
+  context.showToast?.(t('file.pathCopied'), 'success');
 }
 
 async function handleProperties(path: string): Promise<void> {
@@ -427,12 +434,12 @@ async function handleProperties(path: string): Promise<void> {
 
 async function handleRefresh(context: FileActionContext): Promise<void> {
   if (!context.workspaceStore.rootPath) {
-    context.showToast?.(t('file.noWorkspace'));
+    context.showToast?.(t('file.noWorkspace'), 'warning');
     return;
   }
 
   await refreshWorkspace(context);
-  context.showToast?.(t('file.treeRefreshed'));
+  context.showToast?.(t('file.treeRefreshed'), 'success');
 }
 
 async function handleWorkspaceTreeScope(
@@ -443,7 +450,7 @@ async function handleWorkspaceTreeScope(
   await refreshWorkspace(context, context.workspaceStore.rootPath, scope);
   context.showToast?.(scope === 'recursive'
     ? t('file.treeScopeRecursive')
-    : t('file.treeScopeCurrentLevel'));
+    : t('file.treeScopeCurrentLevel'), 'success');
 }
 
 export async function executeFileAction(
@@ -558,10 +565,10 @@ export async function executeFileAction(
         return;
 
       default:
-        context.showToast?.(getUnsupportedFileActionMessage(command));
+        context.showToast?.(getUnsupportedFileActionMessage(command), 'warning');
     }
   } catch (err) {
     console.error(`[FileAction] ${command} failed:`, err);
-    context.showToast?.(t('command.operationFailed', { message: formatError(err) }));
+    context.showToast?.(t('command.operationFailed', { message: formatError(err) }), 'error');
   }
 }

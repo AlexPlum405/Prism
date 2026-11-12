@@ -106,6 +106,7 @@ const menuModel: MenuModel = {
     { command: 'save' },
     { command: 'saveAs' },
     { command: 'openCurrentLocation' },
+    { command: 'copyCurrentFilePath' },
     { command: 'fileProperties' },
     { type: 'separator' },
     { command: 'print' },

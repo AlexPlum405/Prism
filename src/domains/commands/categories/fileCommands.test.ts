@@ -99,7 +99,7 @@ function createContext(overrides: Partial<CommandContext> = {}): CommandContext 
   };
 }
 
-function getFileCommand(id: 'new' | 'newWindow' | 'open' | 'save' | 'saveAs' | 'fileProperties') {
+function getFileCommand(id: 'new' | 'newWindow' | 'open' | 'save' | 'saveAs' | 'fileProperties' | 'copyCurrentFilePath') {
   const command = createFileCommands().find((entry) => entry.id === id);
   if (!command) throw new Error(`Missing command: ${id}`);
   return command;
@@ -343,5 +343,64 @@ describe('file commands', () => {
         workspaceStore: context.workspaceStore,
       }),
     );
+  });
+
+  it('copies the saved document path through the shared file action', async () => {
+    const context = createContext({
+      documentStore: {
+        ...createContext().documentStore,
+        currentDocument: {
+          path: '/repo/notes/report.md',
+          name: 'report.md',
+          content: '# Report',
+          isDirty: false,
+          lastSavedAt: 1,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          saveStatus: 'saved',
+          saveError: null,
+          viewMode: 'split',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+        },
+      },
+    });
+
+    await getFileCommand('copyCurrentFilePath').run(context);
+
+    expect(executeFileActionMock).toHaveBeenCalledWith(
+      { action: 'copyPath', path: '/repo/notes/report.md' },
+      expect.objectContaining({
+        documentStore: context.documentStore,
+        workspaceStore: context.workspaceStore,
+      }),
+    );
+  });
+
+  it('warns instead of copying when the document has never been saved', async () => {
+    const showToast = vi.fn();
+    const context = createContext({
+      showToast,
+      documentStore: {
+        ...createContext().documentStore,
+        currentDocument: {
+          path: '',
+          name: 'Untitled.md',
+          content: '',
+          isDirty: true,
+          lastSavedAt: 0,
+          lastKnownMtime: null,
+          lastKnownSize: null,
+          saveStatus: 'dirty',
+          saveError: null,
+          viewMode: 'split',
+          scrollState: { editorRatio: 0, previewRatio: 0 },
+        },
+      },
+    });
+
+    await getFileCommand('copyCurrentFilePath').run(context);
+
+    expect(executeFileActionMock).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('缺少复制路径', 'warning');
   });
 });

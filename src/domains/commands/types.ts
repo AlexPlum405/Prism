@@ -2,7 +2,7 @@ import type { useDocumentStore } from '../document/store';
 import type { useSettingsStore } from '../settings/store';
 import type { useWorkspaceStore } from '../workspace/store';
 import type { ExportFormat } from '../export/types';
-import type { ToastInput } from '../../lib/toast';
+import type { ShowToast } from '../../lib/toast';
 import type { WorkspaceIndex } from '../workspace/services';
 
 export type CommandCategory =
@@ -39,6 +39,7 @@ export type CommandId =
   | 'templateWhitePaper'
   | 'print'
   | 'openCurrentLocation'
+  | 'copyCurrentFilePath'
   | 'fileProperties'
   | 'closeDocument'
   | 'exportHtml'
@@ -187,7 +188,7 @@ export interface CommandContext {
   settingsStore: ReturnType<typeof useSettingsStore.getState>;
   workspaceStore: ReturnType<typeof useWorkspaceStore.getState>;
   workspaceIndex?: WorkspaceIndex | null;
-  showToast?: (toast: ToastInput) => void;
+  showToast?: ShowToast;
   requestExportPath?: (input: {
     format: ExportFormat;
     filename: string;

@@ -1,3 +1,4 @@
+import type { ShowToast } from '../lib/toast';
 import { useCallback, useState } from 'react';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
@@ -14,7 +15,7 @@ interface DirtySwitchPromptState {
 
 interface UseAppFileActionsModelInput {
   requestMarkdownSavePath: (input: { filename: string; documentPath?: string }) => Promise<string | null>;
-  showToast: (message: string) => void;
+  showToast: ShowToast;
   startupFileOpenEnabled?: boolean;
 }
 

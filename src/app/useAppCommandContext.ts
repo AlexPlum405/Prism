@@ -11,7 +11,7 @@ import type { RecentFileEntry, SettingsState, ShortcutStyle } from '../domains/s
 import { useWorkspaceStore } from '../domains/workspace/store';
 import type { WorkspaceIndex } from '../domains/workspace/services';
 import { t } from '../domains/i18n';
-import type { ToastInput } from '../lib/toast';
+import type { ShowToast } from '../lib/toast';
 import type { FileActionInput } from '../lib/fileActions';
 import { emitAppEvent, onAppEvent } from '../platform/events/appEvents';
 import { listenForNativeCommands } from '../platform/tauri/nativeMenuEvents';
@@ -62,7 +62,7 @@ interface UseAppCommandContextInput {
   requestSavePath: RequestSavePath;
   settingsLocale: unknown;
   shortcutStyle: ShortcutStyle;
-  showToast: (toast: ToastInput) => void;
+  showToast: ShowToast;
   themeRegistryVersion: number;
   wordWrap: boolean;
   workspace: WorkspaceCommandSnapshot;
@@ -185,7 +185,7 @@ export function useAppCommandContext({
     if (action.startsWith('insertSlashSnippet:')) {
       const command = decodeURIComponent(action.slice('insertSlashSnippet:'.length));
       if (!isSlashSnippetCommand(command)) {
-        showToast(t('app.unknownCommand', { action }));
+        showToast(t('app.unknownCommand', { action }), 'warning');
         return;
       }
       const snippet = getSlashSnippet(command);
@@ -200,7 +200,7 @@ export function useAppCommandContext({
 
     if (!isCommandId(action)) {
       console.warn(`[Command] Unknown command id: ${action}`);
-      showToast(t('app.unknownCommand', { action }));
+      showToast(t('app.unknownCommand', { action }), 'warning');
       return;
     }
 

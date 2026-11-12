@@ -26,6 +26,7 @@ const paletteGroupByCommand = {
   save: 'file',
   saveAs: 'file',
   openCurrentLocation: 'file',
+  copyCurrentFilePath: 'file',
   fileProperties: 'file',
   closeDocument: 'file',
 

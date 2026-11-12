@@ -72,14 +72,14 @@ async function setWorkspaceToDocumentDirectoryIfNeeded(context: CommandContext, 
     context.workspaceStore.setWorkspace(rootPath, tree);
   } catch (err) {
     console.error('[fileCommands] Failed to set workspace after save:', err);
-    context.showToast?.(t('command.operationFailed', { message: formatError(err) }));
+    context.showToast?.(t('command.operationFailed', { message: formatError(err) }), 'error');
   }
 }
 
 async function handleNew(context: CommandContext): Promise<void> {
   const doc = context.documentStore.currentDocument;
   if (doc?.isDirty && !doc.path && !context.requestSavePath) {
-    context.showToast?.(t('command.savePanelUnavailable'));
+    context.showToast?.(t('command.savePanelUnavailable'), 'warning');
     return;
   }
 
@@ -109,7 +109,7 @@ function handleMarkdownTemplate(templateId: MarkdownTemplateId, context: Command
     context.documentStore.createNewDocument(resolveMarkdownTemplateContent(template.content, {
       title: template.label,
     }), template.filename);
-    context.showToast?.(t('command.templateCreated', { label: template.label }));
+    context.showToast?.(t('command.templateCreated', { label: template.label }), 'success');
     return;
   }
 
@@ -144,7 +144,7 @@ async function saveCurrentDocument(context: CommandContext): Promise<string | nu
 
   if (!targetPath) {
     if (!context.requestSavePath) {
-      context.showToast?.(t('command.savePanelUnavailable'));
+      context.showToast?.(t('command.savePanelUnavailable'), 'warning');
       return null;
     }
     const chosen = await context.requestSavePath({
@@ -197,7 +197,7 @@ async function handleSaveAs(context: CommandContext): Promise<void> {
   if (!doc) return;
 
   if (!context.requestSavePath) {
-    context.showToast?.(t('command.savePanelUnavailable'));
+    context.showToast?.(t('command.savePanelUnavailable'), 'warning');
     return;
   }
 
@@ -243,13 +243,30 @@ async function handleOpenCurrentLocation(context: CommandContext): Promise<void>
     return;
   }
 
-  context.showToast?.(t('command.noLocationToReveal'));
+  context.showToast?.(t('command.noLocationToReveal'), 'warning');
+}
+
+async function handleCopyCurrentFilePath(context: CommandContext): Promise<void> {
+  const docPath = context.documentStore.currentDocument?.path;
+  if (!docPath) {
+    context.showToast?.(t('file.missingCopyPath'), 'warning');
+    return;
+  }
+
+  await executeFileAction({
+    action: 'copyPath',
+    path: docPath,
+  }, {
+    documentStore: context.documentStore,
+    showToast: context.showToast,
+    workspaceStore: context.workspaceStore,
+  });
 }
 
 async function handleFileProperties(context: CommandContext): Promise<void> {
   const docPath = context.documentStore.currentDocument?.path;
   if (!docPath) {
-    context.showToast?.(t('file.missingPropertiesPath'));
+    context.showToast?.(t('file.missingPropertiesPath'), 'warning');
     return;
   }
 
@@ -271,7 +288,7 @@ async function handleCloseDocument(context: CommandContext): Promise<void> {
     let targetPath = doc.path;
     if (!targetPath) {
       if (!context.requestSavePath) {
-        context.showToast?.(t('command.savePanelUnavailable'));
+        context.showToast?.(t('command.savePanelUnavailable'), 'warning');
         return;
       }
       const chosen = await context.requestSavePath({
@@ -420,6 +437,14 @@ export function createFileCommands(): CommandDefinition[] {
       category: 'file',
       enabled: (context) => hasSavedDocumentPath(context) || Boolean(context.workspaceStore.rootPath),
       run: handleOpenCurrentLocation,
+    },
+    {
+      id: 'copyCurrentFilePath',
+      category: 'file',
+      keywords: ['copy', 'path', 'file', 'location', '复制', '路径'],
+      // 原生菜单项无法随文档状态实时置灰，若在此按 enabled 拦截，未保存文稿下点击会静默无响应；
+      // 改为始终可执行，由 handler 用 toast 说明为什么没有可复制的路径。
+      run: handleCopyCurrentFilePath,
     },
     {
       id: 'fileProperties',

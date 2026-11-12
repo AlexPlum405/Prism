@@ -102,7 +102,7 @@ async function handleDevTools(context: CommandContext): Promise<void> {
     await invokeNativeCommand('plugin:webview|internal_toggle_devtools');
   } catch (error) {
     console.error('[Command] DevTools toggle failed', error);
-    context.showToast?.(t('command.devToolsUnavailable'));
+    context.showToast?.(t('command.devToolsUnavailable'), 'warning');
   }
 }
 
@@ -124,11 +124,11 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
   try {
     const result = await checkForAppUpdate();
     if (result.status === 'none') {
-      context.showToast?.(t('command.updateLatest'));
+      context.showToast?.(t('command.updateLatest'), 'success');
       return;
     }
     if (result.status === 'unavailable') {
-      context.showToast?.(t('command.updateUnavailable', { reason: result.reason }));
+      context.showToast?.(t('command.updateUnavailable', { reason: result.reason }), 'warning');
       return;
     }
 
@@ -152,7 +152,7 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
                   }
                 });
               } catch (error) {
-                context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
+                context.showToast?.(t('command.updateFailed', { message: formatError(error) }), 'error');
               }
             },
           },
@@ -175,7 +175,7 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       await downloadAndInstallUpdate(result.update);
     }
   } catch (error) {
-    context.showToast?.(t('command.updateFailed', { message: formatError(error) }));
+    context.showToast?.(t('command.updateFailed', { message: formatError(error) }), 'error');
   }
 }
 
@@ -237,7 +237,7 @@ export async function runCommand(id: CommandId, context: CommandContext): Promis
     await definition.run(context);
   } catch (err) {
     console.error(`[Command] ${id} failed:`, err);
-    context.showToast?.(t('command.operationFailed', { message: formatError(err) }));
+    context.showToast?.(t('command.operationFailed', { message: formatError(err) }), 'error');
   }
 }
 
