@@ -48,6 +48,23 @@ interface PlantUmlDiagram {
 let plantUmlLittleRuntimePromise: Promise<PlantUmlLittleRuntime> | null = null;
 const plantUmlSvgCache = new Map<string, Promise<string>>();
 
+// 分栏下编辑 PlantUML 源码时，每次键入都会产生新缓存键；
+// 无上限会让长会话内存只涨不降，这里按 LRU 淘汰旧的渲染结果。
+const PLANTUML_SVG_CACHE_LIMIT = 40;
+
+function prunePlantUmlSvgCache() {
+  while (plantUmlSvgCache.size > PLANTUML_SVG_CACHE_LIMIT) {
+    const oldestKey = plantUmlSvgCache.keys().next().value as string | undefined;
+    if (oldestKey === undefined) break;
+    plantUmlSvgCache.delete(oldestKey);
+  }
+}
+
+function rememberPlantUmlSvg(key: string, value: Promise<string>) {
+  plantUmlSvgCache.set(key, value);
+  prunePlantUmlSvgCache();
+}
+
 const PLANT_UML_RELATION_PATTERN = /^(.+?)\s+([.<|*o+#[\]}{]*[-.]+(?:left|right|up|down)?[-.]*[.>|*o+#[\]}{]*)\s+(.+?)(?:\s*:\s*(.+))?$/i;
 
 function getPlantUmlThemeColors(contentTheme: ContentTheme): PlantUmlThemeColors {
@@ -444,16 +461,19 @@ export async function renderPlantUmlSvgString(
 ) {
   const key = getPlantUmlSvgCacheKey(source, contentTheme, options);
   let cached = plantUmlSvgCache.get(key);
-  if (!cached) {
-    cached = renderPlantUmlSvgStringUncached(source, contentTheme, options).catch((error) => {
-      if (plantUmlSvgCache.get(key) === cached) {
-        plantUmlSvgCache.delete(key);
-      }
-      throw error;
-    });
+  if (cached) {
+    // 命中即续期：移到 Map 尾部，保证 LRU 淘汰次序正确。
+    plantUmlSvgCache.delete(key);
     plantUmlSvgCache.set(key, cached);
+    return cached;
   }
-
+  cached = renderPlantUmlSvgStringUncached(source, contentTheme, options).catch((error) => {
+    if (plantUmlSvgCache.get(key) === cached) {
+      plantUmlSvgCache.delete(key);
+    }
+    throw error;
+  });
+  rememberPlantUmlSvg(key, cached);
   return cached;
 }
 
@@ -929,6 +949,8 @@ export function renderFallbackPlantUmlSvgString(source: string, contentTheme: Co
 }
 
 export const __plantUmlTesting = {
+  cache: plantUmlSvgCache,
+  seedPlantUmlSvgCache: (key: string, value: Promise<string>) => rememberPlantUmlSvg(key, value),
   clearPlantUmlSvgCache,
   encodeNonAsciiRunsForPlantUmlLittle,
   injectPlantUmlSkinparams,

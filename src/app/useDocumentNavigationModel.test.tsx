@@ -89,7 +89,7 @@ describe('useDocumentNavigationModel', () => {
 
     expect(jumpToLine).not.toHaveBeenCalled();
     expect(handleFileAction).not.toHaveBeenCalled();
-    expect(showToast).toHaveBeenCalledWith('没有找到链接文档：#不存在');
+    expect(showToast).toHaveBeenCalledWith('没有找到链接文档：#不存在', 'warning');
   });
 
   it('selects same-document links from the document links panel model', async () => {

@@ -17,7 +17,7 @@ import {
 import { queryWorkspaceBacklinksNativeModel } from '../domains/workspace/services/workspaceIndexNative';
 import type { FileNode } from '../domains/workspace/types';
 import type { FileActionInput } from '../lib/fileActions';
-import type { ToastInput } from '../lib/toast';
+import type { ShowToast } from '../lib/toast';
 import { t } from '../domains/i18n';
 import { extractMarkdownDocumentHeadings } from '../domains/markdown/headings';
 
@@ -55,7 +55,7 @@ interface UseDocumentNavigationModelInput {
   handleFileAction: (input: FileActionInput) => void | Promise<void>;
   jumpToLine: (line: number) => void;
   rootPath: string | null;
-  showToast: (toast: ToastInput) => void;
+  showToast: ShowToast;
   workspaceIndex: WorkspaceIndex | null;
   workspaceIndexJobId?: string | null;
 }
@@ -165,14 +165,14 @@ export function useDocumentNavigationModel({
         if (line) {
           jumpToLine(line);
         } else {
-          showToast(t('app.linkDocumentNotFound', { target }));
+          showToast(t('app.linkDocumentNotFound', { target }), 'warning');
         }
         return;
       }
     }
 
     if (!rootPath) {
-      showToast(t('app.openWorkspaceFirst'));
+      showToast(t('app.openWorkspaceFirst'), 'warning');
       return;
     }
 
@@ -190,7 +190,7 @@ export function useDocumentNavigationModel({
     });
 
     if (!resolved) {
-      showToast(t('app.linkDocumentNotFound', { target }));
+      showToast(t('app.linkDocumentNotFound', { target }), 'warning');
       return;
     }
 
@@ -229,7 +229,7 @@ export function useDocumentNavigationModel({
     if (currentDocument?.profile?.supportsRelationGraph === false) return;
     const hasMarkdownDocuments = workspaceIndex?.documents.some((document) => document.profile === 'markdown');
     if (!workspaceIndex || !hasMarkdownDocuments) {
-      showToast(t('app.openMarkdownWorkspaceFirst'));
+      showToast(t('app.openMarkdownWorkspaceFirst'), 'warning');
       return;
     }
     setRelationGraphVisible(true);

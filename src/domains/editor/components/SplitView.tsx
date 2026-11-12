@@ -12,8 +12,18 @@ import { getThemeContract } from '../../themes';
 import { useWorkspaceStore } from '../../workspace/store';
 import type { WorkspaceIndex } from '../../workspace/services';
 import { getCommandMenuItems, type CommandContext } from '../../commands';
-import { t } from '../../i18n';
+import { t, type I18nKey } from '../../i18n';
 import { previewHtmlToRichClipboardInput, writeRichClipboard } from '../extensions/richCopy';
+import {
+  PreviewChartCopyError,
+  copyPreviewChartAsImage,
+  copyPreviewChartAsSource,
+  findPreviewChartTarget,
+  type PreviewChartTarget,
+} from './previewChartCopy';
+import { buildPreviewClipboardHtml, stripPreviewInternalAttributes } from './previewClipboardHtml';
+import { isTauriClipboardRuntime, writeClipboardTextNative } from '../../../platform/tauri/clipboardRich';
+import type { PreviewChartCopyDefault } from '../../settings/types';
 import { emitAppEvent, onAppEvent } from '../../../platform/events/appEvents';
 import { hasPresentationSlides } from '../extensions/presentation';
 import { PresentationOverlay } from './PresentationOverlay';
@@ -130,10 +140,19 @@ export const __splitViewFontZoomTesting = {
   isInteractiveFontZoomTarget,
   normalizeWheelDeltaY,
   shouldUseFontZoomModifier,
+  stripPreviewInternalAttributes,
 };
 
 async function copyText(text: string) {
   if (!text) return;
+  if (isTauriClipboardRuntime()) {
+    try {
+      await writeClipboardTextNative(text);
+      return;
+    } catch {
+      // 原生剪贴板写入失败时退回 Web API。
+    }
+  }
   await navigator.clipboard.writeText(text);
 }
 
@@ -489,7 +508,9 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       y: number;
       hasSelection: boolean;
       line: number | null;
+      chart: PreviewChartTarget | null;
     } | null>(null);
+    const previewHoverChartRef = useRef<PreviewChartTarget | null>(null);
     const [presentationVisible, setPresentationVisible] = useState(false);
     const searchParamsRef = useRef(searchParams);
     const searchCurrentMatchRef = useRef(searchCurrentMatch);
@@ -753,7 +774,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       return normalizeSelectionSeed(getPreviewRawSelectedText());
     }, [getPreviewRawSelectedText]);
 
-    const getPreviewContextMenuItems = useCallback((hasSelection: boolean, line: number | null): ContextMenuItem[] => {
+    const getPreviewContextMenuItems = useCallback((hasSelection: boolean, line: number | null, chart: PreviewChartTarget | null): ContextMenuItem[] => {
       const exportItems = getCommandMenuItems(
         ['exportWithPrevious', 'exportOverwritePrevious', 'exportPdf', 'exportDocx', 'exportHtml', 'exportPng'],
         createReadonlyCommandContext(),
@@ -763,7 +784,16 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         createReadonlyCommandContext(),
       ) as ContextMenuItem[];
 
+      const chartItems: ContextMenuItem[] = chart
+        ? [
+            { label: t('preview.chart.copyAsImage'), action: 'copyChartImage' },
+            { label: t('preview.chart.copyAsSource'), action: 'copyChartSource', disabled: !chart.source },
+            { type: 'separator' },
+          ]
+        : [];
+
       return [
+        ...chartItems,
         { label: t('command.copy'), action: 'copy', shortcut: '⌘C', disabled: !hasSelection },
         { label: t('command.selectAll'), action: 'selectAll', shortcut: '⌘A' },
         { type: 'separator' },
@@ -805,14 +835,66 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
 
       const target = event.target instanceof Element ? event.target : null;
       const sourceLine = findSourceLineElement(target, previewContainerRef.current);
+      const chart = findPreviewChartTarget(target);
 
       setPreviewContextMenu({
         x: event.clientX,
         y: event.clientY,
         hasSelection: Boolean(normalizeSelectionSeed(getPreviewRawSelectedText())),
         line: sourceLine?.line ?? null,
+        chart,
       });
     }, [getPreviewRawSelectedText]);
+
+    const handlePreviewMouseOver = useCallback((event: React.MouseEvent) => {
+      previewHoverChartRef.current = findPreviewChartTarget(
+        event.target instanceof Element ? event.target : null,
+      );
+    }, []);
+
+    const handlePreviewMouseOut = useCallback((event: React.MouseEvent) => {
+      const chart = previewHoverChartRef.current;
+      if (!chart) return;
+      const related = event.relatedTarget instanceof Element ? event.relatedTarget : null;
+      if (!related || !chart.element.contains(related)) {
+        previewHoverChartRef.current = null;
+      }
+    }, []);
+
+    const runPreviewChartCopy = useCallback(async (target: PreviewChartTarget, mode: PreviewChartCopyDefault) => {
+      // 预览重渲染后悬停 ref 可能仍指向已脱离 DOM 的旧节点，避免对其截图/复制。
+      if (!target.element.isConnected) {
+        previewHoverChartRef.current = null;
+        return;
+      }
+      const showChartToast = (tone: 'success' | 'error', key: I18nKey) => {
+        emitAppEvent('toast.show', { tone, title: t(key) });
+      };
+      try {
+        if (mode === 'source') {
+          await copyPreviewChartAsSource(target);
+          showChartToast('success', 'preview.chart.sourceCopied');
+          return;
+        }
+        await copyPreviewChartAsImage(target);
+        showChartToast('success', 'preview.chart.imageCopied');
+      } catch (error) {
+        // 图片复制失败时降级为源码文字，保证悬停快捷键始终有产出。
+        if (mode === 'image' && target.source) {
+          try {
+            await copyPreviewChartAsSource(target);
+            showChartToast('error', 'preview.chart.copyFailed');
+            return;
+          } catch {
+            // 落入统一失败提示。
+          }
+        }
+        const key = error instanceof PreviewChartCopyError && error.code === 'no-source'
+          ? 'preview.chart.sourceUnavailable'
+          : 'preview.chart.copyFailed';
+        showChartToast('error', key);
+      }
+    }, []);
 
     const handlePreviewClick = useCallback((event: React.MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return;
@@ -871,6 +953,12 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
       const selectedText = getPreviewRawSelectedText();
 
       switch (action) {
+        case 'copyChartImage':
+          if (previewContextMenu?.chart) void runPreviewChartCopy(previewContextMenu.chart, 'image');
+          break;
+        case 'copyChartSource':
+          if (previewContextMenu?.chart) void runPreviewChartCopy(previewContextMenu.chart, 'source');
+          break;
         case 'copy':
           await copyText(selectedText);
           break;
@@ -891,12 +979,14 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           break;
         case 'copyHtml': {
           const serializedPreviewHtml = getSerializedSelectionHtml(preview) || preview?.innerHTML || '';
-          const html = serializedPreviewHtml || (await import('../../../lib/markdownToHtml'))
-            .markdownToHtml(contentRef.current);
+          const html = await buildPreviewClipboardHtml(serializedPreviewHtml)
+            || stripPreviewInternalAttributes(
+              (await import('../../../lib/markdownToHtml')).markdownToHtml(contentRef.current),
+            );
           await writeRichClipboard(previewHtmlToRichClipboardInput(
             html,
             selectedText || preview?.innerText || contentRef.current,
-          ), { fallback: 'html' });
+          ));
           break;
         }
         case 'locateSource': {
@@ -915,7 +1005,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           dispatchCommand(action);
           break;
       }
-    }, [getPreviewRawSelectedText, jumpToSourceLine, previewContextMenu?.line]);
+    }, [getPreviewRawSelectedText, jumpToSourceLine, previewContextMenu?.chart, previewContextMenu?.line, runPreviewChartCopy]);
 
     const getSearchSeed = useCallback(() => {
       if (viewModeRef.current !== 'preview') {
@@ -1108,6 +1198,15 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
             void copyText(selectedText);
             return;
           }
+          const hoverChart = previewHoverChartRef.current;
+          if (hoverChart && !hoverChart.element.isConnected) {
+            previewHoverChartRef.current = null;
+          } else if (hoverChart && !isInteractiveFontZoomTarget(e.target)) {
+            e.preventDefault();
+            e.stopPropagation();
+            void runPreviewChartCopy(hoverChart, useSettingsStore.getState().previewChartCopyDefault);
+            return;
+          }
         }
         if ((e.ctrlKey || e.metaKey) && key === 'f' && !e.shiftKey) {
           e.preventDefault();
@@ -1132,7 +1231,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
         window.removeEventListener('keydown', handleGlobalKeyDown, true);
         unsubscribeSearch();
       };
-    }, [activateSearch, closeSearch, getPreviewRawSelectedText]);
+    }, [activateSearch, closeSearch, getPreviewRawSelectedText, runPreviewChartCopy]);
 
     useEffect(() => {
       return onAppEvent('presentation.open', () => {
@@ -1329,6 +1428,8 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
               onScroll={handlePreviewScroll}
               onClick={handlePreviewClick}
               onContextMenu={handlePreviewContextMenu}
+              onMouseOver={handlePreviewMouseOver}
+              onMouseOut={handlePreviewMouseOut}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -1370,7 +1471,7 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
           <ContextMenu
             x={previewContextMenu.x}
             y={previewContextMenu.y}
-            items={getPreviewContextMenuItems(previewContextMenu.hasSelection, previewContextMenu.line)}
+            items={getPreviewContextMenuItems(previewContextMenu.hasSelection, previewContextMenu.line, previewContextMenu.chart)}
             onAction={handlePreviewContextMenuAction}
             onClose={() => setPreviewContextMenu(null)}
           />

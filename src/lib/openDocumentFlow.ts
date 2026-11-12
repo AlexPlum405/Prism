@@ -1,3 +1,4 @@
+import type { ShowToast } from './toast';
 import { askDialog } from '../platform/tauri/dialogs';
 import { stat } from '../platform/tauri/fileSystem';
 import { loadFolderTree } from '../domains/workspace/lib/loadFolderTree';
@@ -51,7 +52,7 @@ export interface OpenDocumentFlowContext {
     sizeMB: string;
   }) => Promise<boolean>;
   requestSavePath?: (input: { filename: string; documentPath?: string }) => Promise<string | null>;
-  showToast?: (message: string) => void;
+  showToast?: ShowToast;
   workspaceStore: ReturnType<typeof useWorkspaceStore.getState>;
 }
 

@@ -1118,3 +1118,42 @@ describe('SplitView preview scroll mapping', () => {
     expect(durationMs).toBeLessThan(500);
   });
 });
+
+describe('stripPreviewInternalAttributes', () => {
+  const { stripPreviewInternalAttributes } = __splitViewFontZoomTesting;
+
+  it('removes Prism internal data attributes while keeping content attributes', () => {
+    const html = '<h1 data-source-line="1" data-line="1" id="标题">标题</h1>'
+      + '<p data-katex="x%5E2" data-katex-display="false">行内公式</p>'
+      + '<div class="mermaid-placeholder" data-mermaid="graph%20TD"><svg viewBox="0 0 10 10"></svg></div>'
+      + '<li data-task-checkbox-index="0"><input type="checkbox" checked></li>'
+      + '<blockquote class="prism-callout" data-callout-kind="note" data-callout-label="Note">提示</blockquote>'
+      + '<img src="blob:prism" data-prism-original-src="a.png" data-prism-media-error="">';
+
+    const cleaned = stripPreviewInternalAttributes(html);
+
+    expect(cleaned).toContain('<h1 id="标题">标题</h1>');
+    expect(cleaned).toContain('<p>行内公式</p>');
+    expect(cleaned).toContain('<div class="mermaid-placeholder"><svg viewBox="0 0 10 10"></svg></div>');
+    expect(cleaned).toContain('<li><input type="checkbox" checked=""></li>');
+    expect(cleaned).toContain('<blockquote class="prism-callout">提示</blockquote>');
+    expect(cleaned).toContain('<img src="blob:prism">');
+    expect(cleaned).not.toContain('data-source-line');
+    expect(cleaned).not.toContain('data-katex');
+    expect(cleaned).not.toContain('data-mermaid');
+    expect(cleaned).not.toContain('data-task-checkbox-index');
+    expect(cleaned).not.toContain('data-callout');
+    expect(cleaned).not.toContain('data-prism-');
+  });
+
+  it('returns empty and whitespace input unchanged', () => {
+    expect(stripPreviewInternalAttributes('')).toBe('');
+    expect(stripPreviewInternalAttributes('   ')).toBe('   ');
+  });
+
+  it('keeps non-internal data attributes and class names intact', () => {
+    const cleaned = stripPreviewInternalAttributes('<span class="katex" data-custom="keep">x</span>');
+    expect(cleaned).toContain('class="katex"');
+    expect(cleaned).toContain('data-custom="keep"');
+  });
+});

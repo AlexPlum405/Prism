@@ -1120,3 +1120,41 @@ describe('PreviewPane theme switching', () => {
     });
   });
 });
+
+describe('mermaid svg cache LRU', () => {
+  const hooks = __previewPaneTesting.mermaidSvgCache;
+
+  beforeEach(() => {
+    hooks.cache.clear();
+  });
+
+  afterEach(() => {
+    hooks.cache.clear();
+  });
+
+  it('evicts the oldest entries beyond the cache limit', () => {
+    for (let index = 0; index <= 40; index += 1) {
+      hooks.remember(`key-${index}`, `<svg data-index="${index}"></svg>`);
+    }
+
+    expect(hooks.cache.size).toBe(40);
+    expect(hooks.cache.has('key-0')).toBe(false);
+    expect(hooks.cache.has('key-1')).toBe(true);
+    expect(hooks.cache.get('key-40')).toBe('<svg data-index="40"></svg>');
+  });
+
+  it('renews the insertion order when a cached entry is touched', () => {
+    for (let index = 0; index < 40; index += 1) {
+      hooks.remember(`key-${index}`, `<svg data-index="${index}"></svg>`);
+    }
+
+    // 触达最早的 key-0，随后新增 key-40 时应淘汰紧随其后的 key-1。
+    hooks.touch('key-0', hooks.cache.get('key-0') ?? '');
+
+    hooks.remember('key-40', '<svg data-index="40"></svg>');
+
+    expect(hooks.cache.has('key-0')).toBe(true);
+    expect(hooks.cache.has('key-1')).toBe(false);
+    expect(hooks.cache.has('key-40')).toBe(true);
+  });
+});

@@ -1,12 +1,32 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDocumentStore } from '../domains/document/store';
+import { useWorkspaceStore } from '../domains/workspace/store';
 import {
   LARGE_DOCUMENT_WARNING_BYTES,
   isSupportedOpenDocumentPath,
+  openSelectedDocument,
   resolveOpenDocumentPolicy,
   shouldWarnBeforeOpeningLargeDocument,
 } from './openDocumentFlow';
 
+const openPrismWindowMock = vi.hoisted(() => vi.fn(async () => undefined));
+const grantMarkdownFileScopeMock = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock('./openWindow', () => ({
+  openPrismWindow: openPrismWindowMock,
+}));
+
+vi.mock('./fileSystemScope', () => ({
+  grantMarkdownFileScope: grantMarkdownFileScopeMock,
+}));
+
 describe('openDocumentFlow policy', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useDocumentStore.setState({ currentDocument: null });
+    useWorkspaceStore.setState({ fileTree: [], rootPath: null });
+  });
+
   it('keeps the current document in the current window without dirty guard', () => {
     expect(resolveOpenDocumentPolicy({
       currentDocumentPath: '/repo/current.md',
@@ -76,5 +96,28 @@ describe('openDocumentFlow policy', () => {
   it('warns only above the large document threshold', () => {
     expect(shouldWarnBeforeOpeningLargeDocument(LARGE_DOCUMENT_WARNING_BYTES)).toBe(false);
     expect(shouldWarnBeforeOpeningLargeDocument(LARGE_DOCUMENT_WARNING_BYTES + 1)).toBe(true);
+  });
+
+  it('opens system document requests in a new window when another document is active', async () => {
+    useDocumentStore.getState().openDocument('/repo/current.md', 'current.md', '# Current');
+
+    await expect(openSelectedDocument(
+      '/repo/from-finder.md',
+      {
+        documentStore: useDocumentStore.getState(),
+        workspaceStore: useWorkspaceStore.getState(),
+      },
+      {
+        confirmLargeDocument: false,
+        entryPoint: 'system',
+      },
+    )).resolves.toEqual({
+      reason: 'system',
+      status: 'opened-new-window',
+    });
+
+    expect(grantMarkdownFileScopeMock).toHaveBeenCalledWith('/repo/from-finder.md');
+    expect(openPrismWindowMock).toHaveBeenCalledWith({ filePath: '/repo/from-finder.md' });
+    expect(useDocumentStore.getState().currentDocument?.path).toBe('/repo/current.md');
   });
 });

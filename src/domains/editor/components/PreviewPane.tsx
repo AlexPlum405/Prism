@@ -43,6 +43,25 @@ const PREVIEW_MERMAID_BATCH_THRESHOLD = 10;
 const PREVIEW_MERMAID_BATCH_SIZE = 3;
 const PREVIEW_MEDIA_CACHE_LIMIT = 96;
 const mermaidSvgCache = new Map<string, string>();
+
+// key = 主题+图源码。分栏编辑 mermaid 源码时每敲一键都会产生新 key，
+// 无上限会让长会话内存只涨不降，这里按 LRU 淘汰旧的渲染结果。
+const MERMAID_SVG_CACHE_LIMIT = 40;
+
+function rememberMermaidSvg(cacheKey: string, svg: string) {
+  mermaidSvgCache.set(cacheKey, svg);
+  while (mermaidSvgCache.size > MERMAID_SVG_CACHE_LIMIT) {
+    const oldestKey = mermaidSvgCache.keys().next().value as string | undefined;
+    if (oldestKey === undefined) break;
+    mermaidSvgCache.delete(oldestKey);
+  }
+}
+
+function touchMermaidSvgCache(cacheKey: string, svg: string) {
+  // 命中即续期：移到 Map 尾部，保证 LRU 淘汰次序正确。
+  mermaidSvgCache.delete(cacheKey);
+  mermaidSvgCache.set(cacheKey, svg);
+}
 const mermaidFontReadyCache = new Map<string, Promise<void>>();
 let lastMermaidConfigSignature: string | null = null;
 
@@ -886,6 +905,17 @@ function withPreviewKatexDisplaySourceLine(html: string, sourceLine: string) {
   );
 }
 
+function withPreviewKatexSourceAttribute(html: string, value: string) {
+  const attribute = ` data-katex="${escapeHtml(encodeURIComponent(value))}"`;
+  if (html.startsWith('<span class="katex-display"')) {
+    return html.replace('<span class="katex-display"', `<span class="katex-display"${attribute}`);
+  }
+  if (html.startsWith('<span class="katex"')) {
+    return html.replace('<span class="katex"', `<span class="katex"${attribute}`);
+  }
+  return html;
+}
+
 function renderPreviewKatexHtml(
   katex: typeof import('katex'),
   value: string,
@@ -909,6 +939,10 @@ function renderPreviewKatexHtml(
     } catch {
       html = `<span class="katex-error" style="color:#cc0000" title="${escapeHtml(formatRenderError(error))}">${escapeHtml(value)}</span>`;
     }
+  }
+
+  if (!html.includes('katex-error')) {
+    html = withPreviewKatexSourceAttribute(html, value);
   }
 
   return displayMode ? withPreviewKatexDisplaySourceLine(html, sourceLine) : html;
@@ -935,6 +969,11 @@ export const __previewPaneTesting = {
     mermaidFontReadyCache.clear();
     mermaidModulePromise = null;
     lastMermaidConfigSignature = null;
+  },
+  mermaidSvgCache: {
+    cache: mermaidSvgCache,
+    remember: (key: string, svg: string) => rememberMermaidSvg(key, svg),
+    touch: (key: string, svg: string) => touchMermaidSvgCache(key, svg),
   },
   clearMarkmapCache: () => {
     markmapTransformerPromise = null;
@@ -1464,6 +1503,7 @@ export function PreviewPane({
               const cachedSvg = mermaidSvgCache.get(cacheKey);
               if (cachedSvg) {
                 cachedCount += 1;
+                touchMermaidSvgCache(cacheKey, cachedSvg);
                 renderMermaidSvg(el, cachedSvg, contentTheme);
                 continue;
               }
@@ -1475,7 +1515,7 @@ export function PreviewPane({
               try {
                 const { svg } = await mermaid.render(id, code, renderSandbox);
                 if (cancelled) return;
-                mermaidSvgCache.set(cacheKey, svg);
+                rememberMermaidSvg(cacheKey, svg);
                 renderedCount += 1;
                 renderMermaidSvg(el, svg, contentTheme);
               } catch (err) {

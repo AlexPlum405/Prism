@@ -241,4 +241,20 @@ describe('PlantUML rendering helpers', () => {
     expect(source).toContain('skinparam defaultTextColor #EDEDED');
     expect(source).toContain('skinparam arrowColor #A3E635');
   });
+
+  it('caps the svg cache with LRU eviction', () => {
+    const { cache, seedPlantUmlSvgCache } = __plantUmlTesting;
+    cache.clear();
+    try {
+      for (let index = 0; index <= 40; index += 1) {
+        seedPlantUmlSvgCache(`key-${index}`, Promise.resolve(`<svg data-index="${index}"></svg>`));
+      }
+
+      expect(cache.size).toBe(40);
+      expect(cache.has('key-0')).toBe(false);
+      expect(cache.has('key-1')).toBe(true);
+    } finally {
+      cache.clear();
+    }
+  });
 });

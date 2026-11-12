@@ -611,6 +611,17 @@ function withDisplayMathLineAttributes(html: string, line: number | undefined) {
   );
 }
 
+function withKatexSourceAttribute(html: string, value: string) {
+  const attribute = ` data-katex="${escapeGeneratedHtml(encodeURIComponent(value))}"`;
+  if (html.startsWith('<span class="katex-display"')) {
+    return html.replace('<span class="katex-display"', `<span class="katex-display"${attribute}`);
+  }
+  if (html.startsWith('<span class="katex"')) {
+    return html.replace('<span class="katex"', `<span class="katex"${attribute}`);
+  }
+  return html;
+}
+
 function renderKatexHtml(value: string, displayMode: boolean, line: number | undefined) {
   let html: string;
 
@@ -629,6 +640,10 @@ function renderKatexHtml(value: string, displayMode: boolean, line: number | und
     } catch {
       html = `<span class="katex-error" style="color:#cc0000" title="${escapeGeneratedHtml(String(error))}">${escapeGeneratedHtml(value)}</span>`;
     }
+  }
+
+  if (!html.includes('katex-error')) {
+    html = withKatexSourceAttribute(html, value);
   }
 
   return displayMode ? withDisplayMathLineAttributes(html, line) : html;
