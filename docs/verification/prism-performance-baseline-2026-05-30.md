@@ -1,7 +1,7 @@
 # 性能基线实测（竞品差距补齐 Phase 4）
 
 > 日期：2026-05-30
-> 关联 goal：`docs/prism-competitor-gap-fix-goal.md`
+> 关联 goal：`docs/archive/dirty-data-2026-05-30/prism-competitor-gap-fix-goal.md`
 > 关联报告：`docs/prism-vs-competitors-benchmark-2026-05-30.md` 第 3.1 节
 > 采集环境：Apple M1 Max / 32 GB / macOS 26.5（25F71）/ Node v25.9.0；Prism release v1.4.1 aarch64
 

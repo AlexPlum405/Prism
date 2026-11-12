@@ -1,7 +1,7 @@
 # 导出保真验收记录（竞品差距补齐 Phase 3）
 
 > 日期：2026-05-30
-> 关联 goal：`docs/prism-competitor-gap-fix-goal.md`
+> 关联 goal：`docs/archive/dirty-data-2026-05-30/prism-competitor-gap-fix-goal.md`
 > 关联报告：`docs/prism-vs-competitors-benchmark-2026-05-30.md`（短板③ 导出保真未被验证）
 
 ## 结论
