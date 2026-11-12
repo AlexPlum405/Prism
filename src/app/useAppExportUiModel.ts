@@ -1,4 +1,4 @@
-import { exists as fsExists } from '@tauri-apps/plugin-fs';
+import { exists as fsExists } from '../platform/tauri/fileSystem';
 import { useAppToast } from '../hooks/useAppToast';
 import { useExportTaskUi } from '../hooks/useExportTaskUi';
 import { useSaveExportDialogModel } from './useSaveExportDialogModel';
@@ -12,7 +12,7 @@ export function useAppExportUiModel({
   exportDefaults,
   rootPath,
 }: SaveExportDialogInput) {
-  const { toast, showToast, dismissToast } = useAppToast();
+  const { toast, leaving, showToast, dismissToast } = useAppToast();
   const exportTaskUi = useExportTaskUi(showToast);
   const saveExportDialog = useSaveExportDialogModel({
     existsPath: fsExists,
@@ -23,6 +23,7 @@ export function useAppExportUiModel({
 
   return {
     toast,
+    toastLeaving: leaving,
     showToast,
     dismissToast,
     ...exportTaskUi,

@@ -1273,64 +1273,88 @@ html[data-content-theme='miaoyan'] .prism-relation-graph-list span {
 
 .prism-toast-region {
   position: fixed;
-  right: 18px;
-  bottom: 54px;
+  right: 20px;
+  /* 28px 状态栏 + 12px 呼吸，避免压在状态栏上 */
+  bottom: 40px;
   z-index: 5000;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  width: min(460px, calc(100vw - 36px));
+  max-width: min(372px, calc(100vw - 40px));
   pointer-events: none;
 }
 
 /* Toast card */
 .prism-toast {
   position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 44px;
-  padding: 9px 10px 9px 12px;
-  border: 1px solid color-mix(in srgb, var(--c-void) 10%, var(--c-fog));
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--c-canvas) 94%, transparent);
+  /* 用 flex 而非 grid：操作按钮是可选子元素，固定列数会让带按钮的卡片换行 */
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 208px;
+  padding: 11px 9px 12px 12px;
+  border: 1px solid var(--c-hair);
+  border-radius: var(--r-toast);
+  background: color-mix(in srgb, var(--c-canvas) 93%, transparent);
   color: var(--c-void);
-  box-shadow: rgba(0, 0, 0, 0.10) 0 18px 46px, rgba(0, 0, 0, 0.06) 0 5px 14px, rgba(0, 0, 0, 0.05) 0 0 0 1px;
-  backdrop-filter: blur(22px) saturate(1.08);
+  box-shadow: var(--shadow-toast);
+  backdrop-filter: blur(20px) saturate(1.5);
   font-size: 13px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.45;
   pointer-events: auto;
-  animation: prism-toast-in var(--duration-toast) var(--ease-out);
+  /* 提示层带 backdrop-filter，提升为独立合成层后透明度动画只重合成、不重绘模糊 */
+  will-change: opacity, transform;
+  /*
+   * backwards：动画开始前就锁在 opacity 0 / translateY(22px)。
+   * 不加时元素会先以最终状态画一帧再起动画，看上去就是「直接出现」。
+   * 用 backwards 而非 both：播完回到基础样式，不长期留一个 identity transform。
+   */
+  animation: prism-toast-in var(--duration-toast-in) var(--ease-out) backwards;
   overflow: hidden;
 }
 
+/* 内高光：给薄纸片一点厚度，替代第二层阴影 */
 .prism-toast::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
 }
 
 body.dark .prism-toast::after {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* 语义色只落在图标与时长线，卡片骨架四态一致 */
+.prism-toast {
+  --tone-ink: var(--c-graphite);
+  --tone-tint: rgba(0, 0, 0, 0.06);
+}
+
+body.dark .prism-toast {
+  --tone-ink: var(--c-graphite);
+  --tone-tint: rgba(255, 255, 255, 0.09);
 }
 
 .prism-toast--success {
-  border-color: color-mix(in srgb, #1c7c54 26%, var(--c-fog));
+  --tone-ink: var(--c-success);
+  --tone-tint: var(--c-success-tint);
 }
 
 .prism-toast--warning {
-  border-color: color-mix(in srgb, #c98212 34%, var(--c-fog));
+  --tone-ink: var(--c-warning);
+  --tone-tint: var(--c-warning-tint);
 }
 
 .prism-toast--error {
-  border-color: color-mix(in srgb, #d23d30 32%, var(--c-fog));
+  --tone-ink: var(--c-danger);
+  --tone-tint: var(--c-danger-tint);
 }
 
 .prism-toast-icon {
@@ -1339,75 +1363,57 @@ body.dark .prism-toast::after {
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: var(--c-void);
-  color: var(--c-canvas);
+  margin-top: 1px;
+  border-radius: 6px;
+  background: var(--tone-tint);
+  color: var(--tone-ink);
   flex: 0 0 auto;
 }
 
-.prism-toast--neutral .prism-toast-icon::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.prism-toast-icon svg {
+  width: 11px;
+  height: 11px;
+  display: block;
 }
 
-.prism-toast--success .prism-toast-icon {
-  background: #1c7c54;
+.prism-toast-icon svg * {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.prism-toast--success .prism-toast-icon::before {
-  content: '';
-  width: 5px;
-  height: 9px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: translateY(-1px) rotate(42deg);
-}
-
-.prism-toast--warning .prism-toast-icon {
-  background: #c98212;
-}
-
-.prism-toast--warning .prism-toast-icon::before,
-.prism-toast--error .prism-toast-icon::before {
-  content: '!';
-  color: currentColor;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.prism-toast--error .prism-toast-icon {
-  background: #d23d30;
+.prism-toast-icon svg .prism-toast-icon-dot {
+  fill: currentColor;
+  stroke: none;
 }
 
 .prism-toast-copy {
   display: flex;
+  flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
-  gap: 1px;
-}
-
-.prism-toast-title,
-.prism-toast-message {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 0;
+  padding-top: 0.5px;
 }
 
 .prism-toast-title {
   color: var(--c-void);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.012em;
 }
 
 .prism-toast-message {
+  display: block;
+  margin-top: 3px;
   color: var(--c-graphite);
   font-size: 12px;
   font-weight: 400;
+  letter-spacing: 0.008em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .prism-toast-message--secondary {
@@ -1420,56 +1426,136 @@ body.dark .prism-toast::after {
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
+  align-self: center;
 }
 
 .prism-toast-action,
 .prism-toast-dismiss {
   position: relative;
   z-index: 1;
-  border: 1px solid var(--c-fog);
-  background: var(--c-canvas);
+  border: 0;
+  background: transparent;
   color: var(--c-void);
   cursor: pointer;
   transition:
     background var(--duration-hover) var(--ease-out),
-    border-color var(--duration-hover) var(--ease-out),
-    color var(--duration-hover) var(--ease-out);
+    color var(--duration-hover) var(--ease-out),
+    opacity var(--duration-hover) var(--ease-out);
 }
 
 .prism-toast-action {
-  height: 26px;
+  height: 22px;
   border-radius: var(--r-pill);
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 0 9px;
+  font-size: 11.5px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .prism-toast-action:hover,
 .prism-toast-dismiss:hover {
-  background: var(--c-chalk);
+  background: var(--tone-tint);
 }
 
 .prism-toast-action:focus-visible,
 .prism-toast-dismiss:focus-visible {
   outline: 2px solid var(--c-void);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
+/* 幽灵关闭：默认隐形，hover / 聚焦时才出现 */
 .prism-toast-dismiss {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  font-size: 16px;
+  width: 19px;
+  height: 19px;
+  margin-left: 2px;
+  border-radius: 5px;
+  color: var(--c-ash);
+  font-size: 13px;
   font-weight: 400;
   line-height: 1;
+  opacity: 0;
 }
+
+.prism-toast:hover .prism-toast-dismiss,
+.prism-toast:focus-within .prism-toast-dismiss {
+  opacity: 1;
+}
+
+.prism-toast-dismiss:hover {
+  color: var(--c-void);
+}
+
+/* 时长线：只在 durationMs ≥ TOAST_TIMER_MIN_MS 时渲染 */
+.prism-toast-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  pointer-events: none;
+}
+
+.prism-toast-timer i {
+  display: block;
+  height: 100%;
+  background: var(--tone-ink);
+  opacity: 0.42;
+  transform-origin: left center;
+  animation: prism-toast-timer linear forwards;
+}
+
 @keyframes prism-toast-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  from { opacity: 0; transform: translateY(22px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes prism-toast-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(12px) scale(0.97); }
+}
+
+@keyframes prism-toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* 退场：由 useAppToast 延迟卸载，见 TOAST_EXIT_MS */
+.prism-toast.is-leaving {
+  animation: prism-toast-out var(--duration-toast-out) ease-in forwards;
+  pointer-events: none;
+}
+
+/*
+ * 减弱动态时只保留透明度过渡：淡入淡出不引发前庭不适，
+ * 需要压制的是位移与缩放；整体 animation: none 会让提示变成闪断，反而是更差的一档。
+ */
+@keyframes prism-toast-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes prism-toast-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism-toast {
+    animation: prism-toast-fade-in 200ms var(--ease-out);
+  }
+
+  .prism-toast.is-leaving {
+    animation: prism-toast-fade-out 140ms ease-in forwards;
+  }
+
+  /* 没有动画的进度条会误导，直接隐藏 */
+  .prism-toast-timer {
+    display: none;
+  }
 }
 
 .prism-export-progress {
@@ -1524,18 +1610,19 @@ body.dark .prism-toast::after {
   .prism-toast-region {
     left: 12px;
     right: 12px;
-    bottom: 52px;
-    width: auto;
+    bottom: 40px;
+    max-width: none;
   }
 
+  /* 窄屏：卡片占满宽度，操作按钮折行并与文案左缘对齐（18px 图标 + 9px 间距） */
   .prism-toast {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   .prism-toast-actions {
-    grid-column: 2 / -1;
-    justify-self: start;
     flex-wrap: wrap;
+    margin-left: 27px;
   }
 }
 
@@ -1809,8 +1896,8 @@ body.dark .custom-context-menu .menu-item.danger { color: #ff6b5e; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* .prism-toast 不在此列：它要保留上面那条纯透明度过渡，不能被 animation-duration: 1ms 压掉 */
   .prism-diagnostics-popover,
-  .prism-toast,
   .prism-toast-action,
   .prism-toast-dismiss,
   .custom-context-menu,

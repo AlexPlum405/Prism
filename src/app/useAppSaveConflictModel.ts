@@ -1,3 +1,4 @@
+import type { ShowToast } from '../lib/toast';
 import { useCallback, useEffect, useState } from 'react';
 import type { SaveConflictAction } from '../domains/document/components/SaveConflictModal';
 import {
@@ -13,7 +14,7 @@ import { t } from '../domains/i18n';
 interface UseAppSaveConflictModelInput {
   currentDocument: OpenDocument | null;
   requestMarkdownSavePath: (input: { filename: string; documentPath?: string }) => Promise<string | null>;
-  showToast: (message: string) => void;
+  showToast: ShowToast;
 }
 
 function formatAppError(error: unknown): string {
@@ -38,21 +39,21 @@ export function useAppSaveConflictModel({
       const issueKind = useDocumentStore.getState().currentDocument?.saveIssue ?? null;
       if (action === 'reload') {
         result = await reloadConflictedDocument();
-        if (result.resolved) showToast(t('app.reloadedDiskVersion'));
+        if (result.resolved) showToast(t('app.reloadedDiskVersion'), 'success');
       } else if (action === 'saveAs') {
         result = await saveConflictedDocumentAs(requestMarkdownSavePath);
-        if (result.resolved) showToast(t('app.savedCurrentVersionAs'));
+        if (result.resolved) showToast(t('app.savedCurrentVersionAs'), 'success');
       } else if (action === 'discard') {
         result = await discardConflictedDocument();
-        if (result.resolved) showToast(t('app.discardedMissingFileCopy'));
+        if (result.resolved) showToast(t('app.discardedMissingFileCopy'), 'success');
       } else {
         result = await overwriteConflictedDocument();
         if (result.resolved) {
-          showToast(issueKind === 'missing' ? t('app.recreatedMissingFile') : t('app.overwroteDiskVersion'));
+          showToast(issueKind === 'missing' ? t('app.recreatedMissingFile') : t('app.overwroteDiskVersion'), 'success');
         }
       }
     } catch (error) {
-      showToast(t('app.conflictActionFailed', { message: formatAppError(error) }));
+      showToast(t('app.conflictActionFailed', { message: formatAppError(error) }), 'error');
     } finally {
       setConflictAction(null);
     }

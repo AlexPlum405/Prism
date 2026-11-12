@@ -32,6 +32,7 @@ interface ExportUiControllerProps {
   saveDialogOverwriteFilename: string | null;
   sendExportProgressToBackground: () => void;
   toast: ToastState | null;
+  toastLeaving: boolean;
   updateSaveDialogFilename: (filename: string) => void;
   updateSaveDialogQualityScale: (qualityScale: number) => void;
 }
@@ -53,6 +54,7 @@ export function ExportUiController({
   saveDialogOverwriteFilename,
   sendExportProgressToBackground,
   toast,
+  toastLeaving,
   updateSaveDialogFilename,
   updateSaveDialogQualityScale,
 }: ExportUiControllerProps) {
@@ -175,7 +177,7 @@ export function ExportUiController({
 
       {(toast || (exportProgress && !exportProgressInBackground)) && (
         <div className="prism-toast-region">
-          {toast && <Toast toast={toast} onDismiss={dismissToast} />}
+          {toast && <Toast toast={toast} onDismiss={dismissToast} leaving={toastLeaving} />}
 
           {exportProgress && !exportProgressInBackground && (
             <div role="status" aria-live="polite" className="prism-toast prism-toast--loading prism-export-progress">

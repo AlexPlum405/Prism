@@ -1,13 +1,15 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { exists as fsExists } from '@tauri-apps/plugin-fs';
+import { exists as fsExists } from '../platform/tauri/fileSystem';
 import { DEFAULT_SETTINGS } from '../domains/settings/types';
 import { useAppToast } from '../hooks/useAppToast';
 import { useExportTaskUi } from '../hooks/useExportTaskUi';
 import { useAppExportUiModel } from './useAppExportUiModel';
 import { useSaveExportDialogModel } from './useSaveExportDialogModel';
 
-vi.mock('@tauri-apps/plugin-fs', () => ({
+// useAppExportUiModel 现在从平台包装层导入 exists，mock 该模块保持身份断言。
+vi.mock('../platform/tauri/fileSystem', async (importOriginal) => ({
+  ...(await importOriginal()),
   exists: vi.fn(),
 }));
 

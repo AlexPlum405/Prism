@@ -62,7 +62,7 @@ describe('useAppSaveConflictModel', () => {
     });
 
     expect(reloadConflictedDocument).toHaveBeenCalledTimes(1);
-    expect(showToast).toHaveBeenCalledWith('已重新加载磁盘版本');
+    expect(showToast).toHaveBeenCalledWith('已重新加载磁盘版本', 'success');
     expect(result.current.conflictAction).toBeNull();
   });
 
@@ -78,7 +78,7 @@ describe('useAppSaveConflictModel', () => {
     });
 
     expect(saveConflictedDocumentAs).toHaveBeenCalledWith(requestMarkdownSavePath);
-    expect(showToast).toHaveBeenCalledWith('已保留当前版本并另存为');
+    expect(showToast).toHaveBeenCalledWith('已保留当前版本并另存为', 'success');
   });
 
   it('uses the missing-file success message when overwriting a missing original file', async () => {
@@ -94,7 +94,7 @@ describe('useAppSaveConflictModel', () => {
     });
 
     expect(overwriteConflictedDocument).toHaveBeenCalledTimes(1);
-    expect(showToast).toHaveBeenCalledWith('已保存回原位置');
+    expect(showToast).toHaveBeenCalledWith('已保存回原位置', 'success');
   });
 
   it('discards the local copy for missing-file conflict actions', async () => {
@@ -110,7 +110,7 @@ describe('useAppSaveConflictModel', () => {
     });
 
     expect(discardConflictedDocument).toHaveBeenCalledTimes(1);
-    expect(showToast).toHaveBeenCalledWith('已关闭，未保存当前副本');
+    expect(showToast).toHaveBeenCalledWith('已关闭，未保存当前副本', 'success');
   });
 
   it('reports conflict resolution failures as toast messages', async () => {
@@ -125,6 +125,6 @@ describe('useAppSaveConflictModel', () => {
       await result.current.runConflictAction('reload');
     });
 
-    expect(showToast).toHaveBeenCalledWith('冲突处理失败: disk denied');
+    expect(showToast).toHaveBeenCalledWith('冲突处理失败: disk denied', 'error');
   });
 });

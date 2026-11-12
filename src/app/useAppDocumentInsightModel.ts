@@ -1,5 +1,5 @@
 import { useCallback, type RefObject } from 'react';
-import { exists as fsExists } from '@tauri-apps/plugin-fs';
+import { exists as fsExists } from '../platform/tauri/fileSystem';
 import type { EditorPaneHandle } from '../domains/editor/components/EditorPane';
 import { useDocumentDiagnosticsModel } from './useDocumentDiagnosticsModel';
 import { useDocumentNavigationModel } from './useDocumentNavigationModel';

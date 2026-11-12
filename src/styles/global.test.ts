@@ -385,7 +385,8 @@ describe('motion and microfeedback rules', () => {
   });
 
   it('routes primary feedback surfaces through shared motion tokens', () => {
-    expect(css).toContain('animation: prism-toast-in var(--duration-toast) var(--ease-out)');
+    expect(css).toContain('animation: prism-toast-in var(--duration-toast-in) var(--ease-out) backwards');
+    expect(css).toContain('animation: prism-toast-out var(--duration-toast-out) ease-in forwards');
     expect(css).toContain('animation: prism-line-flash var(--duration-attention) var(--ease-out)');
     expect(css).toContain('animation: prism-export-spin var(--duration-spinner) linear infinite');
     expect(css).toContain('background-color var(--duration-hover) var(--ease-out)');
@@ -393,9 +394,17 @@ describe('motion and microfeedback rules', () => {
   });
 
   it('respects reduced motion for floating layers, toast progress, source flash, and export spinners', () => {
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.prism-toast[\s\S]*transition-duration: 1ms/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.prism-toast-action[\s\S]*transition-duration: 1ms/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.preview-line-flash[\s\S]*animation: none/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.prism-export-spinner[\s\S]*animation: none/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.cmdk[\s\S]*animation: none/);
+  });
+
+  it('keeps a pure opacity fade for toasts under reduced motion instead of a hard cut', () => {
+    // 位移与缩放被移除，透明度过渡保留：提示不会瞬间切换
+    expect(css).toContain('animation: prism-toast-fade-in 200ms var(--ease-out)');
+    expect(css).toContain('animation: prism-toast-fade-out 140ms ease-in forwards');
+    expect(css).toMatch(/@keyframes prism-toast-fade-in \{\s*from \{ opacity: 0; \}\s*to \{ opacity: 1; \}/);
+    expect(css).toMatch(/@keyframes prism-toast-fade-out \{\s*from \{ opacity: 1; \}\s*to \{ opacity: 0; \}/);
   });
 });

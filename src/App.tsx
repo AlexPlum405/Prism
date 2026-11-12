@@ -127,6 +127,7 @@ function App() {
     showToast,
     showBackgroundExportProgress,
     toast,
+    toastLeaving,
     updateSaveDialogFilename,
     updateSaveDialogQualityScale,
   } = useAppExportUiModel({
@@ -370,6 +371,7 @@ function App() {
         saveDialogOverwriteFilename={saveDialogOverwriteFilename}
         sendExportProgressToBackground={sendExportProgressToBackground}
         toast={toast}
+        toastLeaving={toastLeaving}
         updateSaveDialogFilename={updateSaveDialogFilename}
         updateSaveDialogQualityScale={updateSaveDialogQualityScale}
       />
