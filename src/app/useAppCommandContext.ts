@@ -5,6 +5,7 @@ import {
   runCommand,
   type CommandContext,
 } from '../domains/commands';
+import { runEditCommandOnFocusedControl } from '../domains/commands/editCommandFocus';
 import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import type { RecentFileEntry, SettingsState, ShortcutStyle } from '../domains/settings/types';
@@ -218,6 +219,8 @@ export function useAppCommandContext({
     let unlisten: (() => void) | null = null;
 
     void listenForNativeCommands((action) => {
+      // 菜单加速键抢在 keydown 之前消费了按键，输入框里的原生行为得在这里补回
+      if (runEditCommandOnFocusedControl(action)) return;
       void handleCommandAction(action);
     }).then((nextUnlisten) => {
       if (disposed) {
