@@ -68,6 +68,15 @@ describe('IslandGutter', () => {
     expect(props.onReset).toHaveBeenCalledTimes(1);
   });
 
+  it('resets from the second pointerdown too (WKWebView 不给 dblclick)', () => {
+    const props = setup();
+    fireEvent.pointerDown(hit(), { button: 0, clientX: 800, pointerId: 1, detail: 1 });
+    fireEvent.pointerUp(hit(), { clientX: 800, pointerId: 1 });
+    fireEvent.pointerDown(hit(), { button: 0, clientX: 800, pointerId: 1, detail: 2 });
+    expect(props.onReset).toHaveBeenCalledTimes(1);
+    expect(props.onResizeStart).toHaveBeenCalledTimes(1);
+  });
+
   it('nudges by 8px with the arrow keys', () => {
     const props = setup();
     fireEvent.keyDown(hit(), { key: 'ArrowRight' });

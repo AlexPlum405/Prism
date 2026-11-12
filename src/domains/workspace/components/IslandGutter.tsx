@@ -58,7 +58,15 @@ export function IslandGutter({
 
   const handlePointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
-    event.preventDefault();
+    // 这里刻意不 preventDefault：WKWebView 会因此在 pointerdown 后吞掉
+    // 兼容鼠标事件，双击复位就永远收不到 dblclick。防选中的职责交给
+    // .island-gutter 的 user-select: none 与 body.island-resizing。
+    // 双击复位兜底：某些引擎只给 pointerdown 的 detail，不给 dblclick。
+    if (event.detail >= 2) {
+      startRef.current = null;
+      onReset();
+      return;
+    }
     // jsdom 没有 setPointerCapture，测试里退化成普通事件流即可。
     event.currentTarget.setPointerCapture?.(event.pointerId);
     startRef.current = { x: event.clientX, value };
