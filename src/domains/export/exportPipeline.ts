@@ -9,7 +9,6 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { markdownToHtml } from '../../lib/markdownToHtml';
 import { applyCalloutMetadataToMdastBlockquote } from '../editor/extensions/callouts';
 import { findPandocCitations } from '../editor/extensions/citations';
 import type { ContentTheme } from '../settings/types';
@@ -17,12 +16,9 @@ import { t } from '../i18n/runtime';
 import type { ExportDocumentInput } from './types';
 import {
   getDocxThemeByContentTheme,
-  getWriteClassByTheme,
   type DocxTheme,
 } from './exportSettings';
 import {
-  buildExportTocHtml,
-  buildExportTocItems,
   buildExportTocItemsFromMdast,
   type ExportTocItem,
 } from './toc';
@@ -37,11 +33,8 @@ import {
   reportWarning,
 } from './pipeline/exportPipelineContext';
 import {
-  blobToDataUrl,
-  bytesToDataUrl,
   canvasToPngBytes,
   dataUrlToBytes,
-  readLocalExportMedia,
 } from './assets';
 import {
   EXPORT_PAGE_SPLIT_EPSILON,
@@ -57,29 +50,31 @@ import {
 import {
   DOCX_MERMAID_IMAGE_MAX_HEIGHT,
   DOCX_MERMAID_IMAGE_MAX_WIDTH,
-  DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS,
-  DOCX_VISUAL_BLOCK_WIDTH,
   EXPORT_FONT_READY_TIMEOUT_MS,
   PDF_EXPORT_BATCH_RENDER_TIMEOUT_MS,
   PDF_EXPORT_MAX_PAGES,
   PDF_EXPORT_MAX_PAGES_PER_BATCH,
   PDF_EXPORT_MAX_RENDER_VIEWPORT_HEIGHT,
   PDF_EXPORT_RASTER_SCALE,
-  STANDALONE_EXPORT_FRAME_WIDTH,
   WEBKIT_PDF_CAPTURE_WIDTH,
   WEBKIT_PDF_MAX_CAPTURE_HEIGHT,
   WEBKIT_PDF_MAX_PAGES_PER_CAPTURE,
 } from './exportConstants';
 import { createSlicedRenderedPng } from './png/pngAssembly';
 import {
+  createRenderedExportNode,
+  createStandaloneExportFrame,
+  measureRenderedExportBounds,
+} from './render/exportNode';
+import {
+  normalizeDocxDrawingCompatibility,
+  renderDocxHtmlBlockImage,
+  renderDocxMathImage,
+} from './docx/docxVisualBlock';
+import {
   normalizePlantUmlSvg,
   rasterizePlantUmlSvgsForCapture,
 } from './diagrams/svgDocument';
-import {
-  renderMarkmapPlaceholders,
-  renderMermaidPlaceholders,
-  renderPlantUmlPlaceholders,
-} from './diagrams/diagramPlaceholders';
 import {
   collectExportPdfLinkRects,
   type ExportPdfLinkRect,
@@ -101,7 +96,6 @@ import {
   normalizePdfChromeText,
   type HeaderFooterTextPart,
 } from './pdf/pdfChromeText';
-import { sanitizeExportHtmlFragment } from './render/htmlFragmentRenderer';
 import {
   nextExportFrame as nextFrame,
   normalizeCssColorFunctionsForRaster,
@@ -121,7 +115,6 @@ import {
   type DocxBlock,
   type DocxInline,
   type DocxModule,
-  type RasterDocxImage,
 } from './docx/docxImage';
 interface PdfRenderedPage {
   data: Uint8Array;
@@ -346,325 +339,7 @@ async function createPdfRenderedPageFromBatch(
 }
 
 
-async function renderDocxVisualHtmlFragment(
-  input: ExportDocumentInput,
-  html: string,
-  scale: number,
-  options: { label: string; inline?: boolean },
-): Promise<RasterDocxImage | null> {
-  const root = document.createElement('div');
-  root.className = [
-    'prism-export-document',
-    `prism-export-template--${input.templateId ?? 'theme'}`,
-    'preview-compat',
-    `preview-compat--${input.contentTheme}`,
-  ].join(' ');
-  Object.assign(root.style, {
-    position: 'fixed',
-    left: '-12000px',
-    top: '0',
-    width: `${DOCX_VISUAL_BLOCK_WIDTH}px`,
-    pointerEvents: 'none',
-    background: getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff',
-  });
-  root.innerHTML = [
-    `<div id="write" class="${getWriteClassByTheme(input.contentTheme)}">`,
-    `<div data-prism-docx-visual-target="true">${html}</div>`,
-    '</div>',
-  ].join('');
-  document.body.appendChild(root);
 
-  try {
-    await inlineImages(root, input);
-    if ('fonts' in document) {
-      try {
-        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
-      } catch {
-        // Font readiness is best effort for visual fallback blocks.
-      }
-    }
-    await nextFrame();
-
-    const target = root.querySelector<HTMLElement>('[data-prism-docx-visual-target="true"]');
-    if (!target) return null;
-    Object.assign(target.style, {
-      display: options.inline ? 'inline-block' : 'block',
-      width: options.inline ? 'auto' : '100%',
-      maxWidth: `${DOCX_VISUAL_BLOCK_WIDTH}px`,
-      background: getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff',
-      padding: options.inline ? '2px 4px' : '12px 16px',
-      boxSizing: 'border-box',
-    });
-    normalizeRasterComputedColors(target);
-
-    const rect = target.getBoundingClientRect();
-    const width = Math.max(
-      options.inline ? 120 : 320,
-      Math.ceil(rect.width || target.scrollWidth || (options.inline ? 240 : DOCX_VISUAL_BLOCK_WIDTH)),
-    );
-    const height = Math.max(
-      options.inline ? 48 : 120,
-      Math.ceil(rect.height || target.scrollHeight || (options.inline ? 80 : 180)),
-    );
-    assertExportCanvasWithinLimits(width, height, scale, `DOCX ${options.label}`);
-
-    const { default: html2canvas } = await import('html2canvas');
-    const canvas = await withTimeout(
-      html2canvas(target, {
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-preview').trim() || '#ffffff',
-        scale,
-        width,
-        height,
-        windowWidth: width,
-        windowHeight: height,
-        scrollX: 0,
-        scrollY: 0,
-      }),
-      DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS,
-      t('export.error.docxVisualTimeout', { label: options.label }),
-    );
-
-    return {
-      type: 'png',
-      data: await canvasToPngBytes(canvas, t('export.error.docxVisualImageFailed', { label: options.label })),
-      width,
-      height,
-    };
-  } catch (err) {
-    reportWarning(input, t('export.warning.docxVisualFallback', { label: options.label, message: getErrorMessage(err) }));
-    return null;
-  } finally {
-    root.remove();
-  }
-}
-
-async function renderDocxMathImage(
-  input: ExportDocumentInput,
-  source: string,
-  displayMode: boolean,
-  scale: number,
-) {
-  try {
-    const katex = await import('katex');
-    const html = katex.default.renderToString(source, {
-      displayMode,
-      throwOnError: false,
-      strict: 'ignore',
-      trust: false,
-      output: 'htmlAndMathml',
-    });
-    return renderDocxVisualHtmlFragment(input, html, scale, {
-      label: displayMode ? t('export.label.mathBlock') : t('export.label.inlineMath'),
-      inline: !displayMode,
-    });
-  } catch (err) {
-    reportWarning(input, t('export.warning.wordMathFallback', { message: getErrorMessage(err) }));
-    return null;
-  }
-}
-
-async function renderDocxHtmlBlockImage(input: ExportDocumentInput, source: string, scale: number) {
-  const sanitized = sanitizeExportHtmlFragment(source).trim();
-  if (!sanitized) return null;
-  const wrapped = `<div class="prism-html-block" style="border:1px solid #d0d7de;border-left:4px solid #2563eb;background:#f6f8fa;padding:12px 16px;border-radius:6px;line-height:1.6;">${sanitized}</div>`;
-  return renderDocxVisualHtmlFragment(input, wrapped, scale, {
-    label: t('export.label.htmlBlock'),
-  });
-}
-
-function rewriteOpenXmlNumericAttribute(xml: string, tagName: string, attrName: string) {
-  let nextId = 1;
-  const tagPattern = new RegExp(`<${tagName}\\b[^>]*\\/?>`, 'g');
-  const attrPattern = new RegExp(`\\b${attrName}="[^"]*"`);
-  return xml.replace(tagPattern, (tag) => {
-    const replacement = `${attrName}="${nextId}"`;
-    nextId += 1;
-    if (attrPattern.test(tag)) return tag.replace(attrPattern, replacement);
-    return tag.replace(/\/?>$/, (end) => ` ${replacement}${end}`);
-  });
-}
-
-async function normalizeDocxDrawingCompatibility(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  const { default: JSZip } = await import('jszip');
-  const zip = await JSZip.loadAsync(buffer);
-  const documentXmlFile = zip.file('word/document.xml');
-  if (!documentXmlFile) return new Uint8Array(buffer);
-
-  const documentXml = await documentXmlFile.async('string');
-  const normalizedXml = rewriteOpenXmlNumericAttribute(
-    rewriteOpenXmlNumericAttribute(documentXml, 'wp:docPr', 'id'),
-    'pic:cNvPr',
-    'id',
-  );
-  zip.file('word/document.xml', normalizedXml);
-  return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
-}
-
-async function inlineImages(root: HTMLElement, input: ExportDocumentInput) {
-  const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
-  await Promise.all(images.map(async (image) => {
-    const rawSrc = image.getAttribute('src') ?? '';
-    if (!rawSrc || rawSrc.startsWith('data:')) return;
-    try {
-      const localMedia = await readLocalExportMedia(rawSrc, input.documentPath);
-      if (localMedia) {
-        image.setAttribute('src', bytesToDataUrl(localMedia.bytes, localMedia.mimeType));
-        return;
-      }
-
-      if (!/^https?:\/\//i.test(rawSrc) && !rawSrc.startsWith('//')) return;
-      const response = await fetch(rawSrc.startsWith('//') ? `${window.location.protocol}${rawSrc}` : rawSrc);
-      if (!response.ok) return;
-      image.setAttribute('src', await blobToDataUrl(await response.blob()));
-    } catch {
-      // Leave the original src when it cannot be fetched.
-    }
-  }));
-}
-
-function applyExportToc(root: HTMLElement, input: ExportDocumentInput) {
-  if (!input.toc) return;
-  const write = root.querySelector<HTMLElement>('#write');
-  if (!write) return;
-  const headingElements = Array.from(write.querySelectorAll<HTMLHeadingElement>('h1, h2, h3, h4, h5, h6'));
-  const headings = headingElements
-    .map((element) => ({
-      element,
-      level: Number(element.tagName.slice(1)),
-      text: (element.textContent ?? '').trim(),
-    }))
-    .filter((heading) => heading.text.length > 0);
-  const items = buildExportTocItems(headings);
-  if (items.length === 0) return;
-
-  headings.forEach((heading, index) => {
-    heading.element.id = items[index].anchor;
-    heading.element.classList.add('prism-export-heading-anchor');
-  });
-
-  write.insertAdjacentHTML('afterbegin', buildExportTocHtml(items));
-}
-
-async function createRenderedExportNode(input: ExportDocumentInput, options: { html?: string | null } = {}) {
-  reportProgress(input, exportProgressMessages.parseMarkdown());
-  const html = options.html ? sanitizeExportHtmlFragment(options.html) : markdownToHtml(input.content);
-  reportProgress(input, exportProgressMessages.applyTheme());
-  const root = document.createElement('div');
-  root.className = [
-    'prism-export-document',
-    `prism-export-template--${input.templateId ?? 'theme'}`,
-    'preview-compat',
-    `preview-compat--${input.contentTheme}`,
-  ].join(' ');
-  root.style.position = 'fixed';
-  root.style.left = '-12000px';
-  root.style.top = '0';
-  root.style.width = '980px';
-  root.style.pointerEvents = 'none';
-  root.style.opacity = '0';
-  root.innerHTML = `<div id="write" class="${getWriteClassByTheme(input.contentTheme)}">${html}</div>`;
-  applyExportToc(root, input);
-  document.body.appendChild(root);
-
-  try {
-    reportProgress(input, exportProgressMessages.renderDiagrams());
-    await renderMermaidPlaceholders(root, input.contentTheme, input);
-    await renderMarkmapPlaceholders(root, input.contentTheme, input);
-    await renderPlantUmlPlaceholders(root, input.contentTheme, input);
-    await inlineImages(root, input);
-    if ('fonts' in document) {
-      try {
-        await withTimeout(document.fonts.ready, EXPORT_FONT_READY_TIMEOUT_MS, t('export.error.fontLoadTimeout'));
-      } catch {
-        // Font readiness is best effort.
-      }
-    }
-    await nextFrame();
-    markExportAtomicBlocks(root);
-    return root;
-  } catch (err) {
-    root.remove();
-    throw err;
-  }
-}
-
-async function createStandaloneExportFrame(input: ExportDocumentInput) {
-  const node = await createRenderedExportNode(input);
-  let html = '';
-  try {
-    html = await buildStandaloneHtml(input, node, { rasterSafeCss: true });
-  } finally {
-    node.remove();
-  }
-
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.left = '-12000px';
-  iframe.style.top = '0';
-  iframe.style.width = `${STANDALONE_EXPORT_FRAME_WIDTH}px`;
-  iframe.style.height = '1200px';
-  iframe.style.border = '0';
-  iframe.style.opacity = '1';
-  iframe.style.pointerEvents = 'none';
-  iframe.setAttribute('aria-hidden', 'true');
-
-  await new Promise<void>((resolve) => {
-    const timeout = window.setTimeout(resolve, 1600);
-    iframe.onload = () => {
-      window.clearTimeout(timeout);
-      resolve();
-    };
-    iframe.srcdoc = html;
-    document.body.appendChild(iframe);
-  });
-
-  const frameDocument = iframe.contentDocument;
-  if (!frameDocument) {
-    iframe.remove();
-    throw new Error(t('export.error.renderEnvironmentFailed'));
-  }
-
-  if ('fonts' in frameDocument) {
-    try {
-      await frameDocument.fonts.ready;
-    } catch {
-      // Font readiness is best effort in the export frame.
-    }
-  }
-  await nextFrame();
-  return iframe;
-}
-
-function isNestedSvgGraphicsElement(element: Element) {
-  const ownerSvg = (element as Element & { ownerSVGElement?: SVGSVGElement | null }).ownerSVGElement;
-  return Boolean(ownerSvg && ownerSvg !== element);
-}
-
-function measureRenderedExportBounds(target: HTMLElement, frameDocument: Document) {
-  const targetRect = target.getBoundingClientRect();
-  let maxRight = Math.max(targetRect.width, WEBKIT_PDF_CAPTURE_WIDTH);
-  let maxBottom = Math.max(
-    targetRect.height,
-    target.scrollHeight || 0,
-    frameDocument.body.scrollHeight || 0,
-    frameDocument.documentElement.scrollHeight || 0,
-  );
-
-  target.querySelectorAll<Element>('*').forEach((element) => {
-    if (isNestedSvgGraphicsElement(element)) return;
-    const rect = element.getBoundingClientRect();
-    if (!Number.isFinite(rect.right) || !Number.isFinite(rect.bottom)) return;
-    if (rect.width < 1 || rect.height < 1) return;
-    maxRight = Math.max(maxRight, rect.right - targetRect.left);
-    maxBottom = Math.max(maxBottom, rect.bottom - targetRect.top);
-  });
-
-  return {
-    width: Math.max(WEBKIT_PDF_CAPTURE_WIDTH, Math.ceil(maxRight || WEBKIT_PDF_CAPTURE_WIDTH)),
-    height: Math.max(200, Math.ceil(maxBottom || 200)),
-  };
-}
 
 export async function exportHtml(input: ExportDocumentInput, outputPath?: string) {
   const targetPath = await getExportOutputPath(outputPath);
