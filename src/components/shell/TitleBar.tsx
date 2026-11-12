@@ -268,6 +268,10 @@ export function TitleBar({
   return (
     <div
       className={`${styles.titlebar} ${IS_MACOS ? styles.macos : IS_WINDOWS ? styles.windows : styles.linux} app-titlebar`}
+      // macOS 使用 Overlay 标题栏，内容铺满整个窗口，原生标题栏下方那条带子
+      // 会变成拖不动的死区；这里交回给 Tauri 的拖动区域。
+      // Windows/Linux 已由各自的 drag spacer 承担，根节点不加，避免与窗口按钮抢事件。
+      data-tauri-drag-region={IS_MACOS ? '' : undefined}
     >
       {IS_MACOS ? (
         <>

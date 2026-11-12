@@ -90,6 +90,19 @@ describe('TitleBar platform layout', () => {
     expect(screen.queryByText('proposal.md')).not.toBeInTheDocument();
   });
 
+  it('keeps the macOS titlebar draggable without stealing clicks from the filename button', async () => {
+    const onRenameDocument = vi.fn();
+    const { container } = await renderTitleBarOn('MacIntel', { onRenameDocument });
+
+    expect(container.querySelector('.app-titlebar')).toHaveAttribute('data-tauri-drag-region');
+
+    // 拖动只作用于命中根节点的空白区域；文档名按钮自行吞掉 mousedown，点它仍是重命名。
+    const renameButton = screen.getByRole('button', { name: '重命名当前文稿' });
+    fireEvent.mouseDown(renameButton);
+    fireEvent.click(renameButton);
+    expect(screen.getByRole('textbox', { name: '重命名当前文稿' })).toHaveValue('proposal');
+  });
+
   it('allows renaming the current document from the filename area', async () => {
     const onRenameDocument = vi.fn();
     await renderTitleBarOn('MacIntel', { onRenameDocument });
