@@ -1,6 +1,7 @@
 import { lazy, Suspense, useRef, useState, useCallback } from 'react';
 import { useWorkspaceIndexModel } from './domains/workspace/hooks/useWorkspaceIndexModel';
 import { useAppStoreSnapshotModel } from './app/useAppStoreSnapshotModel';
+import { useNativeMenuLabels } from './app/useNativeMenuLabels';
 import { useAppLifecycleModel } from './app/useAppLifecycleModel';
 import { useAppCommandWiringModel } from './app/useAppCommandWiringModel';
 import { useAppDocumentInsightModel } from './app/useAppDocumentInsightModel';
@@ -58,6 +59,8 @@ function App() {
     titleDocName,
     workspace,
   } = useAppStoreSnapshotModel();
+
+  useNativeMenuLabels();
 
   const editorRef = useRef<EditorPaneHandle>(null);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);

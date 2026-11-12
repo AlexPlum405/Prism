@@ -65,7 +65,7 @@ fn emit_frontend_command(app: &tauri::AppHandle, action: &'static str) {
 fn command_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
     manager: &M,
     command: &'static str,
-    label: &'static str,
+    label: &str,
     accelerator: Option<&'static str>,
 ) -> tauri::Result<tauri::menu::MenuItem<R>> {
     let mut builder = tauri::menu::MenuItemBuilder::with_id(format!("command:{command}"), label);
@@ -75,13 +75,57 @@ fn command_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
     builder.build(manager)
 }
 
+/// 原生菜单标签随界面语言变化。
+///
+/// 菜单在 app 启动时就构建，那时前端还没跑起来，所以默认用中文；前端拿到
+/// 当前 locale 后调用 `update_app_menu_labels` 重建一次，语言切换时再调一次。
+/// key 就是菜单动作 id（与 `command:` 前缀后面的部分一致）。
+pub(crate) type AppMenuLabels = std::collections::HashMap<String, String>;
+
 #[cfg(target_os = "macos")]
-fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
+fn menu_label(labels: &AppMenuLabels, key: &str, fallback: &str) -> String {
+    labels
+        .get(key)
+        .filter(|value| !value.trim().is_empty())
+        .cloned()
+        .unwrap_or_else(|| fallback.to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn install_app_menu(app: &mut tauri::App, labels: &AppMenuLabels) -> tauri::Result<()> {
+    let handle = app.handle().clone();
+    let menu = build_app_menu(&handle, labels)?;
+    app.set_menu(menu)?;
+    // 监听只注册一次：语言切换走 update_app_menu_labels 重建菜单，不能再挂一个 handler
+    app.on_menu_event(handle_menu_event);
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn update_app_menu_labels(app: tauri::AppHandle, labels: AppMenuLabels) -> Result<(), String> {
+    let menu = build_app_menu(&app, &labels).map_err(|error| error.to_string())?;
+    app.set_menu(menu).map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+/// Windows / Linux 走自绘菜单栏，原生菜单不存在，这里只做无操作的成功返回，
+/// 免得前端为了平台差异再分叉一次。
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+fn update_app_menu_labels(_labels: AppMenuLabels) -> Result<(), String> {
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn build_app_menu(
+    handle: &tauri::AppHandle,
+    labels: &AppMenuLabels,
+) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
     use tauri::menu::{
         MenuBuilder, PredefinedMenuItem, SubmenuBuilder, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID,
     };
 
-    let handle = app.handle();
     let app_menu = SubmenuBuilder::new(handle, "Prism")
         .item(&PredefinedMenuItem::about(
             handle,
@@ -95,7 +139,7 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&command_menu_item(
             handle,
             "preferences",
-            "设置...",
+            &menu_label(labels, "preferences", "设置..."),
             Some("CmdOrCtrl+,"),
         )?)
         .separator()
@@ -110,64 +154,64 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&command_menu_item(
             handle,
             "new",
-            "新建文稿",
+            &menu_label(labels, "new", "新建文稿"),
             Some("CmdOrCtrl+KeyN"),
         )?)
         .item(&command_menu_item(
             handle,
             "newWindow",
-            "新建窗口",
+            &menu_label(labels, "newWindow", "新建窗口"),
             Some("CmdOrCtrl+Shift+KeyN"),
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "open",
-            "打开文件...",
+            &menu_label(labels, "open", "打开文件..."),
             Some("CmdOrCtrl+KeyO"),
         )?)
         .item(&command_menu_item(
             handle,
             "openFolder",
-            "打开文件夹...",
+            &menu_label(labels, "openFolder", "打开文件夹..."),
             Some("CmdOrCtrl+Shift+KeyO"),
         )?)
         .item(&command_menu_item(
             handle,
             "quickOpen",
-            "快速打开...",
+            &menu_label(labels, "quickOpen", "快速打开..."),
             Some("CmdOrCtrl+KeyP"),
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "save",
-            "保存",
+            &menu_label(labels, "save", "保存"),
             Some("CmdOrCtrl+KeyS"),
         )?)
         .item(&command_menu_item(
             handle,
             "saveAs",
-            "另存为...",
+            &menu_label(labels, "saveAs", "另存为..."),
             Some("CmdOrCtrl+Shift+KeyS"),
         )?)
         .item(&command_menu_item(
             handle,
             "openCurrentLocation",
-            "在访达中显示",
+            &menu_label(labels, "openCurrentLocation", "在访达中显示"),
             None,
         )?)
         .item(&command_menu_item(
             handle,
             "copyCurrentFilePath",
-            "复制当前文件路径",
+            &menu_label(labels, "copyCurrentFilePath", "复制当前文件路径"),
             None,
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "closeDocument",
-            "关闭文稿",
+            &menu_label(labels, "closeDocument", "关闭文稿"),
             Some("CmdOrCtrl+KeyW"),
         )?)
         .build()?;
@@ -176,26 +220,26 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&command_menu_item(
             handle,
             "undo",
-            "撤销",
+            &menu_label(labels, "undo", "撤销"),
             Some("CmdOrCtrl+KeyZ"),
         )?)
         .item(&command_menu_item(
             handle,
             "redo",
-            "重做",
+            &menu_label(labels, "redo", "重做"),
             Some("CmdOrCtrl+Shift+KeyZ"),
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "cut",
-            "剪切",
+            &menu_label(labels, "cut", "剪切"),
             Some("CmdOrCtrl+KeyX"),
         )?)
         .item(&command_menu_item(
             handle,
             "copy",
-            "复制",
+            &menu_label(labels, "copy", "复制"),
             Some("CmdOrCtrl+KeyC"),
         )?)
         // 粘贴必须交给系统预定义项：自定义菜单项的 Cmd+V 加速键会截获按键，
@@ -205,33 +249,33 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&command_menu_item(
             handle,
             "pastePlain",
-            "粘贴为纯文本",
+            &menu_label(labels, "pastePlain", "粘贴为纯文本"),
             Some("CmdOrCtrl+Shift+KeyV"),
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "selectAll",
-            "全选",
+            &menu_label(labels, "selectAll", "全选"),
             Some("CmdOrCtrl+KeyA"),
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "showSearch",
-            "查找",
+            &menu_label(labels, "showSearch", "查找"),
             Some("CmdOrCtrl+KeyF"),
         )?)
         .item(&command_menu_item(
             handle,
             "showReplace",
-            "替换",
+            &menu_label(labels, "showReplace", "替换"),
             Some("CmdOrCtrl+KeyH"),
         )?)
         .item(&command_menu_item(
             handle,
             "workspaceSearch",
-            "全文搜索",
+            &menu_label(labels, "workspaceSearch", "全文搜索"),
             Some("CmdOrCtrl+Shift+KeyF"),
         )?)
         .build()?;
@@ -240,46 +284,46 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&command_menu_item(
             handle,
             "sourceMode",
-            "编辑",
+            &menu_label(labels, "sourceMode", "编辑"),
             Some("CmdOrCtrl+Key1"),
         )?)
         .item(&command_menu_item(
             handle,
             "splitMode",
-            "分栏",
+            &menu_label(labels, "splitMode", "分栏"),
             Some("CmdOrCtrl+Key2"),
         )?)
         .item(&command_menu_item(
             handle,
             "previewMode",
-            "预览",
+            &menu_label(labels, "previewMode", "预览"),
             Some("CmdOrCtrl+Key3"),
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "toggleSidebar",
-            "切换侧边栏",
+            &menu_label(labels, "toggleSidebar", "切换侧边栏"),
             Some("CmdOrCtrl+KeyB"),
         )?)
-        .item(&command_menu_item(handle, "showOutline", "大纲", None)?)
+        .item(&command_menu_item(handle, "showOutline", &menu_label(labels, "showOutline", "大纲"), None)?)
         .separator()
         .item(&command_menu_item(
             handle,
             "actualSize",
-            "实际大小",
+            &menu_label(labels, "actualSize", "实际大小"),
             Some("CmdOrCtrl+Digit0"),
         )?)
         .item(&command_menu_item(
             handle,
             "zoomIn",
-            "放大",
+            &menu_label(labels, "zoomIn", "放大"),
             Some("CmdOrCtrl+Equal"),
         )?)
         .item(&command_menu_item(
             handle,
             "zoomOut",
-            "缩小",
+            &menu_label(labels, "zoomOut", "缩小"),
             Some("CmdOrCtrl+Minus"),
         )?)
         .build()?;
@@ -289,32 +333,32 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&PredefinedMenuItem::maximize(handle, Some("缩放"))?)
         .item(&PredefinedMenuItem::fullscreen(handle, Some("进入全屏"))?)
         .separator()
-        .item(&command_menu_item(handle, "alwaysOnTop", "窗口置顶", None)?)
+        .item(&command_menu_item(handle, "alwaysOnTop", &menu_label(labels, "alwaysOnTop", "窗口置顶"), None)?)
         .build()?;
 
     let help_menu = SubmenuBuilder::with_id(handle, HELP_SUBMENU_ID, "Help")
-        .item(&command_menu_item(handle, "showShortcuts", "快捷键", None)?)
+        .item(&command_menu_item(handle, "showShortcuts", &menu_label(labels, "showShortcuts", "快捷键"), None)?)
         .item(&command_menu_item(
             handle,
             "mdReference",
-            "Markdown 参考",
+            &menu_label(labels, "mdReference", "Markdown 参考"),
             None,
         )?)
         .item(&command_menu_item(
             handle,
             "migrationGuide",
-            "迁移指南",
+            &menu_label(labels, "migrationGuide", "迁移指南"),
             None,
         )?)
         .item(&command_menu_item(
             handle,
             "checkUpdate",
-            "检查更新...",
+            &menu_label(labels, "checkUpdate", "检查更新..."),
             None,
         )?)
         .separator()
-        .item(&command_menu_item(handle, "github", "GitHub", None)?)
-        .item(&command_menu_item(handle, "feedback", "反馈", None)?)
+        .item(&command_menu_item(handle, "github", &menu_label(labels, "github", "GitHub"), None)?)
+        .item(&command_menu_item(handle, "feedback", &menu_label(labels, "feedback", "反馈"), None)?)
         .build()?;
 
     let menu = MenuBuilder::new(handle)
@@ -325,55 +369,54 @@ fn install_app_menu(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&window_menu)
         .item(&help_menu)
         .build()?;
-    app.set_menu(menu)?;
 
-    app.on_menu_event(|app, event| {
-        let id = event.id().as_ref();
-        if let Some(action) = id.strip_prefix("command:") {
-            match action {
-                "new" => emit_frontend_command(app, "new"),
-                "newWindow" => emit_frontend_command(app, "newWindow"),
-                "open" => emit_frontend_command(app, "open"),
-                "openFolder" => emit_frontend_command(app, "openFolder"),
-                "quickOpen" => emit_frontend_command(app, "quickOpen"),
-                "save" => emit_frontend_command(app, "save"),
-                "saveAs" => emit_frontend_command(app, "saveAs"),
-                "openCurrentLocation" => emit_frontend_command(app, "openCurrentLocation"),
-                "copyCurrentFilePath" => emit_frontend_command(app, "copyCurrentFilePath"),
-                "closeDocument" => emit_frontend_command(app, "closeDocument"),
-                "preferences" => emit_frontend_command(app, "preferences"),
-                "undo" => emit_frontend_command(app, "undo"),
-                "redo" => emit_frontend_command(app, "redo"),
-                "cut" => emit_frontend_command(app, "cut"),
-                "copy" => emit_frontend_command(app, "copy"),
-                "paste" => emit_frontend_command(app, "paste"),
-                "pastePlain" => emit_frontend_command(app, "pastePlain"),
-                "selectAll" => emit_frontend_command(app, "selectAll"),
-                "showSearch" => emit_frontend_command(app, "showSearch"),
-                "showReplace" => emit_frontend_command(app, "showReplace"),
-                "workspaceSearch" => emit_frontend_command(app, "workspaceSearch"),
-                "sourceMode" => emit_frontend_command(app, "sourceMode"),
-                "splitMode" => emit_frontend_command(app, "splitMode"),
-                "previewMode" => emit_frontend_command(app, "previewMode"),
-                "toggleSidebar" => emit_frontend_command(app, "toggleSidebar"),
-                "showOutline" => emit_frontend_command(app, "showOutline"),
-                "actualSize" => emit_frontend_command(app, "actualSize"),
-                "zoomIn" => emit_frontend_command(app, "zoomIn"),
-                "zoomOut" => emit_frontend_command(app, "zoomOut"),
-                "alwaysOnTop" => emit_frontend_command(app, "alwaysOnTop"),
-                "showShortcuts" => emit_frontend_command(app, "showShortcuts"),
-                "mdReference" => emit_frontend_command(app, "mdReference"),
-                "migrationGuide" => emit_frontend_command(app, "migrationGuide"),
-                "checkUpdate" => emit_frontend_command(app, "checkUpdate"),
-                "github" => emit_frontend_command(app, "github"),
-                "feedback" => emit_frontend_command(app, "feedback"),
-                _ => {}
-            }
-            return;
+    Ok(menu)
+}
+
+#[cfg(target_os = "macos")]
+fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
+    let id = event.id().as_ref();
+    if let Some(action) = id.strip_prefix("command:") {
+        match action {
+            "new" => emit_frontend_command(app, "new"),
+            "newWindow" => emit_frontend_command(app, "newWindow"),
+            "open" => emit_frontend_command(app, "open"),
+            "openFolder" => emit_frontend_command(app, "openFolder"),
+            "quickOpen" => emit_frontend_command(app, "quickOpen"),
+            "save" => emit_frontend_command(app, "save"),
+            "saveAs" => emit_frontend_command(app, "saveAs"),
+            "openCurrentLocation" => emit_frontend_command(app, "openCurrentLocation"),
+            "copyCurrentFilePath" => emit_frontend_command(app, "copyCurrentFilePath"),
+            "closeDocument" => emit_frontend_command(app, "closeDocument"),
+            "preferences" => emit_frontend_command(app, "preferences"),
+            "undo" => emit_frontend_command(app, "undo"),
+            "redo" => emit_frontend_command(app, "redo"),
+            "cut" => emit_frontend_command(app, "cut"),
+            "copy" => emit_frontend_command(app, "copy"),
+            "paste" => emit_frontend_command(app, "paste"),
+            "pastePlain" => emit_frontend_command(app, "pastePlain"),
+            "selectAll" => emit_frontend_command(app, "selectAll"),
+            "showSearch" => emit_frontend_command(app, "showSearch"),
+            "showReplace" => emit_frontend_command(app, "showReplace"),
+            "workspaceSearch" => emit_frontend_command(app, "workspaceSearch"),
+            "sourceMode" => emit_frontend_command(app, "sourceMode"),
+            "splitMode" => emit_frontend_command(app, "splitMode"),
+            "previewMode" => emit_frontend_command(app, "previewMode"),
+            "toggleSidebar" => emit_frontend_command(app, "toggleSidebar"),
+            "showOutline" => emit_frontend_command(app, "showOutline"),
+            "actualSize" => emit_frontend_command(app, "actualSize"),
+            "zoomIn" => emit_frontend_command(app, "zoomIn"),
+            "zoomOut" => emit_frontend_command(app, "zoomOut"),
+            "alwaysOnTop" => emit_frontend_command(app, "alwaysOnTop"),
+            "showShortcuts" => emit_frontend_command(app, "showShortcuts"),
+            "mdReference" => emit_frontend_command(app, "mdReference"),
+            "migrationGuide" => emit_frontend_command(app, "migrationGuide"),
+            "checkUpdate" => emit_frontend_command(app, "checkUpdate"),
+            "github" => emit_frontend_command(app, "github"),
+            "feedback" => emit_frontend_command(app, "feedback"),
+            _ => {}
         }
-    });
-
-    Ok(())
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -485,7 +528,7 @@ pub fn run() {
             seed_initial_documents(app);
 
             #[cfg(target_os = "macos")]
-            install_app_menu(app)?;
+            install_app_menu(app, &AppMenuLabels::new())?;
 
             Ok(())
         })
@@ -497,6 +540,7 @@ pub fn run() {
             commands::startup_files::get_pending_files,
             commands::startup_files::get_pending_workspace_path,
             commands::window::reveal_current_window,
+            update_app_menu_labels,
             commands::pandoc::detect_pandoc,
             commands::pandoc::render_citations_with_pandoc,
             commands::document_io::get_file_snapshot,

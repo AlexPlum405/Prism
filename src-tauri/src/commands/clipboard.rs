@@ -158,7 +158,9 @@ fn read_clipboard_payload_macos() -> ClipboardPayload {
 }
 
 #[cfg(target_os = "macos")]
-async fn read_clipboard_payload_platform(app_handle: AppHandle) -> Result<ClipboardPayload, String> {
+async fn read_clipboard_payload_platform(
+    app_handle: AppHandle,
+) -> Result<ClipboardPayload, String> {
     let (tx, rx) = std::sync::mpsc::channel();
     app_handle
         .run_on_main_thread(move || {
@@ -175,7 +177,9 @@ async fn read_clipboard_payload_platform(app_handle: AppHandle) -> Result<Clipbo
 }
 
 #[cfg(not(target_os = "macos"))]
-async fn read_clipboard_payload_platform(_app_handle: AppHandle) -> Result<ClipboardPayload, String> {
+async fn read_clipboard_payload_platform(
+    _app_handle: AppHandle,
+) -> Result<ClipboardPayload, String> {
     Err("Clipboard read is not available on this platform yet".to_string())
 }
 
