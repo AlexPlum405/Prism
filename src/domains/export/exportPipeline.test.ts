@@ -56,6 +56,9 @@ const plantUmlRenderMock = vi.hoisted(() => vi.fn(async (source: string) => {
 vi.mock('mermaid', () => ({ default: mermaidMock }));
 vi.mock('html2canvas', () => ({ default: canvasRenderMock.render }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }));
+vi.mock('@tauri-apps/api/path', () => ({
+  appDataDir: vi.fn(async () => '/tmp/prism-app-data'),
+}));
 vi.mock('../editor/components/plantUml', () => ({
   createPlantUmlSvgElement: plantUmlRenderMock,
 }));
@@ -79,6 +82,7 @@ type PrismRuntimeWindow = Window & {
 };
 
 const fsMock = vi.hoisted(() => ({
+  mkdir: vi.fn(async (_path: string, _options?: unknown) => undefined),
   readFile: vi.fn(async (_path: string) => new Uint8Array()),
   remove: vi.fn(async (_path: string) => undefined),
   writeFile: vi.fn(async (_path: string, _contents: Uint8Array) => undefined),
@@ -218,6 +222,7 @@ $$
 `;
 
 function resetFsMockImplementations() {
+  fsMock.mkdir.mockImplementation(async (_path: string, _options?: unknown) => undefined);
   fsMock.readFile.mockImplementation(async (_path: string) => new Uint8Array());
   fsMock.writeTextFile.mockImplementation(async (_path: string, _contents: string) => undefined);
   fsMock.writeFile.mockImplementation(async (_path: string, _contents: Uint8Array) => undefined);
@@ -245,12 +250,30 @@ function getPdfCaptureCalls() {
   return invokeMock.mock.calls.filter(([command]) => command === 'capture_current_webview_pdf');
 }
 
+function expectPdfCaptureTempPath(path: unknown, batchIndex: number) {
+  expect(path).toEqual(expect.stringMatching(
+    new RegExp(`^/tmp/prism-app-data/export-captures/[^/]+/capture-${batchIndex + 1}\\.pdf$`),
+  ));
+}
+
+function getPdfCaptureOutputPath(batchIndex: number) {
+  const call = getPdfCaptureCalls()[batchIndex];
+  const args = call?.[1] as { outputPath?: string } | undefined;
+  if (!args?.outputPath) throw new Error(`Missing PDF capture output path for batch ${batchIndex}`);
+  return args.outputPath;
+}
+
+function getPdfCaptureSessionDirectory() {
+  return getPdfCaptureOutputPath(0).replace(/\/capture-1\.pdf$/, '');
+}
+
 describe('export pipeline html', () => {
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
   let originalFonts: unknown;
 
   beforeEach(() => {
     fsMock.readFile.mockClear();
+    fsMock.mkdir.mockClear();
     fsMock.writeTextFile.mockClear();
     fsMock.writeFile.mockClear();
     mermaidMock.initialize.mockClear();
@@ -1608,8 +1631,10 @@ describe('export pipeline image progress', () => {
     }), '/tmp/native.pdf');
 
     expect(warnings).toEqual([]);
+    const capturePath = getPdfCaptureOutputPath(0);
+    expectPdfCaptureTempPath(capturePath, 0);
     expect(invokeMock).toHaveBeenCalledWith('capture_current_webview_pdf', {
-      outputPath: '/tmp/native.webkit-capture-1.pdf',
+      outputPath: capturePath,
       x: expect.any(Number),
       y: expect.any(Number),
       width: expect.any(Number),
@@ -1617,7 +1642,7 @@ describe('export pipeline image progress', () => {
     });
     expect(canvasRenderMock.render).not.toHaveBeenCalled();
     expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/native.pdf', expect.any(Uint8Array));
-    expect(fsMock.remove).toHaveBeenCalledWith('/tmp/native.webkit-capture-1.pdf');
+    expect(fsMock.remove).toHaveBeenCalledWith(getPdfCaptureSessionDirectory(), { recursive: true });
     expect(onProgress.mock.calls.map(([message]) => message)).toEqual([
       '正在准备 WebKit PDF 文档',
       '正在解析 Markdown',
@@ -1661,7 +1686,9 @@ describe('export pipeline image progress', () => {
 
     expect(warnings).toEqual([]);
     expect(canvasRenderMock.render).not.toHaveBeenCalled();
-    expect(fsMock.readFile).toHaveBeenCalledWith('/tmp/native-chrome.webkit-capture-1.pdf');
+    const capturePath = getPdfCaptureOutputPath(0);
+    expectPdfCaptureTempPath(capturePath, 0);
+    expect(fsMock.readFile).toHaveBeenCalledWith(capturePath);
     expect(fsMock.readFile).toHaveBeenCalledWith('/tmp/native-chrome.pdf');
     expect(fsMock.writeFile).toHaveBeenCalledWith('/tmp/native-chrome.pdf', expect.any(Uint8Array));
     const lastWrite = fsMock.writeFile.mock.calls.at(-1);
@@ -1719,7 +1746,7 @@ describe('export pipeline image progress', () => {
       const sourceBytes = new Uint8Array(await sourcePdf.save()) as Uint8Array<ArrayBuffer>;
       const persistedWrites = new Map<string, Uint8Array<ArrayBuffer>>();
       fsMock.readFile.mockImplementation(async (filePath: string) => {
-        if (filePath.endsWith('.webkit-capture-1.pdf')) return sourceBytes;
+        if (filePath.endsWith('/capture-1.pdf')) return sourceBytes;
         const persisted = persistedWrites.get(filePath);
         if (persisted) return persisted;
         return new Uint8Array();
@@ -1827,15 +1854,21 @@ describe('export pipeline image progress', () => {
 
       const captureCalls = getPdfCaptureCalls();
       expect(captureCalls).toHaveLength(2);
+      const firstCapturePath = getPdfCaptureOutputPath(0);
+      const secondCapturePath = getPdfCaptureOutputPath(1);
+      expectPdfCaptureTempPath(firstCapturePath, 0);
+      expectPdfCaptureTempPath(secondCapturePath, 1);
+      expect(firstCapturePath.replace(/\/capture-1\.pdf$/, '')).toBe(
+        secondCapturePath.replace(/\/capture-2\.pdf$/, ''),
+      );
       expect(captureCalls[0]).toEqual(['capture_current_webview_pdf', expect.objectContaining({
-        outputPath: '/tmp/native-long.webkit-capture-1.pdf',
+        outputPath: firstCapturePath,
       })]);
       expect(captureCalls[1]).toEqual(['capture_current_webview_pdf', expect.objectContaining({
-        outputPath: '/tmp/native-long.webkit-capture-2.pdf',
+        outputPath: secondCapturePath,
       })]);
       expect(canvasRenderMock.render).not.toHaveBeenCalled();
-      expect(fsMock.remove).toHaveBeenCalledWith('/tmp/native-long.webkit-capture-1.pdf');
-      expect(fsMock.remove).toHaveBeenCalledWith('/tmp/native-long.webkit-capture-2.pdf');
+      expect(fsMock.remove).toHaveBeenCalledWith(getPdfCaptureSessionDirectory(), { recursive: true });
       expect(progress).toContain('正在捕获 PDF 页面 1-8 / 13');
       expect(progress).toContain('正在捕获 PDF 页面 9-13 / 13');
       const write = fsMock.writeFile.mock.calls.find(([targetPath]) => targetPath === '/tmp/native-long.pdf');

@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use tauri::{AppHandle, Manager};
+
+const PDF_CAPTURE_TEMP_ROOT_NAME: &str = "export-captures";
 
 #[derive(Debug, serde::Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -37,19 +41,28 @@ fn pdf_capture_capability() -> PdfCaptureCapability {
     }
 }
 
-fn validate_pdf_output_path(path: &str) -> Result<PathBuf, String> {
+fn pdf_capture_temp_root(app_data_dir: &Path) -> PathBuf {
+    app_data_dir.join(PDF_CAPTURE_TEMP_ROOT_NAME)
+}
+
+fn validate_pdf_output_path(app_data_dir: &Path, path: &str) -> Result<PathBuf, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
         return Err("PDF output path cannot be empty".to_string());
     }
     let target_path = PathBuf::from(trimmed);
+    if !target_path.is_absolute() {
+        return Err("PDF output path must be absolute".to_string());
+    }
     if target_path.exists() && target_path.is_dir() {
         return Err("PDF output path cannot be a folder".to_string());
     }
-    if let Some(parent) = target_path.parent() {
-        if !parent.as_os_str().is_empty() && !parent.exists() {
-            return Err("PDF output directory does not exist".to_string());
-        }
+    let parent = target_path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .ok_or_else(|| "PDF output directory does not exist".to_string())?;
+    if !parent.exists() {
+        return Err("PDF output directory does not exist".to_string());
     }
     if target_path
         .extension()
@@ -59,7 +72,24 @@ fn validate_pdf_output_path(path: &str) -> Result<PathBuf, String> {
     {
         return Err("PDF output path must end with .pdf".to_string());
     }
-    Ok(target_path)
+
+    let temp_root = pdf_capture_temp_root(app_data_dir);
+    let canonical_temp_root = temp_root
+        .canonicalize()
+        .map_err(|err| format!("Failed to access Prism PDF capture temp directory: {err}"))?;
+    let canonical_parent = parent
+        .canonicalize()
+        .map_err(|err| format!("Failed to access PDF output directory: {err}"))?;
+    if canonical_parent == canonical_temp_root
+        || !canonical_parent.starts_with(&canonical_temp_root)
+    {
+        return Err("PDF capture output must be inside Prism PDF capture temp storage".to_string());
+    }
+
+    let filename = target_path
+        .file_name()
+        .ok_or_else(|| "PDF output path must include a file name".to_string())?;
+    Ok(canonical_parent.join(filename))
 }
 
 fn validate_pdf_capture_rect(x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
@@ -99,11 +129,6 @@ async fn capture_current_webview_pdf_macos(
     webview_window
         .with_webview(move |platform_webview| {
             let result = (|| -> Result<(), String> {
-                if output_path_for_capture.exists() {
-                    std::fs::remove_file(&output_path_for_capture)
-                        .map_err(|err| format!("Failed to overwrite existing PDF file: {err}"))?;
-                }
-
                 let mtm = MainThreadMarker::new()
                     .ok_or_else(|| "WebKit PDF capture must run on the main thread".to_string())?;
                 let configuration = unsafe { WKPDFConfiguration::new(mtm) };
@@ -207,6 +232,7 @@ pub fn get_pdf_capture_capability() -> PdfCaptureCapability {
 
 #[tauri::command]
 pub async fn capture_current_webview_pdf(
+    app: AppHandle,
     webview_window: tauri::WebviewWindow,
     output_path: String,
     x: f64,
@@ -214,7 +240,11 @@ pub async fn capture_current_webview_pdf(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    let target_path = validate_pdf_output_path(&output_path)?;
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("Failed to resolve Prism app data directory: {err}"))?;
+    let target_path = validate_pdf_output_path(&app_data_dir, &output_path)?;
     validate_pdf_capture_rect(x, y, width, height)?;
     capture_current_webview_pdf_platform(webview_window, target_path, x, y, width, height).await
 }
@@ -222,21 +252,77 @@ pub async fn capture_current_webview_pdf(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn timestamp_millis() -> u128 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0)
+    }
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "prism-pdf-capture-{}-{}-{name}",
+            std::process::id(),
+            timestamp_millis()
+        ));
+        fs::create_dir_all(&path).expect("create temp dir");
+        path
+    }
 
     #[test]
     fn validates_pdf_output_path_extension() {
-        let output_path = std::env::temp_dir().join("prism-export-output.pdf");
+        let app_data_dir = temp_dir("app-data");
+        let capture_session = app_data_dir
+            .join(PDF_CAPTURE_TEMP_ROOT_NAME)
+            .join("session");
+        fs::create_dir_all(&capture_session).expect("create capture session");
+        let output_path = capture_session.join("capture-1.pdf");
+        let expected_output_path = capture_session
+            .canonicalize()
+            .expect("canonicalize capture session")
+            .join("capture-1.pdf");
 
         assert_eq!(
-            validate_pdf_output_path(output_path.to_str().unwrap()).expect("pdf path should pass"),
-            output_path
+            validate_pdf_output_path(&app_data_dir, output_path.to_str().unwrap())
+                .expect("pdf path should pass"),
+            expected_output_path
         );
-        assert!(validate_pdf_output_path("")
+        assert!(validate_pdf_output_path(&app_data_dir, "")
             .expect_err("empty path should fail")
             .contains("empty"));
-        assert!(validate_pdf_output_path("/tmp/export.png")
+        assert!(validate_pdf_output_path(&app_data_dir, "/tmp/export.png")
             .expect_err("non-pdf path should fail")
             .contains(".pdf"));
+
+        let _ = fs::remove_dir_all(app_data_dir);
+    }
+
+    #[test]
+    fn rejects_pdf_capture_output_outside_prism_temp_storage() {
+        let app_data_dir = temp_dir("app-data");
+        let capture_root = app_data_dir.join(PDF_CAPTURE_TEMP_ROOT_NAME);
+        fs::create_dir_all(&capture_root).expect("create capture root");
+        let user_dir = temp_dir("user-documents");
+        let user_pdf = user_dir.join("report.webkit-capture-1.pdf");
+
+        assert!(
+            validate_pdf_output_path(&app_data_dir, user_pdf.to_str().unwrap())
+                .expect_err("user directory path should fail")
+                .contains("Prism PDF capture temp storage")
+        );
+
+        let root_pdf = capture_root.join("capture-1.pdf");
+        assert!(
+            validate_pdf_output_path(&app_data_dir, root_pdf.to_str().unwrap())
+                .expect_err("capture root path should fail")
+                .contains("Prism PDF capture temp storage")
+        );
+
+        let _ = fs::remove_dir_all(app_data_dir);
+        let _ = fs::remove_dir_all(user_dir);
     }
 
     #[test]

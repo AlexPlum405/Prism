@@ -1,4 +1,4 @@
-import { readFile, remove, writeFile, writeTextFile } from '../../platform/tauri/fileSystem';
+import { readFile, writeFile, writeTextFile } from '../../platform/tauri/fileSystem';
 import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 import { readCustomFontBytes } from '../settings/fontService';
 import type {
@@ -75,6 +75,7 @@ import {
   captureCurrentWebviewPdf,
   getPdfCaptureCapability,
 } from './pdf/pdfCaptureClient';
+import { createPdfCaptureTempSession } from './pdf/pdfCaptureTemp';
 import {
   buildHeaderFooterTextParts,
   createPdfChromeTextImage,
@@ -2033,13 +2034,6 @@ export async function exportHtml(input: ExportDocumentInput, outputPath?: string
   return true;
 }
 
-function getWebkitPdfCapturePath(targetPath: string, batchIndex: number) {
-  const suffix = `.webkit-capture-${batchIndex + 1}.pdf`;
-  return targetPath.toLowerCase().endsWith('.pdf')
-    ? `${targetPath.slice(0, -4)}${suffix}`
-    : `${targetPath}${suffix}`;
-}
-
 function getWebkitPdfCaptureProgressMessage(startPage: number, endPage: number, pageCount: number) {
   return startPage === endPage
     ? t('export.progress.capturePdfPage', { page: startPage, total: pageCount })
@@ -2319,7 +2313,7 @@ async function exportPdfWithNativeCapture(input: ExportDocumentInput, targetPath
   const cssPxToPdfPoint = layout.contentWidth / layout.rect.width;
   let pageIndex = 0;
   let batchIndex = 0;
-  const tempPaths: string[] = [];
+  const tempSession = await createPdfCaptureTempSession();
 
   try {
     while (pageIndex < layout.pageCount) {
@@ -2329,8 +2323,7 @@ async function exportPdfWithNativeCapture(input: ExportDocumentInput, targetPath
       const batchStartY = Math.floor(pageIndex * layout.pageCssHeight);
       const batchEndY = Math.min(layout.rect.height, Math.ceil(batchEndPage * layout.pageCssHeight));
       const batchHeight = Math.max(1, batchEndY - batchStartY);
-      const capturePath = getWebkitPdfCapturePath(targetPath, batchIndex);
-      tempPaths.push(capturePath);
+      const capturePath = tempSession.getCapturePath(batchIndex);
 
       reportProgress(input, getWebkitPdfCaptureProgressMessage(pageIndex + 1, batchEndPage, layout.pageCount));
       await captureCurrentWebviewPdf({
@@ -2376,7 +2369,7 @@ async function exportPdfWithNativeCapture(input: ExportDocumentInput, targetPath
     reportProgress(input, exportProgressMessages.writeFile('PDF'));
     await writeFile(targetPath, await pdf.save());
   } finally {
-    await Promise.all(tempPaths.map((path) => remove(path).catch(() => undefined)));
+    await tempSession.cleanup().catch(() => undefined);
   }
 
   await overlayPdfChrome(input, targetPath);

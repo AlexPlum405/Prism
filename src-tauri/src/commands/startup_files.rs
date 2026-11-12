@@ -1,3 +1,7 @@
+#[cfg(target_os = "macos")]
+use std::path::PathBuf;
+#[cfg(target_os = "macos")]
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashSet, path::Path, sync::Mutex};
 
 use tauri::{Emitter, Manager, State};
@@ -92,13 +96,35 @@ pub fn handle_opened_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
             .filter(|path| !focus_existing_startup_file_window(app, path))
             .collect();
 
-        if !paths_to_open.is_empty() {
-            let state: State<PendingFiles> = app.state();
-            state.push_paths(paths_to_open.clone());
-            if let Some(label) = preferred_startup_file_window_label(app) {
-                let _ = app.emit_to(label, "file-opened", &paths_to_open);
-            }
+        if paths_to_open.is_empty() {
+            return;
         }
+
+        if should_open_startup_files_in_new_windows(has_visible_startup_file_window(app)) {
+            let failed_paths: Vec<String> = paths_to_open
+                .iter()
+                .enumerate()
+                .filter_map(|(index, path)| {
+                    open_startup_file_window(app, path, index)
+                        .map(|_| None)
+                        .unwrap_or_else(|error| {
+                            eprintln!(
+                                "[startup_files] Failed to open startup file window for {path}: {error}"
+                            );
+                            Some(path.clone())
+                        })
+                })
+                .collect();
+
+            if failed_paths.is_empty() {
+                return;
+            }
+
+            queue_opened_paths_for_existing_window(app, failed_paths);
+            return;
+        }
+
+        queue_opened_paths_for_existing_window(app, paths_to_open);
     }
 }
 
@@ -132,6 +158,88 @@ fn focus_existing_startup_file_window(app: &tauri::AppHandle, path: &str) -> boo
     }
 
     false
+}
+
+#[cfg(target_os = "macos")]
+fn has_visible_startup_file_window(app: &tauri::AppHandle) -> bool {
+    app.webview_windows().iter().any(|(label, window)| {
+        is_prism_document_window(label) && window.is_visible().unwrap_or(false)
+    })
+}
+
+#[cfg(target_os = "macos")]
+fn should_open_startup_files_in_new_windows(has_visible_window: bool) -> bool {
+    has_visible_window
+}
+
+#[cfg(target_os = "macos")]
+fn queue_opened_paths_for_existing_window(app: &tauri::AppHandle, paths: Vec<String>) {
+    if paths.is_empty() {
+        return;
+    }
+
+    let state: State<PendingFiles> = app.state();
+    state.push_paths(paths.clone());
+    if let Some(label) = preferred_startup_file_window_label(app) {
+        let _ = app.emit_to(label, "file-opened", &paths);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn encode_query_component(value: &str) -> String {
+    let mut encoded = String::new();
+    for byte in value.as_bytes() {
+        match *byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                encoded.push(*byte as char);
+            }
+            _ => {
+                encoded.push_str(&format!("%{byte:02X}"));
+            }
+        }
+    }
+    encoded
+}
+
+#[cfg(target_os = "macos")]
+fn startup_file_window_url(path: &str) -> PathBuf {
+    PathBuf::from(format!("/?file={}", encode_query_component(path)))
+}
+
+#[cfg(target_os = "macos")]
+fn startup_file_window_label(sequence: usize) -> String {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    format!("prism-opened-{stamp}-{sequence}")
+}
+
+#[cfg(target_os = "macos")]
+fn open_startup_file_window(
+    app: &tauri::AppHandle,
+    path: &str,
+    sequence: usize,
+) -> tauri::Result<()> {
+    tauri::WebviewWindowBuilder::new(
+        app,
+        startup_file_window_label(sequence),
+        tauri::WebviewUrl::App(startup_file_window_url(path)),
+    )
+    .title("Prism")
+    .inner_size(1100.0, 760.0)
+    .min_inner_size(900.0, 620.0)
+    .resizable(true)
+    .maximizable(true)
+    .minimizable(true)
+    .closable(true)
+    .fullscreen(false)
+    .decorations(true)
+    .title_bar_style(tauri::TitleBarStyle::Overlay)
+    .hidden_title(true)
+    .visible(false)
+    .build()?;
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
@@ -332,6 +440,37 @@ mod tests {
             startup_file_window_priority("prism-1", false, true, true)
                 > startup_file_window_priority("prism-2", true, false, true)
         );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn visible_running_document_windows_route_system_opens_to_new_windows() {
+        assert!(should_open_startup_files_in_new_windows(true));
+        assert!(!should_open_startup_files_in_new_windows(false));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn startup_file_window_url_encodes_file_paths_for_bootstrap() {
+        assert_eq!(
+            startup_file_window_url("/tmp/中文 文档.markdown").to_string_lossy(),
+            "/?file=%2Ftmp%2F%E4%B8%AD%E6%96%87%20%E6%96%87%E6%A1%A3.markdown",
+        );
+        assert_eq!(
+            startup_file_window_url("C:/docs/a+b.md").to_string_lossy(),
+            "/?file=C%3A%2Fdocs%2Fa%2Bb.md",
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn startup_file_window_labels_stay_in_document_window_namespace() {
+        let first = startup_file_window_label(0);
+        let second = startup_file_window_label(1);
+
+        assert!(first.starts_with("prism-opened-"));
+        assert!(second.starts_with("prism-opened-"));
+        assert_ne!(first, second);
     }
 
     #[test]

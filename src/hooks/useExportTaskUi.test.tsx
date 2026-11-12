@@ -178,7 +178,7 @@ describe('useExportTaskUi', () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('stage: render');
-    expect(showToast).toHaveBeenCalledWith('导出诊断文本已复制');
+    expect(showToast).toHaveBeenCalledWith('导出诊断文本已复制', 'success');
 
     act(() => {
       result.current.dismissExportFailure();

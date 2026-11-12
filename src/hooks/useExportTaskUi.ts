@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ToastInput } from '../lib/toast';
+import type { ShowToast } from '../lib/toast';
 import {
   EXPORT_ACTION_TOAST_DURATION_MS,
   EXPORT_TRANSIENT_FEEDBACK_MS,
@@ -29,7 +29,7 @@ export interface ExportFeedbackState {
   title: string;
 }
 
-export function useExportTaskUi(showToast: (input: ToastInput) => void) {
+export function useExportTaskUi(showToast: ShowToast) {
   const [exportProgress, setExportProgress] = useState<string | null>(null);
   const [exportProgressInBackground, setExportProgressInBackground] = useState(false);
   const [exportFailure, setExportFailure] = useState<ExportFailureState | null>(null);
@@ -174,9 +174,9 @@ export function useExportTaskUi(showToast: (input: ToastInput) => void) {
     if (!exportFailure) return;
     try {
       await navigator.clipboard.writeText(exportFailure.diagnostic);
-      showToast(t('export.diagnosticCopied'));
+      showToast(t('export.diagnosticCopied'), 'success');
     } catch {
-      showToast(t('export.diagnosticCopyFailed'));
+      showToast(t('export.diagnosticCopyFailed'), 'error');
     }
   }, [exportFailure, showToast]);
 

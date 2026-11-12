@@ -1,3 +1,4 @@
+import type { ShowToast } from '../lib/toast';
 import { useCallback, useMemo, useState } from 'react';
 import { downloadDir, homeDir } from '../platform/tauri/path';
 import { getExportFormatLabel, type ExportFormat } from '../domains/export/types';
@@ -48,7 +49,7 @@ async function resolveDefaultExportDirectory(input: {
   documentPath?: string;
   existsPath: (path: string) => Promise<boolean>;
   rootPath?: string | null;
-  showToast?: (message: string) => void;
+  showToast?: ShowToast;
 }) {
   const fallback = input.documentPath
     ? dirname(input.documentPath)
@@ -114,7 +115,7 @@ interface UseSaveExportDialogModelInput {
   existsPath: (path: string) => Promise<boolean>;
   exportDefaults: SettingsState['exportDefaults'];
   rootPath: string | null;
-  showToast: (message: string) => void;
+  showToast: ShowToast;
 }
 
 export function useSaveExportDialogModel({

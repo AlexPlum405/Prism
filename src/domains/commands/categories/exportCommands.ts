@@ -209,7 +209,7 @@ async function handleExport(
 ): Promise<void> {
   const doc = context.documentStore.currentDocument;
   if (!doc) {
-    context.showToast?.(t('export.noDocument'));
+    context.showToast?.(t('export.noDocument'), 'warning');
     return;
   }
 
@@ -267,7 +267,7 @@ async function handleExport(
     }
 
     if (!options.outputPath && !context.requestExportPath) {
-      context.showToast?.(t('export.savePanelUnavailable'));
+      context.showToast?.(t('export.savePanelUnavailable'), 'warning');
       return;
     }
 
@@ -453,7 +453,7 @@ async function handleExport(
 async function handleExportWithPrevious(context: CommandContext, overwrite: boolean): Promise<void> {
   const history = getCurrentDocumentExportHistory(context);
   if (!history) {
-    context.showToast?.(t('export.noPreviousHistory'));
+    context.showToast?.(t('export.noPreviousHistory'), 'warning');
     return;
   }
 

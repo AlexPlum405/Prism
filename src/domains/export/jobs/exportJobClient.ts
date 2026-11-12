@@ -34,6 +34,10 @@ export class ExportCancelledError extends Error {
 let localJobSequence = 0;
 const localJobs = new Map<string, ExportJob>();
 
+// 本地兜底作业只用于导出进行中的进度查询，完成后无人读取；
+// 限制保留条数，避免长会话里每次导出都永久累积。
+const LOCAL_JOB_HISTORY_LIMIT = 20;
+
 function nowMs() {
   return Date.now();
 }
@@ -71,6 +75,11 @@ function shouldUseLocalFallback(error: unknown): boolean {
 
 function rememberLocalJob(job: ExportJob): ExportJob {
   localJobs.set(job.id, job);
+  while (localJobs.size > LOCAL_JOB_HISTORY_LIMIT) {
+    const oldestId = localJobs.keys().next().value as string | undefined;
+    if (oldestId === undefined) break;
+    localJobs.delete(oldestId);
+  }
   return job;
 }
 
