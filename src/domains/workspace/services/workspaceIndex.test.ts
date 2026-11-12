@@ -4,11 +4,13 @@ import {
   applyWorkspaceIndexOverlay,
   buildWorkspaceIndex,
   buildWorkspaceIndexIncremental,
+} from './workspaceIndex';
+import {
   getWorkspaceIndexBacklinks,
   getWorkspaceIndexLinkFiles,
   rankWorkspaceIndexDocuments,
   searchWorkspaceIndex,
-} from './workspaceIndex';
+} from './workspaceIndexQuery';
 import {
   getWorkspaceIndexDocumentRelations,
   hasWorkspaceIndexDocumentRelations,

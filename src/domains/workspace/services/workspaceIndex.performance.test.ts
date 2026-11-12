@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FileNode } from '../types';
-import { buildWorkspaceIndex, searchWorkspaceIndex } from './workspaceIndex';
+import { buildWorkspaceIndex } from './workspaceIndex';
+import { searchWorkspaceIndex } from './workspaceIndexQuery';
 
 const RUN_WORKSPACE_INDEX_BENCHMARK = process.env.PRISM_WORKSPACE_INDEX_BENCH === '1';
 
