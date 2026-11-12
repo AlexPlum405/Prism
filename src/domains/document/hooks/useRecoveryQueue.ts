@@ -1,3 +1,4 @@
+import type { ShowToast } from '../../../lib/toast';
 import { useCallback, useEffect, useState } from 'react';
 import {
   deleteRecoverySnapshot,
@@ -10,7 +11,7 @@ import { t } from '../../i18n';
 export type RecoveryAction = 'restore' | 'discard';
 
 interface UseRecoveryQueueOptions {
-  showToast: (message: string) => void;
+  showToast: ShowToast;
 }
 
 interface UseRecoveryQueueResult {
@@ -58,9 +59,9 @@ export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRec
     try {
       await restoreRecoverySnapshot(snapshot);
       removeRecoverySnapshotFromList(snapshot);
-      showToast(t('recovery.restoreDone'));
+      showToast(t('recovery.restoreDone'), 'success');
     } catch (error) {
-      showToast(t('recovery.restoreFailed', { message: formatRecoveryError(error) }));
+      showToast(t('recovery.restoreFailed', { message: formatRecoveryError(error) }), 'error');
     } finally {
       setRecoveryAction(null);
     }
@@ -74,9 +75,9 @@ export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRec
     try {
       await deleteRecoverySnapshot(snapshot);
       removeRecoverySnapshotFromList(snapshot);
-      showToast(t('recovery.discardDone'));
+      showToast(t('recovery.discardDone'), 'success');
     } catch (error) {
-      showToast(t('recovery.discardFailed', { message: formatRecoveryError(error) }));
+      showToast(t('recovery.discardFailed', { message: formatRecoveryError(error) }), 'error');
     } finally {
       setRecoveryAction(null);
     }

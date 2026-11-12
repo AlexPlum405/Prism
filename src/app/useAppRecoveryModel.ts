@@ -1,3 +1,4 @@
+import type { ShowToast } from '../lib/toast';
 import { useRecoveryQueue } from '../domains/document/hooks/useRecoveryQueue';
 
 interface RecoveryPromptVisibilityInput {
@@ -9,7 +10,7 @@ interface RecoveryPromptVisibilityInput {
 interface UseAppRecoveryModelInput {
   hasSaveConflict: boolean;
   saveDialogVisible: boolean;
-  showToast: (message: string) => void;
+  showToast: ShowToast;
 }
 
 export function shouldShowRecoveryPrompt({

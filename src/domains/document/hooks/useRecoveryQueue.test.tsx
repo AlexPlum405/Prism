@@ -73,7 +73,7 @@ describe('useRecoveryQueue', () => {
 
     expect(restoreRecoverySnapshot).toHaveBeenCalledWith(firstSnapshot);
     expect(result.current.activeRecoverySnapshot).toEqual(secondSnapshot);
-    expect(showToast).toHaveBeenCalledWith('已恢复本地快照');
+    expect(showToast).toHaveBeenCalledWith('已恢复本地快照', 'success');
   });
 
   it('discards only the active snapshot and leaves newer document recovery contract intact', async () => {
@@ -90,7 +90,7 @@ describe('useRecoveryQueue', () => {
 
     expect(deleteRecoverySnapshot).toHaveBeenCalledWith(firstSnapshot);
     expect(result.current.activeRecoverySnapshot).toEqual(secondSnapshot);
-    expect(showToast).toHaveBeenCalledWith('已丢弃恢复快照');
+    expect(showToast).toHaveBeenCalledWith('已丢弃恢复快照', 'success');
   });
 
   it('keeps the active snapshot available when restore fails', async () => {
@@ -107,7 +107,7 @@ describe('useRecoveryQueue', () => {
     });
 
     expect(result.current.activeRecoverySnapshot).toEqual(firstSnapshot);
-    expect(showToast).toHaveBeenCalledWith('恢复失败: disk denied');
+    expect(showToast).toHaveBeenCalledWith('恢复失败: disk denied', 'error');
   });
 
   it('keeps the active snapshot available when discard fails', async () => {
@@ -124,7 +124,7 @@ describe('useRecoveryQueue', () => {
     });
 
     expect(result.current.activeRecoverySnapshot).toEqual(firstSnapshot);
-    expect(showToast).toHaveBeenCalledWith('丢弃失败: disk denied');
+    expect(showToast).toHaveBeenCalledWith('丢弃失败: disk denied', 'error');
   });
 
   it('does not update state after unmounting while startup recovery scan is pending', async () => {

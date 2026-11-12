@@ -3,7 +3,7 @@ import {
   mkdir,
   readDir,
   readTextFile,
-  remove,
+  removeAppDataPath,
   writeTextFile,
 } from '../../../platform/tauri/fileSystem';
 import { appDataDir } from '../../../platform/tauri/path';
@@ -125,7 +125,9 @@ async function listRecoverySnapshotsForDocument(documentPath: string): Promise<R
 async function pruneRecoverySnapshots(documentPath: string): Promise<void> {
   const snapshots = await listRecoverySnapshotsForDocument(documentPath);
   const stale = snapshots.slice(MAX_RECOVERY_SNAPSHOTS_PER_DOCUMENT);
-  await Promise.all(stale.map((snapshot) => remove(snapshot.filePath).catch(() => undefined)));
+  await Promise.all(stale.map((snapshot) => removeAppDataPath(snapshot.filePath, {
+    reason: 'recovery-snapshot-prune',
+  }).catch(() => undefined)));
 }
 
 async function getUniqueRecoverySnapshotPath(documentDir: string, createdAt: number) {
@@ -170,11 +172,16 @@ export async function clearRecoverySnapshotsForDocument(documentPath: string): P
   if (!documentPath) return;
   const documentDir = await getRecoveryDocumentPath(documentPath);
   if (!(await exists(documentDir))) return;
-  await remove(documentDir, { recursive: true });
+  await removeAppDataPath(documentDir, {
+    recursive: true,
+    reason: 'recovery-document-clear',
+  });
 }
 
 export async function deleteRecoverySnapshot(snapshot: RecoverySnapshot): Promise<void> {
-  await remove(snapshot.filePath);
+  await removeAppDataPath(snapshot.filePath, {
+    reason: 'recovery-snapshot-delete',
+  });
 }
 
 export async function listRecoverySnapshots(): Promise<RecoverySnapshot[]> {
