@@ -512,6 +512,10 @@ fn split_csv(value: &str) -> Vec<String> {
         .collect()
 }
 
+fn unquote_yaml_scalar(value: &str) -> String {
+    value.trim().trim_matches('"').trim_matches('\'').to_string()
+}
+
 fn parse_front_matter(content: &str) -> ParsedDocument {
     let mut front_matter = FrontMatterDto {
         author: String::new(),
@@ -546,18 +550,40 @@ fn parse_front_matter(content: &str) -> ParsedDocument {
     front_matter.export_raw = raw.to_string();
     front_matter.has_front_matter = true;
 
+    // 逐行扫描而不是上 YAML 解析器：front matter 只取 6 个已知键，
+    // 真正需要的是「tags 既能写 inline 列表也能写块列表」这一种结构。
+    let mut collecting_tags = false;
     for line in raw.lines() {
-        let Some((key, value)) = line.split_once(':') else {
+        let trimmed = line.trim();
+
+        if let Some(item) = trimmed.strip_prefix("- ") {
+            if collecting_tags {
+                let item = unquote_yaml_scalar(item);
+                if !item.is_empty() {
+                    front_matter.tags.push(item);
+                }
+            }
+            continue;
+        }
+
+        let Some((key, value)) = trimmed.split_once(':') else {
+            collecting_tags = false;
             continue;
         };
-        let value = value.trim().trim_matches('"').trim_matches('\'');
-        match key.trim() {
-            "author" => front_matter.author = value.to_string(),
-            "date" => front_matter.date = value.to_string(),
-            "description" => front_matter.description = value.to_string(),
-            "status" => front_matter.status = value.to_string(),
-            "tags" => front_matter.tags = split_csv(value.trim_matches(['[', ']'])),
-            "title" => front_matter.title = value.to_string(),
+        let key = key.trim();
+        let value = unquote_yaml_scalar(value);
+        // 只有 `tags:` 后面留空才期待块列表，`tags: [a, b]` 已经在同一行收完
+        collecting_tags = key == "tags" && value.is_empty();
+
+        match key {
+            "author" => front_matter.author = value,
+            "date" => front_matter.date = value,
+            "description" => front_matter.description = value,
+            "status" => front_matter.status = value,
+            "tags" => {
+                front_matter.tags = split_csv(value.trim_matches(['[', ']']));
+            }
+            "title" => front_matter.title = value,
             _ => {}
         }
     }
@@ -589,31 +615,75 @@ fn strip_inline_code(value: &str) -> String {
     value.replace('`', "")
 }
 
+/// 去掉标题尾部的闭合井号（`## Title ##` → `## Title`）。
+///
+/// 不能简单地 trim_end_matches('#')：`## C#` 的井号是标题内容的一部分，
+/// 只有当尾部 `#` 前面存在空格时才算闭合标记。
+fn strip_closing_hashes(line: &str) -> &str {
+    let trimmed = line.trim_end();
+    if let Some(index) = trimmed.find(" #") {
+        let tail = &trimmed[index + 1..];
+        if tail.chars().all(|ch| ch == '#') {
+            return trimmed[..index].trim_end();
+        }
+    }
+    trimmed
+}
+
+/// 识别围栏代码块的开启／闭合行。返回 (标记字符, 连续的标记数量)。
+fn fence_marker(line: &str) -> Option<(char, usize)> {
+    let trimmed = line.trim_start();
+    let marker = trimmed.chars().next()?;
+    if marker != '`' && marker != '~' {
+        return None;
+    }
+    let run = trimmed.chars().take_while(|ch| *ch == marker).count();
+    (run >= 3).then_some((marker, run))
+}
+
 fn parse_headings(body: &str, line_offset: usize) -> Vec<HeadingDto> {
-    body.lines()
-        .enumerate()
-        .filter_map(|(index, line)| {
-            let trimmed = line.trim_end_matches('#').trim();
-            let level = trimmed.chars().take_while(|ch| *ch == '#').count();
-            if !(1..=6).contains(&level) {
-                return None;
+    let mut headings = Vec::new();
+    let mut open_fence: Option<(char, usize)> = None;
+
+    for (index, line) in body.lines().enumerate() {
+        if let Some((marker, run)) = fence_marker(line) {
+            match open_fence {
+                // 同种标记且不短于开启围栏才闭合，`~~~` 里的 ``` 不算
+                Some((open_marker, open_run)) if open_marker == marker && run >= open_run => {
+                    open_fence = None;
+                }
+                Some(_) => {}
+                None => open_fence = Some((marker, run)),
             }
-            if !trimmed.chars().nth(level).is_some_and(char::is_whitespace) {
-                return None;
-            }
-            let title = strip_inline_code(trimmed[level..].trim());
-            let slug = heading_slug(&title);
-            if title.is_empty() || slug.is_empty() {
-                return None;
-            }
-            Some(HeadingDto {
-                level: level as u8,
-                line: line_offset + index + 1,
-                slug,
-                title,
-            })
-        })
-        .collect()
+            continue;
+        }
+        // 代码块里的 `# 注释` 不是标题
+        if open_fence.is_some() {
+            continue;
+        }
+
+        let trimmed = strip_closing_hashes(line).trim();
+        let level = trimmed.chars().take_while(|ch| *ch == '#').count();
+        if !(1..=6).contains(&level) {
+            continue;
+        }
+        if !trimmed.chars().nth(level).is_some_and(char::is_whitespace) {
+            continue;
+        }
+        let title = strip_inline_code(trimmed[level..].trim());
+        let slug = heading_slug(&title);
+        if title.is_empty() || slug.is_empty() {
+            continue;
+        }
+        headings.push(HeadingDto {
+            level: level as u8,
+            line: line_offset + index + 1,
+            slug,
+            title,
+        });
+    }
+
+    headings
 }
 
 fn line_column_from_index(content: &str, index: usize) -> (usize, usize) {
@@ -2587,5 +2657,37 @@ mod tests {
         );
 
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn headings_ignore_fenced_code_blocks() {
+        let body = "# Real\n\n```bash\n# not a heading\n```\n\n~~~md\n## also not\n~~~\n\n## After\n";
+        let headings = parse_headings(body, 0);
+        let titles: Vec<&str> = headings.iter().map(|h| h.title.as_str()).collect();
+        assert_eq!(titles, vec!["Real", "After"]);
+        assert_eq!(headings[1].line, 11);
+    }
+
+    #[test]
+    fn headings_keep_hash_that_belongs_to_the_title() {
+        let headings = parse_headings("## C#\n## Closed ##\n", 0);
+        let titles: Vec<&str> = headings.iter().map(|h| h.title.as_str()).collect();
+        assert_eq!(titles, vec!["C#", "Closed"]);
+    }
+
+    #[test]
+    fn front_matter_reads_block_style_tags() {
+        let content = "---\ntitle: Note\ntags:\n  - rust\n  - \"index\"\nstatus: draft\n---\n# Body\n";
+        let parsed = parse_front_matter(content);
+        assert_eq!(parsed.front_matter.tags, vec!["rust", "index"]);
+        assert_eq!(parsed.front_matter.status, "draft");
+        assert!(parsed.body.trim_start().starts_with("# Body"));
+    }
+
+    #[test]
+    fn front_matter_reads_inline_tags() {
+        let content = "---\ntags: [a, b]\n---\nbody\n";
+        let parsed = parse_front_matter(content);
+        assert_eq!(parsed.front_matter.tags, vec!["a", "b"]);
     }
 }
