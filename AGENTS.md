@@ -16,7 +16,7 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 
 - 不 `force push` 共享分支，不对已推送的提交 `--amend`。
 - 不提交真实密钥与凭据；只提交占位值，环境配置不入库。
-- Tauri API 直连存量约 27 处不再扩散，新增调用走 `src/platform`。
+- Tauri API 直连存量 12 处（窗口 / WebView / 事件 / 更新器），不再扩散；新增调用走 `src/platform`。
 
 ## 流程
 
@@ -76,3 +76,4 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 - **Issue**：GitHub Issues（`AlexPlum405/Prism`），用 `gh` CLI，详见 `docs/agents/issue-tracker.md`。
 - **标签**：needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix。
 - **领域文档**：单上下文布局，`CONTEXT.md` + `docs/adr/`。
+- **规则文件**：本文件是唯一真身，`CLAUDE.md` 是指向它的软链，改规则只动这里。
