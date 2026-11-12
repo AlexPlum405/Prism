@@ -6,7 +6,6 @@ import type {
   Table as DocxTable,
   TextRun as DocxTextRun,
 } from 'docx';
-import { Zlib } from 'fflate';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
@@ -64,9 +63,33 @@ import { buildStandaloneHtml } from './render/standaloneHtml';
 import {
   assertExportCanvasWithinLimits,
   isExportCanvasWithinLimits,
-  MAX_EXPORT_CANVAS_AREA,
-  MAX_EXPORT_CANVAS_DIMENSION,
 } from './render/canvasLimits';
+import {
+  DOCX_IMAGE_MAX_HEIGHT,
+  DOCX_IMAGE_MAX_WIDTH,
+  DOCX_MERMAID_IMAGE_MAX_HEIGHT,
+  DOCX_MERMAID_IMAGE_MAX_WIDTH,
+  DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS,
+  DOCX_VISUAL_BLOCK_WIDTH,
+  EXPORT_FONT_READY_TIMEOUT_MS,
+  EXPORT_MARKMAP_RENDER_TIMEOUT_MS,
+  EXPORT_MERMAID_RENDER_TIMEOUT_MS,
+  EXPORT_PLANTUML_RENDER_TIMEOUT_MS,
+  PDF_EXPORT_BATCH_RENDER_TIMEOUT_MS,
+  PDF_EXPORT_MAX_PAGES,
+  PDF_EXPORT_MAX_PAGES_PER_BATCH,
+  PDF_EXPORT_MAX_RENDER_VIEWPORT_HEIGHT,
+  PDF_EXPORT_RASTER_SCALE,
+  STANDALONE_EXPORT_FRAME_WIDTH,
+  WEBKIT_PDF_CAPTURE_WIDTH,
+  WEBKIT_PDF_MAX_CAPTURE_HEIGHT,
+  WEBKIT_PDF_MAX_PAGES_PER_CAPTURE,
+} from './exportConstants';
+import { createSlicedRenderedPng } from './png/pngAssembly';
+import {
+  normalizePlantUmlSvg,
+  rasterizePlantUmlSvgsForCapture,
+} from './diagrams/svgDocument';
 import {
   collectExportPdfLinkRects,
   type ExportPdfLinkRect,
@@ -124,30 +147,6 @@ interface PdfRenderResult {
   pageCssHeight: number;
   contentCssWidth: number;
 }
-interface PngRenderedImage {
-  data: Uint8Array;
-  width: number;
-  height: number;
-}
-interface PngCaptureColumn {
-  x: number;
-  width: number;
-  pixelX: number;
-  pixelWidth: number;
-}
-interface PngCaptureRow {
-  y: number;
-  height: number;
-  pixelY: number;
-  pixelHeight: number;
-}
-interface PngCapturedTile {
-  column: PngCaptureColumn;
-  data: Uint8ClampedArray;
-  width: number;
-  height: number;
-}
-type Html2CanvasRenderer = typeof import('html2canvas')['default'];
 interface PandocCitationHtmlResult {
   html: string;
   warnings: string;
@@ -169,25 +168,6 @@ interface WebkitPdfCaptureLayout {
   margins: typeof pdfPageMarginsPoints[keyof typeof pdfPageMarginsPoints];
 }
 
-const PDF_EXPORT_RASTER_SCALE = 2;
-const PDF_EXPORT_MAX_PAGES = 500;
-const PDF_EXPORT_BATCH_RENDER_TIMEOUT_MS = 60_000;
-const PDF_EXPORT_MAX_RENDER_VIEWPORT_HEIGHT = 4_096;
-const PDF_EXPORT_MAX_PAGES_PER_BATCH = 8;
-const WEBKIT_PDF_CAPTURE_WIDTH = 980;
-const STANDALONE_EXPORT_FRAME_WIDTH = 1040;
-const WEBKIT_PDF_MAX_CAPTURE_HEIGHT = 12_000;
-const WEBKIT_PDF_MAX_PAGES_PER_CAPTURE = 8;
-const EXPORT_MERMAID_RENDER_TIMEOUT_MS = 20_000;
-const EXPORT_MARKMAP_RENDER_TIMEOUT_MS = 20_000;
-const EXPORT_PLANTUML_RENDER_TIMEOUT_MS = 30_000;
-const EXPORT_FONT_READY_TIMEOUT_MS = 3_000;
-const DOCX_VISUAL_BLOCK_RENDER_TIMEOUT_MS = 60_000;
-const DOCX_VISUAL_BLOCK_WIDTH = 760;
-const DOCX_IMAGE_MAX_WIDTH = 500;
-const DOCX_IMAGE_MAX_HEIGHT = 900;
-const DOCX_MERMAID_IMAGE_MAX_WIDTH = 650;
-const DOCX_MERMAID_IMAGE_MAX_HEIGHT = 900;
 function hasCitationExportConfig(input: ExportDocumentInput) {
   return Boolean(input.citation?.bibliographyPath || input.citation?.cslStylePath);
 }
@@ -378,246 +358,6 @@ async function createPdfRenderedPageFromBatch(
   };
 }
 
-const PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
-const PNG_CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let index = 0; index < table.length; index += 1) {
-    let value = index;
-    for (let bit = 0; bit < 8; bit += 1) {
-      value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
-    }
-    table[index] = value >>> 0;
-  }
-  return table;
-})();
-
-function writePngUint32(target: Uint8Array, offset: number, value: number) {
-  target[offset] = (value >>> 24) & 0xff;
-  target[offset + 1] = (value >>> 16) & 0xff;
-  target[offset + 2] = (value >>> 8) & 0xff;
-  target[offset + 3] = value & 0xff;
-}
-
-function getPngCrc32(bytes: Uint8Array) {
-  let crc = 0xffffffff;
-  for (let index = 0; index < bytes.length; index += 1) {
-    crc = PNG_CRC_TABLE[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function createPngChunk(type: string, data: Uint8Array<ArrayBufferLike> = new Uint8Array()) {
-  if (type.length !== 4) throw new Error(`Invalid PNG chunk type: ${type}`);
-  const chunk = new Uint8Array(12 + data.length);
-  writePngUint32(chunk, 0, data.length);
-  for (let index = 0; index < 4; index += 1) {
-    chunk[4 + index] = type.charCodeAt(index);
-  }
-  chunk.set(data, 8);
-  writePngUint32(chunk, 8 + data.length, getPngCrc32(chunk.subarray(4, 8 + data.length)));
-  return chunk;
-}
-
-function concatPngChunks(chunks: Uint8Array<ArrayBufferLike>[]) {
-  const byteLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
-  const output = new Uint8Array(byteLength);
-  let offset = 0;
-  chunks.forEach((chunk) => {
-    output.set(chunk, offset);
-    offset += chunk.length;
-  });
-  return output;
-}
-
-class RgbaPngStreamEncoder {
-  private readonly chunks: Uint8Array<ArrayBufferLike>[];
-
-  private readonly idatChunks: Uint8Array<ArrayBufferLike>[] = [];
-
-  private readonly zlib: Zlib;
-
-  constructor(width: number, height: number) {
-    const ihdr = new Uint8Array(13);
-    writePngUint32(ihdr, 0, width);
-    writePngUint32(ihdr, 4, height);
-    ihdr[8] = 8;
-    ihdr[9] = 6;
-    ihdr[10] = 0;
-    ihdr[11] = 0;
-    ihdr[12] = 0;
-
-    this.chunks = [PNG_SIGNATURE, createPngChunk('IHDR', ihdr)];
-    this.zlib = new Zlib({ level: 6 }, (data) => {
-      if (data.length > 0) this.idatChunks.push(data);
-    });
-  }
-
-  pushScanline(scanline: Uint8Array) {
-    this.zlib.push(scanline);
-  }
-
-  finish() {
-    this.zlib.push(new Uint8Array(), true);
-    this.idatChunks.forEach((chunk) => {
-      this.chunks.push(createPngChunk('IDAT', chunk));
-    });
-    this.chunks.push(createPngChunk('IEND'));
-    return concatPngChunks(this.chunks);
-  }
-}
-
-function getScaledPngPixelLength(cssLength: number, scale: number) {
-  return Math.max(1, Math.ceil(cssLength * scale));
-}
-
-function createPngCaptureColumns(width: number, scale: number): PngCaptureColumn[] {
-  const maxCssWidth = Math.max(1, Math.floor(MAX_EXPORT_CANVAS_DIMENSION / scale));
-  const finalPixelWidth = getScaledPngPixelLength(width, scale);
-  const columns: PngCaptureColumn[] = [];
-  for (let x = 0; x < width;) {
-    const columnWidth = Math.min(maxCssWidth, width - x);
-    const nextX = x + columnWidth;
-    const pixelX = Math.round(x * scale);
-    const pixelEnd = nextX >= width ? finalPixelWidth : Math.round(nextX * scale);
-    columns.push({
-      x,
-      width: columnWidth,
-      pixelX,
-      pixelWidth: Math.max(1, pixelEnd - pixelX),
-    });
-    x = nextX;
-  }
-  return columns;
-}
-
-function getMaxPngRowCssHeight(documentWidth: number, documentHeight: number, scale: number) {
-  const scaledWidth = getScaledPngPixelLength(documentWidth, scale);
-  const maxScaledHeightByArea = Math.max(1, Math.floor(MAX_EXPORT_CANVAS_AREA / scaledWidth));
-  const maxScaledHeight = Math.max(1, Math.min(MAX_EXPORT_CANVAS_DIMENSION, maxScaledHeightByArea));
-  return Math.max(1, Math.min(documentHeight, Math.floor(maxScaledHeight / scale)));
-}
-
-function createPngCaptureRows(width: number, height: number, scale: number): PngCaptureRow[] {
-  const maxCssHeight = getMaxPngRowCssHeight(width, height, scale);
-  const finalPixelHeight = getScaledPngPixelLength(height, scale);
-  const rows: PngCaptureRow[] = [];
-  for (let y = 0; y < height;) {
-    const rowHeight = Math.min(maxCssHeight, height - y);
-    const nextY = y + rowHeight;
-    const pixelY = Math.round(y * scale);
-    const pixelEnd = nextY >= height ? finalPixelHeight : Math.round(nextY * scale);
-    rows.push({
-      y,
-      height: rowHeight,
-      pixelY,
-      pixelHeight: Math.max(1, pixelEnd - pixelY),
-    });
-    y = nextY;
-  }
-  return rows;
-}
-
-async function capturePngTile(
-  html2canvas: Html2CanvasRenderer,
-  target: HTMLElement,
-  options: {
-    backgroundColor: string;
-    documentWidth: number;
-    scale: number;
-    column: PngCaptureColumn;
-    row: PngCaptureRow;
-  },
-): Promise<PngCapturedTile> {
-  assertExportCanvasWithinLimits(
-    options.column.width,
-    options.row.height,
-    options.scale,
-    t('export.label.pngExport'),
-  );
-
-  const canvas = await html2canvas(target, {
-    backgroundColor: options.backgroundColor,
-    scale: options.scale,
-    useCORS: true,
-    logging: false,
-    width: options.column.width,
-    height: options.row.height,
-    x: options.column.x,
-    y: options.row.y,
-    windowWidth: options.documentWidth,
-    windowHeight: Math.max(1200, Math.ceil(options.row.height)),
-    scrollX: 0,
-    scrollY: 0,
-  });
-  canvas.width ||= options.column.pixelWidth;
-  canvas.height ||= options.row.pixelHeight;
-
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error(t('export.error.sliceFailed', { label: t('export.label.pngExport') }));
-  const width = Math.min(options.column.pixelWidth, canvas.width);
-  const height = Math.min(options.row.pixelHeight, canvas.height);
-  const imageData = context.getImageData(0, 0, width, height);
-  return {
-    column: options.column,
-    data: imageData.data,
-    width,
-    height,
-  };
-}
-
-async function createSlicedRenderedPng(
-  html2canvas: Html2CanvasRenderer,
-  target: HTMLElement,
-  options: {
-    backgroundColor: string;
-    width: number;
-    height: number;
-    scale: number;
-  },
-): Promise<PngRenderedImage> {
-  const pixelWidth = getScaledPngPixelLength(options.width, options.scale);
-  const pixelHeight = getScaledPngPixelLength(options.height, options.scale);
-  const columns = createPngCaptureColumns(options.width, options.scale);
-  const rows = createPngCaptureRows(options.width, options.height, options.scale);
-  const encoder = new RgbaPngStreamEncoder(pixelWidth, pixelHeight);
-  const scanline = new Uint8Array(1 + pixelWidth * 4);
-
-  for (const row of rows) {
-    await nextFrame();
-    const tiles: PngCapturedTile[] = [];
-    for (const column of columns) {
-      tiles.push(await capturePngTile(html2canvas, target, {
-        backgroundColor: options.backgroundColor,
-        documentWidth: options.width,
-        scale: options.scale,
-        column,
-        row,
-      }));
-    }
-
-    for (let pixelRow = 0; pixelRow < row.pixelHeight; pixelRow += 1) {
-      scanline.fill(0);
-      for (const tile of tiles) {
-        if (pixelRow >= tile.height) continue;
-        const copyWidth = Math.min(tile.column.pixelWidth, tile.width);
-        const sourceOffset = pixelRow * tile.width * 4;
-        scanline.set(
-          tile.data.subarray(sourceOffset, sourceOffset + copyWidth * 4),
-          1 + tile.column.pixelX * 4,
-        );
-      }
-      encoder.pushScanline(scanline);
-      if (pixelRow > 0 && pixelRow % 512 === 0) await nextFrame();
-    }
-  }
-
-  return {
-    data: encoder.finish(),
-    width: pixelWidth,
-    height: pixelHeight,
-  };
-}
-
 function getMermaidConfig(contentTheme: ContentTheme) {
   return getMermaidThemeConfig(contentTheme);
 }
@@ -690,333 +430,6 @@ function normalizeMermaidSvg(svg: SVGSVGElement) {
   } catch {
     // Font timing can make getBBox unavailable. Overflow rules still protect labels.
   }
-}
-
-type SvgViewBox = { x: number; y: number; width: number; height: number };
-type SvgBounds = { minX: number; minY: number; maxX: number; maxY: number };
-
-const PLANTUML_SVG_BOUNDS_PADDING = 8;
-
-function parseSvgNumberAttribute(element: Element, name: string) {
-  const raw = element.getAttribute(name)?.trim();
-  if (!raw || raw.endsWith('%')) return Number.NaN;
-  return Number.parseFloat(raw);
-}
-
-function createSvgBounds(x: number, y: number, width: number, height: number): SvgBounds | null {
-  if (![x, y, width, height].every(Number.isFinite) || width < 0 || height < 0) return null;
-  return {
-    minX: x,
-    minY: y,
-    maxX: x + width,
-    maxY: y + height,
-  };
-}
-
-function unionSvgBounds(current: SvgBounds | null, next: SvgBounds | null): SvgBounds | null {
-  if (!next) return current;
-  if (!current) return next;
-  return {
-    minX: Math.min(current.minX, next.minX),
-    minY: Math.min(current.minY, next.minY),
-    maxX: Math.max(current.maxX, next.maxX),
-    maxY: Math.max(current.maxY, next.maxY),
-  };
-}
-
-function offsetSvgBounds(bounds: SvgBounds | null, x: number, y: number): SvgBounds | null {
-  if (!bounds) return null;
-  return {
-    minX: bounds.minX + x,
-    minY: bounds.minY + y,
-    maxX: bounds.maxX + x,
-    maxY: bounds.maxY + y,
-  };
-}
-
-function svgBoundsToViewBox(bounds: SvgBounds): SvgViewBox {
-  return {
-    x: bounds.minX,
-    y: bounds.minY,
-    width: bounds.maxX - bounds.minX,
-    height: bounds.maxY - bounds.minY,
-  };
-}
-
-function parseSvgTranslate(element: Element) {
-  const transform = element.getAttribute('transform') ?? '';
-  const match = /translate\(\s*([+-]?\d*\.?\d+)(?:[\s,]+([+-]?\d*\.?\d+))?\s*\)/i.exec(transform);
-  if (!match) return { x: 0, y: 0 };
-  return {
-    x: Number.parseFloat(match[1]) || 0,
-    y: Number.parseFloat(match[2] ?? '0') || 0,
-  };
-}
-
-function getSvgPointsBounds(points: string | null): SvgBounds | null {
-  if (!points) return null;
-  const values = points
-    .trim()
-    .split(/[\s,]+/)
-    .map((value) => Number.parseFloat(value))
-    .filter(Number.isFinite);
-  if (values.length < 2) return null;
-
-  let bounds: SvgBounds | null = null;
-  for (let index = 0; index + 1 < values.length; index += 2) {
-    bounds = unionSvgBounds(bounds, createSvgBounds(values[index], values[index + 1], 0, 0));
-  }
-  return bounds;
-}
-
-function getSvgTextApproximateBounds(element: Element): SvgBounds | null {
-  const x = parseSvgNumberAttribute(element, 'x');
-  const y = parseSvgNumberAttribute(element, 'y');
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-
-  const fontSize = Math.max(8, parseSvgNumberAttribute(element, 'font-size') || 12);
-  const textLength = parseSvgNumberAttribute(element, 'textLength');
-  const text = (element.textContent ?? '').trim();
-  const approximateWidth = Number.isFinite(textLength)
-    ? textLength
-    : Array.from(text).reduce((sum, char) => sum + (/[^\x00-\x7F]/.test(char) ? 1 : 0.58), 0) * fontSize;
-  if (!Number.isFinite(approximateWidth) || approximateWidth <= 0) return null;
-
-  const anchor = element.getAttribute('text-anchor');
-  const left = anchor === 'middle'
-    ? x - approximateWidth / 2
-    : anchor === 'end'
-      ? x - approximateWidth
-      : x;
-
-  return createSvgBounds(left, y - fontSize, approximateWidth, fontSize * 1.35);
-}
-
-function getSvgElementOwnBounds(element: Element): SvgBounds | null {
-  const tagName = element.tagName.toLowerCase();
-
-  if (tagName === 'rect' || tagName === 'image' || tagName === 'foreignobject' || tagName === 'use') {
-    return createSvgBounds(
-      parseSvgNumberAttribute(element, 'x') || 0,
-      parseSvgNumberAttribute(element, 'y') || 0,
-      parseSvgNumberAttribute(element, 'width'),
-      parseSvgNumberAttribute(element, 'height'),
-    );
-  }
-
-  if (tagName === 'circle') {
-    const cx = parseSvgNumberAttribute(element, 'cx');
-    const cy = parseSvgNumberAttribute(element, 'cy');
-    const radius = parseSvgNumberAttribute(element, 'r');
-    return createSvgBounds(cx - radius, cy - radius, radius * 2, radius * 2);
-  }
-
-  if (tagName === 'ellipse') {
-    const cx = parseSvgNumberAttribute(element, 'cx');
-    const cy = parseSvgNumberAttribute(element, 'cy');
-    const rx = parseSvgNumberAttribute(element, 'rx');
-    const ry = parseSvgNumberAttribute(element, 'ry');
-    return createSvgBounds(cx - rx, cy - ry, rx * 2, ry * 2);
-  }
-
-  if (tagName === 'line') {
-    const x1 = parseSvgNumberAttribute(element, 'x1');
-    const y1 = parseSvgNumberAttribute(element, 'y1');
-    const x2 = parseSvgNumberAttribute(element, 'x2');
-    const y2 = parseSvgNumberAttribute(element, 'y2');
-    return unionSvgBounds(createSvgBounds(x1, y1, 0, 0), createSvgBounds(x2, y2, 0, 0));
-  }
-
-  if (tagName === 'polygon' || tagName === 'polyline') {
-    return getSvgPointsBounds(element.getAttribute('points'));
-  }
-
-  if (tagName === 'text') {
-    return getSvgTextApproximateBounds(element);
-  }
-
-  return null;
-}
-
-function getPlantUmlChildDrawableBounds(element: Element, offsetX = 0, offsetY = 0): SvgBounds | null {
-  let bounds: SvgBounds | null = null;
-
-  Array.from(element.children).forEach((child) => {
-    const translate = parseSvgTranslate(child);
-    const childOffsetX = offsetX + translate.x;
-    const childOffsetY = offsetY + translate.y;
-    bounds = unionSvgBounds(bounds, offsetSvgBounds(getSvgElementOwnBounds(child), childOffsetX, childOffsetY));
-    bounds = unionSvgBounds(bounds, getPlantUmlChildDrawableBounds(child, childOffsetX, childOffsetY));
-  });
-
-  return bounds;
-}
-
-function getSvgBrowserDrawableBounds(svg: SVGSVGElement, current: SvgViewBox, childBounds: SvgBounds | null): SvgBounds | null {
-  try {
-    const box = svg.getBBox();
-    if (!Number.isFinite(box.x) || !Number.isFinite(box.y) || box.width <= 0 || box.height <= 0) {
-      return null;
-    }
-
-    const referenceWidth = Math.max(current.width, childBounds ? childBounds.maxX - childBounds.minX : 0);
-    const referenceHeight = Math.max(current.height, childBounds ? childBounds.maxY - childBounds.minY : 0);
-    if (
-      childBounds
-      && (box.width > Math.max(referenceWidth * 4, WEBKIT_PDF_CAPTURE_WIDTH * 2)
-        || box.height > Math.max(referenceHeight * 4, 2000))
-    ) {
-      return null;
-    }
-
-    return createSvgBounds(box.x, box.y, box.width, box.height);
-  } catch {
-    return null;
-  }
-}
-
-function parseSvgViewBox(svg: SVGSVGElement, fallback: { width: number; height: number }): SvgViewBox {
-  const values = (svg.getAttribute('viewBox') ?? '')
-    .split(/[\s,]+/)
-    .filter(Boolean)
-    .map((value) => Number.parseFloat(value));
-  if (
-    values.length === 4
-    && values.every(Number.isFinite)
-    && values[2] > 0
-    && values[3] > 0
-  ) {
-    return {
-      x: values[0],
-      y: values[1],
-      width: values[2],
-      height: values[3],
-    };
-  }
-  return { x: 0, y: 0, width: fallback.width, height: fallback.height };
-}
-
-function getPlantUmlDrawableViewBox(svg: SVGSVGElement, fallback: { width: number; height: number }): SvgViewBox {
-  const current = parseSvgViewBox(svg, fallback);
-  const childBounds = getPlantUmlChildDrawableBounds(svg);
-  const browserBounds = getSvgBrowserDrawableBounds(svg, current, childBounds);
-  const drawableBounds = unionSvgBounds(childBounds, browserBounds);
-
-  if (!drawableBounds) return current;
-
-  const box = svgBoundsToViewBox(drawableBounds);
-  const overflowsCurrentViewBox = box.x < current.x
-    || box.y < current.y
-    || box.x + box.width > current.x + current.width
-    || box.y + box.height > current.y + current.height;
-  if (!overflowsCurrentViewBox) return current;
-
-  const minX = Math.min(current.x, box.x - PLANTUML_SVG_BOUNDS_PADDING);
-  const minY = Math.min(current.y, box.y - PLANTUML_SVG_BOUNDS_PADDING);
-  const maxX = Math.max(current.x + current.width, box.x + box.width + PLANTUML_SVG_BOUNDS_PADDING);
-  const maxY = Math.max(current.y + current.height, box.y + box.height + PLANTUML_SVG_BOUNDS_PADDING);
-  return {
-    x: Math.floor(minX),
-    y: Math.floor(minY),
-    width: Math.ceil(maxX - minX),
-    height: Math.ceil(maxY - minY),
-  };
-}
-
-function normalizePlantUmlSvg(svg: SVGSVGElement) {
-  const size = getSvgSize(new XMLSerializer().serializeToString(svg));
-  const viewBox = getPlantUmlDrawableViewBox(svg, size);
-  const width = Math.max(80, Math.ceil(viewBox.width));
-  const height = Math.max(40, Math.ceil(viewBox.height));
-  const displayWidth = Math.min(width, WEBKIT_PDF_CAPTURE_WIDTH);
-  const displayHeight = Math.max(1, Math.ceil(height * (displayWidth / width)));
-
-  svg.style.display = 'block';
-  svg.style.marginInline = 'auto';
-  svg.style.width = width > WEBKIT_PDF_CAPTURE_WIDTH ? '100%' : `${displayWidth}px`;
-  svg.style.maxWidth = '100%';
-  svg.style.height = 'auto';
-  svg.style.overflow = 'visible';
-  svg.setAttribute('preserveAspectRatio', 'xMidYMin meet');
-  svg.setAttribute('overflow', 'visible');
-
-  svg.setAttribute('width', String(displayWidth));
-  svg.setAttribute('height', String(displayHeight));
-  const currentViewBox = parseSvgViewBox(svg, size);
-  if (
-    !svg.getAttribute('viewBox')
-    || viewBox.x < currentViewBox.x
-    || viewBox.y < currentViewBox.y
-    || viewBox.x + viewBox.width > currentViewBox.x + currentViewBox.width
-    || viewBox.y + viewBox.height > currentViewBox.y + currentViewBox.height
-  ) {
-    svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${width} ${height}`);
-  }
-}
-
-function serializeSvgForRasterImage(svg: SVGSVGElement, width: number, height: number) {
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute('width', String(width));
-  clone.setAttribute('height', String(height));
-  clone.style.width = `${width}px`;
-  clone.style.height = `${height}px`;
-  clone.style.maxWidth = '100%';
-  clone.style.overflow = 'visible';
-  return new XMLSerializer()
-    .serializeToString(clone)
-    .replace(/<\?plantuml-src[\s\S]*?\?>/g, '');
-}
-
-async function waitForRasterImageLoad(image: HTMLImageElement) {
-  if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) return;
-  if (image.ownerDocument.defaultView?.navigator.userAgent.toLowerCase().includes('jsdom')) {
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error(t('export.error.svgRasterize'))), 10_000);
-    image.onload = () => {
-      window.clearTimeout(timeout);
-      resolve();
-    };
-    image.onerror = () => {
-      window.clearTimeout(timeout);
-      reject(new Error(t('export.error.svgRasterize')));
-    };
-  });
-}
-
-async function rasterizePlantUmlSvgsForCapture(target: HTMLElement) {
-  const svgs = Array.from(target.querySelectorAll<SVGSVGElement>('svg.plantuml-image'));
-  if (svgs.length === 0) return;
-
-  for (const svg of svgs) {
-    normalizePlantUmlSvg(svg);
-    const rect = svg.getBoundingClientRect();
-    const fallback = getSvgSize(new XMLSerializer().serializeToString(svg));
-    const width = Math.max(80, Math.ceil(rect.width || fallback.width));
-    const height = Math.max(40, Math.ceil(rect.height || fallback.height));
-    const serialized = serializeSvgForRasterImage(svg, width, height);
-    const image = target.ownerDocument.createElement('img');
-    image.className = `${svg.getAttribute('class') ?? ''} prism-export-rasterized-svg`.trim();
-    image.setAttribute('role', svg.getAttribute('role') ?? 'img');
-    image.setAttribute('aria-label', svg.getAttribute('aria-label') ?? 'PlantUML diagram');
-    image.setAttribute('alt', svg.getAttribute('aria-label') ?? 'PlantUML diagram');
-    image.width = width;
-    image.height = height;
-    image.style.cssText = svg.style.cssText;
-    image.style.display = 'block';
-    image.style.width = `${width}px`;
-    image.style.height = `${height}px`;
-    image.style.maxWidth = '100%';
-    image.style.marginInline = 'auto';
-    image.style.objectFit = 'contain';
-    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
-    await waitForRasterImageLoad(image);
-    svg.replaceWith(image);
-  }
-
-  await nextFrame();
 }
 
 async function renderMermaidPlaceholders(root: HTMLElement, contentTheme: ContentTheme, input: ExportDocumentInput) {
