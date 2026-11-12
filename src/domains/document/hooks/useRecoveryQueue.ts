@@ -7,6 +7,7 @@ import {
   type RecoverySnapshot,
 } from '../services/recovery';
 import { t } from '../../i18n';
+import { formatUnknownError } from '../../../lib/errorMessage';
 
 export type RecoveryAction = 'restore' | 'discard';
 
@@ -19,12 +20,6 @@ interface UseRecoveryQueueResult {
   recoveryAction: RecoveryAction | null;
   handleRestoreRecovery: () => Promise<void>;
   handleDiscardRecovery: () => Promise<void>;
-}
-
-function formatRecoveryError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || t('common.unknownEventError');
-  return String(error);
 }
 
 export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRecoveryQueueResult {
@@ -61,7 +56,7 @@ export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRec
       removeRecoverySnapshotFromList(snapshot);
       showToast(t('recovery.restoreDone'), 'success');
     } catch (error) {
-      showToast(t('recovery.restoreFailed', { message: formatRecoveryError(error) }), 'error');
+      showToast(t('recovery.restoreFailed', { message: formatUnknownError(error) }), 'error');
     } finally {
       setRecoveryAction(null);
     }
@@ -77,7 +72,7 @@ export function useRecoveryQueue({ showToast }: UseRecoveryQueueOptions): UseRec
       removeRecoverySnapshotFromList(snapshot);
       showToast(t('recovery.discardDone'), 'success');
     } catch (error) {
-      showToast(t('recovery.discardFailed', { message: formatRecoveryError(error) }), 'error');
+      showToast(t('recovery.discardFailed', { message: formatUnknownError(error) }), 'error');
     } finally {
       setRecoveryAction(null);
     }

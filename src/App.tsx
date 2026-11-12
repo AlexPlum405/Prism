@@ -107,6 +107,7 @@ function App() {
   });
 
   const {
+    cancelExport,
     chooseSaveDirectory,
     closeSaveDialog,
     confirmSaveDialog,
@@ -276,6 +277,7 @@ function App() {
         exportProgress={exportProgress}
         exportProgressInBackground={exportProgressInBackground}
         exportFeedback={exportFeedback}
+        onCancelExport={cancelExport}
         firstActionableMessage={documentInsight.firstActionableDiagnostic?.message}
         firstTypographyMessage={documentInsight.firstTypographyDiagnostic?.message}
         globalContextMenu={globalContextMenu}

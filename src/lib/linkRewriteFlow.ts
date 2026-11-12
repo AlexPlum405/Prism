@@ -8,6 +8,7 @@ import {
 import { isSamePath } from '../domains/workspace/services/path';
 import type { DocumentLinkFile } from '../domains/workspace/services/documentLinks';
 import type { FileNode } from '../domains/workspace/types';
+import { formatUnknownError } from './errorMessage';
 
 const MARKDOWN_FILE_RE = /\.(md|markdown)$/i;
 
@@ -29,10 +30,6 @@ export interface LinkRewriteApplyInput {
 export interface LinkRewriteApplyResult {
   failed: Array<{ error: string; path: string }>;
   written: string[];
-}
-
-function formatError(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }
 
 /**
@@ -115,7 +112,7 @@ export async function applyLinkRewrites(
       await writeFile(plan.path, plan.content);
       result.written.push(plan.path);
     } catch (err) {
-      result.failed.push({ error: formatError(err), path: plan.path });
+      result.failed.push({ error: formatUnknownError(err), path: plan.path });
     }
   }
 

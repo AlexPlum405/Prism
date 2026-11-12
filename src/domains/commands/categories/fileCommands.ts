@@ -29,12 +29,7 @@ import type { CommandContext, CommandDefinition } from '../types';
 import { t } from '../../i18n';
 import { emitAppEvent } from '../../../platform/events/appEvents';
 import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (err instanceof Event) return err.type || t('common.unknownEventError');
-  return String(err);
-}
+import { formatUnknownError } from '../../../lib/errorMessage';
 
 function hasDocument(context: CommandContext): boolean {
   return Boolean(context.documentStore.currentDocument);
@@ -72,7 +67,7 @@ async function setWorkspaceToDocumentDirectoryIfNeeded(context: CommandContext, 
     context.workspaceStore.setWorkspace(rootPath, tree);
   } catch (err) {
     console.error('[fileCommands] Failed to set workspace after save:', err);
-    context.showToast?.(t('command.operationFailed', { message: formatError(err) }), 'error');
+    context.showToast?.(t('command.operationFailed', { message: formatUnknownError(err) }), 'error');
   }
 }
 
@@ -128,7 +123,7 @@ async function handleOpen(context: CommandContext): Promise<void> {
     await openSelectedDocument(selected, context, { entryPoint: 'file-command' });
   } catch (err) {
     console.error('[Command] Failed to open file:', err);
-    const message = formatError(err);
+    const message = formatUnknownError(err);
     await askDialog(t('command.openFileFailedDialog', { message }), {
       title: t('command.openFileFailedTitle'),
       kind: 'error',

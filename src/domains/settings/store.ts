@@ -51,6 +51,7 @@ import { readSettingsFileNative, writeSettingsFileNative } from '../../platform/
 import { emitAppEvent } from '../../platform/events/appEvents';
 import { initPerfInstrumentation, markPerf } from '../../lib/performanceInstrumentation';
 import { joinPath } from '../workspace/services/path';
+import { formatUnknownError } from '../../lib/errorMessage';
 
 const CONFIG_FILENAME = 'config.json';
 const LEGACY_RECENT_FILES_KEY = 'prism_recent_files';
@@ -140,15 +141,11 @@ function resolveFontFamily(source: FontSource, customFonts: CustomFont[], fallba
 }
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  if (typeof error === 'string' && error.trim()) return error;
-  return t('settings.pandocDetectionFailed');
+  return formatUnknownError(error, t('settings.pandocDetectionFailed'));
 }
 
 function getPersistenceErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  if (typeof error === 'string' && error.trim()) return error;
-  return t('common.unknownEventError');
+  return formatUnknownError(error);
 }
 
 function showSettingsSaveFailed(error: unknown) {

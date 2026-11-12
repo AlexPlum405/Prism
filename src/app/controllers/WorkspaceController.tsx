@@ -56,6 +56,7 @@ interface WorkspaceControllerProps {
   onSetSidebarTab: (tab: SidebarTab) => void;
   onShowExportFailure: () => void;
   onShowExportProgress: () => void;
+  onCancelExport?: () => void;
   onToggleFileTreeMode: () => void | Promise<void>;
   onToggleFocusMode: () => void;
   onToggleSidebar: () => void;
@@ -104,6 +105,7 @@ export function WorkspaceController({
   onSetSidebarTab,
   onShowExportFailure,
   onShowExportProgress,
+  onCancelExport,
   onToggleFileTreeMode,
   onToggleFocusMode,
   onToggleSidebar,
@@ -173,6 +175,7 @@ export function WorkspaceController({
             documentProfileKind={documentProfileKind}
             onShowExportFailure={onShowExportFailure}
             onShowExportProgress={onShowExportProgress}
+            onCancelExport={onCancelExport}
           />
         </div>
       )}

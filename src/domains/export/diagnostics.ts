@@ -2,12 +2,7 @@ import type { SettingsState } from '../settings/types';
 import { getThemeEntry } from '../themes';
 import { t } from '../i18n/runtime';
 import { getExportFormatLabel, type ExportFormat } from './types';
-
-function formatExportDiagnosticError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || t('common.unknownEventError');
-  return String(error);
-}
+import { formatUnknownError } from '../../lib/errorMessage';
 
 function hasSupportedCitationPathExtension(path: string, extensions: string[]) {
   const normalized = path.trim().toLowerCase();
@@ -38,7 +33,7 @@ export function buildExportFailureDiagnostic(input: {
   warnings?: string[];
   error: unknown;
 }) {
-  const errorMessage = formatExportDiagnosticError(input.error);
+  const errorMessage = formatUnknownError(input.error);
   const stack = input.error instanceof Error && input.error.stack
     ? input.error.stack
     : '';

@@ -227,9 +227,3 @@ export async function listExportJobs(): Promise<ExportJob[]> {
   return [...localJobs.values()].sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
 }
 
-export async function throwIfExportCancelled(jobId: string): Promise<void> {
-  const job = await getExportJob(jobId);
-  if (job.cancelRequested) {
-    throw new ExportCancelledError(jobId);
-  }
-}

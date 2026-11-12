@@ -28,12 +28,7 @@ import { openExternalUrl } from '../../platform/tauri/opener';
 import { askDialog } from '../../platform/tauri/dialogs';
 import { invokeNativeCommand } from '../../platform/tauri/nativeCommands';
 import { PRISM_MIGRATION_GUIDE_URL } from '../../lib/brand';
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (err instanceof Event) return err.type || t('common.unknownEventError');
-  return String(err);
-}
+import { formatUnknownError } from '../../lib/errorMessage';
 
 function hasDocument(context: CommandContext): boolean {
   return Boolean(context.documentStore.currentDocument);
@@ -152,7 +147,7 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
                   }
                 });
               } catch (error) {
-                context.showToast?.(t('command.updateFailed', { message: formatError(error) }), 'error');
+                context.showToast?.(t('command.updateFailed', { message: formatUnknownError(error) }), 'error');
               }
             },
           },
@@ -175,7 +170,7 @@ async function handleCheckUpdate(context: CommandContext): Promise<void> {
       await downloadAndInstallUpdate(result.update);
     }
   } catch (error) {
-    context.showToast?.(t('command.updateFailed', { message: formatError(error) }), 'error');
+    context.showToast?.(t('command.updateFailed', { message: formatUnknownError(error) }), 'error');
   }
 }
 
@@ -237,7 +232,7 @@ export async function runCommand(id: CommandId, context: CommandContext): Promis
     await definition.run(context);
   } catch (err) {
     console.error(`[Command] ${id} failed:`, err);
-    context.showToast?.(t('command.operationFailed', { message: formatError(err) }), 'error');
+    context.showToast?.(t('command.operationFailed', { message: formatUnknownError(err) }), 'error');
   }
 }
 

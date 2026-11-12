@@ -26,6 +26,7 @@ import { t } from '../domains/i18n';
 import { grantMarkdownFileScope } from './fileSystemScope';
 import { openPrismWindow } from './openWindow';
 import { markPerf } from './performanceInstrumentation';
+import { formatUnknownError } from './errorMessage';
 
 export const LARGE_DOCUMENT_WARNING_BYTES = 10 * 1024 * 1024;
 
@@ -82,11 +83,6 @@ interface OpenDocumentOptions {
   shouldAbort?: () => boolean;
   skipFileScopeGrant?: boolean;
   skipWorkspaceSync?: boolean;
-}
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return String(err);
 }
 
 function supportedDocumentExtensionsLabel(): string {
@@ -266,7 +262,7 @@ async function saveDirtyDocumentBeforeSwitch(
     return true;
   } catch (error) {
     context.documentStore.markSaveFailed(error, document.path || undefined);
-    context.showToast?.(formatError(error));
+    context.showToast?.(formatUnknownError(error));
     return false;
   }
 }

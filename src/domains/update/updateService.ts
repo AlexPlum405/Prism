@@ -1,6 +1,7 @@
 import { check, type Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { t } from '../i18n';
+import { formatUnknownError } from '../../lib/errorMessage';
 
 export interface AvailableUpdate {
   status: 'available';
@@ -27,12 +28,6 @@ export interface DownloadProgress {
   contentLength: number | null;
 }
 
-function getUpdateErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (error instanceof Event) return error.type || t('common.unknownEventError');
-  return String(error);
-}
-
 function isMissingOrInvalidReleaseManifestError(message: string) {
   return /valid release json|latest\.json|not found|404|invalid json|unexpected token/i.test(message);
 }
@@ -42,7 +37,7 @@ export async function checkForAppUpdate(): Promise<UpdateCheckResult> {
   try {
     update = await check({ timeout: 15000 });
   } catch (error) {
-    const message = getUpdateErrorMessage(error);
+    const message = formatUnknownError(error);
     if (isMissingOrInvalidReleaseManifestError(message)) {
       return {
         status: 'unavailable',

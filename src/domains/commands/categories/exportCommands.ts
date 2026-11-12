@@ -5,12 +5,18 @@ import {
   type ExportFormat,
 } from '../../export/types';
 import {
+  cancelExportJob,
   completeExportJob,
   createExportJob,
+  ExportCancelledError,
   failExportJob,
   updateExportJob,
   type ExportJob,
 } from '../../export/jobs/exportJobClient';
+import {
+  isExportCancellationRequested,
+  resetExportCancellation,
+} from '../../export/jobs/exportCancellation';
 import { normalizeExportQualityScale } from '../../export/quality';
 import { getActionableErrorDiagnostics } from '../../diagnostics/types';
 import type { ExportHistoryEntry, ExportHistorySettings, SettingsState } from '../../settings/types';
@@ -21,17 +27,12 @@ import { openPathWithSystemNative } from '../../../platform/tauri/nativeCommands
 import { openPathWithDefaultApp, revealPathInFileManager } from '../../../platform/tauri/opener';
 import type { PrismCommandError } from '../../../platform/tauri/result';
 import { EXPORT_ACTION_TOAST_DURATION_MS } from '../../../lib/feedbackTiming';
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (err instanceof Event) return err.type || t('common.unknownEventError');
-  return String(err);
-}
+import { formatUnknownError } from '../../../lib/errorMessage';
 
 function createExportJobError(error: unknown, stage: string, path?: string | null): PrismCommandError {
   return {
     code: 'export_failed',
-    message: formatError(error),
+    message: formatUnknownError(error),
     path: path ?? null,
     stage,
   };
@@ -160,7 +161,7 @@ function showExportPathActionError(context: CommandContext, title: string, error
   context.showToast?.({
     tone: 'error',
     title,
-    message: formatError(error),
+    message: formatUnknownError(error),
     durationMs: 5200,
   });
 }
@@ -173,8 +174,8 @@ async function openExportedPath(path: string) {
       await openPathWithDefaultApp(path);
     } catch (pluginError) {
       throw new Error(t('export.systemOpenFailed', {
-        nativeError: formatError(nativeError),
-        pluginError: formatError(pluginError),
+        nativeError: formatUnknownError(nativeError),
+        pluginError: formatUnknownError(pluginError),
       }));
     }
   }
@@ -234,6 +235,10 @@ async function handleExport(
       .catch(() => undefined);
   };
   const setExportProgress = (message: string | null) => {
+    // 用户点了取消就地中断，不必等下一个阶段的 IPC 回来
+    if (message && isExportCancellationRequested()) {
+      throw new ExportCancelledError(exportJob?.id ?? '');
+    }
     emitAppEvent('export.progress', message ? { visible: true, message } : { visible: false });
     if (message) syncExportJobProgress(message);
   };
@@ -391,12 +396,27 @@ async function handleExport(
       });
     }
   } catch (err) {
+    if (err instanceof ExportCancelledError) {
+      if (exportJob) {
+        try {
+          await cancelExportJob(exportJob.id);
+        } catch {
+          // 取消失败不应盖住「已取消」这个结果
+        }
+      }
+      emitExportResult({
+        format,
+        status: 'cancelled',
+        title: t('export.cancelled'),
+      });
+      return;
+    }
     if (exportJob) {
       try {
         exportJob = await failExportJob({
           id: exportJob.id,
           stage: lastProgress,
-          message: formatError(err),
+          message: formatUnknownError(err),
           error: createExportJobError(err, lastProgress, outputPath),
         });
       } catch {
@@ -418,7 +438,7 @@ async function handleExport(
       format,
       diagnostic,
       documentPath: doc.path ?? null,
-      message: formatError(err),
+      message: formatUnknownError(err),
       nextSteps: t('export.diagnostic.nextStepsText'),
       outputPath,
       stage: lastProgress,
@@ -447,6 +467,7 @@ async function handleExport(
     });
   } finally {
     setExportProgress(null);
+    resetExportCancellation();
   }
 }
 

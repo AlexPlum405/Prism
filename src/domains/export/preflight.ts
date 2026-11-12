@@ -14,6 +14,7 @@ import { scanMarkdownTableDiagnostics } from '../editor/extensions/tables';
 import { t } from '../i18n/runtime';
 import { exportResourceExists } from './resources/exportResourceClient';
 import type { ExportFormat } from './types';
+import { formatUnknownError } from '../../lib/errorMessage';
 
 interface ExportPreflightInput {
   content: string;
@@ -36,12 +37,6 @@ const MERMAID_FENCE_RE = /^```(?:mermaid|mmd)[^\n]*\n([\s\S]*?)^```/gim;
 const DISPLAY_MATH_RE = /\$\$([\s\S]*?)\$\$/g;
 const INLINE_MATH_RE = /(^|[^\\$])\$([^\n$]+?)\$/g;
 
-function formatError(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message.trim();
-  if (typeof error === 'string' && error.trim()) return error.trim();
-  return t('common.unknown');
-}
-
 function lineAtOffset(source: string, offset: number) {
   return source.slice(0, offset).split('\n').length;
 }
@@ -63,7 +58,7 @@ function createKatexDiagnostic(error: unknown, line: number): PrismDiagnostic {
   return createRenderDiagnostic({
     action: t('diagnostics.render.katex.action'),
     line,
-    message: t('diagnostics.render.katex.messageWithReason', { message: formatError(error) }),
+    message: t('diagnostics.render.katex.messageWithReason', { message: formatUnknownError(error) }),
     reason: t('diagnostics.render.katex.reason'),
     target: 'katex',
   });
@@ -135,7 +130,7 @@ export function scanMarkdownKatexDiagnostics(
     return [createRenderDiagnostic({
       action: t('diagnostics.render.preview.action'),
       line: 1,
-      message: t('diagnostics.render.preview.message', { message: formatError(error) }),
+      message: t('diagnostics.render.preview.message', { message: formatUnknownError(error) }),
       reason: t('diagnostics.render.preview.reason'),
       target: 'preview',
     })];
@@ -199,7 +194,7 @@ async function scanMarkdownMermaidDiagnostics(content: string): Promise<PrismDia
       diagnostics.push(createRenderDiagnostic({
         action: t('diagnostics.render.mermaid.action'),
         line: fence.line,
-        message: t('diagnostics.render.mermaid.message', { message: formatError(error) }),
+        message: t('diagnostics.render.mermaid.message', { message: formatUnknownError(error) }),
         reason: t('diagnostics.render.mermaid.reason'),
         target: 'mermaid',
       }));

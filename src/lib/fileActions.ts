@@ -42,6 +42,7 @@ import {
   applyLinkRewrites,
   scanLinkRewritesForMovedPath,
 } from './linkRewriteFlow';
+import { formatUnknownError } from './errorMessage';
 
 export type { FileActionInput } from './fileActionCommands';
 export type { DirtyDocumentSwitchAction } from './openDocumentFlow';
@@ -69,11 +70,6 @@ function splitName(name: string): { stem: string; ext: string } {
   const index = name.lastIndexOf('.');
   if (index <= 0) return { stem: name, ext: '' };
   return { stem: name.slice(0, index), ext: name.slice(index) };
-}
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return String(err);
 }
 
 async function movePathToTrash(path: string): Promise<void> {
@@ -111,7 +107,7 @@ export async function deletePathWithTrashFallback({
     await moveToTrash(path);
     return { deleted: true, mode: 'trash' };
   } catch (err) {
-    const error = formatError(err);
+    const error = formatUnknownError(err);
     const permanentConfirmed = await confirmDialog(
       t('file.confirmPermanentDelete', { error, name: displayName }),
       {
@@ -364,7 +360,7 @@ async function updateIncomingLinksAfterMove(
       }), 'error');
     }
   } catch (err) {
-    context.showToast?.(t('file.linkRewriteFailed', { count: 0, error: formatError(err) }), 'error');
+    context.showToast?.(t('file.linkRewriteFailed', { count: 0, error: formatUnknownError(err) }), 'error');
   }
 }
 
@@ -569,6 +565,6 @@ export async function executeFileAction(
     }
   } catch (err) {
     console.error(`[FileAction] ${command} failed:`, err);
-    context.showToast?.(t('command.operationFailed', { message: formatError(err) }), 'error');
+    context.showToast?.(t('command.operationFailed', { message: formatUnknownError(err) }), 'error');
   }
 }

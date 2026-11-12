@@ -13,6 +13,10 @@ vi.mock('../platform/tauri/opener', () => openerMock);
 vi.mock('../platform/tauri/nativeCommands', () => nativeMock);
 
 import { useExportTaskUi } from './useExportTaskUi';
+import {
+  isExportCancellationRequested,
+  resetExportCancellation,
+} from '../domains/export/jobs/exportCancellation';
 
 describe('useExportTaskUi', () => {
   beforeEach(() => {
@@ -192,4 +196,47 @@ describe('useExportTaskUi', () => {
     });
     expect(result.current.exportFailureVisible).toBe(true);
   });
+it("labels a cancelled result as cancelled rather than reusing success framing", () => {
+    const showToast = vi.fn();
+    const { result } = renderHook(() => useExportTaskUi(showToast));
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent("prism-export-result", {
+        detail: { status: "cancelled" },
+      }));
+    });
+
+    expect(result.current.exportFeedback).toEqual({
+      message: undefined,
+      status: "cancelled",
+      title: "已取消",
+    });
+  });
+
+  it("labels a failed result from export.result as failed, not cancelled", () => {
+    const showToast = vi.fn();
+    const { result } = renderHook(() => useExportTaskUi(showToast));
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent("prism-export-result", {
+        detail: { status: "failed" },
+      }));
+    });
+
+    expect(result.current.exportFeedback?.status).toBe("failed");
+    expect(result.current.exportFeedback?.title).toBe("导出失败");
+  });
+
+  it("raises the shared cancellation flag when the user cancels", () => {
+    const showToast = vi.fn();
+    const { result } = renderHook(() => useExportTaskUi(showToast));
+
+    expect(isExportCancellationRequested()).toBe(false);
+    act(() => {
+      result.current.cancelExport();
+    });
+    expect(isExportCancellationRequested()).toBe(true);
+    resetExportCancellation();
+  });
+
 });

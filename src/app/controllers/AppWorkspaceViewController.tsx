@@ -49,6 +49,7 @@ interface AppWorkspaceViewControllerProps {
   onSetSidebarHovered: (hovered: boolean) => void;
   onShowExportFailure: () => void;
   onShowExportProgress: () => void;
+  onCancelExport?: () => void;
   onTypographyDiagnosticsClick: () => void;
 }
 
@@ -88,6 +89,7 @@ export function AppWorkspaceViewController({
   onSetSidebarHovered,
   onShowExportFailure,
   onShowExportProgress,
+  onCancelExport,
   onTypographyDiagnosticsClick,
 }: AppWorkspaceViewControllerProps) {
   const hasDocumentRelations = Boolean(
@@ -151,6 +153,7 @@ export function AppWorkspaceViewController({
       onSetSidebarTab={workspace.setSidebarTab}
       onShowExportFailure={onShowExportFailure}
       onShowExportProgress={onShowExportProgress}
+      onCancelExport={onCancelExport}
       onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
       onToggleFocusMode={() => workspace.toggleFocusMode()}
       onToggleSidebar={() => workspace.toggleSidebar()}

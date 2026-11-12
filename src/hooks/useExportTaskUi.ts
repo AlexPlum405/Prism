@@ -11,6 +11,7 @@ import {
   revealPathInFileManager,
 } from '../platform/tauri/opener';
 import { openPathWithSystemNative } from '../platform/tauri/nativeCommands';
+import { requestExportCancellation } from '../domains/export/jobs/exportCancellation';
 
 export interface ExportFailureState {
   diagnostic: string;
@@ -28,6 +29,13 @@ export interface ExportFeedbackState {
   status: 'success' | 'failed' | 'cancelled';
   title: string;
 }
+
+/** 失败有独立事件，但 export.result 也可能直接带 failed，这里必须三态分开 */
+const EXPORT_RESULT_TITLE_KEY = {
+  success: 'status.exported',
+  failed: 'export.failed',
+  cancelled: 'status.exportCancelled',
+} as const satisfies Record<ExportFeedbackState['status'], string>;
 
 export function useExportTaskUi(showToast: ShowToast) {
   const [exportProgress, setExportProgress] = useState<string | null>(null);
@@ -72,9 +80,7 @@ export function useExportTaskUi(showToast: ShowToast) {
 
   useEffect(() => {
     return onAppEvent('export.result', (detail) => {
-      const title = detail.title ?? (
-        detail.status === 'success' ? t('status.exported') : t('status.exportCancelled')
-      );
+      const title = detail.title ?? t(EXPORT_RESULT_TITLE_KEY[detail.status]);
       setExportProgress(null);
       setExportProgressInBackground(false);
       setExportFailure(null);
@@ -166,6 +172,14 @@ export function useExportTaskUi(showToast: ShowToast) {
     setExportFailureVisible(false);
   }, []);
 
+  /**
+   * 取消只会置一个标志，真正的中断发生在导出管线下一次进度上报处；
+   * 不做本地 unloading，因为管线自己收尾时会 emit cancelled 结果。
+   */
+  const cancelExport = useCallback(() => {
+    requestExportCancellation();
+  }, []);
+
   const showExportFailureDetails = useCallback(() => {
     setExportFailureVisible((visible) => visible || Boolean(exportFailure));
   }, [exportFailure]);
@@ -191,5 +205,6 @@ export function useExportTaskUi(showToast: ShowToast) {
     showExportFailureDetails,
     dismissExportFailure,
     copyExportFailureDiagnostic,
+    cancelExport,
   };
 }

@@ -91,6 +91,7 @@ interface StatusBarProps {
   documentProfileKind?: DocumentProfileKind;
   onShowExportFailure?: () => void;
   onShowExportProgress?: () => void;
+  onCancelExport?: () => void;
 }
 
 
@@ -126,6 +127,7 @@ export function StatusBar({
   documentProfileKind,
   onShowExportFailure,
   onShowExportProgress,
+  onCancelExport,
 }: StatusBarProps) {
   useI18n();
 
@@ -238,6 +240,16 @@ export function StatusBar({
             >
               <span className={styles.exportStatusSpinner} aria-hidden="true" />
               <span className={styles.exportStatusText}>{t('status.exporting')}</span>
+            </button>
+          )}
+          {exportProgress && onCancelExport && (
+            <button
+              className={`${styles.btn} ${styles.iconBtn}`}
+              title={t('status.cancelExport')}
+              aria-label={t('status.cancelExport')}
+              onClick={onCancelExport}
+            >
+              <span aria-hidden="true">×</span>
             </button>
           )}
           {!exportProgress && exportFeedback?.status === 'success' && (
