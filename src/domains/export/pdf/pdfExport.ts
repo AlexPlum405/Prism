@@ -157,9 +157,6 @@ async function createPdfRenderedPageFromBatch(
   };
 }
 
-
-
-
 function getWebkitPdfCaptureProgressMessage(startPage: number, endPage: number, pageCount: number) {
   return startPage === endPage
     ? t('export.progress.capturePdfPage', { page: startPage, total: pageCount })

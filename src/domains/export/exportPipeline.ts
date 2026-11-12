@@ -14,9 +14,7 @@ import {
   normalizeExportRasterScale,
   reportProgress,
 } from './pipeline/exportPipelineContext';
-import {
-  canvasToPngBytes,
-} from './assets';
+import { canvasToPngBytes } from './assets';
 import { createSlicedRenderedPng } from './png/pngAssembly';
 import { prepareExportAtomicPagination, markExportAtomicBlocks } from './pagination';
 import {
@@ -143,9 +141,6 @@ export async function exportPng(input: ExportDocumentInput, outputPath?: string)
   await writeFile(targetPath, image.data);
   return true;
 }
-
-
-
 
 export const __exportPipelineTesting = {
   constrainDocxImageSize,

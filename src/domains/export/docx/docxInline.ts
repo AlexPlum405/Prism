@@ -117,7 +117,6 @@ export function composeDocxInlineHtmlStyle(
   return stack.reduce((current, tag) => applyDocxInlineHtmlStyle(docx, theme, tag, current), { ...base });
 }
 
-
 export async function inlineChildrenToRuns(
   docx: DocxModule,
   children: any[],
