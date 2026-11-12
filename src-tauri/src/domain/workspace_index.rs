@@ -513,7 +513,11 @@ fn split_csv(value: &str) -> Vec<String> {
 }
 
 fn unquote_yaml_scalar(value: &str) -> String {
-    value.trim().trim_matches('"').trim_matches('\'').to_string()
+    value
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .to_string()
 }
 
 fn parse_front_matter(content: &str) -> ParsedDocument {
@@ -596,14 +600,23 @@ fn parse_front_matter(content: &str) -> ParsedDocument {
     }
 }
 
+/// 标题锚点。规则必须与前端 src/domains/markdown/headingSlug.ts 逐字一致：
+/// 先丢行内标记字符，再丢一切非字母非数字，空白与连字符折叠成单个 -。
+/// 三处（预览、导出目录、索引）此前各写一套，`## A/B 测试` 会得到
+/// `ab-测试` 与 `a-b-测试` 两个不同锚点。
 fn heading_slug(title: &str) -> String {
-    let mut slug = String::new();
+    const DROPPED_MARKS: [char; 8] = ['`', '*', '_', '~', '[', ']', '(', ')'];
+
+    let mut slug = String::with_capacity(title.len());
     let mut last_dash = false;
     for ch in title.to_lowercase().chars() {
+        if DROPPED_MARKS.contains(&ch) {
+            continue;
+        }
         if ch.is_alphanumeric() {
             slug.push(ch);
             last_dash = false;
-        } else if !last_dash {
+        } else if (ch.is_whitespace() || ch == '-') && !last_dash && !slug.is_empty() {
             slug.push('-');
             last_dash = true;
         }
@@ -644,6 +657,8 @@ fn fence_marker(line: &str) -> Option<(char, usize)> {
 fn parse_headings(body: &str, line_offset: usize) -> Vec<HeadingDto> {
     let mut headings = Vec::new();
     let mut open_fence: Option<(char, usize)> = None;
+    // 与前端 createHeadingSlugRegistry 一致：第二个同名标题是 base-2
+    let mut slug_counts: HashMap<String, usize> = HashMap::new();
 
     for (index, line) in body.lines().enumerate() {
         if let Some((marker, run)) = fence_marker(line) {
@@ -671,10 +686,17 @@ fn parse_headings(body: &str, line_offset: usize) -> Vec<HeadingDto> {
             continue;
         }
         let title = strip_inline_code(trimmed[level..].trim());
-        let slug = heading_slug(&title);
-        if title.is_empty() || slug.is_empty() {
+        let base = heading_slug(&title);
+        if title.is_empty() || base.is_empty() {
             continue;
         }
+        let count = slug_counts.entry(base.clone()).or_insert(0);
+        *count += 1;
+        let slug = if *count == 1 {
+            base
+        } else {
+            format!("{base}-{}", *count)
+        };
         headings.push(HeadingDto {
             level: level as u8,
             line: line_offset + index + 1,
@@ -1997,7 +2019,6 @@ pub fn build_relation_graph(
 
     RelationGraphDto { edges, nodes }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2661,7 +2682,8 @@ mod tests {
 
     #[test]
     fn headings_ignore_fenced_code_blocks() {
-        let body = "# Real\n\n```bash\n# not a heading\n```\n\n~~~md\n## also not\n~~~\n\n## After\n";
+        let body =
+            "# Real\n\n```bash\n# not a heading\n```\n\n~~~md\n## also not\n~~~\n\n## After\n";
         let headings = parse_headings(body, 0);
         let titles: Vec<&str> = headings.iter().map(|h| h.title.as_str()).collect();
         assert_eq!(titles, vec!["Real", "After"]);
@@ -2677,7 +2699,8 @@ mod tests {
 
     #[test]
     fn front_matter_reads_block_style_tags() {
-        let content = "---\ntitle: Note\ntags:\n  - rust\n  - \"index\"\nstatus: draft\n---\n# Body\n";
+        let content =
+            "---\ntitle: Note\ntags:\n  - rust\n  - \"index\"\nstatus: draft\n---\n# Body\n";
         let parsed = parse_front_matter(content);
         assert_eq!(parsed.front_matter.tags, vec!["rust", "index"]);
         assert_eq!(parsed.front_matter.status, "draft");
@@ -2689,5 +2712,30 @@ mod tests {
         let content = "---\ntags: [a, b]\n---\nbody\n";
         let parsed = parse_front_matter(content);
         assert_eq!(parsed.front_matter.tags, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn heading_slugs_match_the_frontend_implementation() {
+        // 同一组向量也写在前端 headingSlug.test.ts 里，两端必须逐字一致
+        let cases = [
+            ("Hello, World!", "hello-world"),
+            ("A/B 测试", "ab-测试"),
+            ("snake_case", "snakecase"),
+            ("Deep   Dive", "deep-dive"),
+            ("Intro - Scope", "intro-scope"),
+            ("中文标题 / API", "中文标题-api"),
+            ("C++ 入门", "c-入门"),
+            ("  前导后置  ", "前导后置"),
+        ];
+        for (title, expected) in cases {
+            assert_eq!(heading_slug(title), expected, "title={title}");
+        }
+    }
+
+    #[test]
+    fn duplicate_headings_get_numbered_slugs() {
+        let headings = parse_headings("# Notes\n## Notes\n### Notes\n", 0);
+        let slugs: Vec<&str> = headings.iter().map(|h| h.slug.as_str()).collect();
+        assert_eq!(slugs, vec!["notes", "notes-2", "notes-3"]);
     }
 }

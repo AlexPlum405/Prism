@@ -1,4 +1,5 @@
 import { load } from 'js-yaml';
+import { frontMatterObject, frontMatterScalar, splitFrontMatterBlock } from '../markdown/frontMatterBlock';
 import type {
   ExportTemplateId,
   PdfMargin,
@@ -20,17 +21,17 @@ export interface ExportFrontMatterResult {
   frontMatter: ExportFrontMatter | null;
 }
 
-const FRONT_MATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 const TEMPLATE_IDS = new Set<ExportTemplateId>(['theme', 'business', 'plain', 'academic']);
 const PDF_PAPERS = new Set<PdfPaper>(['a4', 'letter']);
 const PDF_MARGINS = new Set<PdfMargin>(['compact', 'standard', 'wide']);
 
+function frontMatterObjectOrNull(value: unknown): Record<string, unknown> | null {
+  const object = frontMatterObject(value);
+  return Object.keys(object).length > 0 ? object : null;
+}
+
 function stringValue(value: unknown): string | undefined {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  if (typeof value !== 'string' && typeof value !== 'number') return undefined;
-  const text = String(value).trim();
+  const text = frontMatterScalar(value).trim();
   return text ? text : undefined;
 }
 
@@ -66,16 +67,10 @@ function marginValue(value: unknown): PdfMargin | undefined {
     : undefined;
 }
 
-function objectValue(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
 function normalizeFrontMatter(value: unknown): ExportFrontMatter | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const data = value as Record<string, unknown>;
-  const exportData = objectValue(data.export);
+  const exportData = frontMatterObjectOrNull(data.export);
   const frontMatter: ExportFrontMatter = {};
 
   const title = stringValue(data.title);
@@ -103,13 +98,13 @@ function normalizeFrontMatter(value: unknown): ExportFrontMatter | null {
 }
 
 export function parseExportFrontMatter(content: string): ExportFrontMatterResult {
-  const match = FRONT_MATTER_PATTERN.exec(content);
-  if (!match) return { content, frontMatter: null };
+  const block = splitFrontMatterBlock(content);
+  if (!block.hasBlock) return { content, frontMatter: null };
 
   try {
-    const loaded = load(match[1]);
+    const loaded = load(block.raw);
     return {
-      content: content.slice(match[0].length),
+      content: block.body,
       frontMatter: normalizeFrontMatter(loaded),
     };
   } catch {

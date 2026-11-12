@@ -1,4 +1,5 @@
 import { t } from '../i18n/runtime';
+import { createHeadingSlugRegistry } from '../markdown/headingSlug';
 
 export interface ExportTocHeading {
   level: number;
@@ -22,24 +23,6 @@ function normalizeLevel(level: number) {
   return Math.min(6, Math.max(1, Math.round(level)));
 }
 
-function slugifyHeading(text: string) {
-  const slug = text
-    .trim()
-    .toLowerCase()
-    .replace(/[\s/]+/g, '-')
-    .replace(/[^\p{L}\p{N}_-]+/gu, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-  return slug || 'section';
-}
-
-function uniqueAnchor(text: string, used: Map<string, number>) {
-  const base = slugifyHeading(text);
-  const count = used.get(base) ?? 0;
-  used.set(base, count + 1);
-  return count === 0 ? base : `${base}-${count + 1}`;
-}
-
 function extractMdastText(node: any): string {
   if (!node) return '';
   if (typeof node.value === 'string') return node.value;
@@ -49,7 +32,7 @@ function extractMdastText(node: any): string {
 }
 
 export function buildExportTocItems(headings: ExportTocHeading[]): ExportTocItem[] {
-  const used = new Map<string, number>();
+  const nextSlug = createHeadingSlugRegistry();
   return headings
     .map((heading) => ({
       level: normalizeLevel(heading.level),
@@ -58,8 +41,9 @@ export function buildExportTocItems(headings: ExportTocHeading[]): ExportTocItem
     .filter((heading) => heading.text.length > 0)
     .map((heading) => ({
       ...heading,
-      anchor: uniqueAnchor(heading.text, used),
-    }));
+      anchor: nextSlug(heading.text),
+    }))
+    .filter((heading) => heading.anchor.length > 0);
 }
 
 export function buildExportTocItemsFromMdast(nodes: any[]): ExportTocItem[] {

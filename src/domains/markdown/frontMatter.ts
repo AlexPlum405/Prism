@@ -1,4 +1,9 @@
 import { dump, load } from 'js-yaml';
+import {
+  frontMatterObject,
+  frontMatterScalar,
+  splitFrontMatterBlock,
+} from './frontMatterBlock';
 
 export interface DocumentFrontMatterProperties {
   author: string;
@@ -18,8 +23,6 @@ export interface ParsedDocumentFrontMatter {
   properties: DocumentFrontMatterProperties;
 }
 
-const FRONT_MATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
-
 export const EMPTY_DOCUMENT_FRONT_MATTER_PROPERTIES: DocumentFrontMatterProperties = {
   title: '',
   tags: '',
@@ -30,19 +33,11 @@ export const EMPTY_DOCUMENT_FRONT_MATTER_PROPERTIES: DocumentFrontMatterProperti
   exportRaw: '',
 };
 
-function stringValue(value: unknown) {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  if (typeof value !== 'string' && typeof value !== 'number') return '';
-  return String(value);
-}
-
 function tagsValue(value: unknown) {
   if (Array.isArray(value)) {
-    return value.map((item) => stringValue(item).trim()).filter(Boolean).join(', ');
+    return value.map((item) => frontMatterScalar(item).trim()).filter(Boolean).join(', ');
   }
-  return stringValue(value);
+  return frontMatterScalar(value);
 }
 
 function exportValue(value: unknown) {
@@ -53,27 +48,21 @@ function exportValue(value: unknown) {
   return dump(value, { lineWidth: -1, noRefs: true, sortKeys: false }).trim();
 }
 
-function normalizeLoadedYaml(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? { ...(value as Record<string, unknown>) }
-    : {};
-}
-
 function propertiesFromData(data: Record<string, unknown>): DocumentFrontMatterProperties {
   return {
-    title: stringValue(data.title),
+    title: frontMatterScalar(data.title),
     tags: tagsValue(data.tags),
-    description: stringValue(data.description),
-    author: stringValue(data.author),
-    date: stringValue(data.date),
-    status: stringValue(data.status),
+    description: frontMatterScalar(data.description),
+    author: frontMatterScalar(data.author),
+    date: frontMatterScalar(data.date),
+    status: frontMatterScalar(data.status),
     exportRaw: exportValue(data.export),
   };
 }
 
 export function parseDocumentFrontMatter(content: string): ParsedDocumentFrontMatter {
-  const match = FRONT_MATTER_PATTERN.exec(content);
-  if (!match) {
+  const block = splitFrontMatterBlock(content);
+  if (!block.hasBlock) {
     return {
       body: content,
       data: {},
@@ -84,9 +73,9 @@ export function parseDocumentFrontMatter(content: string): ParsedDocumentFrontMa
   }
 
   try {
-    const data = normalizeLoadedYaml(load(match[1]));
+    const data = frontMatterObject(load(block.raw));
     return {
-      body: content.slice(match[0].length),
+      body: block.body,
       data,
       error: null,
       hasFrontMatter: true,
