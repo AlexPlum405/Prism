@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  DEFAULT_ISLAND_WIDTHS,
+  createIslandPreference,
   fitIslandWidths,
   ISLAND_LIMITS,
-  resetIslandWidths,
-  resizeEditor,
-  resizeSidebar,
+  resizeEditorPreference,
+  resizeSidebarPreference,
   type DocumentPaneCount,
-  type IslandWidths,
+  type IslandPreference,
 } from './islandLayout';
 
 interface UseIslandLayoutOptions {
@@ -23,13 +22,14 @@ interface GhostState {
 /**
  * 浮岛外壳的宽度状态。
  *
- * 宽度只在这里维护一份：栏缝拖拽、窗口缩放、双击复位都改同一处，
- * 三块岛自己不做 flex 伸缩，避免拖动时另一块被隐式改宽导致读数错位。
+ * 只存「偏好」（用户拖出来的意图），实际像素宽每次渲染现算：窗口变窄时三块岛
+ * 一起让路，但让路结果不写回偏好，所以把窗口拉宽后岛宽会回到用户拖出的值，
+ * 而不是停在被压窄的数字上。
  */
 export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [available, setAvailable] = useState(0);
-  const [widths, setWidths] = useState<IslandWidths>({ ...DEFAULT_ISLAND_WIDTHS });
+  const [preference, setPreference] = useState<IslandPreference>(createIslandPreference);
   const [ghost, setGhost] = useState<GhostState | null>(null);
 
   // 量的是 .island-main 的 clientWidth（已含左右各 18 的 padding，计算里会扣）。
@@ -47,21 +47,13 @@ export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOp
     return () => observer.disconnect();
   }, []);
 
-  // 可用宽度变化时按比例收敛一次；宽度不够时缩，够用时保持用户拖过的值。
-  useEffect(() => {
-    if (available <= 0) return;
-    setWidths((prev) => fitIslandWidths(prev, {
-      available: available - 36,
-      paneCount,
-      sidebarVisible,
-    }));
-  }, [available, paneCount, sidebarVisible]);
-
-  const options = useCallback(() => ({
+  const options = useMemo(() => ({
     available: Math.max(0, available - 36),
     paneCount,
     sidebarVisible,
   }), [available, paneCount, sidebarVisible]);
+
+  const widths = useMemo(() => fitIslandWidths(preference, options), [preference, options]);
 
   const startSidebarDrag = useCallback(() => {
     setGhost({ x: 18 + widths.sidebar, label: `原边界 ${Math.round(18 + widths.sidebar)}` });
@@ -73,19 +65,19 @@ export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOp
   }, [sidebarVisible, widths.editor, widths.sidebar]);
 
   const resizeSidebarTo = useCallback((next: number) => {
-    setWidths((prev) => resizeSidebar(prev, next, options()));
-  }, [options]);
+    setPreference((prev) => resizeSidebarPreference(prev, next));
+  }, []);
 
   const resizeEditorTo = useCallback((next: number) => {
-    setWidths((prev) => resizeEditor(prev, next));
-  }, []);
+    setPreference((prev) => resizeEditorPreference(prev, next, options));
+  }, [options]);
 
   const endDrag = useCallback(() => setGhost(null), []);
 
   const reset = useCallback(() => {
     setGhost(null);
-    setWidths(resetIslandWidths(options()));
-  }, [options]);
+    setPreference(createIslandPreference());
+  }, []);
 
   return {
     containerRef,

@@ -92,6 +92,9 @@ body.dark {
 }
 
 .island-main {
+  /* 虚影与读数是相对主区域定位的：不加 relative 会锚到窗口最外层，
+     点线就会从标题栏一路画到状态栏里。 */
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 0;
@@ -230,8 +233,10 @@ body.dark {
 
 .island-ghost {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  /* 虚影贯穿的是「岛高」而不是主区域高：主区域比岛多出上下各 18px 的留白，
+     不内缩的话点线会顶到标题栏、尾巴伸进状态栏。 */
+  top: var(--window-pad);
+  bottom: var(--window-pad);
   width: 1px;
   pointer-events: none;
   z-index: 5;

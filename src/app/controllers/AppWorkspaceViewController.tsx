@@ -116,7 +116,8 @@ export function AppWorkspaceViewController({
   const paneCount: DocumentPaneCount = currentDocument
     ? (currentDocument.viewMode === 'split' ? 2 : 1)
     : 0;
-  const sidebarVisible = Boolean(workspace.sidebarVisible) && Boolean(currentDocument);
+  // 没有文档时侧栏岛照旧显示（老版本也是这个行为）：否则打开应用先看到一整片空画布。
+  const sidebarVisible = Boolean(workspace.sidebarVisible);
 
   const layout = useIslandLayout({ paneCount, sidebarVisible });
 
