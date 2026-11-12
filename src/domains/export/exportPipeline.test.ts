@@ -999,7 +999,9 @@ describe('export pipeline raster CSS compatibility', () => {
 });
 
 describe('export pipeline image progress', () => {
-  const PNG_SLICING_TEST_TIMEOUT_MS = 15_000;
+  // 这些用例真的会把 16k × 4k 的扫描线送进 zlib 编码器（约 256MB 输入），
+  // 机器忙的时候耗时会在 2s 和 13s 之间跳，默认 5s 会随机超时。
+  const PNG_SLICING_TEST_TIMEOUT_MS = 60_000;
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
   const originalImage = globalThis.Image;
   const originalCreateElement = document.createElement.bind(document);
@@ -1190,7 +1192,7 @@ describe('export pipeline image progress', () => {
     ]);
     expect(canvasRenderMock.render).toHaveBeenCalledTimes(2);
     expect(mermaidMock.render).toHaveBeenCalledTimes(2);
-  });
+  }, PNG_SLICING_TEST_TIMEOUT_MS);
 
   it('reports diagnostic progress stages for png export', async () => {
     const onProgress = vi.fn();
