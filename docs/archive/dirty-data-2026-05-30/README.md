@@ -23,7 +23,6 @@
 - `docs/screenshot/prism-intro/assets/` 仍被 README 截图区引用，暂时保留在原位置。
 - `docs/assets/prism-icon-red-panda-app-icon.png` 仍是 `scripts/generate-brand-icons.mjs` 的当前图标源，暂时保留在原位置。
 - `docs/prism-openai-redesign.html` 被 ADR 和样式注释作为历史视觉参考引用，暂时保留在原位置。
-- `docs/prism-rust-core-modernization-implementation-plan.md` 仍是当前待实施的 Rust Core 现代化计划，暂时保留在原位置。
 - `docs/verification/`、`docs/releases/`、`docs/examples/`、`docs/agents/`、`docs/adr/` 属于正式证据、发布记录、示例、Agent 配置或架构决策，不纳入脏数据归档。
 - `node_modules/`、`dist/`、`src-tauri/target/` 是标准依赖/构建缓存，只由 `.gitignore` 管理，没有搬入归档。
 

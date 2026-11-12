@@ -1,7 +1,7 @@
 # Prism Rust Core Modernization 验证记录
 
 > 启动日期：2026-05-28
-> 计划文件：`docs/prism-rust-core-modernization-implementation-plan.md`
+> 计划文件：`docs/prism-rust-core-modernization-implementation-plan.md`（计划于 2026-11-12 核对为已完成，文件同日删除，内容见 git 历史）
 > 目标：按 Phase 0 到 Phase 10 把 Prism 的本地能力层逐步迁到 Rust / Tauri，React / CodeMirror 继续负责编辑器、预览、设置中心、菜单、状态栏、弹窗、主题 CSS 和用户交互。
 
 ## 基线
