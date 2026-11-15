@@ -75,20 +75,24 @@ export function fitIslandWidths(preference: IslandPreference, options: FitOption
     ? ISLAND_LIMITS.editor.min + ISLAND_LIMITS.preview.min
     : 0;
 
-  if (!options.sidebarVisible) {
-    return { sidebar: 0, editor: budget, preview: budget };
-  }
-
   if (options.paneCount === 0) {
-    return { sidebar: Math.max(0, Math.min(preference.sidebar, budget)), editor: 0, preview: 0 };
+    return {
+      sidebar: options.sidebarVisible ? Math.max(0, Math.min(preference.sidebar, budget)) : 0,
+      editor: 0,
+      preview: 0,
+    };
   }
 
+  // 侧栏收起时 sidebar 归零，但文档区仍要按偏好分栏——否则分屏下编辑与预览
+  // 各拿满宽，后者会被挤出可视区，看起来就像退回了单栏编辑。
   // 窗口不够宽时先压侧栏，而不是压文档区：否则预览岛会被推到最小宽以下并横向溢出。
-  const sidebar = clamp(
-    preference.sidebar,
-    ISLAND_LIMITS.sidebar.min,
-    Math.max(ISLAND_LIMITS.sidebar.min, Math.min(ISLAND_LIMITS.sidebar.max, budget - docMinimum)),
-  );
+  const sidebar = options.sidebarVisible
+    ? clamp(
+      preference.sidebar,
+      ISLAND_LIMITS.sidebar.min,
+      Math.max(ISLAND_LIMITS.sidebar.min, Math.min(ISLAND_LIMITS.sidebar.max, budget - docMinimum)),
+    )
+    : 0;
   const docBudget = Math.max(0, budget - sidebar);
 
   if (options.paneCount === 1) {

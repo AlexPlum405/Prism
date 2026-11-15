@@ -15,12 +15,6 @@ const IconGrid = () => (
   </svg>
 );
 
-const IconChevronsLeft = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M6.08 3.72c.4 0 .72.32.72.72v11.12a.72.72 0 0 1-1.44 0V4.44c0-.4.32-.72.72-.72Zm8.34 2.02c.28.28.28.74 0 1.02L11.18 10l3.24 3.24a.72.72 0 0 1-1.02 1.02L9.65 10.5a.72.72 0 0 1 0-1.02l3.75-3.74c.28-.28.74-.28 1.02 0Z" />
-  </svg>
-);
-
 interface SidebarProps {
   fileTree: FileNode[];
   sidebarTab: SidebarTab;
@@ -36,8 +30,6 @@ interface SidebarProps {
   /** 页脚：树 / 列表切换。 */
   onToggleFileTreeMode?: () => void;
   fileTreeMode?: 'tree' | 'list';
-  /** 页脚最右：收起侧栏。 */
-  onCollapse?: () => void;
   /** 页脚中间那行说明文字，默认取工作区目录名。 */
   footerLabel?: string;
 }
@@ -61,7 +53,6 @@ export function Sidebar({
   onFolderContextMenu,
   onToggleFileTreeMode,
   fileTreeMode = 'list',
-  onCollapse,
   footerLabel,
 }: SidebarProps) {
   const { t } = useI18n();
@@ -135,15 +126,6 @@ export function Sidebar({
           onClick={onToggleFileTreeMode}
         >
           <IconGrid />
-        </button>
-        <button
-          type="button"
-          className="island-sidebar__icon-btn"
-          title={t('status.collapseSidebar')}
-          aria-label={t('status.collapseSidebar')}
-          onClick={onCollapse}
-        >
-          <IconChevronsLeft />
         </button>
       </div>
     </div>

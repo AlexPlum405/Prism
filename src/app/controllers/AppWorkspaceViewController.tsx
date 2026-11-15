@@ -148,7 +148,6 @@ export function AppWorkspaceViewController({
                 onFolderContextMenu={onFolderContextMenu}
                 onToggleFileTreeMode={() => onFileAction(workspace.fileTreeMode === 'tree' ? 'viewList' : 'viewTree')}
                 fileTreeMode={workspace.fileTreeMode}
-                onCollapse={() => workspace.toggleSidebar()}
                 footerLabel={workspaceLabel}
               />
             </aside>
@@ -196,7 +195,8 @@ export function AppWorkspaceViewController({
             writingStats={writingStats}
             selectionStats={selectionWritingStats}
             cursor={cursor}
-            onExpandSidebar={sidebarVisible ? undefined : () => workspace.toggleSidebar()}
+            sidebarVisible={sidebarVisible}
+            onToggleSidebar={() => workspace.toggleSidebar()}
             onExportMenu={onExportMenu}
             onToggleFocusMode={() => workspace.toggleFocusMode()}
             linkIssueCount={actionableIssueCount}

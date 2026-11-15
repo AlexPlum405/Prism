@@ -44,6 +44,14 @@ describe('islandLayout', () => {
     expect(restored).toEqual({ sidebar: 268, editor: 548, preview: 556 });
   });
 
+  it('keeps the split when the sidebar is collapsed', () => {
+    const widths = fitIslandWidths(pref(), { ...fullWindow, sidebarVisible: false });
+    expect(widths.sidebar).toBe(0);
+    // 收起侧栏只该让文档区变宽，不该把编辑与预览压成一个满宽的编辑区
+    expect(widths.editor + widths.preview + GUTTER_W).toBe(1404);
+    expect(widths.editor / widths.preview).toBeCloseTo(548 / 556, 1);
+  });
+
   it('grows both document panes proportionally on a 1920 window', () => {
     const widths = fitIslandWidths(pref(), { ...fullWindow, available: 1920 - 36 });
     expect(widths.sidebar).toBe(268);
