@@ -187,36 +187,36 @@ export function AppWorkspaceViewController({
         />
 
         {layout.ghost && <IslandGhost x={layout.ghost.x} label={layout.ghost.label} />}
-      </div>
 
-      {currentDocument && workspace.statusBarVisible && (
-        <div className="app-statusbar">
-          <StatusBar
-            writingStats={writingStats}
-            selectionStats={selectionWritingStats}
-            cursor={cursor}
-            onExportMenu={onExportMenu}
-            onToggleFocusMode={() => workspace.toggleFocusMode()}
-            linkIssueCount={actionableIssueCount}
-            linkIssueTitle={firstActionableMessage}
-            onLinkDiagnosticsClick={onLinkDiagnosticsClick}
-            backlinkCount={backlinkCount}
-            onBacklinksClick={onBacklinksClick}
-            typographyIssueCount={typographyIssueCount}
-            typographyIssueTitle={firstTypographyMessage}
-            onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
-            onRelationGraphClick={onRelationGraphClick}
-            hasDocumentRelations={hasDocumentRelations}
-            exportFeedback={exportFeedback}
-            exportProgress={exportProgress}
-            exportProgressInBackground={exportProgressInBackground}
-            documentProfileKind={currentDocument.profile?.kind}
-            onShowExportFailure={onShowExportFailure}
-            onShowExportProgress={onShowExportProgress}
-            onCancelExport={onCancelExport}
-          />
-        </div>
-      )}
+        {currentDocument && workspace.statusBarVisible && (
+          <div className="island-status-chip app-statusbar">
+            <StatusBar
+              writingStats={writingStats}
+              selectionStats={selectionWritingStats}
+              cursor={cursor}
+              onExportMenu={onExportMenu}
+              onToggleFocusMode={() => workspace.toggleFocusMode()}
+              linkIssueCount={actionableIssueCount}
+              linkIssueTitle={firstActionableMessage}
+              onLinkDiagnosticsClick={onLinkDiagnosticsClick}
+              backlinkCount={backlinkCount}
+              onBacklinksClick={onBacklinksClick}
+              typographyIssueCount={typographyIssueCount}
+              typographyIssueTitle={firstTypographyMessage}
+              onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
+              onRelationGraphClick={onRelationGraphClick}
+              hasDocumentRelations={hasDocumentRelations}
+              exportFeedback={exportFeedback}
+              exportProgress={exportProgress}
+              exportProgressInBackground={exportProgressInBackground}
+              documentProfileKind={currentDocument.profile?.kind}
+              onShowExportFailure={onShowExportFailure}
+              onShowExportProgress={onShowExportProgress}
+              onCancelExport={onCancelExport}
+              />
+          </div>
+        )}
+      </div>
 
       {globalContextMenu && (
         <ContextMenu

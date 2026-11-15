@@ -1,7 +1,9 @@
 .windowShell {
-  /* 浮岛外壳：52 / 1fr / 38 三段。中间那段是画布色，三块岛浮在上面。 */
+  /* 浮岛外壳：52 / 1fr 两段。中间那段是画布色，三块岛浮在上面。
+     原来的第三条状态栏已撤掉——它横在最底下，和浮岛之间隔着一条空画布，
+     观感上是「多出来的一条」；状态信息改为岛内右下角的浮层。 */
   display: grid;
-  grid-template-rows: var(--island-titlebar-h, 52px) 1fr var(--island-statusbar-h, 38px);
+  grid-template-rows: var(--island-titlebar-h, 52px) 1fr;
   height: 100vh;
   min-height: 0;
   background: var(--island-canvas, #f3f1ec);

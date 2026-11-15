@@ -58,6 +58,7 @@
   /* 纵向留白单独一档：与横向同值时（18），岛顶到标题栏、岛底到状态栏都隔得太远，
      整屏读起来像被切成两块。纵向收到 10，横向仍保持 18。 */
   --window-pad-y: 10px;
+  --window-pad-bottom: 8px;
   --island-titlebar-h: 52px;
   --island-statusbar-h: 38px;
 }
@@ -103,7 +104,7 @@ body.dark {
   gap: 0;
   min-height: 0;
   min-width: 0;
-  padding: var(--window-pad-y) var(--window-pad);
+  padding: var(--window-pad-y) var(--window-pad) var(--window-pad-bottom);
   background: var(--island-canvas);
 }
 
@@ -239,7 +240,7 @@ body.dark {
   /* 虚影贯穿的是「岛高」而不是主区域高：主区域比岛多出上下各 18px 的留白，
      不内缩的话点线会顶到标题栏、尾巴伸进状态栏。 */
   top: var(--window-pad-y);
-  bottom: var(--window-pad-y);
+  bottom: var(--window-pad-bottom);
   width: 1px;
   pointer-events: none;
   z-index: 5;
@@ -488,4 +489,19 @@ html[data-content-theme] .file-tree-item:hover:not([data-active='true']) {
 /* 预览岛内边距 30/34：主题给 #write 的是 0 28px 80px，横向差 6px，纵向没有留白 */
 .island--preview #write {
   padding: 30px 34px 60px !important;
+}
+
+/* 文档状态浮层：贴住最右那块岛的右下角（与岛内边距对齐）。
+   给它一块与岛同色的底，正文从下面滚过时不会和它糊在一起；
+   不做边框、不做投影，尽量轻。 */
+.island-status-chip {
+  position: absolute;
+  right: calc(var(--window-pad) + 8px);
+  bottom: calc(var(--window-pad-bottom) + 4px);
+  z-index: 6;
+  max-width: calc(100% - var(--window-pad) * 2 - 24px);
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--island-surface);
+  pointer-events: none;
 }

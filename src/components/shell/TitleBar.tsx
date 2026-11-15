@@ -26,29 +26,24 @@ const IS_MACOS = RUNTIME_PLATFORM === 'mac';
 const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
 
 /**
- * 侧栏图标（展开态）：外框 + 左侧栏实心块——表示「左栏正在显示」。
- * 收起态用 IconPanelLeftOff：只剩外框与一个右向箭头，两个状态一眼能分。
+ * 侧栏图标：结构与 ViewModeSwitch 的 IconSplit 同源——20×20 viewBox、纯 fill、
+ * evenodd 挖空成 1.35 宽的描边环。展开态在环内加一道细分隔条（左侧窄栏），
+ * 收起态去掉分隔条、改画一个右向箭头，两态轮廓一致但一眼能分。
  */
+const PANEL_RING =
+  'M6.1 3.9h7.8a3.2 3.2 0 0 1 3.2 3.2v5.8a3.2 3.2 0 0 1-3.2 3.2H6.1a3.2 3.2 0 0 1-3.2-3.2V7.1a3.2 3.2 0 0 1 3.2-3.2Zm0 1.35a1.85 1.85 0 0 0-1.85 1.85v5.8c0 1.02.83 1.85 1.85 1.85h7.8a1.85 1.85 0 0 0 1.85-1.85V7.1a1.85 1.85 0 0 0-1.85-1.85H6.1Z';
+
 const IconPanelLeftOn = () => (
-  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
-    <rect x="2.9" y="3.9" width="14.2" height="12.2" rx="3.2" stroke="currentColor" strokeWidth="1.5" />
-    <rect x="5.1" y="6.1" width="3.1" height="7.8" rx="1.2" fill="currentColor" />
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
+    <rect x="7.05" y="5.4" width="1.3" height="9.2" rx="0.65" />
   </svg>
 );
 
 const IconPanelLeftOff = () => (
-  <svg
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <rect x="2.9" y="3.9" width="14.2" height="12.2" rx="3.2" />
-    <path d="M9 7.4 11.6 10 9 12.6" />
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
+    <path d="M9.75 7.58a.68.68 0 0 1 .96 0l2.2 2.15a.74.74 0 0 1 0 1.06l-2.2 2.15a.68.68 0 1 1-.96-.96l1.76-1.72-1.76-1.72a.68.68 0 0 1 0-.96Z" />
   </svg>
 );
 

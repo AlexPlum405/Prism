@@ -1,50 +1,44 @@
-/* 状态栏：浮岛外壳的最后一行，只有一条画布色的底，没有上边框。
-   字数条绝对定位在 x=770（设计稿指定的位置，既不居中也不靠左），
-   右侧三件组靠 padding-right 52 贴齐窗口右缘。 */
+/* 文档状态浮层：贴在第（最右）块岛内的右下角，不再是横贯窗口的一整条。
+   没有底色、没有边框，只有 11px 的次级文字与三个小图标，安静地待在正文留白里。 */
 .statusbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  height: var(--island-statusbar-h);
-  padding: 0 52px;
-  border-top: 0;
-  background: var(--island-canvas);
-  font-size: 11.5px;
+  gap: 14px;
+  font-size: 11px;
+  line-height: 1;
   color: var(--island-text-muted);
   user-select: none;
-  position: relative;
+  pointer-events: none;
+}
+
+.statusbar button {
+  pointer-events: auto;
 }
 
 .center {
-  position: absolute;
-  left: 770px;
-  top: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
   overflow: hidden;
-  pointer-events: none;
   white-space: nowrap;
+}
+
+.statText {
+  font-variant-numeric: tabular-nums;
 }
 
 .right {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .documentType {
   display: inline-flex;
   align-items: center;
   max-width: 116px;
-  height: 22px;
-  padding: 0 7px;
-  border: 1px solid color-mix(in srgb, var(--c-void) 10%, var(--c-fog));
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-chalk));
-  color: var(--c-graphite);
+  color: var(--island-text-muted);
   font-size: 10.5px;
   font-weight: 500;
   line-height: 1;
@@ -324,12 +318,10 @@ button.exportStatus:hover {
 }
 
 :global(html[data-content-theme='miaoyan']) .statusbar {
-  height: var(--island-statusbar-h);
-  border-top: 0;
-  background: var(--island-canvas);
+  /* 浮层不再占一整行：只保留文字样式，高度与底色都去掉。 */
   color: var(--island-text-muted);
   font-family: var(--font-sans);
-  font-size: 11.5px;
+  font-size: 11px;
   letter-spacing: 0;
 }
 
@@ -509,12 +501,9 @@ button.exportStatus:hover {
 :global(html[data-content-theme='slate']) .statusbar,
 :global(html[data-content-theme='mono']) .statusbar,
 :global(html[data-content-theme='nocturne']) .statusbar {
-  height: var(--island-statusbar-h);
-  border-top: 0;
-  background: var(--island-canvas);
   color: var(--island-text-muted);
   font-family: var(--font-sans);
-  font-size: 11.5px;
+  font-size: 11px;
   letter-spacing: 0;
 }
 
