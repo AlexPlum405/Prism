@@ -14,9 +14,12 @@
 }
 
 .titlebar.macos {
-  /* 不隐藏原生红绿灯，所以左内边距要让出它们占的宽度（设计稿是 52）。 */
+  /* 不隐藏原生红绿灯：左内边距让出它们的宽度，侧栏开关紧跟在红绿灯右侧。
+     红绿灯的垂直位置在 tauri.conf.json 的 trafficLightPosition（y=29，实测
+     圆点落在 20..33.5，与 52 高的行里 13px 文字中心对齐）。 */
   padding-left: 86px;
   padding-right: 52px;
+  gap: 8px;
 }
 
 .titlebar.windows {

@@ -25,8 +25,18 @@ const RUNTIME_PLATFORM = getRuntimePlatform();
 const IS_MACOS = RUNTIME_PLATFORM === 'mac';
 const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
 
-/** 左侧栏图标：圆角外框 + 左侧分隔线，和 Codex 标题栏那个一致。 */
-const IconPanelLeft = () => (
+/**
+ * 侧栏图标（展开态）：外框 + 左侧栏实心块——表示「左栏正在显示」。
+ * 收起态用 IconPanelLeftOff：只剩外框与一个右向箭头，两个状态一眼能分。
+ */
+const IconPanelLeftOn = () => (
+  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+    <rect x="2.9" y="3.9" width="14.2" height="12.2" rx="3.2" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="5.1" y="6.1" width="3.1" height="7.8" rx="1.2" fill="currentColor" />
+  </svg>
+);
+
+const IconPanelLeftOff = () => (
   <svg
     viewBox="0 0 20 20"
     fill="none"
@@ -38,7 +48,7 @@ const IconPanelLeft = () => (
     focusable="false"
   >
     <rect x="2.9" y="3.9" width="14.2" height="12.2" rx="3.2" />
-    <path d="M7.7 3.9v12.2" />
+    <path d="M9 7.4 11.6 10 9 12.6" />
   </svg>
 );
 
@@ -303,7 +313,7 @@ export function TitleBar({
         aria-pressed={sidebarVisible}
         onClick={onToggleSidebar}
       >
-        <IconPanelLeft />
+        {sidebarVisible ? <IconPanelLeftOn /> : <IconPanelLeftOff />}
       </button>
     );
   };
@@ -314,13 +324,13 @@ export function TitleBar({
     >
       {IS_MACOS ? (
         <>
+          {renderSidebarToggle()}
           <div className={styles.macosTitleGroup}>
             {renderTitleContent()}
           </div>
           {renderInlineMenu()}
           <div className={styles.macosDragSpacer} data-titlebar-section="macos-drag-spacer" data-tauri-drag-region />
           <div className={styles.titlebarActions}>
-            {renderSidebarToggle()}
             <ViewModeSwitch variant="titlebarBorderless" />
           </div>
         </>
@@ -334,7 +344,6 @@ export function TitleBar({
               {renderTitleContent(styles.windowsTitle)}
             </div>
           </div>
-          {renderSidebarToggle()}
           <div className={styles.windowsDragSpacer} data-titlebar-section="windows-drag-spacer" data-tauri-drag-region />
           <div className={styles.windowsRightCluster} data-titlebar-section="windows-right-cluster">
             {renderSidebarToggle()}
@@ -346,12 +355,12 @@ export function TitleBar({
       ) : (
         <>
           <div className={styles.windowsTitleCluster} data-titlebar-section="windows-title-cluster">
+            {renderSidebarToggle()}
             <ViewModeSwitch flushStart />
             <div className={`${styles.titleGroup} ${styles.windowsTitleGroup}`}>
               {renderTitleContent(styles.windowsTitle)}
             </div>
           </div>
-          {renderSidebarToggle()}
           <div className={styles.windowsDragSpacer} data-titlebar-section="windows-drag-spacer" data-tauri-drag-region />
           {renderWindowControls()}
         </>
