@@ -39,6 +39,8 @@
   margin-right: 22px;
   flex: 0 0 auto;
   max-width: 260px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .titlebarActions {
@@ -207,6 +209,11 @@
   height: 100%;
   min-width: 0;
   overflow: visible;
+  /* 标题栏这一条在 WKWebView 里属于可拖动区域，容器不声明 no-drag 的话
+     鼠标事件会被拿去拖窗口，表现为「菜单点不开」。ViewModeSwitch 能用正是
+     因为它的容器写了 no-drag。 */
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .inlineMenuItemWrapper {
@@ -378,6 +385,8 @@
   margin-right: 22px;
   flex: 0 0 auto;
   max-width: 260px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .titlebarActions {
@@ -513,6 +522,8 @@
   margin-right: 22px;
   flex: 0 0 auto;
   max-width: 260px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .titlebarActions {
@@ -764,4 +775,48 @@
 
 :global(.app-titlebar) .docNameButton:hover {
   color: var(--island-text);
+}
+
+/* 侧栏开关：和 Codex 一样挂在标题栏右簇最左，18px 线性图标、无底色，
+   仅在悬停时给一点反馈。 */
+.sidebarToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--island-text-secondary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  transition:
+    background var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+}
+
+.sidebarToggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebarToggle:hover {
+  background: var(--island-hover);
+  color: var(--island-text);
+}
+
+.sidebarToggleOn {
+  color: var(--island-text);
+}
+
+/* macOS 的窗口拖动只留给这条空白带。整行挂 data-tauri-drag-region 时，
+   菜单、视图切换、侧栏开关的点击都会被拖动逻辑吃掉（表现为「点了没反应」）。 */
+.macosDragSpacer {
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 100%;
 }

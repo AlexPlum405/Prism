@@ -233,33 +233,6 @@ describe('StatusBar', () => {
     expect(screen.queryByText('未保存')).not.toBeInTheDocument();
   });
 
-  it('keeps one sidebar toggle at a fixed spot, flipping its label and icon', () => {
-    const onToggleSidebar = vi.fn();
-    const { rerender } = render(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
-        sidebarVisible
-        onToggleSidebar={onToggleSidebar}
-      />
-    );
-    fireEvent.click(screen.getByRole('button', { name: '收起侧边栏' }));
-    expect(onToggleSidebar).toHaveBeenCalledTimes(1);
-
-    // 收起后还是同一个按钮，只是文案与箭头方向反过来
-    rerender(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
-        sidebarVisible={false}
-        onToggleSidebar={onToggleSidebar}
-      />
-    );
-    expect(screen.queryByRole('button', { name: '收起侧边栏' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '展开侧边栏' }));
-    expect(onToggleSidebar).toHaveBeenCalledTimes(2);
-  });
-
   it('keeps export failure visible and clickable for details', () => {
     const onShowExportFailure = vi.fn();
     render(

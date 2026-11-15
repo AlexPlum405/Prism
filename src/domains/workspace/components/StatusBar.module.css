@@ -727,23 +727,3 @@ button.exportStatus:hover {
   }
 }
 
-/* 侧栏开关：收起/展开都是这一个按钮、这一个位置（状态栏最左，与内边距对齐）。
-   绝对定位是为了不参与右侧那组的排布，避免顶动 x=770 的字数条。 */
-.sidebarToggle {
-  position: absolute;
-  left: 52px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  color: var(--island-text-secondary);
-}
-
-.sidebarToggle svg {
-  width: 13px;
-  height: 13px;
-}

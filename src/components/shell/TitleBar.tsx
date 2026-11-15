@@ -16,11 +16,31 @@ interface TitleBarProps {
   onRenameDocument?: (name: string) => void | Promise<void>;
   saveError?: string | null;
   saveStatus?: DocumentSaveStatus;
+  /** 侧栏开关：和 Codex 一样放在标题栏右簇里，而不是状态栏。 */
+  sidebarVisible?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 const RUNTIME_PLATFORM = getRuntimePlatform();
 const IS_MACOS = RUNTIME_PLATFORM === 'mac';
 const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
+
+/** 左侧栏图标：圆角外框 + 左侧分隔线，和 Codex 标题栏那个一致。 */
+const IconPanelLeft = () => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <rect x="2.9" y="3.9" width="14.2" height="12.2" rx="3.2" />
+    <path d="M7.7 3.9v12.2" />
+  </svg>
+);
 
 const IconMin = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor">
@@ -98,6 +118,8 @@ export function TitleBar({
   onRenameDocument,
   saveError = null,
   saveStatus,
+  sidebarVisible = true,
+  onToggleSidebar,
 }: TitleBarProps) {
   const { t } = useI18n();
   const [window] = useState(() => getSafeWindowControls());
@@ -270,13 +292,25 @@ export function TitleBar({
     );
   };
 
+  const renderSidebarToggle = () => {
+    if (!onToggleSidebar) return null;
+    return (
+      <button
+        type="button"
+        className={`${styles.sidebarToggle} ${sidebarVisible ? styles.sidebarToggleOn : ''}`}
+        title={sidebarVisible ? t('status.collapseSidebar') : t('status.expandSidebar')}
+        aria-label={sidebarVisible ? t('status.collapseSidebar') : t('status.expandSidebar')}
+        aria-pressed={sidebarVisible}
+        onClick={onToggleSidebar}
+      >
+        <IconPanelLeft />
+      </button>
+    );
+  };
+
   return (
     <div
       className={`${styles.titlebar} ${IS_MACOS ? styles.macos : IS_WINDOWS ? styles.windows : styles.linux} app-titlebar`}
-      // macOS 使用 Overlay 标题栏，内容铺满整个窗口，原生标题栏下方那条带子
-      // 会变成拖不动的死区；这里交回给 Tauri 的拖动区域。
-      // Windows/Linux 已由各自的 drag spacer 承担，根节点不加，避免与窗口按钮抢事件。
-      data-tauri-drag-region={IS_MACOS ? '' : undefined}
     >
       {IS_MACOS ? (
         <>
@@ -284,7 +318,9 @@ export function TitleBar({
             {renderTitleContent()}
           </div>
           {renderInlineMenu()}
+          <div className={styles.macosDragSpacer} data-titlebar-section="macos-drag-spacer" data-tauri-drag-region />
           <div className={styles.titlebarActions}>
+            {renderSidebarToggle()}
             <ViewModeSwitch variant="titlebarBorderless" />
           </div>
         </>
@@ -298,8 +334,10 @@ export function TitleBar({
               {renderTitleContent(styles.windowsTitle)}
             </div>
           </div>
+          {renderSidebarToggle()}
           <div className={styles.windowsDragSpacer} data-titlebar-section="windows-drag-spacer" data-tauri-drag-region />
           <div className={styles.windowsRightCluster} data-titlebar-section="windows-right-cluster">
+            {renderSidebarToggle()}
             <ViewModeSwitch variant="titlebarBorderless" />
             <div className={styles.windowsControlsDivider} aria-hidden="true" />
             {renderWindowControls()}
@@ -313,6 +351,7 @@ export function TitleBar({
               {renderTitleContent(styles.windowsTitle)}
             </div>
           </div>
+          {renderSidebarToggle()}
           <div className={styles.windowsDragSpacer} data-titlebar-section="windows-drag-spacer" data-tauri-drag-region />
           {renderWindowControls()}
         </>

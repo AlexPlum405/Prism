@@ -264,6 +264,8 @@ function App() {
         onRenameDocument={currentDocument?.path ? handleTitlebarRename : undefined}
         saveError={currentDocument?.saveError ?? null}
         saveStatus={currentDocument?.saveStatus}
+        sidebarVisible={workspace.sidebarVisible}
+        onToggleSidebar={() => workspace.toggleSidebar()}
       />
       <AppWorkspaceViewController
         activePath={currentDocument?.path}

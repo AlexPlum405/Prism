@@ -4,18 +4,6 @@ import type { DocumentProfileKind, WritingStats } from '../services';
 import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
-const IconCollapseSidebar = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M6.08 3.72c.4 0 .72.32.72.72v11.12a.72.72 0 0 1-1.44 0V4.44c0-.4.32-.72.72-.72Zm8.34 2.02c.28.28.28.74 0 1.02L11.18 10l3.24 3.24a.72.72 0 0 1-1.02 1.02L9.65 10.5a.72.72 0 0 1 0-1.02l3.75-3.74c.28-.28.74-.28 1.02 0Z" />
-  </svg>
-);
-
-const IconExpandSidebar = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M13.92 3.72c-.4 0-.72.32-.72.72v11.12a.72.72 0 1 0 1.44 0V4.44c0-.4-.32-.72-.72-.72ZM5.58 5.74a.72.72 0 0 0 0 1.02L8.82 10l-3.24 3.24a.72.72 0 0 0 1.02 1.02l3.75-3.76a.72.72 0 0 0 0-1.02L6.6 5.74a.72.72 0 0 0-1.02 0Z" />
-  </svg>
-);
-
 const IconFocus = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M10 2.85a7.15 7.15 0 1 1 0 14.3 7.15 7.15 0 0 1 0-14.3Zm0 1.36a5.79 5.79 0 1 0 0 11.58 5.79 5.79 0 0 0 0-11.58Zm0 2.82a2.97 2.97 0 1 1 0 5.94 2.97 2.97 0 0 1 0-5.94Zm0 1.32a1.65 1.65 0 1 0 0 3.3 1.65 1.65 0 0 0 0-3.3Z" />
@@ -45,12 +33,6 @@ interface StatusBarProps {
   writingStats: WritingStats;
   selectionStats?: WritingStats | null;
   cursor: { line: number; column: number };
-  /**
-   * 侧栏开关。收起与展开是同一个按钮、同一个位置——侧栏页脚里的 « 会随岛一起
-   * 消失，两个状态各自一处按钮的话，位置对不上就会让人找不到。
-   */
-  sidebarVisible?: boolean;
-  onToggleSidebar?: () => void;
   onExportMenu?: (e: React.MouseEvent) => void;
   onToggleFocusMode?: () => void;
   linkIssueCount?: number;
@@ -82,8 +64,6 @@ export function StatusBar({
   writingStats,
   selectionStats,
   cursor,
-  sidebarVisible = true,
-  onToggleSidebar,
   onExportMenu,
   onToggleFocusMode,
   linkIssueCount = 0,
@@ -125,17 +105,6 @@ export function StatusBar({
 
   return (
     <div className={`${styles.statusbar} app-statusbar`}>
-      {onToggleSidebar && (
-        <button
-          type="button"
-          className={`${styles.btn} ${styles.iconBtn} ${styles.sidebarToggle}`}
-          title={sidebarVisible ? t('status.collapseSidebar') : t('status.expandSidebar')}
-          aria-label={sidebarVisible ? t('status.collapseSidebar') : t('status.expandSidebar')}
-          onClick={onToggleSidebar}
-        >
-          {sidebarVisible ? <IconCollapseSidebar /> : <IconExpandSidebar />}
-        </button>
-      )}
       {/* 字数条绝对定位在 x=770，既不是居中也不靠左：它要落在编辑岛下方 */}
       <div className={styles.center} title={statsTitle}>
         <span className={styles.statText}>{statusText}</span>
