@@ -85,7 +85,6 @@ describe('file tree visual rules', () => {
   it('keeps file tree items free of per-row hairline separators', () => {
     expect(css).not.toContain('.file-tree-item::after');
     expect(css).toContain("html[data-content-theme='miaoyan'] .file-tree-item[data-active='true']");
-    expect(css).toContain('box-shadow: inset 2px 0 0 var(--miaoyan-accent)');
   });
 });
 

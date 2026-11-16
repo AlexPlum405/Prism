@@ -34,7 +34,3 @@ export function readThemePackageSourceNative(themeDirectory: string) {
 export function deleteUserThemeNative(themeId: string) {
   return invokeNativeCommand<void>('delete_user_theme', { themeId });
 }
-
-export function openThemesDirectoryNative() {
-  return invokeNativeCommand<void>('open_themes_directory');
-}

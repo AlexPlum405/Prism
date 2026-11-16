@@ -3,7 +3,6 @@ import {
   completeExportJobNative,
   createExportJobNative,
   failExportJobNative,
-  getExportJobNative,
   listExportJobsNative,
   updateExportJobNative,
   type CompleteExportJobInputDto,
@@ -198,19 +197,6 @@ export async function cancelExportJob(jobId: string): Promise<ExportJob> {
     updatedAt: nowMs(),
     cancelRequested: true,
   }));
-}
-
-export async function getExportJob(jobId: string): Promise<ExportJob> {
-  try {
-    const nativeJob = readNativeJob(await getExportJobNative(jobId));
-    if (nativeJob) return nativeJob;
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) throw error;
-  }
-
-  const localJob = localJobs.get(jobId);
-  if (!localJob) throw new Error(`Export job not found: ${jobId}`);
-  return localJob;
 }
 
 export async function listExportJobs(): Promise<ExportJob[]> {

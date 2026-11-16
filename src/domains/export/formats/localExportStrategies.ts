@@ -32,7 +32,3 @@ export async function loadLocalExportStrategy(format: ExportFormat): Promise<Loc
   if (!loader) throw new Error(t('export.unsupportedFormat'));
   return loader();
 }
-
-export const __localExportStrategiesTesting = {
-  localExportStrategyLoaders,
-};

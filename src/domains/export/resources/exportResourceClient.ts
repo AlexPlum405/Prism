@@ -1,11 +1,8 @@
 import {
-  preflightExportNative,
   readExportResourceNative,
   resolveExportResourceNative,
   type ExportResourceBytesDto,
-  type ExportResourceDiagnosticDto,
   type ExportResourceRefDto,
-  type PreflightExportInputDto,
   type ResolveExportResourceInputDto,
 } from '../../../platform/tauri/exportResources';
 import { exists } from '../../../platform/tauri/fileSystem';
@@ -45,17 +42,6 @@ function isResourceBytes(value: unknown): value is ExportResourceBytesDto {
     && isByteArray(value.bytes)
     && typeof value.mimeType === 'string'
     && typeof value.path === 'string',
-  );
-}
-
-function isResourceDiagnostic(value: unknown): value is ExportResourceDiagnosticDto {
-  return Boolean(
-    isObject(value)
-    && typeof value.column === 'number'
-    && typeof value.kind === 'string'
-    && typeof value.line === 'number'
-    && (typeof value.resolvedPath === 'string' || value.resolvedPath === null || value.resolvedPath === undefined)
-    && typeof value.target === 'string',
   );
 }
 
@@ -109,16 +95,3 @@ export async function exportResourceExists(path: string): Promise<boolean> {
   }
 }
 
-export async function preflightExportResources(
-  input: PreflightExportInputDto,
-): Promise<ExportResourceDiagnosticDto[] | null> {
-  try {
-    const diagnostics = await preflightExportNative(input);
-    return Array.isArray(diagnostics) && diagnostics.every(isResourceDiagnostic)
-      ? diagnostics
-      : null;
-  } catch (error) {
-    if (shouldFallback(error)) return null;
-    throw error;
-  }
-}

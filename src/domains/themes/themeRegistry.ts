@@ -1,4 +1,4 @@
-import { CONTENT_THEMES, type BuiltInContentTheme, type ContentTheme } from '../settings/types';
+import { CONTENT_THEMES, type ContentTheme } from '../settings/types';
 import { t } from '../i18n';
 import {
   builtInThemeContracts,
@@ -256,10 +256,6 @@ export function getMermaidThemeConfig(theme: ContentTheme) {
     gantt: { useMaxWidth: true },
     journey: { useMaxWidth: true },
   };
-}
-
-export function getFallbackContentTheme(theme: ContentTheme | null | undefined): BuiltInContentTheme {
-  return theme && isRegisteredContentTheme(theme) ? theme as BuiltInContentTheme : 'miaoyan';
 }
 
 export const __themeRegistryTesting = {

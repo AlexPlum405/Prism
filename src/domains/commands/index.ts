@@ -17,8 +17,3 @@ export {
   getCommandMenuItems,
   getMenuSections,
 } from './menuModel';
-export {
-  COMMAND_PALETTE_GROUP_ORDER,
-  getCommandPaletteGroup,
-  type CommandPaletteGroup,
-} from './paletteGroups';

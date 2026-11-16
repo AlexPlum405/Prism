@@ -111,9 +111,6 @@ html[data-ui-theme='miaoyan'] .file-tree-item.is-active {
 html[data-ui-theme='miaoyan'] .file-tree-item:hover:not([data-active='true']) {
   background: rgba(0, 0, 0, 0.035) !important;
 }
-html[data-ui-theme='miaoyan'] .island--preview #write {
-  padding: 30px 34px 60px !important;
-}
 
 /* ---- 暖纸 ---- */
 html[data-ui-theme='warm-paper'],

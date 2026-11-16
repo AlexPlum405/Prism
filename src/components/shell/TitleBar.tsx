@@ -277,9 +277,9 @@ export function TitleBar({
     if (!menuSections || !onMenuAction) return null;
 
     return (
-      <div className={styles.inlineMenu} ref={inlineMenuRef}>
+      <div className={styles.inlineMenu} ref={inlineMenuRef} data-tauri-drag-region={macosDragRegion}>
         {Object.keys(menuSections).map((menuName) => (
-          <div key={menuName} className={styles.inlineMenuItemWrapper}>
+          <div key={menuName} className={styles.inlineMenuItemWrapper} data-tauri-drag-region={macosDragRegion}>
             <button
               type="button"
               className={`${styles.inlineMenuItem} ${activeMenu === menuName ? styles.active : ''}`}
@@ -322,21 +322,27 @@ export function TitleBar({
     );
   };
 
+  /* macOS 上标题栏这一行的空白都应该能拖窗口：红绿灯左侧的留白命中 .titlebar，
+     文件名/菜单文字上下的留白命中各自的容器。Tauri 的拖动脚本只看被点元素自身的
+     data-tauri-drag-region（e.target，不向上找），所以标在容器上不会吃掉按钮点击。 */
+  const macosDragRegion = IS_MACOS ? '' : undefined;
+
   return (
     <div
       className={`${styles.titlebar} ${IS_MACOS ? styles.macos : IS_WINDOWS ? styles.windows : styles.linux} app-titlebar`}
+      data-tauri-drag-region={macosDragRegion}
     >
       {IS_MACOS ? (
         <>
           {/* 文件名 → 侧栏开关 → 菜单：这一组的右缘由侧栏浮岛右缘决定（CSS 变量），
               开关因此落在浮岛右边界上方，收起时变量不更新，按钮停在原处。 */}
-          <div className={styles.macosLeftGroup}>
+          <div className={styles.macosLeftGroup} data-tauri-drag-region={macosDragRegion}>
             <div className={styles.macosFileName}>{renderTitleContent()}</div>
             {renderSidebarToggle()}
           </div>
           {renderInlineMenu()}
-          <div className={styles.macosDragSpacer} data-titlebar-section="macos-drag-spacer" data-tauri-drag-region />
-          <div className={styles.titlebarActions}>
+          <div className={styles.macosDragSpacer} data-titlebar-section="macos-drag-spacer" data-tauri-drag-region={macosDragRegion} />
+          <div className={styles.titlebarActions} data-tauri-drag-region={macosDragRegion}>
             {statusSlot}
             <ViewModeSwitch variant="titlebarBorderless" />
           </div>

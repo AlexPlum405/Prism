@@ -117,21 +117,6 @@ describe('StatusBar', () => {
     expect(screen.queryByRole('button', { name: '排版' })).not.toBeInTheDocument();
   });
 
-  it('does not render backlink count in the status bar', () => {
-    const onBacklinksClick = vi.fn();
-    render(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
-        backlinkCount={4}
-        onBacklinksClick={onBacklinksClick}
-      />
-    );
-
-    expect(screen.queryByRole('button', { name: 'BACKLINK 4' })).not.toBeInTheDocument();
-    expect(onBacklinksClick).not.toHaveBeenCalled();
-  });
-
   /* 关系图谱 / 专注模式 / 导出三个操作已收归菜单（导航 / 视图 / 导出），
      状态区只保留只读信息。这条断言锁定该决定，防止以后又塞回一排工具栏。 */
   it('keeps the status area read-only and free of action icons', () => {
@@ -148,20 +133,6 @@ describe('StatusBar', () => {
     expect(container.querySelector('button[aria-pressed]')).toBeNull();
     expect(container.querySelectorAll('svg')).toHaveLength(0);
     expect(screen.getByText('60 字')).toBeInTheDocument();
-  });
-
-  it('does not render document metadata in the status bar', () => {
-    const onDocumentPropertiesClick = vi.fn();
-    render(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
-        onDocumentPropertiesClick={onDocumentPropertiesClick}
-      />
-    );
-
-    expect(screen.queryByRole('button', { name: 'META' })).not.toBeInTheDocument();
-    expect(onDocumentPropertiesClick).not.toHaveBeenCalled();
   });
 
   it('shows a recoverable background export status', () => {

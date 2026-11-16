@@ -123,10 +123,6 @@ vi.mock('./components/shell/SettingsModal', () => ({
   SettingsModal: () => null,
 }));
 
-vi.mock('./domains/editor/components/LinkDiagnosticsPanel', () => ({
-  LinkDiagnosticsPanel: () => null,
-}));
-
 vi.mock('./domains/editor/components/TypographyDiagnosticsPanel', () => ({
   TypographyDiagnosticsPanel: () => null,
 }));

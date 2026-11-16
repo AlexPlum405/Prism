@@ -49,16 +49,14 @@ button:focus-visible {
 /* ---- 专注模式：软退让（ADR-0004） ---- */
 body.focus-mode .app-titlebar,
 body.focus-mode .app-menubar,
-body.focus-mode .app-sidebar,
-body.focus-mode .app-statusbar {
+body.focus-mode .app-sidebar {
   opacity: 0.25;
   transition: opacity var(--duration-feedback) var(--ease-out);
 }
 
 body.focus-mode .app-titlebar:hover,
 body.focus-mode .app-menubar:hover,
-body.focus-mode .app-sidebar:hover,
-body.focus-mode .app-statusbar:hover {
+body.focus-mode .app-sidebar:hover {
   opacity: 1;
 }
 

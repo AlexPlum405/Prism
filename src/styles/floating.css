@@ -118,17 +118,6 @@ body.dark .modal-overlay { background: rgba(0, 0, 0, 0.6); }
 .cmdk-list { max-height: 312px; overflow-y: auto; padding: 5px; }
 .cmdk-empty { padding: 40px; text-align: center; color: var(--c-ash); font-size: 13px; }
 
-.cmdk-section + .cmdk-section {
-  margin-top: 2px;
-}
-.cmdk-section-title {
-  padding: 7px 10px 4px;
-  color: var(--c-ash);
-  font-size: 10.5px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
 .cmdk-item {
   display: flex;
   align-items: center;

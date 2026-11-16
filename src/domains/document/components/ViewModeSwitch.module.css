@@ -13,8 +13,6 @@
   align-self: stretch;
   height: 100%;
   margin-left: 14px;
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 .flushStart {
@@ -37,8 +35,6 @@
     background var(--duration-hover) var(--ease-out),
     color var(--duration-hover) var(--ease-out),
     transform var(--duration-hover) var(--ease-out);
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 .btn:hover {

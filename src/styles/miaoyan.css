@@ -21,45 +21,6 @@ html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-con
 
 
 
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs {
-  padding: 13px 12px 8px !important;
-  gap: 6px !important;
-  background: var(--theme-pane-bg) !important;
-}
-
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tab-button {
-  height: 30px !important;
-  padding: 0 10px !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  transform: none !important;
-  color: var(--theme-secondary-text) !important;
-  background: transparent !important;
-  font-family: var(--theme-font) !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.6px !important;
-  transition: background 120ms ease, color 120ms ease !important;
-}
-
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button:hover,
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tab-button:hover {
-  background: var(--theme-panel-secondary) !important;
-  color: var(--theme-text) !important;
-}
-
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button[style*='scale(1.02)'],
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tab-button[data-active='true'] {
-  background: var(--theme-selection) !important;
-  color: var(--theme-text) !important;
-  font-weight: 600 !important;
-}
-
-html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar-tabs button > div {
-  display: none !important;
-}
-
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .sidebar,
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-item,
 html:is([data-content-theme='inkstone'], [data-content-theme='slate'], [data-content-theme='mono'], [data-content-theme='nocturne'], [data-content-theme='carbon']) .file-tree-directory,
@@ -213,44 +174,6 @@ html[data-content-theme='miaoyan'] button {
 
 
 
-html[data-content-theme='miaoyan'] .sidebar-tabs {
-  padding: 13px 12px 8px !important;
-  gap: 6px !important;
-  background: var(--miaoyan-pane-bg) !important;
-}
-
-html[data-content-theme='miaoyan'] .sidebar-tabs button,
-html[data-content-theme='miaoyan'] .sidebar-tab-button {
-  height: 30px !important;
-  padding: 0 10px !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  transform: none !important;
-  color: var(--miaoyan-secondary-text) !important;
-  background: transparent !important;
-  font-family: var(--miaoyan-font) !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.6px !important;
-  transition: background 120ms ease, color 120ms ease !important;
-}
-
-html[data-content-theme='miaoyan'] .sidebar-tabs button:hover,
-html[data-content-theme='miaoyan'] .sidebar-tab-button:hover {
-  background: rgba(0, 0, 0, 0.035) !important;
-  color: var(--miaoyan-text) !important;
-}
-
-html[data-content-theme='miaoyan'] .sidebar-tabs button[style*='scale(1.02)'],
-html[data-content-theme='miaoyan'] .sidebar-tab-button[data-active='true'] {
-  background: var(--miaoyan-selection) !important;
-  color: var(--miaoyan-text) !important;
-  font-weight: 600 !important;
-}
-
-html[data-content-theme='miaoyan'] .sidebar-tabs button > div {
-  display: none !important;
-}
 
 html[data-content-theme='miaoyan'] .sidebar,
 html[data-content-theme='miaoyan'] .file-tree-item,
@@ -326,7 +249,6 @@ html[data-content-theme='miaoyan'] .file-tree-preview {
 html[data-content-theme='miaoyan'] .file-tree-item[data-active='true'],
 html[data-content-theme='miaoyan'] .file-tree-item.is-active {
   background: rgba(0, 0, 0, 0.032) !important;
-  box-shadow: inset 2px 0 0 var(--miaoyan-accent);
   color: var(--miaoyan-text) !important;
   font-weight: 400 !important;
 }

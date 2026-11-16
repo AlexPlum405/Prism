@@ -276,8 +276,6 @@ function App() {
               writingStats={writingStats}
               selectionStats={selectionWritingStats}
               cursor={cursor}
-              backlinkCount={documentInsight.backlinks.length}
-              onBacklinksClick={documentInsight.openBacklinks}
               typographyIssueCount={documentInsight.typographyDiagnostics.length}
               typographyIssueTitle={documentInsight.firstTypographyDiagnostic?.message}
               onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}

@@ -4,7 +4,7 @@ import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
 /* 状态区只放只读信息：字数、排版建议，以及导出的进度与结果。
-   文档诊断统一走菜单（视图 → 文档诊断）与命令面板；关系图谱 / 专注模式 /
+   文档诊断统一走菜单（视图 → 文档诊断）；关系图谱 / 专注模式 /
    导出也都在菜单里，标题栏右侧不再摆第二排工具栏或错误计数。
    注意：导出进度与结果反馈不是入口，删掉按钮后仍必须保留，否则从菜单
    发起的导出卡住或失败时用户看不到原因。 */
@@ -14,9 +14,6 @@ interface StatusBarProps {
   cursor: { line: number; column: number };
   /** 仅用于判断是否为纯文本文稿（纯文本不显示排版诊断入口），不展示类型名。 */
   documentProfileKind?: DocumentProfileKind;
-  backlinkCount?: number;
-  onBacklinksClick?: () => void;
-  onDocumentPropertiesClick?: () => void;
   typographyIssueCount?: number;
   typographyIssueTitle?: string;
   onTypographyDiagnosticsClick?: () => void;

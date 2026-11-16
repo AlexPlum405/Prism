@@ -23,7 +23,3 @@ export async function exportDocument(
   }
   return exportDocumentLocal(input, format, outputPath);
 }
-
-export const __exportServiceTesting = {
-  shouldUseIsolatedExportWebview,
-};

@@ -944,10 +944,6 @@ export function createFallbackPlantUmlSvgElement(source: string, contentTheme: C
   return svg;
 }
 
-export function renderFallbackPlantUmlSvgString(source: string, contentTheme: ContentTheme) {
-  return new XMLSerializer().serializeToString(createFallbackPlantUmlSvgElement(source, contentTheme));
-}
-
 export const __plantUmlTesting = {
   cache: plantUmlSvgCache,
   seedPlantUmlSvgCache: (key: string, value: Promise<string>) => rememberPlantUmlSvg(key, value),

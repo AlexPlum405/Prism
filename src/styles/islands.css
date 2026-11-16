@@ -5,8 +5,8 @@
    分区只靠「16px 画布色缝 + 18px 圆角 + 唯一轻投影」。
 
    硬规则（改这个文件前先读）：
-   1. 这里不许出现任何用于分区的 border。唯一的 border 属于
-      拖拽抓手（--border-grip）、读数条（--accent）与文档内 <hr>。
+   1. 这里不许出现任何用于分区的 border。仅允许读数条（--accent）
+      与文档内 <hr> 使用 border。
    2. 岛色只走 --island-* 令牌，别处不许再写死 #FFF / #F3F1EC。
    3. 圆角只有 18 / 9 / 8 / 5 四档，投影只有三档。
    ============================================================ */
@@ -59,7 +59,6 @@
   --window-pad-y: 10px;
   --window-pad-bottom: 8px;
   --island-titlebar-h: 52px;
-  --island-statusbar-h: 38px;
 }
 
 /* 深色模式：浅色岛配深色画布会刺眼，整体压到同一明度带。 */
@@ -79,18 +78,6 @@ body.dark {
   --island-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   --island-shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.32);
   --island-shadow-float: 0 4px 14px rgba(0, 0, 0, 0.45);
-}
-
-/* ---- 外壳骨架：52 / 1fr / 38 ---- */
-
-.island-app {
-  display: grid;
-  grid-template-rows: var(--island-titlebar-h) 1fr var(--island-statusbar-h);
-  height: 100%;
-  min-height: 0;
-  background: var(--island-canvas);
-  border-radius: 14px;
-  overflow: hidden;
 }
 
 .island-main {
@@ -125,10 +112,6 @@ body.dark {
 
 .island--sidebar {
   background: var(--island-sidebar);
-}
-
-.island--fill {
-  flex: 1 1 auto;
 }
 
 /* ---- 栏缝：16px 留白本身，绝对定位的命中区在缝上 ---- */
@@ -463,8 +446,8 @@ html[data-content-theme] .file-tree-item[data-active='true']::before {
 }
 
 
-/* 标题栏右侧的状态区：字数/行列、诊断、聚焦、导出，全部收进 52px 的标题行，
-   不再占用岛内空间。文字小一号、次要色，和三个视图图标保持 16px 间距。 */
+/* 标题栏右侧的状态区：字数与排版建议，全部收进 52px 的标题行，
+   不再占用岛内空间。文字小一号、次要色，和视图图标保持 16px 间距。 */
 .titlebar-status {
   display: flex;
   align-items: center;

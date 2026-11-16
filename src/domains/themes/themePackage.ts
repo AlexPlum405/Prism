@@ -1,5 +1,4 @@
 import {
-  CONTENT_THEMES,
   isBuiltInContentTheme,
   isThemeId,
   type ContentTheme,
@@ -257,11 +256,3 @@ export function validateThemePackageInput(input: {
     previewImagePath,
   } satisfies ThemePackage;
 }
-
-export const BUILT_IN_THEME_IDS = new Set<string>(CONTENT_THEMES);
-
-export const __themePackageTesting = {
-  normalizeDocxColor,
-  normalizeFontAssets,
-  stringValue,
-};

@@ -149,8 +149,3 @@ export function injectThemeCss(themeId: string, css: string) {
   style.textContent = css;
   document.head.appendChild(style);
 }
-
-export const __themeCssTesting = {
-  isRelativeAssetUrl,
-  stripCssComments,
-};

@@ -79,10 +79,8 @@ vi.mock('../export/preflight', () => ({
 import { APP_EVENT_NAMES } from '../../platform/events/appEvents';
 import type { SearchOpenPayload } from '../../platform/events/eventTypes';
 import {
-  COMMAND_PALETTE_GROUP_ORDER,
   commandRegistry,
   commandRegistryById,
-  getCommandPaletteGroup,
   getMenuSections,
   runCommand,
   type CommandContext,
@@ -239,24 +237,6 @@ describe('command registry', () => {
       { code: 'KeyZ', mod: true, shift: true },
       { code: 'KeyY', mod: true },
     ]);
-  });
-
-  it('maps registered commands into the product command palette groups', () => {
-    expect(COMMAND_PALETTE_GROUP_ORDER).toEqual([
-      'file',
-      'document',
-      'export',
-      'diagnostics',
-      'links',
-      'settings',
-    ]);
-    expect(commandRegistry.every((command) => Boolean(getCommandPaletteGroup(command.id)))).toBe(true);
-    expect(getCommandPaletteGroup('open')).toBe('file');
-    expect(getCommandPaletteGroup('showSearch')).toBe('document');
-    expect(getCommandPaletteGroup('presentationMode')).toBe('document');
-    expect(getCommandPaletteGroup('exportPdf')).toBe('export');
-    expect(getCommandPaletteGroup('showRelationGraph')).toBe('links');
-    expect(getCommandPaletteGroup('preferences')).toBe('settings');
   });
 
   it('builds menu sections only from registered commands', () => {
