@@ -28,24 +28,34 @@ const IS_MACOS = RUNTIME_PLATFORM === 'mac';
 const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
 
 /**
- * 侧栏图标：结构与 ViewModeSwitch 的 IconSplit 同源——20×20 viewBox、纯 fill、
- * evenodd 挖空成 1.35 宽的描边环。展开态在环内加一道细分隔条（左侧窄栏），
- * 收起态去掉分隔条、改画一个右向箭头，两态轮廓一致但一眼能分。
+ * 侧栏图标：外框直接复用 ViewModeSwitch 的 IconSplit 超椭圆；内框是这条外框路径的
+ * 仿射内缩，同源同曲率，所以环厚恒定 1.30，不会在四角堆出实心块。
+ * 展开态叠一道 1.20 圆头细缝（左栏 26%），收起态换成 1.20 圆头右向箭头。
  */
-const PANEL_RING =
-  'M6.1 3.9h7.8a3.2 3.2 0 0 1 3.2 3.2v5.8a3.2 3.2 0 0 1-3.2 3.2H6.1a3.2 3.2 0 0 1-3.2-3.2V7.1a3.2 3.2 0 0 1 3.2-3.2Zm0 1.35a1.85 1.85 0 0 0-1.85 1.85v5.8c0 1.02.83 1.85 1.85 1.85h7.8a1.85 1.85 0 0 0 1.85-1.85V7.1a1.85 1.85 0 0 0-1.85-1.85H6.1Z';
+const PANEL_OUTER =
+  'M4.9 3.15h10.2c1.15 0 1.8.12 2.33.4.43.23.78.58 1.01 1.01.28.53.4 1.18.4 2.33v6.22c0 1.15-.12 1.8-.4 2.33-.23.43-.58.78-1.01 1.01-.53.28-1.18.4-2.33.4H4.9c-1.15 0-1.8-.12-2.33-.4a2.42 2.42 0 0 1-1.01-1.01c-.28-.53-.4-1.18-.4-2.33V6.89c0-1.15.12-1.8.4-2.33.23-.43.58-.78 1.01-1.01.53-.28 1.18-.4 2.33-.4Z';
+const PANEL_INNER =
+  'M5.65 4.45h8.7c0.981 0 1.535 0.097 1.987 0.324c0.367 0.186 0.665 0.47 0.861 0.818c0.239 0.429 0.341 0.956 0.341 1.888v5.04c0 0.932 -0.102 1.458 -0.341 1.888c-0.196 0.348 -0.495 0.632 -0.861 0.818c-0.452 0.227 -1.006 0.324 -1.987 0.324H5.65c-0.981 0 -1.535 -0.097 -1.987 -0.324a 2.064 1.961 0 0 1 -0.861 -0.818c-0.239 -0.429 -0.341 -0.956 -0.341 -1.888V7.48c0 -0.932 0.102 -1.458 0.341 -1.888c0.196 -0.348 0.495 -0.632 0.861 -0.818c0.452 -0.227 1.006 -0.324 1.987 -0.324Z';
+const PANEL_RING = PANEL_OUTER + PANEL_INNER;
 
 const IconPanelLeftOn = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
-    <rect x="7.05" y="5.4" width="1.3" height="9.2" rx="0.65" />
+    <rect x="5.78" y="4.45" width="1.2" height="11.1" rx="0.6" />
   </svg>
 );
 
 const IconPanelLeftOff = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
-    <path d="M9.75 7.58a.68.68 0 0 1 .96 0l2.2 2.15a.74.74 0 0 1 0 1.06l-2.2 2.15a.68.68 0 1 1-.96-.96l1.76-1.72-1.76-1.72a.68.68 0 0 1 0-.96Z" />
+    <path
+      d="M9.8 8.7L11.8 10L9.8 11.3"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
