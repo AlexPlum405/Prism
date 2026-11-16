@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createIslandPreference,
   fitIslandWidths,
+  GUTTER_W,
   ISLAND_LIMITS,
   resizeEditorPreference,
   resizeSidebarPreference,
+  WINDOW_PAD_X,
   type DocumentPaneCount,
   type IslandPreference,
 } from './islandLayout';
@@ -48,19 +50,29 @@ export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOp
   }, []);
 
   const options = useMemo(() => ({
-    available: Math.max(0, available - 36),
+    available: Math.max(0, available - WINDOW_PAD_X * 2),
     paneCount,
     sidebarVisible,
   }), [available, paneCount, sidebarVisible]);
 
   const widths = useMemo(() => fitIslandWidths(preference, options), [preference, options]);
 
+  // 侧栏浮岛右缘（窗口坐标）发给标题栏，让侧栏开关对齐这条边。
+  // 收起时不更新：浮岛消失后开关停在原处，两态不跳位；重新展开再恢复跟随。
+  useEffect(() => {
+    if (!sidebarVisible || widths.sidebar <= 0) return;
+    document.documentElement.style.setProperty(
+      '--island-sidebar-edge',
+      `${WINDOW_PAD_X + widths.sidebar}px`,
+    );
+  }, [sidebarVisible, widths.sidebar]);
+
   const startSidebarDrag = useCallback(() => {
-    setGhost({ x: 18 + widths.sidebar, label: `原边界 ${Math.round(18 + widths.sidebar)}` });
+    setGhost({ x: WINDOW_PAD_X + widths.sidebar, label: `原边界 ${Math.round(WINDOW_PAD_X + widths.sidebar)}` });
   }, [widths.sidebar]);
 
   const startDocumentDrag = useCallback(() => {
-    const x = 18 + (sidebarVisible ? widths.sidebar + 16 : 0) + widths.editor;
+    const x = WINDOW_PAD_X + (sidebarVisible ? widths.sidebar + GUTTER_W : 0) + widths.editor;
     setGhost({ x, label: `原边界 ${Math.round(x)}` });
   }, [sidebarVisible, widths.editor, widths.sidebar]);
 

@@ -30,7 +30,7 @@ const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
 /**
  * 侧栏图标：外框直接复用 ViewModeSwitch 的 IconSplit 超椭圆；内框是这条外框路径的
  * 仿射内缩，同源同曲率，所以环厚恒定 1.30，不会在四角堆出实心块。
- * 展开态叠一道 1.20 圆头细缝（左栏 26%），收起态换成 1.20 圆头右向箭头。
+ * 展开态叠一道 1.20 悬浮细缝（左栏 26%，上下各留 0.9），收起态换成 1.20 圆头右向箭头。
  */
 const PANEL_OUTER =
   'M4.9 3.15h10.2c1.15 0 1.8.12 2.33.4.43.23.78.58 1.01 1.01.28.53.4 1.18.4 2.33v6.22c0 1.15-.12 1.8-.4 2.33-.23.43-.58.78-1.01 1.01-.53.28-1.18.4-2.33.4H4.9c-1.15 0-1.8-.12-2.33-.4a2.42 2.42 0 0 1-1.01-1.01c-.28-.53-.4-1.18-.4-2.33V6.89c0-1.15.12-1.8.4-2.33.23-.43.58-.78 1.01-1.01.53-.28 1.18-.4 2.33-.4Z';
@@ -41,7 +41,7 @@ const PANEL_RING = PANEL_OUTER + PANEL_INNER;
 const IconPanelLeftOn = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
-    <rect x="5.78" y="4.45" width="1.2" height="11.1" rx="0.6" />
+    <rect x="5.78" y="5.35" width="1.2" height="9.3" rx="0.6" />
   </svg>
 );
 
@@ -332,9 +332,11 @@ export function TitleBar({
     >
       {IS_MACOS ? (
         <>
-          {renderSidebarToggle()}
-          <div className={styles.macosTitleGroup}>
-            {renderTitleContent()}
+          {/* 文件名 → 侧栏开关 → 菜单：这一组的右缘由侧栏浮岛右缘决定（CSS 变量），
+              开关因此落在浮岛右边界上方，收起时变量不更新，按钮停在原处。 */}
+          <div className={styles.macosLeftGroup}>
+            <div className={styles.macosFileName}>{renderTitleContent()}</div>
+            {renderSidebarToggle()}
           </div>
           {renderInlineMenu()}
           <div className={styles.macosDragSpacer} data-titlebar-section="macos-drag-spacer" data-tauri-drag-region />

@@ -35,15 +35,26 @@
   padding-left: 10px;
 }
 
-.macosTitleGroup {
+/* macOS 标题栏左段：文件名 → 侧栏开关 → 菜单。
+   右缘 = 侧栏浮岛右缘（--island-sidebar-edge，由 useIslandLayout 写入）再往左 6px，
+   让开关比浮岛边界稍微内收；86px 是 .titlebar.macos 给原生红绿灯让出的左内边距。
+   收起侧栏时变量保持上次值，开关因此停在原处不跳位。 */
+.macosLeftGroup {
   display: flex;
   align-items: center;
-  min-width: 0;
-  margin-right: 22px;
   flex: 0 0 auto;
-  max-width: 260px;
+  width: calc(var(--island-sidebar-edge, 286px) - 86px - 6px);
+  min-width: 132px;
   -webkit-app-region: no-drag;
   app-region: no-drag;
+}
+
+.macosFileName {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .titlebarActions {
@@ -780,18 +791,18 @@
   color: var(--island-text);
 }
 
-/* 侧栏开关：和 Codex 一样挂在标题栏右簇最左，18px 线性图标、无底色，
-   仅在悬停时给一点反馈。 */
+/* 侧栏开关：15px 图标，只比单个红绿灯圆点（约 13.5px）稍大一点；
+   18px 点击区不留大块底色，仅悬停时给反馈。行高居中让图标中心与圆点中心齐平。 */
 .sidebarToggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 23px;
-  height: 23px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
   color: var(--island-text-secondary);
   cursor: pointer;
@@ -803,8 +814,8 @@
 }
 
 .sidebarToggle svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
 }
 
 .sidebarToggle:hover {

@@ -14,6 +14,9 @@
 
 export const GUTTER_W = 16;
 
+/** .island-main 的横向外留白，与 islands.css 的 --window-pad 一致；侧栏右缘 = 它 + sidebar。 */
+export const WINDOW_PAD_X = 18;
+
 /** 设计基准：268 / 548 / 556，窗口 1440 时正好 18+268+16+548+16+556+18 = 1440。 */
 export const DEFAULT_ISLAND_WIDTHS = {
   sidebar: 268,
