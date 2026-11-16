@@ -205,7 +205,6 @@ function App() {
   }, []);
 
   const {
-    createCommandContext,
     handleAboutCheckUpdate,
     handleCommandAction,
     menuSections,
@@ -244,10 +243,8 @@ function App() {
     closeGlobalContextMenu,
     globalContextMenu,
     handleContextMenuAction,
-    handleExportContextMenu,
     handleFolderContextMenu,
   } = useAppWorkspaceContextMenu({
-    createCommandContext,
     fileSortMode: workspace.fileSortMode,
     fileTreeMode: workspace.fileTreeMode,
     workspaceTreeScope: workspace.workspaceTreeScope,
@@ -274,8 +271,6 @@ function App() {
               writingStats={writingStats}
               selectionStats={selectionWritingStats}
               cursor={cursor}
-              onExportMenu={handleExportContextMenu}
-              onToggleFocusMode={() => workspace.toggleFocusMode()}
               linkIssueCount={documentInsight.actionableDiagnostics.length}
               linkIssueTitle={documentInsight.firstActionableDiagnostic?.message}
               onLinkDiagnosticsClick={documentInsight.handleLinkDiagnosticsClick}
@@ -284,8 +279,6 @@ function App() {
               typographyIssueCount={documentInsight.typographyDiagnostics.length}
               typographyIssueTitle={documentInsight.firstTypographyDiagnostic?.message}
               onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}
-              onRelationGraphClick={documentInsight.openRelationGraph}
-              hasDocumentRelations={Boolean(currentDocument?.path && workspaceIndex && currentDocument.profile?.supportsRelationGraph !== false)}
               exportFeedback={exportFeedback}
               exportProgress={exportProgress}
               exportProgressInBackground={exportProgressInBackground}

@@ -1,7 +1,7 @@
-/* 标题栏右侧的状态区（字数 / 诊断 / 排版 / 关系图谱 / 专注 / 导出）。
+/* 标题栏右侧的状态区：字数 / 诊断 / 排版 / 导出进度与结果。
    它挂在 TitleBar 的 statusSlot 里，是 52px 标题行的一部分：
+   - 只放只读信息，关系图谱 / 专注模式 / 导出等操作统一走菜单；
    - 文字与标题栏菜单同源：sans、400、无字距、只靠字色深浅反馈，不压药丸底；
-   - 图标与外壳图标同源：20×20 纯 fill 细线、统一 16px；
    - 颜色只走 --island-* 令牌，深浅主题自动适配，不再为每套主题重写一遍
      （原来那 7 个主题块会把 mono 字体 / 11px / 大字距覆盖回来，是风格漂移的根源）。 */
 .statusbar {
@@ -123,7 +123,7 @@ button.exportStatus:hover,
   to { transform: rotate(360deg); }
 }
 
-/* 图标按钮：22px 点击区、16px 图标，hover / 激活只变色 */
+/* 导出中的取消按钮：22px 点击区、hover 只变色。状态区不再有图标按钮。 */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -143,17 +143,8 @@ button.exportStatus:hover,
   transition: color var(--duration-hover) var(--ease-out);
 }
 
-.btn:hover,
-.btn.active {
+.btn:hover {
   color: var(--island-text);
-}
-
-.btn svg {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  fill: currentColor;
-  stroke: none;
 }
 
 .iconBtn {

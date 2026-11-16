@@ -1,8 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { StatusBar } from './StatusBar';
-import { useWorkspaceStore } from '../../workspace/store';
-import { FOCUS_EXIT_PATH, FOCUS_PATH } from '../../../components/icons/islandIconPaths';
 import type { WritingStats } from '../services';
 
 const writingStats: WritingStats = {
@@ -139,31 +137,22 @@ describe('StatusBar', () => {
     expect(onBacklinksClick).not.toHaveBeenCalled();
   });
 
-  it('shows the relation graph button only when the current document has relations', () => {
-    const onRelationGraphClick = vi.fn();
-    const { rerender } = render(
+  /* 关系图谱 / 专注模式 / 导出三个操作已收归菜单（导航 / 视图 / 导出），
+     状态区只保留只读信息。这条断言锁定该决定，防止以后又塞回一排工具栏。 */
+  it('keeps the status area read-only and free of action icons', () => {
+    const { container } = render(
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        hasDocumentRelations={false}
-        onRelationGraphClick={onRelationGraphClick}
       />
     );
 
     expect(screen.queryByTitle(/关系图谱/)).not.toBeInTheDocument();
-
-    rerender(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
-        hasDocumentRelations={true}
-        onRelationGraphClick={onRelationGraphClick}
-      />
-    );
-
-    fireEvent.click(screen.getByTitle(/关系图谱/));
-
-    expect(onRelationGraphClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTitle(/专注模式/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle('导出')).not.toBeInTheDocument();
+    expect(container.querySelector('button[aria-pressed]')).toBeNull();
+    expect(container.querySelectorAll('svg')).toHaveLength(0);
+    expect(screen.getByText('60 字 · 1:1')).toBeInTheDocument();
   });
 
   it('does not render document metadata in the status bar', () => {
@@ -244,49 +233,19 @@ describe('StatusBar', () => {
     expect(onShowExportFailure).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps every status icon in the shared pure-fill outline style', () => {
-    const { container } = render(
+  it('keeps cancelling an in-flight export after the export button is gone', () => {
+    const onCancelExport = vi.fn();
+    render(
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        hasDocumentRelations
-        onRelationGraphClick={vi.fn()}
+        exportProgress="正在生成 PDF 页面 2 / 49"
+        onCancelExport={onCancelExport}
       />
     );
 
-    const svgs = container.querySelectorAll('svg');
-    expect(svgs.length).toBeGreaterThanOrEqual(3);
-    svgs.forEach((svg) => {
-      expect(svg.getAttribute('viewBox')).toBe('0 0 20 20');
-      expect(svg.getAttribute('fill')).toBe('currentColor');
-      expect(svg.querySelector('[stroke]')).toBeNull();
-    });
-  });
+    fireEvent.click(screen.getByRole('button', { name: '取消导出' }));
 
-  it('switches the focus icon and aria-pressed when focus mode turns on', () => {
-    useWorkspaceStore.setState({ focusMode: false });
-    const { container } = render(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 1, column: 1 }}
-        onToggleFocusMode={vi.fn()}
-      />
-    );
-
-    const button = container.querySelector('button[aria-pressed]') as HTMLButtonElement;
-    expect(button).toBeTruthy();
-    expect(button.getAttribute('aria-pressed')).toBe('false');
-    expect(button.querySelector('path')?.getAttribute('d')).toBe(FOCUS_PATH);
-
-    act(() => {
-      useWorkspaceStore.setState({ focusMode: true });
-    });
-
-    expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(button.querySelector('path')?.getAttribute('d')).toBe(FOCUS_EXIT_PATH);
-
-    act(() => {
-      useWorkspaceStore.setState({ focusMode: false });
-    });
+    expect(onCancelExport).toHaveBeenCalledTimes(1);
   });
 });
