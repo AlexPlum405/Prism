@@ -66,8 +66,6 @@ export function StatusBar({
   const statusText = t('status.statusText', {
     prefix: isSelectionStats ? t('status.selectionTextPrefix') : '',
     words: formatStatusNumber(activeStats.wordCount),
-    line: cursor.line,
-    column: cursor.column,
   });
 
   return (

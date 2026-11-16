@@ -20,7 +20,7 @@ const selectionStats: WritingStats = {
 };
 
 describe('StatusBar', () => {
-  it('renders writing stats, line and column', () => {
+  it('shows only the word count in the status area', () => {
     render(
       <StatusBar
         writingStats={writingStats}
@@ -28,8 +28,10 @@ describe('StatusBar', () => {
       />
     );
 
+    // 行:列只留在悬浮详情里，常驻文本不再出现容易被误读成比例的数字
     expect(screen.getByTitle('字数 60，行 12，列 8')).toBeInTheDocument();
-    expect(screen.getByText('60 字 · 12:8')).toBeInTheDocument();
+    expect(screen.getByText('60 字')).toBeInTheDocument();
+    expect(screen.queryByText(/\d+:\d+/)).not.toBeInTheDocument();
     expect(screen.queryByText('已保存')).not.toBeInTheDocument();
     expect(screen.queryByText('LN')).not.toBeInTheDocument();
     expect(screen.queryByText('COL')).not.toBeInTheDocument();
@@ -47,7 +49,7 @@ describe('StatusBar', () => {
     );
 
     expect(screen.getByTitle('选区：字数 6，行 1，列 1')).toBeInTheDocument();
-    expect(screen.getByText('选区 6 字 · 1:1')).toBeInTheDocument();
+    expect(screen.getByText('选区 6 字')).toBeInTheDocument();
   });
 
   it('no longer shows the document type label, only stats', () => {
@@ -59,7 +61,7 @@ describe('StatusBar', () => {
       />,
     );
 
-    expect(screen.getByText('60 字 · 3:5')).toBeInTheDocument();
+    expect(screen.getByText('60 字')).toBeInTheDocument();
     // 类型标签已删除：标题与后缀已经说明了文档类型
     expect(screen.queryByText('Markdown 文稿')).not.toBeInTheDocument();
     expect(screen.queryByText('文本文件')).not.toBeInTheDocument();
@@ -152,7 +154,7 @@ describe('StatusBar', () => {
     expect(screen.queryByTitle('导出')).not.toBeInTheDocument();
     expect(container.querySelector('button[aria-pressed]')).toBeNull();
     expect(container.querySelectorAll('svg')).toHaveLength(0);
-    expect(screen.getByText('60 字 · 1:1')).toBeInTheDocument();
+    expect(screen.getByText('60 字')).toBeInTheDocument();
   });
 
   it('does not render document metadata in the status bar', () => {
