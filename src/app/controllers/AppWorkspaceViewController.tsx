@@ -6,15 +6,9 @@ import type { EditorPaneHandle } from '../../domains/editor/components/EditorPan
 import type { OpenDocument } from '../../domains/document/types';
 import type { WorkspaceContextMenuState } from './workspaceContextMenu';
 import type { FileActionInput } from '../../lib/fileActions';
-import type { ExportFeedbackState } from '../../hooks/useExportTaskUi';
-import {
-  hasWorkspaceIndexDocumentRelations,
-  type WorkspaceIndex,
-  type WritingStats,
-} from '../../domains/workspace/services';
+import type { WorkspaceIndex } from '../../domains/workspace/services';
 import type { useWorkspaceStore } from '../../domains/workspace/store';
 import { Sidebar } from '../../domains/workspace/components/Sidebar';
-import { StatusBar } from '../../domains/workspace/components/StatusBar';
 import { IslandGhost, IslandGutter } from '../../domains/workspace/components/IslandGutter';
 import { useIslandLayout } from '../../domains/workspace/layout/useIslandLayout';
 import type { DocumentPaneCount } from '../../domains/workspace/layout/islandLayout';
@@ -33,85 +27,44 @@ import type { DocumentPaneCount } from '../../domains/workspace/layout/islandLay
  */
 interface AppWorkspaceViewControllerProps {
   activePath?: string | null;
-  actionableIssueCount: number;
-  backlinkCount: number;
   currentDocument: OpenDocument | null;
-  cursor: { line: number; column: number };
   editorRef: RefObject<EditorPaneHandle>;
-  exportFeedback: ExportFeedbackState | null;
-  exportProgress: string | null;
-  exportProgressInBackground: boolean;
   firstActionableMessage?: string;
   firstTypographyMessage?: string;
   globalContextMenu: WorkspaceContextMenuState | null;
-  selectionWritingStats: WritingStats | null;
-  typographyIssueCount: number;
   workspace: ReturnType<typeof useWorkspaceStore.getState>;
   workspaceIndex: WorkspaceIndex | null;
   workspaceIndexJobId?: string | null;
-  writingStats: WritingStats;
-  onBacklinksClick: () => void;
   onCloseContextMenu: () => void;
   onContextMenuAction: (action: string, kind: WorkspaceContextMenuState['kind']) => void;
   onCursorChange: (cursor: { line: number; column: number }) => void;
-  onExportMenu: MouseEventHandler;
   onFileAction: (input: FileActionInput) => void | Promise<void>;
   onFileClick: (path: string) => void | Promise<void>;
   onFolderContextMenu: MouseEventHandler;
-  onLinkDiagnosticsClick: () => void;
   onNotice: (message: string) => void;
   onOpenDocumentLink: Parameters<typeof DocumentView>[0]['onOpenDocumentLink'];
-  onRelationGraphClick: () => void;
   onSelectionTextChange: (text: string) => void;
-  onShowExportFailure: () => void;
-  onShowExportProgress: () => void;
   onCancelExport?: () => void;
-  onTypographyDiagnosticsClick: () => void;
 }
 
 export function AppWorkspaceViewController({
   activePath,
-  actionableIssueCount,
-  backlinkCount,
   currentDocument,
-  cursor,
   editorRef,
-  exportFeedback,
-  exportProgress,
-  exportProgressInBackground,
-  firstActionableMessage,
-  firstTypographyMessage,
   globalContextMenu,
-  selectionWritingStats,
-  typographyIssueCount,
   workspace,
   workspaceIndex,
   workspaceIndexJobId,
-  writingStats,
-  onBacklinksClick,
   onCloseContextMenu,
   onContextMenuAction,
   onCursorChange,
-  onExportMenu,
   onFileAction,
   onFileClick,
   onFolderContextMenu,
-  onLinkDiagnosticsClick,
   onNotice,
   onOpenDocumentLink,
-  onRelationGraphClick,
   onSelectionTextChange,
-  onShowExportFailure,
-  onShowExportProgress,
-  onCancelExport,
-  onTypographyDiagnosticsClick,
 }: AppWorkspaceViewControllerProps) {
-  const hasDocumentRelations = Boolean(
-    currentDocument?.path
-    && currentDocument.profile?.supportsRelationGraph !== false
-    && workspaceIndex
-    && hasWorkspaceIndexDocumentRelations(workspaceIndex, currentDocument.path),
-  );
 
   const paneCount: DocumentPaneCount = currentDocument
     ? (currentDocument.viewMode === 'split' ? 2 : 1)
@@ -188,34 +141,6 @@ export function AppWorkspaceViewController({
 
         {layout.ghost && <IslandGhost x={layout.ghost.x} label={layout.ghost.label} />}
 
-        {currentDocument && workspace.statusBarVisible && (
-          <div className="island-status-chip app-statusbar">
-            <StatusBar
-              writingStats={writingStats}
-              selectionStats={selectionWritingStats}
-              cursor={cursor}
-              onExportMenu={onExportMenu}
-              onToggleFocusMode={() => workspace.toggleFocusMode()}
-              linkIssueCount={actionableIssueCount}
-              linkIssueTitle={firstActionableMessage}
-              onLinkDiagnosticsClick={onLinkDiagnosticsClick}
-              backlinkCount={backlinkCount}
-              onBacklinksClick={onBacklinksClick}
-              typographyIssueCount={typographyIssueCount}
-              typographyIssueTitle={firstTypographyMessage}
-              onTypographyDiagnosticsClick={onTypographyDiagnosticsClick}
-              onRelationGraphClick={onRelationGraphClick}
-              hasDocumentRelations={hasDocumentRelations}
-              exportFeedback={exportFeedback}
-              exportProgress={exportProgress}
-              exportProgressInBackground={exportProgressInBackground}
-              documentProfileKind={currentDocument.profile?.kind}
-              onShowExportFailure={onShowExportFailure}
-              onShowExportProgress={onShowExportProgress}
-              onCancelExport={onCancelExport}
-              />
-          </div>
-        )}
       </div>
 
       {globalContextMenu && (

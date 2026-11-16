@@ -491,17 +491,16 @@ html[data-content-theme] .file-tree-item:hover:not([data-active='true']) {
   padding: 30px 34px 60px !important;
 }
 
-/* 文档状态浮层：贴住最右那块岛的右下角（与岛内边距对齐）。
-   给它一块与岛同色的底，正文从下面滚过时不会和它糊在一起；
-   不做边框、不做投影，尽量轻。 */
-.island-status-chip {
-  position: absolute;
-  right: calc(var(--window-pad) + 8px);
-  bottom: calc(var(--window-pad-bottom) + 4px);
-  z-index: 6;
-  max-width: calc(100% - var(--window-pad) * 2 - 24px);
-  padding: 5px 10px;
-  border-radius: 8px;
-  background: var(--island-surface);
-  pointer-events: none;
+
+/* 标题栏右侧的状态区：字数/行列、诊断、聚焦、导出，全部收进 52px 的标题行，
+   不再占用岛内空间。文字小一号、次要色，和三个视图图标保持 16px 间距。 */
+.titlebar-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.titlebar-status > div {
+  gap: 14px;
 }

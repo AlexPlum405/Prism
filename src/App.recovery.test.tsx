@@ -61,7 +61,10 @@ vi.mock('./components/shell/WindowShell', () => ({
 }));
 
 vi.mock('./components/shell/TitleBar', () => ({
-  TitleBar: () => <div data-testid="title-bar" />,
+  // 状态区（字数/导出/诊断）现在挂在标题栏里，mock 必须把它渲染出来
+  TitleBar: ({ statusSlot }: { statusSlot?: React.ReactNode }) => (
+    <div data-testid="title-bar">{statusSlot}</div>
+  ),
 }));
 
 vi.mock('./components/shell/MenuBar', () => ({

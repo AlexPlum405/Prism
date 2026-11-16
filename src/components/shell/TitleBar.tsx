@@ -10,6 +10,8 @@ import styles from './TitleBar.module.css';
 
 interface TitleBarProps {
   docName: string;
+  /** 标题栏右侧的状态区（字数、诊断、聚焦、导出），由 App 组装后传入。 */
+  statusSlot?: React.ReactNode;
   isDirty?: boolean;
   menuSections?: MenuSection;
   onMenuAction?: (action: string) => void;
@@ -117,6 +119,7 @@ function getSaveFeedback(
 
 export function TitleBar({
   docName,
+  statusSlot,
   isDirty = false,
   menuSections,
   onMenuAction,
@@ -326,6 +329,7 @@ export function TitleBar({
           {renderInlineMenu()}
           <div className={styles.macosDragSpacer} data-titlebar-section="macos-drag-spacer" data-tauri-drag-region />
           <div className={styles.titlebarActions}>
+            {statusSlot}
             <ViewModeSwitch variant="titlebarBorderless" />
           </div>
         </>
@@ -341,6 +345,7 @@ export function TitleBar({
           </div>
           <div className={styles.windowsDragSpacer} data-titlebar-section="windows-drag-spacer" data-tauri-drag-region />
           <div className={styles.windowsRightCluster} data-titlebar-section="windows-right-cluster">
+            {statusSlot}
             {renderSidebarToggle()}
             <ViewModeSwitch variant="titlebarBorderless" />
             <div className={styles.windowsControlsDivider} aria-hidden="true" />
@@ -357,6 +362,7 @@ export function TitleBar({
             </div>
           </div>
           <div className={styles.windowsDragSpacer} data-titlebar-section="windows-drag-spacer" data-tauri-drag-region />
+          <div className={styles.titlebarActions}>{statusSlot}</div>
           {renderWindowControls()}
         </>
       )}

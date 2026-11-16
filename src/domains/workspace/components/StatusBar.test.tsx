@@ -50,8 +50,8 @@ describe('StatusBar', () => {
     expect(screen.getByText('选区 6 字 · 1:1')).toBeInTheDocument();
   });
 
-  it('shows the current document type without changing writing stats', () => {
-    const { rerender } = render(
+  it('no longer shows the document type label, only stats', () => {
+    render(
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 3, column: 5 }}
@@ -59,19 +59,10 @@ describe('StatusBar', () => {
       />,
     );
 
-    expect(screen.getByText('Markdown 文稿')).toHaveAttribute('title', '当前文档类型：Markdown 文稿');
     expect(screen.getByText('60 字 · 3:5')).toBeInTheDocument();
-
-    rerender(
-      <StatusBar
-        writingStats={writingStats}
-        cursor={{ line: 3, column: 5 }}
-        documentProfileKind="text"
-      />,
-    );
-
-    expect(screen.getByText('文本文件')).toHaveAttribute('title', '当前文档类型：文本文件');
+    // 类型标签已删除：标题与后缀已经说明了文档类型
     expect(screen.queryByText('Markdown 文稿')).not.toBeInTheDocument();
+    expect(screen.queryByText('文本文件')).not.toBeInTheDocument();
   });
 
   it('aggregates actionable diagnostics as ERROR count', () => {
@@ -102,7 +93,6 @@ describe('StatusBar', () => {
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        documentProfileKind="markdown"
         typographyIssueCount={3}
         typographyIssueTitle="中英文之间缺少空格"
         onTypographyDiagnosticsClick={onTypographyClick}

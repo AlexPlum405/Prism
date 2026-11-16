@@ -21,6 +21,7 @@ import { AppWorkspaceViewController } from './app/controllers/AppWorkspaceViewCo
 import type { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
+import { StatusBar } from './domains/workspace/components/StatusBar';
 
 export { shouldShowRecoveryPrompt };
 
@@ -266,43 +267,52 @@ function App() {
         saveStatus={currentDocument?.saveStatus}
         sidebarVisible={workspace.sidebarVisible}
         onToggleSidebar={() => workspace.toggleSidebar()}
+        statusSlot={currentDocument && workspace.statusBarVisible ? (
+          <div className="titlebar-status">
+            <StatusBar
+              documentProfileKind={currentDocument?.profile?.kind}
+              writingStats={writingStats}
+              selectionStats={selectionWritingStats}
+              cursor={cursor}
+              onExportMenu={handleExportContextMenu}
+              onToggleFocusMode={() => workspace.toggleFocusMode()}
+              linkIssueCount={documentInsight.actionableDiagnostics.length}
+              linkIssueTitle={documentInsight.firstActionableDiagnostic?.message}
+              onLinkDiagnosticsClick={documentInsight.handleLinkDiagnosticsClick}
+              backlinkCount={documentInsight.backlinks.length}
+              onBacklinksClick={documentInsight.openBacklinks}
+              typographyIssueCount={documentInsight.typographyDiagnostics.length}
+              typographyIssueTitle={documentInsight.firstTypographyDiagnostic?.message}
+              onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}
+              onRelationGraphClick={documentInsight.openRelationGraph}
+              hasDocumentRelations={Boolean(currentDocument?.path && workspaceIndex && currentDocument.profile?.supportsRelationGraph !== false)}
+              exportFeedback={exportFeedback}
+              exportProgress={exportProgress}
+              exportProgressInBackground={exportProgressInBackground}
+              onShowExportFailure={showExportFailureDetails}
+              onShowExportProgress={showBackgroundExportProgress}
+              onCancelExport={cancelExport}
+            />
+          </div>
+        ) : undefined}
       />
       <AppWorkspaceViewController
         activePath={currentDocument?.path}
-        actionableIssueCount={documentInsight.actionableDiagnostics.length}
-        backlinkCount={documentInsight.backlinks.length}
         currentDocument={currentDocument}
-        cursor={cursor}
         editorRef={editorRef}
-        exportProgress={exportProgress}
-        exportProgressInBackground={exportProgressInBackground}
-        exportFeedback={exportFeedback}
-        onCancelExport={cancelExport}
-        firstActionableMessage={documentInsight.firstActionableDiagnostic?.message}
-        firstTypographyMessage={documentInsight.firstTypographyDiagnostic?.message}
         globalContextMenu={globalContextMenu}
-        selectionWritingStats={selectionWritingStats}
-        typographyIssueCount={documentInsight.typographyDiagnostics.length}
         workspace={workspace}
         workspaceIndex={workspaceIndex}
         workspaceIndexJobId={workspaceIndexJobId}
-        writingStats={writingStats}
-        onBacklinksClick={documentInsight.openBacklinks}
         onCloseContextMenu={closeGlobalContextMenu}
         onContextMenuAction={handleContextMenuAction}
         onCursorChange={setCursor}
-        onExportMenu={handleExportContextMenu}
         onFileAction={handleFileAction}
         onFileClick={handleFileClick}
         onFolderContextMenu={handleFolderContextMenu}
-        onLinkDiagnosticsClick={documentInsight.handleLinkDiagnosticsClick}
         onNotice={showToast}
         onOpenDocumentLink={documentInsight.openDocumentLink}
-        onRelationGraphClick={documentInsight.openRelationGraph}
         onSelectionTextChange={setSelectionText}
-        onShowExportProgress={showBackgroundExportProgress}
-        onShowExportFailure={showExportFailureDetails}
-        onTypographyDiagnosticsClick={documentInsight.handleTypographyDiagnosticsClick}
       />
 
       <DocumentSafetyController
@@ -356,6 +366,8 @@ function App() {
 
       <ExportUiController
         actionableIssueCount={documentInsight.actionableDiagnostics.length}
+        exportProgress={exportProgress}
+        exportProgressInBackground={exportProgressInBackground}
         chooseSaveDirectory={chooseSaveDirectory}
         closeSaveDialog={closeSaveDialog}
         confirmSaveDialog={confirmSaveDialog}
@@ -364,8 +376,6 @@ function App() {
         dismissToast={dismissToast}
         exportFailure={exportFailure}
         exportFailureVisible={exportFailureVisible}
-        exportProgress={exportProgress}
-        exportProgressInBackground={exportProgressInBackground}
         exportPngScale={settings.exportDefaults.pngScale}
         saveDialog={saveDialog}
         saveDialogOverwriteFilename={saveDialogOverwriteFilename}

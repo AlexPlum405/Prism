@@ -33,6 +33,8 @@ interface StatusBarProps {
   writingStats: WritingStats;
   selectionStats?: WritingStats | null;
   cursor: { line: number; column: number };
+  /** 仅用于判断是否为纯文本文稿（纯文本不显示排版诊断入口），不展示类型名。 */
+  documentProfileKind?: DocumentProfileKind;
   onExportMenu?: (e: React.MouseEvent) => void;
   onToggleFocusMode?: () => void;
   linkIssueCount?: number;
@@ -49,7 +51,6 @@ interface StatusBarProps {
   exportFeedback?: ExportFeedbackState | null;
   exportProgress?: string | null;
   exportProgressInBackground?: boolean;
-  documentProfileKind?: DocumentProfileKind;
   onShowExportFailure?: () => void;
   onShowExportProgress?: () => void;
   onCancelExport?: () => void;
@@ -64,6 +65,7 @@ export function StatusBar({
   writingStats,
   selectionStats,
   cursor,
+  documentProfileKind,
   onExportMenu,
   onToggleFocusMode,
   linkIssueCount = 0,
@@ -77,7 +79,6 @@ export function StatusBar({
   exportFeedback = null,
   exportProgress = null,
   exportProgressInBackground = false,
-  documentProfileKind,
   onShowExportFailure,
   onShowExportProgress,
   onCancelExport,
@@ -99,9 +100,6 @@ export function StatusBar({
     line: cursor.line,
     column: cursor.column,
   });
-  const documentTypeLabel = documentProfileKind
-    ? t(documentProfileKind === 'text' ? 'status.documentType.text' : 'status.documentType.markdown')
-    : null;
 
   return (
     <div className={`${styles.statusbar} app-statusbar`}>
@@ -111,15 +109,7 @@ export function StatusBar({
       </div>
 
       <div className={styles.right}>
-        {documentTypeLabel && (
-            <span
-              className={`${styles.documentType} ${documentProfileKind === 'text' ? styles.documentTypeText : ''}`}
-              title={t('status.documentTypeTitle', { type: documentTypeLabel })}
-            >
-              {documentTypeLabel}
-            </span>
-          )}
-          {linkIssueCount > 0 && (
+        {linkIssueCount > 0 && (
             <button
               className={styles.diagnostic}
               title={linkIssueTitle ?? t('status.documentDiagnostics')}
