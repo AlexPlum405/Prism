@@ -87,6 +87,16 @@ describe('FileTree', () => {
     expect(screen.queryByTitle('/notes/ideas/raw.md')).not.toBeInTheDocument();
   });
 
+  it('marks the active file without an accent-colour dot', () => {
+    const { container } = render(
+      <FileTree nodes={nodes} activePath="/notes/root.md" onFileClick={vi.fn()} />
+    );
+
+    expect(container.querySelector('[data-active="true"]')).toBeTruthy();
+    // 选中态只靠白底 / 投影 / 文字 / 左侧中性细线，不再挂强调色圆点
+    expect(container.querySelector('.file-tree-active-dot')).toBeNull();
+  });
+
   it('does not render the removed workspace guide copy while empty', () => {
     useWorkspaceStore.setState({
       rootPath: null,

@@ -198,7 +198,6 @@ export function FileTree({ nodes, activePath, onFileClick }: FileTreeProps) {
         className={`file-tree-item ${isActive ? 'is-active' : ''}`}
       >
         {renderFileName(node, isActive)}
-        {isActive && <span className="file-tree-active-dot" aria-hidden="true" />}
 
         {folderLabel && (
           <div className="file-tree-folder-label">{folderLabel}</div>

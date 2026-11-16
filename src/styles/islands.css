@@ -428,16 +428,19 @@ html[data-content-theme] .file-tree-item:hover:not([data-active='true']) {
   background: var(--island-hover) !important;
 }
 
-/* 当前项末尾的 6px 橙点：形状，不是图标 */
-.file-tree-active-dot {
+/* 当前项的选中指示：白底 + 轻投影 + 文字加深本来就是三级指示，过去末尾还挂
+   一个 6px 橙红圆点，既多余，又把「强调 / 告警」色误用成了选中色。
+   改成左侧一条中性色短细线：与外壳的细线语言一致，不抢文字、不含警示语义。 */
+html[data-content-theme] .file-tree-item[data-active='true']::before {
+  content: '';
   position: absolute;
+  left: 1px;
   top: 50%;
-  right: 10px;
-  width: 6px;
-  height: 6px;
-  margin-top: -3px;
-  border-radius: 50%;
-  background: var(--island-accent);
+  width: 2px;
+  height: 18px;
+  margin-top: -9px;
+  border-radius: 1px;
+  background: var(--island-text-muted);
 }
 
 /* ============================================================
@@ -470,5 +473,5 @@ html[data-content-theme] .file-tree-item:hover:not([data-active='true']) {
 }
 
 .titlebar-status > div {
-  gap: 14px;
+  gap: 12px;
 }

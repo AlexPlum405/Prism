@@ -4,28 +4,38 @@ import type { DocumentProfileKind, WritingStats } from '../services';
 import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
-const IconFocus = () => (
+import {
+  EXPORT_PATH,
+  FOCUS_EXIT_PATH,
+  FOCUS_PATH,
+  GRAPH_LINKS_PATH,
+  GRAPH_NODES_PATH,
+} from '../../../components/icons/islandIconPaths';
+
+/* 状态区图标与侧栏开关 / 侧栏页脚 / 视图切换同源：20×20 纯 fill、无 stroke、
+   1.20–1.30 圆头笔画。过去这三个是 stroke 点线 + 四层实心环 + 粗实心箭头，
+   在标题栏里各画各的，所以和左侧外壳图标明显不是一套。 */
+const IconGraph = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M10 2.85a7.15 7.15 0 1 1 0 14.3 7.15 7.15 0 0 1 0-14.3Zm0 1.36a5.79 5.79 0 1 0 0 11.58 5.79 5.79 0 0 0 0-11.58Zm0 2.82a2.97 2.97 0 1 1 0 5.94 2.97 2.97 0 0 1 0-5.94Zm0 1.32a1.65 1.65 0 1 0 0 3.3 1.65 1.65 0 0 0 0-3.3Z" />
+    <path d={GRAPH_LINKS_PATH} />
+    <path fillRule="evenodd" clipRule="evenodd" d={GRAPH_NODES_PATH} />
   </svg>
 );
 
-const IconGraph = () => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-    {/* 精致扁平拓扑：中心聚焦节点与放射状直连节点 */}
-    <path d="M10 10L6.5 6.5" />
-    <path d="M10 10h5" />
-    <path d="M10 10l1 5" />
-    <circle cx="10" cy="10" r="2" fill="currentColor" stroke="none" />
-    <circle cx="6.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="15" cy="10" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="11" cy="15" r="1.5" fill="currentColor" stroke="none" />
+const IconFocus = ({ active = false }: { active?: boolean }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    {/* 角标彼此有重叠，只能用 nonzero；关闭态的环+文字线必须 evenodd */}
+    {active ? (
+      <path d={FOCUS_EXIT_PATH} />
+    ) : (
+      <path fillRule="evenodd" clipRule="evenodd" d={FOCUS_PATH} />
+    )}
   </svg>
 );
 
 const IconExport = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M10 2.7c.2 0 .37.07.5.2l3.15 3.15a.7.7 0 0 1-.99.99l-1.96-1.96v7.07a.7.7 0 1 1-1.4 0V5.08L7.34 7.04a.7.7 0 0 1-.99-.99L9.5 2.9c.13-.13.3-.2.5-.2ZM4.1 11.1c.39 0 .7.31.7.7v2.25c0 .58.47 1.05 1.05 1.05h8.3c.58 0 1.05-.47 1.05-1.05V11.8a.7.7 0 1 1 1.4 0v2.25a2.45 2.45 0 0 1-2.45 2.45h-8.3a2.45 2.45 0 0 1-2.45-2.45V11.8c0-.39.31-.7.7-.7Z" />
+    <path d={EXPORT_PATH} />
   </svg>
 );
 
@@ -185,6 +195,7 @@ export function StatusBar({
               className={`${styles.btn} ${styles.iconBtn}`}
               onClick={onRelationGraphClick}
               title={t('status.relationGraph')}
+              aria-label={t('status.relationGraph')}
             >
               <IconGraph />
             </button>
@@ -193,8 +204,10 @@ export function StatusBar({
             className={`${styles.btn} ${styles.iconBtn} ${focusMode ? styles.active : ''}`}
             onClick={onToggleFocusMode}
             title={t('status.focusMode')}
+            aria-label={t('status.focusMode')}
+            aria-pressed={focusMode}
           >
-            <IconFocus />
+            <IconFocus active={focusMode} />
           </button>
 
           <button
@@ -202,6 +215,7 @@ export function StatusBar({
             onClick={onExportMenu}
             onContextMenu={onExportMenu}
             title={t('status.export')}
+            aria-label={t('status.export')}
           >
             <IconExport />
           </button>

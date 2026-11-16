@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { StatusBar } from './StatusBar';
+import { useWorkspaceStore } from '../../workspace/store';
+import { FOCUS_EXIT_PATH, FOCUS_PATH } from '../../../components/icons/islandIconPaths';
 import type { WritingStats } from '../services';
 
 const writingStats: WritingStats = {
@@ -240,5 +242,51 @@ describe('StatusBar', () => {
     fireEvent.click(failure);
 
     expect(onShowExportFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps every status icon in the shared pure-fill outline style', () => {
+    const { container } = render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        hasDocumentRelations
+        onRelationGraphClick={vi.fn()}
+      />
+    );
+
+    const svgs = container.querySelectorAll('svg');
+    expect(svgs.length).toBeGreaterThanOrEqual(3);
+    svgs.forEach((svg) => {
+      expect(svg.getAttribute('viewBox')).toBe('0 0 20 20');
+      expect(svg.getAttribute('fill')).toBe('currentColor');
+      expect(svg.querySelector('[stroke]')).toBeNull();
+    });
+  });
+
+  it('switches the focus icon and aria-pressed when focus mode turns on', () => {
+    useWorkspaceStore.setState({ focusMode: false });
+    const { container } = render(
+      <StatusBar
+        writingStats={writingStats}
+        cursor={{ line: 1, column: 1 }}
+        onToggleFocusMode={vi.fn()}
+      />
+    );
+
+    const button = container.querySelector('button[aria-pressed]') as HTMLButtonElement;
+    expect(button).toBeTruthy();
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(button.querySelector('path')?.getAttribute('d')).toBe(FOCUS_PATH);
+
+    act(() => {
+      useWorkspaceStore.setState({ focusMode: true });
+    });
+
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.querySelector('path')?.getAttribute('d')).toBe(FOCUS_EXIT_PATH);
+
+    act(() => {
+      useWorkspaceStore.setState({ focusMode: false });
+    });
   });
 });

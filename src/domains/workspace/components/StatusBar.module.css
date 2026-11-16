@@ -1,10 +1,17 @@
-/* 文档状态浮层：贴在第（最右）块岛内的右下角，不再是横贯窗口的一整条。
-   没有底色、没有边框，只有 11px 的次级文字与三个小图标，安静地待在正文留白里。 */
+/* 标题栏右侧的状态区（字数 / 诊断 / 排版 / 关系图谱 / 专注 / 导出）。
+   它挂在 TitleBar 的 statusSlot 里，是 52px 标题行的一部分：
+   - 文字与标题栏菜单同源：sans、400、无字距、只靠字色深浅反馈，不压药丸底；
+   - 图标与外壳图标同源：20×20 纯 fill 细线、统一 16px；
+   - 颜色只走 --island-* 令牌，深浅主题自动适配，不再为每套主题重写一遍
+     （原来那 7 个主题块会把 mono 字体 / 11px / 大字距覆盖回来，是风格漂移的根源）。 */
 .statusbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 11px;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1;
   color: var(--island-text-muted);
   user-select: none;
@@ -18,89 +25,88 @@
 .center {
   display: flex;
   align-items: center;
-  gap: 4px;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
 }
 
 .statText {
   font-variant-numeric: tabular-nums;
+  color: var(--island-text-muted);
 }
 
 .right {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.documentType {
-  display: inline-flex;
-  align-items: center;
-  max-width: 116px;
-  color: var(--island-text-muted);
-  font-size: 10.5px;
-  font-weight: 500;
+/* 诊断 / 排版入口：与菜单项一样，hover 只变字色 */
+.diagnostic {
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--island-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color var(--duration-hover) var(--ease-out);
 }
 
-.documentTypeText {
-  color: color-mix(in srgb, var(--c-void) 86%, var(--c-graphite));
-  border-color: color-mix(in srgb, var(--c-void) 16%, var(--c-fog));
+.diagnostic:hover,
+.typographyDiagnostic:hover {
+  color: var(--island-text);
 }
 
+.typographyDiagnostic {
+  color: var(--island-text-secondary);
+}
+
+/* 导出过程与结果：并入同一行文字，不再另起带边框的彩色胶囊 */
 .exportStatus {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   height: 22px;
   max-width: 132px;
-  padding: 0 8px;
-  border: 1px solid color-mix(in srgb, var(--c-void) 12%, var(--c-fog));
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--c-canvas) 88%, var(--c-chalk));
-  color: var(--c-void);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--island-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
   cursor: default;
-  font-size: 11px;
-  font-weight: 500;
-  transition:
-    background var(--duration-hover) var(--ease-out),
-    border-color var(--duration-hover) var(--ease-out),
-    color var(--duration-hover) var(--ease-out);
 }
 
 button.exportStatus {
   cursor: pointer;
 }
 
-button.exportStatus:hover {
-  background: var(--c-chalk);
-  border-color: color-mix(in srgb, var(--c-void) 18%, var(--c-fog));
-}
-
-.exportStatusSuccess {
-  color: color-mix(in srgb, #147a46 86%, var(--c-void));
-  border-color: color-mix(in srgb, #147a46 22%, var(--c-fog));
-}
-
-.exportStatusCancelled {
-  color: var(--c-graphite);
-}
-
+button.exportStatus:hover,
 .exportStatusFailed {
-  color: color-mix(in srgb, #b42318 88%, var(--c-void));
-  border-color: color-mix(in srgb, #b42318 24%, var(--c-fog));
+  color: var(--island-text);
+}
+
+.exportStatusSuccess,
+.exportStatusCancelled {
+  color: var(--island-text-secondary);
 }
 
 .exportStatusSpinner {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   display: inline-block;
   flex: 0 0 auto;
-  border: 1.6px solid color-mix(in srgb, currentColor 22%, transparent);
+  border: 1.3px solid color-mix(in srgb, currentColor 22%, transparent);
   border-top-color: currentColor;
   border-radius: 50%;
   animation: prism-status-export-spin var(--duration-progress) linear infinite;
@@ -117,591 +123,41 @@ button.exportStatus:hover {
   to { transform: rotate(360deg); }
 }
 
+/* 图标按钮：22px 点击区、16px 图标，hover / 激活只变色 */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
+  width: 22px;
   height: 22px;
-  padding: 0 8px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
-  border: none;
-  border-radius: var(--r-pill);
-  color: var(--c-graphite);
-  font-size: 11px;
+  color: var(--island-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
   cursor: pointer;
-  transition:
-    background var(--duration-hover) var(--ease-out),
-    color var(--duration-hover) var(--ease-out);
+  transition: color var(--duration-hover) var(--ease-out);
 }
 
-.btn:hover {
-  background: var(--c-chalk);
-  color: var(--c-void);
-}
-
+.btn:hover,
 .btn.active {
-  color: var(--c-void);
-  background: var(--c-chalk);
+  color: var(--island-text);
 }
 
 .btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
   fill: currentColor;
   stroke: none;
 }
 
 .iconBtn {
-  width: 22px;
-  padding: 0;
-  justify-content: center;
-}
-
-.folder {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 22px;
-  padding: 0 10px;
-  border-radius: var(--r-pill);
-  cursor: pointer;
-  color: var(--c-graphite);
-  font-size: 11px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  background: transparent;
-  border: none;
-}
-
-.folder span {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.folder:hover {
-  background: var(--c-chalk);
-  color: var(--c-void);
-}
-
-.treeBtn {
-  flex-shrink: 0;
-}
-
-.sep {
-  display: inline-block;
   flex: 0 0 auto;
-  width: 1px;
-  height: 10px;
-  background: var(--c-fog);
-  margin: 0 6px;
-}
-
-/* 模式切换药丸组 */
-.modeGroup {
-  display: inline-flex;
-  align-items: center;
-  background: var(--c-chalk);
-  border-radius: var(--r-pill);
-  padding: 2px;
-}
-
-.modeBtn {
-  width: 26px;
-  height: 18px;
-  border: none;
-  background: transparent;
-  color: var(--c-graphite);
-  cursor: pointer;
-  border-radius: var(--r-pill);
-  display: grid;
-  place-items: center;
-  transition:
-    background var(--duration-hover) var(--ease-out),
-    color var(--duration-hover) var(--ease-out),
-    box-shadow var(--duration-hover) var(--ease-out);
-}
-
-.modeBtn:hover { color: var(--c-void); }
-
-.modeBtn.active {
-  background: var(--c-canvas);
-  color: var(--c-void);
-  box-shadow: var(--shadow-faint);
-}
-
-.modeBtn svg {
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
-  stroke: none;
-}
-
-.statVal {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--c-graphite);
-  font-variant-numeric: tabular-nums;
-}
-
-.statText {
-  display: inline-flex;
-  align-items: center;
-  color: var(--c-graphite);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.statChunk {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 4px;
-}
-
-.statBadge {
-  flex: 0 0 auto;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: var(--c-chalk);
-  color: var(--c-void);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.statLbl {
-  font-size: 10px;
-  color: var(--c-ash);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.diagnostic {
-  border: none;
-  background: transparent;
-  color: var(--c-void);
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: var(--r-pill);
-  pointer-events: auto;
-}
-
-.diagnostic:hover {
-  background: var(--c-chalk);
-}
-
-.typographyDiagnostic {
-  color: var(--c-graphite);
-}
-
-.typographyDiagnostic:hover {
-  color: var(--c-void);
-}
-
-@media (max-width: 900px) {
-  .optionalStat {
-    display: none;
-  }
-}
-
-:global(html[data-content-theme='miaoyan']) .statusbar {
-  /* 浮层不再占一整行：只保留文字样式，高度与底色都去掉。 */
-  color: var(--island-text-muted);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='miaoyan']) .documentType {
-  height: 19px;
-  max-width: 108px;
-  padding: 0 6px;
-  border-color: var(--miaoyan-divider);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--miaoyan-tertiary-text);
-  font-family: var(--miaoyan-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.2px;
-}
-
-:global(html[data-content-theme='miaoyan']) .documentTypeText {
-  border-color: color-mix(in srgb, var(--miaoyan-text) 12%, var(--miaoyan-divider));
-  background: var(--miaoyan-panel-secondary);
-  color: var(--miaoyan-secondary-text);
-}
-
-:global(html[data-content-theme='miaoyan']) .exportStatus {
-  height: 19px;
-  border-color: var(--miaoyan-divider);
-  border-radius: 999px;
-  background: var(--miaoyan-panel-secondary);
-  color: var(--miaoyan-accent);
-  font-family: var(--miaoyan-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='miaoyan']) button.exportStatus:hover {
-  background: var(--miaoyan-selection);
-}
-
-:global(html[data-content-theme='miaoyan']) .exportStatusSuccess {
-  color: color-mix(in srgb, #147a46 74%, var(--miaoyan-text));
-}
-
-:global(html[data-content-theme='miaoyan']) .exportStatusFailed {
-  color: color-mix(in srgb, #b42318 82%, var(--miaoyan-text));
-}
-
-:global(html[data-content-theme='miaoyan']) .btn,
-:global(html[data-content-theme='miaoyan']) .folder {
-  height: 19px;
-  border-radius: 6px;
-  color: var(--miaoyan-secondary-text);
-  font-family: var(--miaoyan-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-:global(html[data-content-theme='miaoyan']) .btn {
-  padding: 0 6px;
-}
-
-:global(html[data-content-theme='miaoyan']) .iconBtn {
-  width: 20px;
-  padding: 0;
-}
-
-:global(html[data-content-theme='miaoyan']) .btn:hover,
-:global(html[data-content-theme='miaoyan']) .folder:hover {
-  background: var(--miaoyan-panel-secondary);
-  color: var(--miaoyan-toolbar-icon);
-}
-
-:global(html[data-content-theme='miaoyan']) .btn.active,
-:global(html[data-content-theme='miaoyan']) .modeBtn.active {
-  background: transparent;
-  color: var(--miaoyan-accent);
-  box-shadow: none;
-}
-
-:global(html[data-content-theme='miaoyan']) .btn svg,
-:global(html[data-content-theme='miaoyan']) .modeBtn svg {
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
-  stroke: none;
-}
-
-:global(html[data-content-theme='miaoyan']) .folder {
-  justify-content: center;
-  padding: 0 8px;
-  color: var(--miaoyan-secondary-text);
-}
-
-:global(html[data-content-theme='miaoyan']) .sep {
-  height: 10px;
-  margin: 0 2px;
-  background: var(--miaoyan-hairline);
-}
-
-:global(html[data-content-theme='miaoyan']) .modeGroup {
-  gap: 8px;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-}
-
-:global(html[data-content-theme='miaoyan']) .modeBtn {
-  width: 20px;
-  height: 19px;
-  border-radius: 6px;
-  color: var(--miaoyan-secondary-text);
-}
-
-:global(html[data-content-theme='miaoyan']) .modeBtn:hover {
-  background: var(--miaoyan-panel-secondary);
-  color: var(--miaoyan-toolbar-icon);
-}
-
-:global(html[data-content-theme='miaoyan']) .statVal {
-  color: var(--miaoyan-secondary-text);
-  font-family: var(--miaoyan-code-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='miaoyan']) .statText {
-  color: var(--island-text-muted);
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='miaoyan']) .statBadge {
-  background: var(--miaoyan-panel-secondary);
-  color: var(--miaoyan-toolbar-icon);
-  font-family: var(--miaoyan-font);
-  font-weight: 400;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='miaoyan']) .statLbl {
-  color: var(--miaoyan-tertiary-text);
-  font-family: var(--miaoyan-font);
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-  text-transform: none;
-}
-
-:global(html[data-content-theme='miaoyan']) .diagnostic {
-  height: 19px;
-  border-radius: 6px;
-  color: var(--miaoyan-accent);
-  font-family: var(--miaoyan-code-font);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='miaoyan']) .diagnostic:hover {
-  background: var(--miaoyan-panel-secondary);
-}
-
-:global(html[data-content-theme='miaoyan']) .typographyDiagnostic {
-  color: var(--miaoyan-secondary-text);
-}
-
-:global(html[data-content-theme='miaoyan']) .typographyDiagnostic:hover {
-  color: var(--miaoyan-accent);
-}
-
-:global(html[data-content-theme='inkstone']) .statusbar,
-:global(html[data-content-theme='slate']) .statusbar,
-:global(html[data-content-theme='mono']) .statusbar,
-:global(html[data-content-theme='nocturne']) .statusbar {
-  color: var(--island-text-muted);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='inkstone']) .btn,
-:global(html[data-content-theme='inkstone']) .folder,
-:global(html[data-content-theme='slate']) .btn,
-:global(html[data-content-theme='slate']) .folder,
-:global(html[data-content-theme='mono']) .btn,
-:global(html[data-content-theme='mono']) .folder,
-:global(html[data-content-theme='nocturne']) .btn,
-:global(html[data-content-theme='nocturne']) .folder {
-  height: 19px;
-  border-radius: 6px;
-  color: var(--theme-secondary-text);
-  font-family: var(--theme-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-:global(html[data-content-theme='inkstone']) .btn,
-:global(html[data-content-theme='slate']) .btn,
-:global(html[data-content-theme='mono']) .btn,
-:global(html[data-content-theme='nocturne']) .btn {
-  padding: 0 6px;
-}
-
-:global(html[data-content-theme='inkstone']) .iconBtn,
-:global(html[data-content-theme='slate']) .iconBtn,
-:global(html[data-content-theme='mono']) .iconBtn,
-:global(html[data-content-theme='nocturne']) .iconBtn {
-  width: 20px;
-  padding: 0;
-}
-
-:global(html[data-content-theme='inkstone']) .btn:hover,
-:global(html[data-content-theme='inkstone']) .folder:hover,
-:global(html[data-content-theme='slate']) .btn:hover,
-:global(html[data-content-theme='slate']) .folder:hover,
-:global(html[data-content-theme='mono']) .btn:hover,
-:global(html[data-content-theme='mono']) .folder:hover,
-:global(html[data-content-theme='nocturne']) .btn:hover,
-:global(html[data-content-theme='nocturne']) .folder:hover {
-  background: var(--theme-panel-secondary);
-  color: var(--theme-toolbar-icon);
-}
-
-:global(html[data-content-theme='inkstone']) .btn.active,
-:global(html[data-content-theme='inkstone']) .modeBtn.active,
-:global(html[data-content-theme='slate']) .btn.active,
-:global(html[data-content-theme='slate']) .modeBtn.active,
-:global(html[data-content-theme='mono']) .btn.active,
-:global(html[data-content-theme='mono']) .modeBtn.active,
-:global(html[data-content-theme='nocturne']) .btn.active,
-:global(html[data-content-theme='nocturne']) .modeBtn.active {
-  background: transparent;
-  color: var(--theme-accent);
-  box-shadow: none;
-}
-
-:global(html[data-content-theme='inkstone']) .btn svg,
-:global(html[data-content-theme='inkstone']) .modeBtn svg,
-:global(html[data-content-theme='slate']) .btn svg,
-:global(html[data-content-theme='slate']) .modeBtn svg,
-:global(html[data-content-theme='mono']) .btn svg,
-:global(html[data-content-theme='mono']) .modeBtn svg,
-:global(html[data-content-theme='nocturne']) .btn svg,
-:global(html[data-content-theme='nocturne']) .modeBtn svg {
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
-  stroke: none;
-}
-
-:global(html[data-content-theme='inkstone']) .folder,
-:global(html[data-content-theme='slate']) .folder,
-:global(html[data-content-theme='mono']) .folder,
-:global(html[data-content-theme='nocturne']) .folder {
-  justify-content: center;
-  padding: 0 8px;
-  color: var(--theme-secondary-text);
-}
-
-:global(html[data-content-theme='inkstone']) .sep,
-:global(html[data-content-theme='slate']) .sep,
-:global(html[data-content-theme='mono']) .sep,
-:global(html[data-content-theme='nocturne']) .sep {
-  height: 10px;
-  margin: 0 2px;
-  background: var(--theme-hairline);
-}
-
-:global(html[data-content-theme='inkstone']) .modeGroup,
-:global(html[data-content-theme='slate']) .modeGroup,
-:global(html[data-content-theme='mono']) .modeGroup,
-:global(html[data-content-theme='nocturne']) .modeGroup {
-  gap: 8px;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-}
-
-:global(html[data-content-theme='inkstone']) .modeBtn,
-:global(html[data-content-theme='slate']) .modeBtn,
-:global(html[data-content-theme='mono']) .modeBtn,
-:global(html[data-content-theme='nocturne']) .modeBtn {
-  width: 20px;
-  height: 19px;
-  border-radius: 6px;
-  color: var(--theme-secondary-text);
-}
-
-:global(html[data-content-theme='inkstone']) .modeBtn:hover,
-:global(html[data-content-theme='slate']) .modeBtn:hover,
-:global(html[data-content-theme='mono']) .modeBtn:hover,
-:global(html[data-content-theme='nocturne']) .modeBtn:hover {
-  background: var(--theme-panel-secondary);
-  color: var(--theme-toolbar-icon);
-}
-
-:global(html[data-content-theme='inkstone']) .statVal,
-:global(html[data-content-theme='slate']) .statVal,
-:global(html[data-content-theme='mono']) .statVal,
-:global(html[data-content-theme='nocturne']) .statVal {
-  color: var(--theme-secondary-text);
-  font-family: var(--theme-code-font);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='inkstone']) .statText,
-:global(html[data-content-theme='slate']) .statText,
-:global(html[data-content-theme='mono']) .statText,
-:global(html[data-content-theme='nocturne']) .statText {
-  color: var(--island-text-muted);
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='inkstone']) .statBadge,
-:global(html[data-content-theme='slate']) .statBadge,
-:global(html[data-content-theme='mono']) .statBadge,
-:global(html[data-content-theme='nocturne']) .statBadge {
-  background: var(--theme-panel-secondary);
-  color: var(--theme-toolbar-icon);
-  font-family: var(--theme-font);
-  font-weight: 400;
-  letter-spacing: 0.6px;
-}
-
-:global(html[data-content-theme='inkstone']) .statLbl,
-:global(html[data-content-theme='slate']) .statLbl,
-:global(html[data-content-theme='mono']) .statLbl,
-:global(html[data-content-theme='nocturne']) .statLbl {
-  color: var(--theme-tertiary-text);
-  font-family: var(--theme-font);
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-  text-transform: none;
-}
-
-:global(html[data-content-theme='inkstone']) .diagnostic,
-:global(html[data-content-theme='slate']) .diagnostic,
-:global(html[data-content-theme='mono']) .diagnostic,
-:global(html[data-content-theme='nocturne']) .diagnostic {
-  height: 19px;
-  border-radius: 6px;
-  color: var(--theme-accent);
-  font-family: var(--theme-code-font);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-:global(html[data-content-theme='inkstone']) .diagnostic:hover,
-:global(html[data-content-theme='slate']) .diagnostic:hover,
-:global(html[data-content-theme='mono']) .diagnostic:hover,
-:global(html[data-content-theme='nocturne']) .diagnostic:hover {
-  background: var(--theme-panel-secondary);
-}
-
-:global(html[data-content-theme='inkstone']) .typographyDiagnostic,
-:global(html[data-content-theme='slate']) .typographyDiagnostic,
-:global(html[data-content-theme='mono']) .typographyDiagnostic,
-:global(html[data-content-theme='nocturne']) .typographyDiagnostic {
-  color: var(--theme-secondary-text);
-}
-
-:global(html[data-content-theme='inkstone']) .typographyDiagnostic:hover,
-:global(html[data-content-theme='slate']) .typographyDiagnostic:hover,
-:global(html[data-content-theme='mono']) .typographyDiagnostic:hover,
-:global(html[data-content-theme='nocturne']) .typographyDiagnostic:hover {
-  color: var(--theme-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -709,10 +165,8 @@ button.exportStatus:hover {
     animation: none;
   }
 
-  .exportStatus,
   .btn,
-  .modeBtn {
+  .diagnostic {
     transition-duration: 1ms;
   }
 }
-
