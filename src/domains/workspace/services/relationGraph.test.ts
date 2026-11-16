@@ -70,4 +70,17 @@ describe('relation graph service', () => {
     expect(graph.edges.length).toBeGreaterThan(0);
     expect(graph.nodes.map((node) => node.relativePath)).not.toContain('query.sql');
   });
+
+  it('reports how many documents matched before hitting the node limit', () => {
+    const graph = buildRelationGraph({
+      index: createIndex(),
+      currentPath: '/repo/b.md',
+      scope: 'workspace',
+      depth: 1,
+      limit: 2,
+    });
+
+    expect(graph.nodes).toHaveLength(2);
+    expect(graph.total).toBe(4);
+  });
 });

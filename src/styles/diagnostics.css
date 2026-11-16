@@ -318,434 +318,604 @@ body.dark .prism-diagnostics-popover {
   white-space: nowrap;
 }
 
+/* ==================== 关系图谱：左进右出的双向布局 ==================== */
+
 .prism-relation-graph-modal {
-  width: min(940px, calc(100vw - 32px));
-  max-width: 940px;
+  /* 组件局部令牌（ADR-0008）：只在本面板消费，全部从 --c-* 派生。 */
+  --graph-canvas: color-mix(in srgb, var(--c-canvas) 96%, var(--c-chalk));
+  --graph-dot: color-mix(in srgb, var(--c-ash) 45%, transparent);
+  --graph-node-bg: var(--c-canvas);
+  --graph-node-border: color-mix(in srgb, var(--c-graphite) 22%, transparent);
+  --graph-edge-out: color-mix(in srgb, var(--c-graphite) 88%, transparent);
+  --graph-edge-in: color-mix(in srgb, var(--c-graphite) 45%, transparent);
+  --graph-edge-far: color-mix(in srgb, var(--c-graphite) 26%, transparent);
+  --graph-focus: var(--c-void);
+  width: min(1200px, calc(100vw - 32px));
+  max-width: 1200px;
+  max-height: min(900px, calc(100vh - 40px));
   background: var(--c-canvas);
   border: 1px solid var(--c-fog);
-  border-radius: var(--r-card, 12px);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-flyout);
   overflow: hidden;
-  transition: opacity 0.2s ease;
 }
 
-/* 极致毛玻璃设计（妙言主题专属） */
-html[data-content-theme='miaoyan'] .prism-relation-graph-modal {
-  background: rgba(250, 249, 246, 0.88) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.01) !important;
+.prism-relation-graph-header {
+  gap: 16px;
+  padding: 16px 24px;
 }
 
-/* 极致毛玻璃设计（黑夜主题专属） */
-html[data-content-theme='nocturne'] .prism-relation-graph-modal {
-  background: rgba(24, 23, 22, 0.88) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
+.prism-relation-graph-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prism-relation-graph-meta {
+  overflow: hidden;
+  color: var(--c-graphite);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prism-relation-graph-body {
-  padding: 16px 20px 20px 20px;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 24px 16px;
 }
 
 .prism-relation-graph-toolbar {
-  display: grid;
-  grid-template-columns: auto auto minmax(180px, 1fr);
-  gap: 12px;
-  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
 }
 
-/* TAB 胶囊滑块重塑 */
-.prism-relation-graph-segment {
+.prism-relation-graph-segment,
+.prism-relation-graph-zoom {
   display: inline-flex;
-  gap: 3px;
-  border: 1px solid var(--c-fog);
-  border-radius: 20px;
+  gap: 2px;
+  align-items: center;
+  border-radius: 8px;
   padding: 3px;
-  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-paper));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
-}
-
-html[data-content-theme='miaoyan'] .prism-relation-graph-segment {
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 18px;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-segment {
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 18px;
+  background: var(--c-chalk);
 }
 
 .prism-relation-graph-segment button {
-  min-height: 26px;
+  min-height: 24px;
   border: 0;
+  border-radius: 6px;
+  padding: 0 10px;
   background: transparent;
   color: var(--c-graphite);
   font-family: var(--font-sans);
+  font-size: 11.5px;
   cursor: pointer;
-  border-radius: 14px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: background var(--duration-hover) var(--ease-out), color var(--duration-hover) var(--ease-out);
 }
 
 .prism-relation-graph-segment button[data-active='true'] {
-  background: var(--c-canvas) !important;
-  color: var(--c-void) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+  background: var(--c-canvas);
+  color: var(--c-void);
   font-weight: 600;
+  box-shadow: var(--shadow-faint);
 }
 
-html[data-content-theme='miaoyan'] .prism-relation-graph-segment button[data-active='true'] {
-  background: #fff !important;
-  color: var(--miaoyan-accent, #2a2826) !important;
+.prism-relation-graph-segment button:hover {
+  color: var(--c-void);
 }
 
-html[data-content-theme='nocturne'] .prism-relation-graph-segment button[data-active='true'] {
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: #fff !important;
-}
-
-/* 高颜值圆润搜索框 */
 .prism-relation-graph-toolbar input {
-  min-width: 0;
-  min-height: 32px;
+  min-width: 160px;
+  flex: 1 1 240px;
+  height: 30px;
   border: 1px solid var(--c-fog);
-  border-radius: 16px;
-  padding: 0 14px;
+  border-radius: 7px;
+  padding: 0 10px;
   background: var(--c-canvas);
   color: var(--c-void);
   font-family: var(--font-sans);
   font-size: 12px;
   outline: none;
-  transition: all 0.25s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.prism-relation-graph-toolbar input:focus {
+.prism-relation-graph-toolbar input::placeholder {
+  color: var(--c-ash);
+}
+
+.prism-relation-graph-toolbar input:focus-visible {
   border-color: var(--c-graphite);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-graphite) 12%, transparent);
 }
 
-html[data-content-theme='miaoyan'] .prism-relation-graph-toolbar input {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.4);
+.prism-relation-graph-zoom button {
+  width: 26px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--c-graphite);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
 }
 
-html[data-content-theme='miaoyan'] .prism-relation-graph-toolbar input:focus {
-  border-color: #2a2826;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(42, 40, 38, 0.08);
+.prism-relation-graph-zoom button:hover {
+  background: var(--c-canvas);
+  color: var(--c-void);
 }
 
-html[data-content-theme='nocturne'] .prism-relation-graph-toolbar input {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-toolbar input:focus {
-  border-color: #dcdad7;
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 3px rgba(220, 218, 215, 0.15);
+.prism-relation-graph-zoom span {
+  min-width: 40px;
+  color: var(--c-graphite);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-align: center;
 }
 
 .prism-relation-graph-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 240px;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 14px;
 }
 
 .prism-relation-graph-canvas {
   position: relative;
-  min-height: 420px;
+  height: clamp(360px, calc(100vh - 300px), 620px);
   border: 1px solid var(--c-fog);
-  border-radius: var(--r-card, 10px);
-  background: #faf9f6;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.02);
+  border-radius: var(--r-card);
+  background-color: var(--graph-canvas);
+  background-image: radial-gradient(var(--graph-dot) 1px, transparent 1px);
+  background-position: 12px 12px;
+  background-size: 36px 36px;
   overflow: hidden;
-}
-
-html[data-content-theme='miaoyan'] .prism-relation-graph-canvas {
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  background: #faf9f6; /* 宣纸米白 */
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-canvas {
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: #181716; /* 静谧焦墨黑 */
 }
 
 .prism-relation-graph-canvas svg {
   display: block;
   width: 100%;
-  height: 420px;
-  transition: opacity 0.3s ease;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* ==================== 东方禅意留白图谱样式 ==================== */
-
-.prism-relation-graph-edge {
-  stroke: #2a2826; /* 焦墨灰 */
-  stroke-width: 1.3px;
-  opacity: 0.18;
-  transition: stroke 0.3s var(--ease-out),
-              stroke-width 0.3s var(--ease-out),
-              opacity 0.3s var(--ease-out);
+.prism-relation-graph-canvas svg:active {
+  cursor: grabbing;
 }
 
-html[data-content-theme='nocturne'] .prism-relation-graph-edge {
-  stroke: #dcdad7; /* 宣纸白 */
-}
-
-svg.has-focus .prism-relation-graph-edge {
-  opacity: 0.05;
-}
-
-svg.has-focus .prism-relation-graph-edge.is-connected-hover {
-  stroke: #2a2826;
-  stroke-width: 1.6px;
-  opacity: 0.65;
-}
-
-html[data-content-theme='nocturne'] svg.has-focus .prism-relation-graph-edge.is-connected-hover {
-  stroke: #dcdad7;
-}
+/* ---- 节点 ---- */
 
 .prism-relation-graph-node {
-  cursor: pointer;
+  cursor: grab;
   outline: none;
-  transition: opacity 0.35s var(--ease-out);
+  touch-action: none;
+  transition: opacity var(--duration-feedback) var(--ease-out);
 }
 
-.prism-relation-graph-node circle {
-  fill: #2a2826; /* 焦墨灰 */
-  stroke: none !important; /* 彻底去除边框 */
-  opacity: 0.85;
-  transition: r 0.35s var(--ease-out),
-              fill 0.35s var(--ease-out),
-              opacity 0.35s var(--ease-out);
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-node circle {
-  fill: #dcdad7; /* 宣纸白 */
-}
-
-/* 激活的文档节点：深焦墨圆点 */
-.prism-relation-graph-node.is-active circle {
-  fill: #11100f !important;
-  opacity: 1.0;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-node.is-active circle {
-  fill: #ffffff !important;
-}
-
-/* Hover 时的焦点节点：深焦墨圆点 */
-.prism-relation-graph-node.is-hovered circle {
-  fill: #11100f !important;
-  opacity: 1.0 !important;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-node.is-hovered circle {
-  fill: #ffffff !important;
-}
-
-/* 联动的相邻节点 */
-.prism-relation-graph-node.is-adjacent circle {
-  fill: #2a2826;
-  opacity: 0.95;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-node.is-adjacent circle {
-  fill: #dcdad7;
-}
-
-/* 水晕呼吸动画定义 */
-@keyframes pulseHalo {
-  0% {
-    r: 10px;
-    opacity: 0.28;
-  }
-  50% {
-    r: 22px;
-    opacity: 0.08;
-  }
-  100% {
-    r: 10px;
-    opacity: 0.28;
-  }
-}
-
-.pulse-halo {
-  animation: pulseHalo 4s ease-in-out infinite;
-  fill: #2a2826;
-  pointer-events: none;
-}
-
-html[data-content-theme='nocturne'] .pulse-halo {
-  fill: #ffffff;
-}
-
-/* 大师级地图文字标签描边设计 */
-.prism-relation-graph-node text {
-  fill: #2a2826;
-  font-size: 11px;
-  font-weight: 500;
-  text-anchor: middle;
-  pointer-events: none;
-  paint-order: stroke fill;
-  stroke: #faf9f6; /* 匹配宣纸背景 */
-  stroke-width: 3.5px;
-  stroke-linejoin: round;
-  transition: all 0.25s var(--ease-out);
-}
-
-html[data-content-theme='miaoyan'] .prism-relation-graph-node text {
-  fill: #2a2826;
-  font-family: var(--miaoyan-font, sans-serif);
-  stroke: #faf9f6;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-node text {
-  fill: #dcdad7;
-  stroke: #181716; /* 匹配黑夜背景 */
-}
-
-.prism-relation-graph-node.is-active text {
-  fill: #11100f;
-  font-weight: 600;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-node.is-active text {
-  fill: #ffffff;
-}
-
-svg.has-focus .prism-relation-graph-node {
-  opacity: 0.15;
-}
-
-svg.has-focus .prism-relation-graph-node.is-hovered,
-svg.has-focus .prism-relation-graph-node.is-adjacent {
+.prism-relation-graph-node.is-dragging {
+  cursor: grabbing;
   opacity: 1;
 }
 
-svg.has-focus .prism-relation-graph-node.is-hovered text {
-  fill: #11100f !important;
-  font-weight: 600;
+.prism-relation-graph-node.is-dragging .prism-relation-graph-node-box {
+  stroke: color-mix(in srgb, var(--c-void) 45%, transparent);
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--c-void) 18%, transparent));
+}
+
+.prism-relation-graph-edge.is-dragging-edge {
+  opacity: 0;
+}
+
+.prism-relation-graph-node-box {
+  fill: var(--graph-node-bg);
+  stroke: var(--graph-node-border);
+  stroke-width: 1;
+  transition: fill var(--duration-hover) var(--ease-out), stroke var(--duration-hover) var(--ease-out);
+}
+
+.prism-relation-graph-node.is-far .prism-relation-graph-node-box {
+  fill: color-mix(in srgb, var(--c-canvas) 88%, var(--c-chalk));
+}
+
+.prism-relation-graph-node.is-hovered .prism-relation-graph-node-box,
+.prism-relation-graph-node.is-focused .prism-relation-graph-node-box {
+  stroke: color-mix(in srgb, var(--c-void) 40%, transparent);
+}
+
+.prism-relation-graph-node.is-active .prism-relation-graph-node-box {
+  stroke: color-mix(in srgb, var(--c-void) 28%, transparent);
+  filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--c-void) 10%, transparent));
+}
+
+.prism-relation-graph-node.is-dimmed {
+  opacity: 0.32;
+}
+
+.prism-relation-graph-node-title {
+  fill: var(--c-void);
+  font-family: var(--font-sans);
   font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
 }
 
-html[data-content-theme='nocturne'] svg.has-focus .prism-relation-graph-node.is-hovered text {
-  fill: #ffffff !important;
+.prism-relation-graph-node.is-active .prism-relation-graph-node-title {
+  font-size: 13px;
+  font-weight: 600;
 }
 
-svg.has-focus .prism-relation-graph-node.is-adjacent text {
-  fill: #2a2826;
-  opacity: 0.85;
+.prism-relation-graph-node.is-far .prism-relation-graph-node-title {
+  fill: var(--c-graphite);
+  font-size: 11.5px;
+  font-weight: 400;
 }
 
-html[data-content-theme='nocturne'] svg.has-focus .prism-relation-graph-node.is-adjacent text {
-  fill: #dcdad7;
+.prism-relation-graph-node-count,
+.prism-relation-graph-node-meta {
+  fill: var(--c-ash);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  pointer-events: none;
 }
+
+.prism-relation-graph-node-dot {
+  fill: var(--c-void);
+  pointer-events: none;
+}
+
+.prism-relation-graph-focus-ring {
+  fill: none;
+  stroke: var(--graph-focus);
+  stroke-width: 1.5;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.prism-relation-graph-node:focus-visible .prism-relation-graph-focus-ring {
+  opacity: 1;
+}
+
+/* ---- 连边 ---- */
+
+.prism-relation-graph-edge {
+  transition: opacity var(--duration-feedback) var(--ease-out);
+}
+
+.prism-relation-graph-edge path {
+  fill: none;
+  stroke: var(--graph-edge-far);
+  stroke-width: 1.2;
+}
+
+.prism-relation-graph-edge[data-tone='in'] path {
+  stroke: var(--graph-edge-in);
+}
+
+.prism-relation-graph-edge[data-tone='out'] path {
+  stroke: var(--graph-edge-out);
+}
+
+.prism-relation-graph-arrow {
+  fill: var(--graph-edge-far);
+}
+
+.prism-relation-graph-edge[data-tone='in'] .prism-relation-graph-arrow {
+  fill: var(--graph-edge-in);
+}
+
+.prism-relation-graph-edge[data-tone='out'] .prism-relation-graph-arrow {
+  fill: var(--graph-edge-out);
+}
+
+.prism-relation-graph-edge.is-muted {
+  opacity: 0.28;
+}
+
+.prism-relation-graph-column-label {
+  fill: var(--c-ash);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+
+/* ---- 图例 ---- */
+
+.prism-relation-graph-legend {
+  position: absolute;
+  right: 16px;
+  bottom: 10px;
+  left: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  color: var(--c-graphite);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.prism-relation-graph-legend-items {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.prism-relation-graph-legend-stats {
+  margin-left: auto;
+  color: var(--c-ash);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+.prism-relation-graph-legend-item {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.prism-relation-graph-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-void);
+}
+
+.prism-relation-graph-legend-arrow::before {
+  content: '→';
+  color: var(--graph-edge-out);
+  font-size: 11px;
+}
+
+.prism-relation-graph-legend-arrow.is-in::before {
+  content: '←';
+  color: var(--graph-edge-in);
+}
+
+/* ---- 空态 ---- */
 
 .prism-relation-graph-empty {
-  display: grid;
-  height: 100%;
-  min-height: 420px;
-  place-items: center;
-  color: var(--c-ash);
-  font-size: 13px;
+  display: flex;
+  min-height: clamp(320px, calc(100vh - 340px), 560px);
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
 }
 
-/* 右侧列表卡片化悬浮设计 */
-.prism-relation-graph-list {
+.prism-relation-graph-empty h3 {
+  color: var(--c-void);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.prism-relation-graph-empty p {
+  max-width: 420px;
+  color: var(--c-graphite);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.prism-relation-graph-empty-actions {
   display: flex;
-  max-height: 420px;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.prism-relation-graph-empty-hint {
+  color: var(--c-ash);
+  font-size: 10px;
+}
+
+.prism-relation-graph-kbd {
+  border: 1px solid var(--c-fog);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--c-graphite);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+/* ---- 详情栏 ---- */
+
+.prism-relation-graph-rail {
+  display: flex;
+  min-height: 0;
+  max-height: calc(100vh - 260px);
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
+  border: 1px solid var(--c-fog);
+  border-radius: var(--r-card);
+  padding: 16px;
+  background: color-mix(in srgb, var(--c-canvas) 94%, var(--c-chalk));
   overflow-y: auto;
 }
 
-.prism-relation-graph-list button {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-  border: 1px solid transparent;
-  background: rgba(0, 0, 0, 0.01);
-  border-radius: 8px;
-  padding: 10px 12px;
-  text-align: left;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+.prism-relation-graph-rail-eyebrow {
+  color: var(--c-ash);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
 }
 
-.prism-relation-graph-list button:hover {
-  background: var(--c-chalk) !important;
-  border-color: var(--c-fog) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  transform: translateY(-1px);
-}
-
-.prism-relation-graph-list button.is-active {
-  background: color-mix(in srgb, var(--c-canvas) 92%, var(--c-paper)) !important;
-  border-color: var(--miaoyan-accent, #1c5d33) !important;
-  border-left: 3.5px solid var(--miaoyan-accent, #1c5d33) !important;
-}
-
-html[data-content-theme='miaoyan'] .prism-relation-graph-list button.is-active {
-  background: rgba(28, 93, 51, 0.04) !important;
-  border-color: rgba(28, 93, 51, 0.15) !important;
-  border-left: 3.5px solid var(--miaoyan-accent, #1c5d33) !important;
-}
-
-html[data-content-theme='nocturne'] .prism-relation-graph-list button.is-active {
-  background: rgba(59, 122, 87, 0.08) !important;
-  border-color: rgba(59, 122, 87, 0.25) !important;
-  border-left: 3.5px solid #3b7a57 !important;
-}
-
-.prism-relation-graph-list span,
-.prism-relation-graph-list small,
-.prism-relation-graph-list em {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.prism-relation-graph-list span {
+.prism-relation-graph-rail-title {
   color: var(--c-void);
-  font-size: 13px;
-  font-style: normal;
+  font-size: 16px;
   font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-html[data-content-theme='miaoyan'] .prism-relation-graph-list span {
-  color: var(--miaoyan-text);
-  font-family: var(--miaoyan-font);
+.prism-relation-graph-rail-path {
+  color: var(--c-ash);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.prism-relation-graph-list small,
-.prism-relation-graph-list em {
+.prism-relation-graph-rail-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--c-hair);
+  border-top: 1px solid var(--c-hair);
+  padding: 12px 0;
+}
+
+.prism-relation-graph-rail-stats strong {
+  display: block;
+  color: var(--c-void);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.prism-relation-graph-rail-stats span {
+  color: var(--c-ash);
+  font-size: 10px;
+}
+
+.prism-relation-graph-rail-group ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prism-relation-graph-rail-group button {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 5px;
+  padding: 5px 6px;
+  background: transparent;
+  color: var(--c-void);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prism-relation-graph-rail-group button:hover {
+  background: var(--c-hover);
+}
+
+.prism-relation-graph-rail-group button em {
+  color: var(--c-ash);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-style: normal;
+}
+
+.prism-relation-graph-rail-empty {
   color: var(--c-ash);
   font-size: 11px;
-  font-style: normal;
 }
 
-@media (max-width: 760px) {
-  .prism-relation-graph-toolbar,
+.prism-relation-graph-rail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.prism-relation-graph-primary,
+.prism-relation-graph-ghost {
+  display: inline-flex;
+  height: 30px;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.prism-relation-graph-empty-actions .prism-relation-graph-primary {
+  padding: 0 12px;
+}
+
+.prism-relation-graph-primary {
+  border: 1px solid var(--c-void);
+  background: var(--c-void);
+  color: var(--c-canvas);
+  font-weight: 500;
+}
+
+.prism-relation-graph-primary:hover {
+  opacity: 0.88;
+}
+
+.prism-relation-graph-primary kbd {
+  color: color-mix(in srgb, var(--c-canvas) 70%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.prism-relation-graph-ghost {
+  border: 1px solid var(--c-fog);
+  background: transparent;
+  color: var(--c-graphite);
+}
+
+.prism-relation-graph-ghost:hover {
+  border-color: var(--c-graphite);
+  color: var(--c-void);
+}
+
+.prism-relation-graph-rail-hint,
+.prism-relation-graph-keys-hint {
+  margin: 0;
+  color: var(--c-ash);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.prism-relation-graph-keys-hint {
+  text-align: center;
+}
+
+.prism-relation-graph-node:focus-visible .prism-relation-graph-node-box,
+.prism-relation-graph-primary:focus-visible,
+.prism-relation-graph-ghost:focus-visible,
+.prism-relation-graph-segment button:focus-visible,
+.prism-relation-graph-zoom button:focus-visible {
+  outline: 2px solid var(--c-void);
+  outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
   .prism-relation-graph-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .prism-relation-graph-list {
-    max-height: 180px;
+  .prism-relation-graph-rail {
+    max-height: 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism-relation-graph-node,
+  .prism-relation-graph-edge,
+  .prism-relation-graph-segment button {
+    transition: none;
   }
 }
 

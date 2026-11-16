@@ -24,6 +24,8 @@ export interface RelationGraphEdge {
 export interface RelationGraph {
   edges: RelationGraphEdge[];
   nodes: RelationGraphNode[];
+  /** 命中范围内的文档总数；大于 nodes.length 表示被 limit 截断。 */
+  total?: number;
 }
 
 export interface BuildRelationGraphInput {
@@ -140,9 +142,10 @@ export function buildRelationGraph({
     : new Map(markdownDocuments.map((document) => [normalizePathForCompare(document.path), 0]));
 
   const selectedKeys = new Set(depthByKey.keys());
-  const filteredDocuments = markdownDocuments
+  const matchingDocuments = markdownDocuments
     .filter((document) => selectedKeys.has(normalizePathForCompare(document.path)))
-    .filter((document) => documentMatchesQuery(document, normalizedQuery))
+    .filter((document) => documentMatchesQuery(document, normalizedQuery));
+  const filteredDocuments = matchingDocuments
     .sort((a, b) => (
       (normalizePathForCompare(a.path) === currentKey ? -1 : 0) ||
       (normalizePathForCompare(b.path) === currentKey ? 1 : 0) ||
@@ -180,5 +183,5 @@ export function buildRelationGraph({
       }];
     });
 
-  return { edges, nodes };
+  return { edges, nodes, total: matchingDocuments.length };
 }

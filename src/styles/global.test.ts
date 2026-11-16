@@ -33,7 +33,9 @@ describe('global Windows visual compensation', () => {
   it('does not leak CSS Modules global selectors into the global stylesheet bundle', () => {
     expect(css).not.toContain(':global(');
     expect(css).toContain('body.dark .prism-diagnostics-popover');
-    expect(css).toContain("html[data-content-theme='nocturne'] .prism-relation-graph-modal");
+    // 关系图谱改为纯 token 驱动，不再依赖主题选择器覆盖。
+    expect(css).toContain('.prism-relation-graph-node-box');
+    expect(css).toContain('var(--graph-edge-out)');
   });
 
   it('keeps Windows floating-layer compensation after content-theme overrides', () => {

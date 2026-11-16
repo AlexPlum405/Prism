@@ -110,7 +110,7 @@ describe('workspace commands', () => {
     expect(openRelationGraph).toHaveBeenCalledTimes(1);
   });
 
-  it('disables relation graph for text documents and markdown documents without relations', () => {
+  it('keeps relation graph available for markdown documents without relations and hides it for text documents', () => {
     const command = getWorkspaceCommand('showRelationGraph');
     const noRelationContext = createContext({
       documentStore: {
@@ -134,7 +134,7 @@ describe('workspace commands', () => {
       ]),
     });
 
-    expect(command.enabled?.(noRelationContext)).toBe(false);
+    expect(command.enabled?.(noRelationContext)).toBe(true);
     expect(command.enabled?.(textContext)).toBe(false);
   });
 });

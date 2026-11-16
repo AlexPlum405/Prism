@@ -3,13 +3,14 @@ import { grantWorkspaceDirectoryScope } from '../../../lib/fileSystemScope';
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import type { CommandContext, CommandDefinition } from '../types';
 import { openDialog } from '../../../platform/tauri/dialogs';
-import { hasWorkspaceIndexDocumentRelations } from '../../workspace/services';
-
-function hasCurrentDocumentRelations(context: CommandContext): boolean {
+/**
+ * 只要打开了可索引的 Markdown 文档就允许进图谱：空态本身就是入口，
+ * 把入口藏起来只会让用户永远不知道这个功能存在。
+ */
+function canOpenRelationGraph(context: CommandContext): boolean {
   const currentDocument = context.documentStore.currentDocument;
   if (!currentDocument?.path || currentDocument.profile?.supportsRelationGraph === false) return false;
-  if (!context.workspaceIndex) return false;
-  return hasWorkspaceIndexDocumentRelations(context.workspaceIndex, currentDocument.path);
+  return Boolean(context.workspaceIndex);
 }
 
 async function handleOpenFolder(context: CommandContext): Promise<void> {
@@ -52,7 +53,7 @@ export function createWorkspaceCommands(): CommandDefinition[] {
       category: 'view',
       keywords: ['graph', 'relation', '关系', '图谱'],
       shortcuts: [{ code: 'KeyG', mod: true, alt: true }],
-      enabled: hasCurrentDocumentRelations,
+      enabled: canOpenRelationGraph,
       run: (context) => context.openRelationGraph?.(),
     },
   ] satisfies CommandDefinition[];
