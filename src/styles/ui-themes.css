@@ -1,0 +1,377 @@
+/* ============================================================
+   界面主题（外壳）
+   ------------------------------------------------------------
+   三套可选的界面风格，只改外壳的配色、边框、圆角、阴影与分栏，
+   不改字体、图标和功能结构。默认 islands 不写任何规则。
+   ============================================================ */
+
+
+/* ---- Miaoyan（妙言原版平栏） ---- */
+html[data-ui-theme='miaoyan'],
+html[data-ui-theme='miaoyan'] body {
+  --island-canvas: #ffffff;
+  --island-surface: #ffffff;
+  --island-sidebar: #fafafa;
+  --island-hover: #f0f0f0;
+  --island-segment: #f0f0f0;
+  --island-chip: #f5f5f5;
+  --island-code: #fafafa;
+  --island-hairline: #e8e8e8;
+  --island-ghost: #dddddd;
+  --island-text: #262626;
+  --island-text-secondary: #777777;
+  --island-text-muted: #999999;
+  --island-accent: #1c5d33;
+  --island-radius: 0px;
+  --island-radius-md: 8px;
+  --island-radius-sm: 6px;
+  --island-shadow: none;
+  --island-shadow-soft: none;
+  --window-pad: 0px;
+  --window-pad-y: 0px;
+  --window-pad-bottom: 0px;
+  --gutter: 0px;
+}
+html[data-ui-theme='miaoyan'] .windowShell {
+  background: #fff;
+}
+html[data-ui-theme='miaoyan'] .island-main {
+  padding: 0 !important;
+}
+html[data-ui-theme='miaoyan'] .island {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html[data-ui-theme='miaoyan'] .island--sidebar {
+  background: #fafafa;
+  border-right: 1px solid #e8e8e8;
+}
+html[data-ui-theme='miaoyan'] .island--editor {
+  border-right: 1px solid #e8e8e8;
+}
+html[data-ui-theme='miaoyan'] .island-gutter {
+  flex: 0 0 0px;
+  width: 0;
+}
+html[data-ui-theme='miaoyan'] .island-gutter__hit {
+  left: -6px;
+  right: -6px;
+}
+html[data-ui-theme='miaoyan'] .app-titlebar {
+  background: #fff;
+}
+html[data-ui-theme='miaoyan'] .app-menubar {
+  height: 28px;
+  padding: 0 22px;
+  gap: 2px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+html[data-ui-theme='miaoyan'] .app-menubar [class*='menuItem']:not([class*='Wrapper']) {
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 6px;
+  color: #262626;
+  font-family: var(--miaoyan-font);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.6px;
+}
+html[data-ui-theme='miaoyan'] .app-menubar [class*='menuItem']:not([class*='Wrapper']):hover,
+html[data-ui-theme='miaoyan'] .app-menubar [class*='menuItem']:not([class*='Wrapper'])[class*='active'] {
+  background: #ededed;
+  color: #262626;
+}
+html[data-ui-theme='miaoyan'] .island-sidebar__segment {
+  background: transparent;
+  border: 0;
+  padding: 0 0 8px;
+  gap: 6px;
+  justify-content: flex-start;
+}
+html[data-ui-theme='miaoyan'] .island-sidebar__segment-item {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #777;
+  font-size: 14px;
+  letter-spacing: 0.6px;
+}
+html[data-ui-theme='miaoyan'] .island-sidebar__segment-item[data-active='true'] {
+  background: #ededed;
+  color: #262626;
+  font-weight: 600;
+}
+html[data-ui-theme='miaoyan'] .file-tree-item[data-active='true'],
+html[data-ui-theme='miaoyan'] .file-tree-item.is-active {
+  background: rgba(0, 0, 0, 0.035) !important;
+  box-shadow: inset 2px 0 0 #1c5d33;
+}
+html[data-ui-theme='miaoyan'] .file-tree-item:hover:not([data-active='true']) {
+  background: rgba(0, 0, 0, 0.035) !important;
+}
+html[data-ui-theme='miaoyan'] .island--preview #write {
+  padding: 30px 34px 60px !important;
+}
+
+/* ---- 暖纸 ---- */
+html[data-ui-theme='warm-paper'],
+html[data-ui-theme='warm-paper'] body {
+  --island-canvas: #e8e1d4;
+  --island-surface: #fffcf5;
+  --island-sidebar: #f3ecde;
+  --island-hover: #ede3d2;
+  --island-segment: #e5dbc8;
+  --island-chip: #f3e9d8;
+  --island-code: #fbf4e7;
+  --island-hairline: #ded4c1;
+  --island-ghost: #cfc3ae;
+  --island-text: #241f18;
+  --island-text-secondary: #5f574b;
+  --island-text-muted: #8b8070;
+  --island-accent: #b4552f;
+  --island-radius: 6px;
+  --island-radius-md: 5px;
+  --island-radius-sm: 5px;
+  --island-shadow: none;
+  --island-shadow-soft: none;
+}
+html[data-ui-theme='warm-paper'] .app-titlebar {
+  border-bottom: 1px solid #dcd2c0;
+  background: transparent;
+}
+html[data-ui-theme='warm-paper'] .island {
+  border: 1px solid #ded4c1;
+  box-shadow: none;
+}
+html[data-ui-theme='warm-paper'] .island-sidebar__segment {
+  border: 1px solid #ded4c1;
+  border-radius: 6px;
+}
+html[data-ui-theme='warm-paper'] .island-sidebar__segment-item[data-active='true'] {
+  border-radius: 4px;
+  background: #fffcf5;
+}
+html[data-ui-theme='warm-paper'] .file-tree-item[data-active='true'],
+html[data-ui-theme='warm-paper'] .file-tree-item.is-active {
+  background: #eadcc6 !important;
+  box-shadow: inset 2px 0 0 #b4552f;
+}
+html[data-ui-theme='warm-paper'] .file-tree-item:hover:not([data-active='true']) {
+  background: #ede3d2 !important;
+}
+html[data-ui-theme='warm-paper'] .island--editor,
+html[data-ui-theme='warm-paper'] .island--preview {
+  --miaoyan-main-bg: #fffcf5;
+  --miaoyan-pane-bg: #fbf6ec;
+  --miaoyan-text: #241f18;
+  --miaoyan-secondary-text: #6a6053;
+  --miaoyan-title: #8e3b22;
+  --miaoyan-link: #a8522f;
+  --miaoyan-accent: #b4552f;
+  --miaoyan-selection: #eadcc6;
+}
+html[data-ui-theme='warm-paper'] .cm-editor,
+html[data-ui-theme='warm-paper'] .cm-editor .cm-scroller,
+html[data-ui-theme='warm-paper'] .cm-editor .cm-content {
+  background: #fffcf5 !important;
+  color: #241f18 !important;
+}
+html[data-ui-theme='warm-paper'] .preview-compat--miaoyan h1,
+html[data-ui-theme='warm-paper'] .preview-compat--miaoyan h2,
+html[data-ui-theme='warm-paper'] .preview-compat--miaoyan h3 {
+  color: #8e3b22 !important;
+}
+html[data-ui-theme='warm-paper'] .island--preview #write {
+  padding: 34px 40px 64px !important;
+}
+
+/* ---- 白昼 · 无缝分栏 ---- */
+html[data-ui-theme='daylight'],
+html[data-ui-theme='daylight'] body {
+  --island-canvas: #ffffff;
+  --island-surface: #ffffff;
+  --island-sidebar: #f7f7f4;
+  --island-hover: #f0f0ec;
+  --island-segment: #f1f1ed;
+  --island-chip: #f2f2ee;
+  --island-code: #f7f7f4;
+  --island-hairline: #e5e5e0;
+  --island-ghost: #d8d8d2;
+  --island-text: #17171a;
+  --island-text-secondary: #5c5c60;
+  --island-text-muted: #8a8a82;
+  --island-accent: #2b5ce6;
+  --island-radius: 0px;
+  --island-radius-md: 0px;
+  --island-radius-sm: 0px;
+  --island-shadow: none;
+  --island-shadow-soft: none;
+  --window-pad: 0px;
+  --window-pad-y: 0px;
+  --window-pad-bottom: 0px;
+  --gutter: 0px;
+}
+html[data-ui-theme='daylight'] .windowShell {
+  background: #fff;
+}
+html[data-ui-theme='daylight'] .island-main {
+  padding: 0 !important;
+}
+html[data-ui-theme='daylight'] .island {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html[data-ui-theme='daylight'] .island--sidebar {
+  border-right: 1px solid #e5e5e0;
+  background: #f7f7f4;
+}
+html[data-ui-theme='daylight'] .island--editor {
+  border-right: 1px solid #e5e5e0;
+}
+html[data-ui-theme='daylight'] .island-gutter {
+  flex: 0 0 0px;
+  width: 0;
+}
+html[data-ui-theme='daylight'] .island-gutter__hit {
+  left: -6px;
+  right: -6px;
+}
+html[data-ui-theme='daylight'] .app-titlebar {
+  border-bottom: 1px solid #e5e5e0;
+  background: #fff;
+}
+html[data-ui-theme='daylight'] .island-sidebar__segment {
+  background: #f1f1ed;
+  border-radius: 0;
+  padding: 2px;
+}
+html[data-ui-theme='daylight'] .island-sidebar__segment-item {
+  border-radius: 0;
+}
+html[data-ui-theme='daylight'] .island-sidebar__segment-item[data-active='true'] {
+  background: #fff;
+  box-shadow: inset 0 -2px 0 #2b5ce6;
+}
+html[data-ui-theme='daylight'] .file-tree-item {
+  border-radius: 0 !important;
+}
+html[data-ui-theme='daylight'] .file-tree-item[data-active='true'],
+html[data-ui-theme='daylight'] .file-tree-item.is-active {
+  background: #edf1ff !important;
+  box-shadow: inset 2px 0 0 #2b5ce6;
+}
+html[data-ui-theme='daylight'] .file-tree-item[data-active='true'] [class*='file-name'],
+html[data-ui-theme='daylight'] .file-tree-item.is-active [class*='file-name'] {
+  color: #1d3fae !important;
+}
+html[data-ui-theme='daylight'] .app-viewmode-switch button[data-active='true'] {
+  background: #edf1ff !important;
+  color: #2b5ce6 !important;
+  border-radius: 0;
+}
+html[data-ui-theme='daylight'] .island--preview #write {
+  padding: 52px 48px 80px !important;
+}
+
+/* ---- 夜读 · 灯下稿纸 ---- */
+html[data-ui-theme='night-paper'],
+html[data-ui-theme='night-paper'] body {
+  --island-canvas: #0d0c0b;
+  --island-surface: #1a1714;
+  --island-sidebar: #121110;
+  --island-hover: #221e19;
+  --island-segment: #221e19;
+  --island-chip: #2a251e;
+  --island-code: #201c17;
+  --island-hairline: #2e2922;
+  --island-ghost: #3b342b;
+  --island-text: #f3eee6;
+  --island-text-secondary: #b7aea1;
+  --island-text-muted: #9a9184;
+  --island-accent: #e0a458;
+  --island-radius: 10px;
+  --island-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --island-shadow-soft: none;
+}
+html[data-ui-theme='night-paper'] .windowShell,
+html[data-ui-theme='night-paper'] .app-titlebar {
+  background: #0d0c0b;
+}
+html[data-ui-theme='night-paper'] .app-titlebar {
+  border-bottom: 1px solid #2e2922;
+}
+html[data-ui-theme='night-paper'] .app-titlebar [class*='docName'] {
+  color: #f3eee6 !important;
+}
+html[data-ui-theme='night-paper'] .app-titlebar [class*='docName']:hover {
+  color: #e0a458 !important;
+}
+html[data-ui-theme='night-paper'] .island--sidebar {
+  --miaoyan-main-bg: #121110;
+  --miaoyan-pane-bg: #121110;
+  --miaoyan-text: #ede6da;
+  --miaoyan-secondary-text: #a79d8f;
+  --miaoyan-selection: #2b251e;
+  --miaoyan-accent: #e0a458;
+}
+html[data-ui-theme='night-paper'] .file-tree-item[data-active='true'],
+html[data-ui-theme='night-paper'] .file-tree-item.is-active {
+  background: #2a2318 !important;
+  box-shadow: inset 2px 0 0 #e0a458;
+}
+html[data-ui-theme='night-paper'] .file-tree-item[data-active='true'] [class*='file-name'],
+html[data-ui-theme='night-paper'] .file-tree-item.is-active [class*='file-name'] {
+  color: #e0a458 !important;
+}
+html[data-ui-theme='night-paper'] .file-tree-item:hover:not([data-active='true']) {
+  background: #221e19 !important;
+}
+html[data-ui-theme='night-paper'] .island--editor {
+  --miaoyan-main-bg: #1a1714;
+  --miaoyan-pane-bg: #1a1714;
+  --miaoyan-text: #ede6da;
+  --miaoyan-secondary-text: #a79d8f;
+  --miaoyan-editor-text: #ede6da;
+  --miaoyan-selection: #3a3022;
+}
+html[data-ui-theme='night-paper'] .cm-editor,
+html[data-ui-theme='night-paper'] .cm-editor .cm-scroller,
+html[data-ui-theme='night-paper'] .cm-editor .cm-content {
+  background: #1a1714 !important;
+  color: #ede6da !important;
+  caret-color: #e0a458;
+}
+html[data-ui-theme='night-paper'] .cm-md-heading { color: #d8b4fe !important; }
+html[data-ui-theme='night-paper'] .cm-md-list-marker { color: #c9a46a !important; }
+html[data-ui-theme='night-paper'] .cm-md-code-inline { color: #f0b36a !important; }
+html[data-ui-theme='night-paper'] .cm-md-strong { color: #f0b36a !important; }
+html[data-ui-theme='night-paper'] .cm-md-emphasis { color: #d8b4fe !important; }
+html[data-ui-theme='night-paper'] .cm-md-link-text { color: #7fd1c7 !important; }
+html[data-ui-theme='night-paper'] .cm-md-link-url { color: #8ab4f8 !important; }
+html[data-ui-theme='night-paper'] .cm-md-math-token { color: #d8b4fe !important; }
+html[data-ui-theme='night-paper'] .island--preview {
+  background: #f7f2e7;
+  --miaoyan-main-bg: #f7f2e7;
+  --miaoyan-pane-bg: #f3eddf;
+  --miaoyan-text: #241f18;
+  --miaoyan-secondary-text: #5f574c;
+  --miaoyan-title: #8a4a24;
+  --miaoyan-link: #9a5b25;
+  --miaoyan-accent: #9a5b25;
+  --miaoyan-selection: #e9e0cf;
+}
+html[data-ui-theme='night-paper'] .island--preview,
+html[data-ui-theme='night-paper'] .island--preview .preview-compat,
+html[data-ui-theme='night-paper'] .island--preview #write,
+html[data-ui-theme='night-paper'] .island--preview .prism-scrollbar-host {
+  background: #f7f2e7 !important;
+}
+html[data-ui-theme='night-paper'] .app-viewmode-switch button[data-active='true'] {
+  background: #2a2318 !important;
+  color: #e0a458 !important;
+}
+html[data-ui-theme='night-paper'] .island--preview #write {
+  padding: 42px 44px 72px !important;
+}

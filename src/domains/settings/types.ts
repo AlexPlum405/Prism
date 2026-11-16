@@ -1,6 +1,12 @@
 import type { LocalePreference } from '../i18n';
 
 export type AppearanceMode = 'light' | 'dark' | 'auto';
+export const UI_THEMES = ['islands', 'miaoyan', 'warm-paper', 'daylight', 'night-paper'] as const;
+export type UiTheme = (typeof UI_THEMES)[number];
+
+export function isUiTheme(value: unknown): value is UiTheme {
+  return typeof value === 'string' && UI_THEMES.includes(value as UiTheme);
+}
 export type { LocalePreference };
 export type DefaultViewMode = 'edit' | 'split' | 'preview';
 export type ShortcutStyle = 'auto' | 'mac' | 'windows';
@@ -110,6 +116,7 @@ export interface SettingsState {
   settingsVersion: number;
   locale: LocalePreference;
   theme: AppearanceMode;
+  uiTheme: UiTheme;
   contentTheme: ContentTheme;
   fontSize: number;
   editorFontFamily: string;
@@ -164,6 +171,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   settingsVersion: CURRENT_SETTINGS_VERSION,
   locale: 'auto',
   theme: 'auto',
+  uiTheme: 'islands',
   contentTheme: 'miaoyan',
   fontSize: 16,
   editorFontFamily: 'Cascadia Code, Consolas, monospace',

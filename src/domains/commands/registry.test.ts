@@ -118,6 +118,7 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       themeRegistry: [],
       setLocale: vi.fn(),
       setTheme: vi.fn(),
+      setUiTheme: vi.fn(),
       setContentTheme: vi.fn(),
       reloadThemeRegistry: vi.fn(),
       setFontSize: vi.fn(),

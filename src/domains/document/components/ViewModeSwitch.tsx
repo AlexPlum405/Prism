@@ -55,6 +55,7 @@ export function ViewModeSwitch({
     <div
       className={[
         styles.container,
+        'app-viewmode-switch',
         flushStart ? styles.flushStart : '',
         variant === 'titlebarBorderless' ? styles.titlebarBorderless : '',
         className,
@@ -67,6 +68,7 @@ export function ViewModeSwitch({
           <button
             key={m.key}
             className={`${styles.btn} ${viewMode === m.key ? styles.active : ''}`}
+            data-active={viewMode === m.key ? 'true' : undefined}
             onClick={() => setViewMode(m.key)}
             title={label}
             aria-label={label}

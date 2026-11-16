@@ -12,6 +12,7 @@ import {
   CitationSettings,
   CustomFont,
   DocxFontPolicy,
+  UiTheme,
   ExportDefaultLocation,
   ExportHistoryEntry,
   ExportTemplateId,
@@ -24,6 +25,7 @@ import {
   RecentFileEntry,
 } from './types';
 import { applyLocaleRuntime, t } from '../i18n';
+import { applyUiTheme, getUiThemeAppearance } from './uiTheme';
 import {
   normalizeCitationSettings,
   normalizeExportHistory,
@@ -168,6 +170,7 @@ interface SettingsStore extends SettingsState {
   themeRegistry: ThemeRegistryEntry[];
   setLocale: (locale: LocalePreference) => void;
   setTheme: (theme: AppearanceMode) => void;
+  setUiTheme: (uiTheme: UiTheme) => void;
   setContentTheme: (theme: ContentTheme) => Promise<void>;
   reloadThemeRegistry: () => Promise<ThemeRegistryEntry[]>;
   setFontSize: (size: number) => void;
@@ -233,6 +236,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setTheme: (theme) => {
     set({ theme });
     applyAppearanceTheme(theme);
+    get().saveSettings();
+  },
+
+  setUiTheme: (uiTheme) => {
+    const fixedMode = getUiThemeAppearance(uiTheme);
+    set({ uiTheme });
+    applyAppearanceTheme(fixedMode ?? get().theme);
+    applyUiTheme(uiTheme);
     get().saveSettings();
   },
 
@@ -602,6 +613,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         contentTheme = DEFAULT_SETTINGS.contentTheme;
       }
 
+      const effectiveTheme = getUiThemeAppearance(settings.uiTheme) ?? settings.theme;
+
       set((state) => ({
         ...settings,
         contentTheme,
@@ -610,12 +623,13 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       }));
 
       applyLocaleRuntime(settings.locale);
-      applyAppearanceTheme(settings.theme);
+      applyAppearanceTheme(effectiveTheme);
+      applyUiTheme(settings.uiTheme);
       await applyContentTheme(contentTheme);
       void registerLoadedCustomFonts(settings.customFonts);
 
       // 监听系统主题变化
-      if (settings.theme === 'auto') {
+      if (!getUiThemeAppearance(settings.uiTheme) && settings.theme === 'auto') {
         const mediaQuery = typeof window.matchMedia === 'function'
           ? window.matchMedia('(prefers-color-scheme: dark)')
           : null;
@@ -665,6 +679,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
       applyLocaleRuntime(DEFAULT_SETTINGS.locale);
       applyAppearanceTheme(DEFAULT_SETTINGS.theme);
+      applyUiTheme(DEFAULT_SETTINGS.uiTheme);
       const themeRegistry = await initializeThemeRegistry().catch(() => []);
       set((state) => ({
         themeRegistry,
@@ -693,6 +708,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         settingsVersion,
         locale,
         theme,
+        uiTheme,
         contentTheme,
         fontSize,
         editorFontFamily,
@@ -725,6 +741,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           settingsVersion,
           locale,
           theme,
+          uiTheme,
           contentTheme,
           fontSize,
           editorFontFamily,

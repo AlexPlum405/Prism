@@ -15,6 +15,7 @@ export interface AppSettingsSnapshot {
   recentFiles: SettingsStoreState['recentFiles'];
   shortcutStyle: SettingsStoreState['shortcutStyle'];
   themeRegistryVersion: SettingsStoreState['themeRegistryVersion'];
+  uiTheme: SettingsStoreState['uiTheme'];
   wordWrap: SettingsStoreState['wordWrap'];
 }
 
@@ -33,6 +34,7 @@ export function useAppStoreSnapshotModel() {
     recentFiles: useSettingsStore((state) => state.recentFiles),
     shortcutStyle: useSettingsStore((state) => state.shortcutStyle),
     themeRegistryVersion: useSettingsStore((state) => state.themeRegistryVersion),
+    uiTheme: useSettingsStore((state) => state.uiTheme),
     wordWrap: useSettingsStore((state) => state.wordWrap),
   };
 

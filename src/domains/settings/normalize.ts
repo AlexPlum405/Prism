@@ -21,12 +21,18 @@ import {
   type RecentFileEntry,
   type SettingsState,
   type ShortcutStyle,
+  type UiTheme,
   isContentTheme,
+  isUiTheme,
 } from './types';
 import { normalizeLocalePreference } from '../i18n';
 
 function isAppearanceMode(value: unknown): value is AppearanceMode {
   return value === 'light' || value === 'dark' || value === 'auto';
+}
+
+function normalizeUiTheme(value: unknown): UiTheme {
+  return isUiTheme(value) ? value : DEFAULT_SETTINGS.uiTheme;
 }
 
 function isDefaultViewMode(value: unknown): value is DefaultViewMode {
@@ -371,6 +377,7 @@ export function normalizeSettings(saved: Partial<SettingsState>): SettingsState 
     settingsVersion: DEFAULT_SETTINGS.settingsVersion,
     locale: normalizeLocalePreference(saved.locale),
     theme: isAppearanceMode(saved.theme) ? saved.theme : DEFAULT_SETTINGS.theme,
+    uiTheme: normalizeUiTheme(saved.uiTheme),
     contentTheme: isContentTheme(saved.contentTheme)
       ? saved.contentTheme
       : DEFAULT_SETTINGS.contentTheme,

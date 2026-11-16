@@ -14,6 +14,8 @@ import {
 interface UseIslandLayoutOptions {
   paneCount: DocumentPaneCount;
   sidebarVisible: boolean;
+  /** 白昼主题：去掉 18px 外留白与 16px 栏缝，三栏贴边。 */
+  flushLayout?: boolean;
 }
 
 interface GhostState {
@@ -28,7 +30,9 @@ interface GhostState {
  * 一起让路，但让路结果不写回偏好，所以把窗口拉宽后岛宽会回到用户拖出的值，
  * 而不是停在被压窄的数字上。
  */
-export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOptions) {
+export function useIslandLayout({ paneCount, sidebarVisible, flushLayout = false }: UseIslandLayoutOptions) {
+  const windowPadX = flushLayout ? 0 : WINDOW_PAD_X;
+  const gutterWidth = flushLayout ? 0 : GUTTER_W;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [available, setAvailable] = useState(0);
   const [preference, setPreference] = useState<IslandPreference>(createIslandPreference);
@@ -50,10 +54,11 @@ export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOp
   }, []);
 
   const options = useMemo(() => ({
-    available: Math.max(0, available - WINDOW_PAD_X * 2),
+    available: Math.max(0, available - windowPadX * 2),
     paneCount,
     sidebarVisible,
-  }), [available, paneCount, sidebarVisible]);
+    gutterWidth,
+  }), [available, paneCount, sidebarVisible, windowPadX, gutterWidth]);
 
   const widths = useMemo(() => fitIslandWidths(preference, options), [preference, options]);
 
@@ -63,18 +68,18 @@ export function useIslandLayout({ paneCount, sidebarVisible }: UseIslandLayoutOp
     if (!sidebarVisible || widths.sidebar <= 0) return;
     document.documentElement.style.setProperty(
       '--island-sidebar-edge',
-      `${WINDOW_PAD_X + widths.sidebar}px`,
+      `${windowPadX + widths.sidebar}px`,
     );
-  }, [sidebarVisible, widths.sidebar]);
+  }, [sidebarVisible, widths.sidebar, windowPadX]);
 
   const startSidebarDrag = useCallback(() => {
-    setGhost({ x: WINDOW_PAD_X + widths.sidebar, label: `原边界 ${Math.round(WINDOW_PAD_X + widths.sidebar)}` });
-  }, [widths.sidebar]);
+    setGhost({ x: windowPadX + widths.sidebar, label: `原边界 ${Math.round(windowPadX + widths.sidebar)}` });
+  }, [widths.sidebar, windowPadX]);
 
   const startDocumentDrag = useCallback(() => {
-    const x = WINDOW_PAD_X + (sidebarVisible ? widths.sidebar + GUTTER_W : 0) + widths.editor;
+    const x = windowPadX + (sidebarVisible ? widths.sidebar + gutterWidth : 0) + widths.editor;
     setGhost({ x, label: `原边界 ${Math.round(x)}` });
-  }, [sidebarVisible, widths.editor, widths.sidebar]);
+  }, [sidebarVisible, widths.editor, widths.sidebar, windowPadX, gutterWidth]);
 
   const resizeSidebarTo = useCallback((next: number) => {
     setPreference((prev) => resizeSidebarPreference(prev, next));

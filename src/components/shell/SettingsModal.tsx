@@ -13,6 +13,7 @@ import type {
   PdfPaper,
   PreviewChartCopyDefault,
   ShortcutStyle,
+  UiTheme,
 } from '../../domains/settings/types';
 import { LOCALE_PREFERENCES, t as translate, useI18n, type I18nKey } from '../../domains/i18n';
 import {
@@ -582,6 +583,23 @@ export function SettingsModal({ initialSection = 'general', visible, onClose }: 
           {activeSection === 'appearance' && (
           <div className="settings-group">
             <h4>{t('settings.section.appearance')}</h4>
+            <div className="settings-row">
+              <div>
+                <div className="row-label">{t('settings.uiTheme.label')}</div>
+                <div className="row-hint">{t('settings.uiTheme.hint')}</div>
+              </div>
+              <select
+                value={settings.uiTheme}
+                onChange={(e) => settings.setUiTheme(e.target.value as UiTheme)}
+                style={selectStyle}
+              >
+                <option value="islands">{t('settings.uiTheme.islands')}</option>
+                <option value="miaoyan">{t('settings.uiTheme.miaoyan')}</option>
+                <option value="warm-paper">{t('settings.uiTheme.warmPaper')}</option>
+                <option value="daylight">{t('settings.uiTheme.daylight')}</option>
+                <option value="night-paper">{t('settings.uiTheme.nightPaper')}</option>
+              </select>
+            </div>
             <div className="settings-row">
               <div>
                 <div className="row-label">{t('settings.contentTheme.label')}</div>

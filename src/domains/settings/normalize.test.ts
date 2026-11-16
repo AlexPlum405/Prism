@@ -15,6 +15,7 @@ describe('normalizeSettings', () => {
     });
 
     expect(settings.theme).toBe('dark');
+    expect(settings.uiTheme).toBe(DEFAULT_SETTINGS.uiTheme);
     expect(settings.settingsVersion).toBe(DEFAULT_SETTINGS.settingsVersion);
     expect(settings.fontSize).toBe(18);
     expect(settings.editorLineHeight).toBe(DEFAULT_SETTINGS.editorLineHeight);
@@ -27,6 +28,13 @@ describe('normalizeSettings', () => {
     expect(settings.shortcutStyle).toBe(DEFAULT_SETTINGS.shortcutStyle);
     expect(settings.locale).toBe(DEFAULT_SETTINGS.locale);
     expect(settings.wordWrap).toBe(DEFAULT_SETTINGS.wordWrap);
+  });
+
+  it('normalizes the interface theme', () => {
+    expect(normalizeSettings({ uiTheme: 'night-paper' }).uiTheme).toBe('night-paper');
+    expect(normalizeSettings({ uiTheme: 'miaoyan' }).uiTheme).toBe('miaoyan');
+    expect(normalizeSettings({ uiTheme: 'sepia-shell' } as unknown as Partial<SettingsState>).uiTheme)
+      .toBe(DEFAULT_SETTINGS.uiTheme);
   });
 
   it('upgrades mixed legacy settings to the current schema without leaking old fields', () => {

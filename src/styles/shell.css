@@ -22,6 +22,14 @@ body {
 
 .app { display: flex; flex-direction: column; height: 100%; }
 
+/* 标题栏 + 菜单栏的组合头；Miaoyan 主题需要在标题栏下恢复独立菜单栏。 */
+.app-chrome {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
 button {
   font-family: inherit;
   color: inherit;

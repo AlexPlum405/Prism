@@ -21,6 +21,13 @@ describe('islandLayout', () => {
     expect(widths.sidebar + widths.editor + widths.preview + 2 * GUTTER_W).toBe(1404);
   });
 
+  it('supports a flush layout with zero gutters', () => {
+    const options = { ...fullWindow, gutterWidth: 0 };
+    expect(getIslandBudget(options)).toBe(1404);
+    const widths = fitIslandWidths(pref(), options);
+    expect(widths.sidebar + widths.editor + widths.preview).toBe(1404);
+  });
+
   it('reserves one gutter per seam', () => {
     expect(getIslandBudget(fullWindow)).toBe(1372);
     expect(getIslandBudget({ ...fullWindow, paneCount: 1 })).toBe(1388);

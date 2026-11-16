@@ -72,6 +72,19 @@ describe('SettingsModal', () => {
     expect(screen.getByRole('dialog', { name: '设置中心' })).toBeInTheDocument();
   });
 
+  it('switches the interface theme from appearance settings', () => {
+    const setUiTheme = vi.fn((uiTheme) => useSettingsStore.setState({ uiTheme }));
+    useSettingsStore.setState({ setUiTheme });
+    render(<SettingsModal visible initialSection="appearance" onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByDisplayValue('默认浮岛'), {
+      target: { value: 'daylight' },
+    });
+
+    expect(setUiTheme).toHaveBeenCalledWith('daylight');
+    expect(screen.getByDisplayValue('白昼无缝')).toBeInTheDocument();
+  });
+
   it('persists the interface language from general settings', () => {
     render(<SettingsModal visible onClose={vi.fn()} />);
 

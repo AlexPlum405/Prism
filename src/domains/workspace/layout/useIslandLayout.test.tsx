@@ -8,8 +8,8 @@ const CLIENT_WIDTH = 1476;
 type LayoutApi = ReturnType<typeof useIslandLayout>;
 let api: LayoutApi | null = null;
 
-function Harness({ sidebarVisible }: { sidebarVisible: boolean }) {
-  const layout = useIslandLayout({ paneCount: 2, sidebarVisible });
+function Harness({ sidebarVisible, flushLayout = false }: { sidebarVisible: boolean; flushLayout?: boolean }) {
+  const layout = useIslandLayout({ paneCount: 2, sidebarVisible, flushLayout });
   api = layout;
   return <div ref={layout.containerRef} />;
 }
@@ -43,6 +43,12 @@ describe('useIslandLayout 侧栏浮岛右缘', () => {
     act(() => api?.resizeSidebarTo(320));
     expect(api?.widths.sidebar).toBe(320);
     expect(edge()).toBe('338px');
+  });
+
+  it('白昼主题去掉外留白后，右缘从 0 起算', () => {
+    render(<Harness sidebarVisible flushLayout />);
+    expect(api?.widths.sidebar).toBe(268);
+    expect(edge()).toBe('268px');
   });
 
   it('收起侧栏时冻结右缘，重新展开后才恢复跟随', () => {

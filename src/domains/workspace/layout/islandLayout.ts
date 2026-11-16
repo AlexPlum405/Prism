@@ -63,12 +63,14 @@ export interface FitOptions {
   available: number;
   paneCount: DocumentPaneCount;
   sidebarVisible: boolean;
+  /** 栏缝宽度；白昼主题把它收到 0。默认沿用 16。 */
+  gutterWidth?: number;
 }
 
 /** 计算给三块岛分配的总宽（已扣掉栏缝）。 */
-export function getIslandBudget({ available, paneCount, sidebarVisible }: FitOptions) {
+export function getIslandBudget({ available, paneCount, sidebarVisible, gutterWidth = GUTTER_W }: FitOptions) {
   const gutters = (sidebarVisible ? 1 : 0) + (paneCount === 2 ? 1 : 0);
-  return Math.max(0, available - gutters * GUTTER_W);
+  return Math.max(0, available - gutters * gutterWidth);
 }
 
 /** 把偏好换算成当前窗口下的实际像素宽。 */

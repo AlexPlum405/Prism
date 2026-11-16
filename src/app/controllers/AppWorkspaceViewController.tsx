@@ -1,5 +1,6 @@
 import type { MouseEventHandler, RefObject } from 'react';
 import { useMemo } from 'react';
+import { useSettingsStore } from '../../domains/settings/store';
 import { ContextMenu } from '../../components/shell/ContextMenu';
 import { DocumentView } from '../../domains/document/components/DocumentView';
 import type { EditorPaneHandle } from '../../domains/editor/components/EditorPane';
@@ -72,7 +73,12 @@ export function AppWorkspaceViewController({
   // 没有文档时侧栏岛照旧显示（老版本也是这个行为）：否则打开应用先看到一整片空画布。
   const sidebarVisible = Boolean(workspace.sidebarVisible);
 
-  const layout = useIslandLayout({ paneCount, sidebarVisible });
+  const uiTheme = useSettingsStore((state) => state.uiTheme);
+  const layout = useIslandLayout({
+    paneCount,
+    sidebarVisible,
+    flushLayout: uiTheme === 'daylight' || uiTheme === 'miaoyan',
+  });
 
   const workspaceLabel = useMemo(() => {
     const root = workspace.rootPath;
