@@ -56,5 +56,15 @@ export function createWorkspaceCommands(): CommandDefinition[] {
       enabled: canOpenRelationGraph,
       run: (context) => context.openRelationGraph?.(),
     },
+    {
+      id: 'showDocumentDiagnostics',
+      category: 'view',
+      keywords: ['diagnostics', 'problems', '诊断', '问题', 'error'],
+      enabled: (context) => Boolean(
+        context.documentStore.currentDocument
+        && context.documentStore.currentDocument.profile?.kind !== 'text',
+      ),
+      run: (context) => context.openDocumentDiagnostics?.(),
+    },
   ] satisfies CommandDefinition[];
 }

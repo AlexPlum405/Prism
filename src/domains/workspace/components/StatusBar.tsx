@@ -3,9 +3,9 @@ import type { DocumentProfileKind, WritingStats } from '../services';
 import { formatLocalizedNumber, t, useI18n } from '../../i18n';
 import type { ExportFeedbackState } from '../../../hooks/useExportTaskUi';
 
-/* 状态区只放只读信息：字数、诊断、排版建议，以及导出的进度与结果。
-   关系图谱 / 专注模式 / 导出这三个操作统一走菜单（导航 / 视图 / 导出），
-   另有快捷键和命令面板兜底，标题栏右侧不再摆第二排工具栏。
+/* 状态区只放只读信息：字数、排版建议，以及导出的进度与结果。
+   文档诊断统一走菜单（视图 → 文档诊断）与命令面板；关系图谱 / 专注模式 /
+   导出也都在菜单里，标题栏右侧不再摆第二排工具栏或错误计数。
    注意：导出进度与结果反馈不是入口，删掉按钮后仍必须保留，否则从菜单
    发起的导出卡住或失败时用户看不到原因。 */
 interface StatusBarProps {
@@ -14,9 +14,6 @@ interface StatusBarProps {
   cursor: { line: number; column: number };
   /** 仅用于判断是否为纯文本文稿（纯文本不显示排版诊断入口），不展示类型名。 */
   documentProfileKind?: DocumentProfileKind;
-  linkIssueCount?: number;
-  linkIssueTitle?: string;
-  onLinkDiagnosticsClick?: () => void;
   backlinkCount?: number;
   onBacklinksClick?: () => void;
   onDocumentPropertiesClick?: () => void;
@@ -40,9 +37,6 @@ export function StatusBar({
   selectionStats,
   cursor,
   documentProfileKind,
-  linkIssueCount = 0,
-  linkIssueTitle,
-  onLinkDiagnosticsClick,
   typographyIssueCount = 0,
   typographyIssueTitle,
   onTypographyDiagnosticsClick,
@@ -75,15 +69,6 @@ export function StatusBar({
       </div>
 
       <div className={styles.right}>
-        {linkIssueCount > 0 && (
-          <button
-            className={styles.diagnostic}
-            title={linkIssueTitle ?? t('status.documentDiagnostics')}
-            onClick={onLinkDiagnosticsClick}
-          >
-            ERROR {linkIssueCount}
-          </button>
-        )}
         {documentProfileKind !== 'text' && onTypographyDiagnosticsClick && (
           <button
             className={`${styles.diagnostic} ${styles.typographyDiagnostic}`}

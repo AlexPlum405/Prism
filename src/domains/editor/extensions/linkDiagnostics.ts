@@ -101,15 +101,27 @@ function normalizeLinkScanContext(context: LinkScanContext): NormalizedLinkScanC
   };
 }
 
+/** 工作区索引只收可打开的文档类型；把同一目标的所有可能绝对路径交给磁盘复核。 */
+export function getLinkTargetPathCandidates(
+  targetPath: string,
+  context: Pick<LinkScanContext, 'currentPath' | 'workspaceRoot'>,
+): string[] {
+  const candidates = new Set<string>();
+  candidates.add(targetPath);
+  if (context.currentPath) candidates.add(joinPath(dirname(context.currentPath), targetPath));
+  if (context.workspaceRoot) candidates.add(joinPath(context.workspaceRoot, targetPath));
+  return [...candidates];
+}
+
+export function getLinkTargetPath(target: string): string {
+  return safeDecodeURIComponent(stripTargetMetadata(target).path);
+}
+
 function targetExists(targetPath: string, context: NormalizedLinkScanContext): boolean {
   if (!context.normalizedWorkspaceFiles?.size) return true;
 
-  const candidates = new Set<string>();
-  candidates.add(normalizePath(targetPath));
-  if (context.currentPath) candidates.add(normalizePath(joinPath(dirname(context.currentPath), targetPath)));
-  if (context.workspaceRoot) candidates.add(normalizePath(joinPath(context.workspaceRoot, targetPath)));
-
-  return [...candidates].some((candidate) => context.normalizedWorkspaceFiles?.has(candidate));
+  return getLinkTargetPathCandidates(targetPath, context)
+    .some((candidate) => context.normalizedWorkspaceFiles?.has(normalizePath(candidate)));
 }
 
 export function scanMarkdownLinks(content: string, context: LinkScanContext = {}): LinkDiagnostic[] {

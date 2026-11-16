@@ -307,6 +307,7 @@ fn build_app_menu(
             Some("CmdOrCtrl+KeyB"),
         )?)
         .item(&command_menu_item(handle, "showOutline", &menu_label(labels, "showOutline", "大纲"), None)?)
+        .item(&command_menu_item(handle, "showDocumentDiagnostics", &menu_label(labels, "showDocumentDiagnostics", "文档诊断"), None)?)
         .separator()
         .item(&command_menu_item(
             handle,
@@ -404,6 +405,7 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
             "previewMode" => emit_frontend_command(app, "previewMode"),
             "toggleSidebar" => emit_frontend_command(app, "toggleSidebar"),
             "showOutline" => emit_frontend_command(app, "showOutline"),
+            "showDocumentDiagnostics" => emit_frontend_command(app, "showDocumentDiagnostics"),
             "actualSize" => emit_frontend_command(app, "actualSize"),
             "zoomIn" => emit_frontend_command(app, "zoomIn"),
             "zoomOut" => emit_frontend_command(app, "zoomOut"),

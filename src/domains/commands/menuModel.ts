@@ -241,6 +241,7 @@ const menuModel: MenuModel = {
     { command: 'typewriterMode' },
     { command: 'wordWrap' },
     { command: 'statusBar' },
+    { command: 'showDocumentDiagnostics' },
     { type: 'separator' },
     {
       label: 'theme',

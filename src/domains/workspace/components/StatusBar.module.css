@@ -42,7 +42,7 @@
   gap: 10px;
 }
 
-/* 诊断 / 排版入口：与菜单项一样，hover 只变字色 */
+/* 排版入口：与菜单项一样，hover 只变字色 */
 .diagnostic {
   height: 22px;
   padding: 0;

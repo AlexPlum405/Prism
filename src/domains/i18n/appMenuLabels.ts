@@ -34,6 +34,7 @@ export const NATIVE_MENU_ACTIONS = [
   'previewMode',
   'toggleSidebar',
   'showOutline',
+  'showDocumentDiagnostics',
   'actualSize',
   'zoomIn',
   'zoomOut',

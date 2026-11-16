@@ -4,7 +4,10 @@ import { flattenFiles } from '../domains/workspace/services';
 import type { useDocumentStore } from '../domains/document/store';
 import {
   createMarkdownLinkWorkspaceFileSet,
+  getLinkTargetPath,
+  getLinkTargetPathCandidates,
   scanMarkdownLinks,
+  type LinkDiagnostic,
 } from '../domains/editor/extensions/linkDiagnostics';
 import { scanMarkdownImageDiagnostics, type ImageDiagnostic } from '../domains/editor/extensions/imageDiagnostics';
 import { scanHeadingAnchorDiagnostics } from '../domains/editor/extensions/headingDiagnostics';
@@ -37,6 +40,7 @@ export function useDocumentDiagnosticsModel({
   rootPath,
 }: UseDocumentDiagnosticsModelInput) {
   const [linkDiagnosticsVisible, setLinkDiagnosticsVisible] = useState(false);
+  const [manualDiagnosticsOpen, setManualDiagnosticsOpen] = useState(false);
   const [imageDiagnostics, setImageDiagnostics] = useState<ImageDiagnostic[]>([]);
   const [renderDiagnostics, setRenderDiagnostics] = useState<PrismDiagnostic[]>([]);
   const [preflightDiagnostics, setPreflightDiagnostics] = useState<PrismDiagnostic[] | null>(null);
@@ -62,6 +66,72 @@ export function useDocumentDiagnosticsModel({
       workspaceRoot: rootPath,
     });
   }, [currentDocument?.content, currentDocument?.path, normalizedWorkspaceFiles, rootPath, supportsMarkdownDiagnostics]);
+
+  /* 工作区文件树只索引可打开的文档类型，LICENSE、图片等真实存在的文件不在其中。
+     索引未命中时再按绝对路径查一次磁盘，避免把「不在索引里」当成「文件不存在」。
+     用目标集合的内容签名做依赖，文件树引用变化时不会把复核结果反复重置。 */
+  const missingLinkTargetsKey = useMemo(() => [...new Set(
+    linkDiagnostics
+      .filter((diagnostic) => diagnostic.kind === 'missing-file')
+      .map((diagnostic) => diagnostic.target),
+  )].join('\u0000'), [linkDiagnostics]);
+  const [diskExistingLinkTargets, setDiskExistingLinkTargets] = useState<{
+    key: string;
+    targets: Set<string>;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const missingTargets = missingLinkTargetsKey ? missingLinkTargetsKey.split('\u0000') : [];
+    if (missingTargets.length === 0) {
+      setDiskExistingLinkTargets({ key: missingLinkTargetsKey, targets: new Set() });
+      return () => { cancelled = true; };
+    }
+
+    const timer = window.setTimeout(() => {
+      void Promise.all(missingTargets.map(async (target) => {
+        const candidates = getLinkTargetPathCandidates(getLinkTargetPath(target), {
+          currentPath: currentDocument?.path || undefined,
+          workspaceRoot: rootPath,
+        });
+        let answered = false;
+        for (const candidate of candidates) {
+          try {
+            if (await existsPath(candidate)) return target;
+            answered = true;
+          } catch {
+            // 单个候选查询失败时继续尝试其余候选
+          }
+        }
+        // 全部查询失败时不臆断文件缺失，宁可漏报也不误报
+        return answered ? null : target;
+      })).then((existingTargets) => {
+        if (!cancelled) {
+          setDiskExistingLinkTargets({
+            key: missingLinkTargetsKey,
+            targets: new Set(existingTargets.filter((target): target is string => target !== null)),
+          });
+        }
+      });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [currentDocument?.path, existsPath, missingLinkTargetsKey, rootPath]);
+
+  const confirmedLinkDiagnostics = useMemo<LinkDiagnostic[]>(() => {
+    const diskTargets = diskExistingLinkTargets?.key === missingLinkTargetsKey
+      ? diskExistingLinkTargets.targets
+      : null;
+    if (diskTargets === null) {
+      return linkDiagnostics.filter((diagnostic) => diagnostic.kind !== 'missing-file');
+    }
+    return linkDiagnostics.filter(
+      (diagnostic) => diagnostic.kind !== 'missing-file' || !diskTargets.has(diagnostic.target),
+    );
+  }, [diskExistingLinkTargets, linkDiagnostics, missingLinkTargetsKey]);
 
   const headingDiagnostics = useMemo(
     () => currentDocument && supportsMarkdownDiagnostics ? scanHeadingAnchorDiagnostics(currentDocument.content) : [],
@@ -123,32 +193,35 @@ export function useDocumentDiagnosticsModel({
   );
 
   const documentDiagnostics = useMemo(() => [
-    ...linkDiagnosticsToPrismDiagnostics(linkDiagnostics),
+    ...linkDiagnosticsToPrismDiagnostics(confirmedLinkDiagnostics),
     ...headingDiagnosticsToPrismDiagnostics(headingDiagnostics),
     ...imageDiagnosticsToPrismDiagnostics(imageDiagnostics),
     ...renderDiagnostics,
     ...tableDiagnosticsToPrismDiagnostics(tableDiagnostics),
-  ], [headingDiagnostics, imageDiagnostics, linkDiagnostics, renderDiagnostics, tableDiagnostics]);
+  ], [confirmedLinkDiagnostics, headingDiagnostics, imageDiagnostics, renderDiagnostics, tableDiagnostics]);
 
   const actionableDiagnostics = useMemo(
     () => getActionableErrorDiagnostics(documentDiagnostics),
     [documentDiagnostics],
   );
 
-  const handleLinkDiagnosticsClick = useCallback(() => {
+  const openDocumentDiagnostics = useCallback(() => {
     if (!supportsMarkdownDiagnostics) return;
-    if (actionableDiagnostics.length === 0) return;
+    setPreflightDiagnostics(null);
+    setManualDiagnosticsOpen(true);
     setLinkDiagnosticsVisible(true);
-  }, [actionableDiagnostics.length, supportsMarkdownDiagnostics]);
+  }, [supportsMarkdownDiagnostics]);
 
   const handleSelectDocumentDiagnostic = useCallback((line: number) => {
     setLinkDiagnosticsVisible(false);
+    setManualDiagnosticsOpen(false);
     setPreflightDiagnostics(null);
     jumpToLine(line);
   }, [jumpToLine]);
 
   const closeDocumentDiagnostics = useCallback(() => {
     setLinkDiagnosticsVisible(false);
+    setManualDiagnosticsOpen(false);
     setPreflightDiagnostics(null);
   }, []);
 
@@ -156,18 +229,20 @@ export function useDocumentDiagnosticsModel({
     return onAppEvent('diagnostics.open', ({ diagnostics }) => {
       if (!supportsMarkdownDiagnostics) return;
       if (diagnostics) setPreflightDiagnostics(diagnostics);
+      setManualDiagnosticsOpen(false);
       setLinkDiagnosticsVisible(true);
     });
   }, [supportsMarkdownDiagnostics]);
 
   useEffect(() => {
     if (
-      linkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0
+      !manualDiagnosticsOpen
+      && confirmedLinkDiagnostics.length + imageDiagnostics.length + headingDiagnostics.length + renderDiagnostics.length === 0
       && !preflightDiagnostics
     ) {
       setLinkDiagnosticsVisible(false);
     }
-  }, [headingDiagnostics.length, imageDiagnostics.length, linkDiagnostics.length, preflightDiagnostics, renderDiagnostics.length]);
+  }, [confirmedLinkDiagnostics.length, headingDiagnostics.length, imageDiagnostics.length, manualDiagnosticsOpen, preflightDiagnostics, renderDiagnostics.length]);
 
   useEffect(() => {
     setPreflightDiagnostics(null);
@@ -205,13 +280,12 @@ export function useDocumentDiagnosticsModel({
     closeDocumentDiagnostics,
     displayedDiagnostics: preflightDiagnostics ?? actionableDiagnostics,
     documentDiagnostics,
-    firstActionableDiagnostic: actionableDiagnostics[0] ?? null,
     firstTypographyDiagnostic: typographyDiagnostics[0] ?? null,
-    handleLinkDiagnosticsClick,
     handleSelectDocumentDiagnostic,
     handleSelectTypographyDiagnostic,
     handleTypographyDiagnosticsClick,
     linkDiagnosticsVisible,
+    openDocumentDiagnostics,
     setTypographyDiagnosticsVisible,
     typographyDiagnostics,
     typographyDiagnosticsVisible,

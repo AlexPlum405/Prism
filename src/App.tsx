@@ -223,6 +223,7 @@ function App() {
     openAbout,
     openBacklinks: documentInsight.openBacklinks,
     openDocumentLinks: documentInsight.openDocumentLinks,
+    openDocumentDiagnostics: documentInsight.openDocumentDiagnostics,
     openDocumentProperties,
     openQuickOpen,
     openRelationGraph: documentInsight.openRelationGraph,
@@ -275,9 +276,6 @@ function App() {
               writingStats={writingStats}
               selectionStats={selectionWritingStats}
               cursor={cursor}
-              linkIssueCount={documentInsight.actionableDiagnostics.length}
-              linkIssueTitle={documentInsight.firstActionableDiagnostic?.message}
-              onLinkDiagnosticsClick={documentInsight.handleLinkDiagnosticsClick}
               backlinkCount={documentInsight.backlinks.length}
               onBacklinksClick={documentInsight.openBacklinks}
               typographyIssueCount={documentInsight.typographyDiagnostics.length}

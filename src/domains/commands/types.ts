@@ -27,6 +27,7 @@ export type CommandId =
   | 'showDocumentLinks'
   | 'showBacklinks'
   | 'showRelationGraph'
+  | 'showDocumentDiagnostics'
   | 'templateReadme'
   | 'templatePrd'
   | 'templateMeeting'
@@ -208,6 +209,7 @@ export interface CommandContext {
   openDocumentLinks?: () => void;
   openBacklinks?: () => void;
   openRelationGraph?: () => void;
+  openDocumentDiagnostics?: () => void;
 }
 
 export interface CommandDefinition {

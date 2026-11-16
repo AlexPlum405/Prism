@@ -28,7 +28,7 @@ describe('diagnostic adapters', () => {
         kind: 'link',
         line: 2,
         message: '未找到链接文件 docs/missing.md',
-        reason: '工作区里没有找到这个相对路径对应的 Markdown 文件。',
+        reason: '工作区索引和磁盘上都没有找到这个路径指向的文件。',
         severity: 'error',
         source: 'link-diagnostics',
         target: 'docs/missing.md',

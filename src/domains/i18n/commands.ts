@@ -15,6 +15,7 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   showDocumentLinks: 'command.showDocumentLinks',
   showBacklinks: 'command.showBacklinks',
   showRelationGraph: 'command.showRelationGraph',
+  showDocumentDiagnostics: 'command.showDocumentDiagnostics',
   templateReadme: 'command.templateReadme',
   templatePrd: 'command.templatePrd',
   templateMeeting: 'command.templateMeeting',

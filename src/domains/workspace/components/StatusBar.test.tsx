@@ -67,26 +67,19 @@ describe('StatusBar', () => {
     expect(screen.queryByText('文本文件')).not.toBeInTheDocument();
   });
 
-  it('aggregates actionable diagnostics as ERROR count', () => {
-    const onDiagnosticsClick = vi.fn();
-    render(
+  /* 文档诊断入口已搬到「视图 → 文档诊断」与命令面板，状态区不再显示 ERROR 计数。
+     这条断言锁定该决定，防止以后又把错误计数塞回标题栏。 */
+  it('keeps error diagnostics out of the status area', () => {
+    const { container } = render(
       <StatusBar
         writingStats={writingStats}
         cursor={{ line: 1, column: 1 }}
-        linkIssueCount={2}
-        linkIssueTitle="未找到链接文件 missing.md"
-        onLinkDiagnosticsClick={onDiagnosticsClick}
       />
     );
 
-    const button = screen.getByRole('button', { name: 'ERROR 2' });
-    fireEvent.click(button);
-
-    expect(button).toHaveAttribute(
-      'title',
-      '未找到链接文件 missing.md',
-    );
-    expect(onDiagnosticsClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/ERROR/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle('文档诊断')).not.toBeInTheDocument();
+    expect(container.querySelectorAll('button')).toHaveLength(0);
   });
 
   it('renders typography suggestions as a non-error status bar entry', () => {

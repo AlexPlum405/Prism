@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWorkspaceCommands } from './workspaceCommands';
 import type { CommandContext } from '../types';
-import { buildWorkspaceIndex, TEXT_DOCUMENT_PROFILE } from '../../workspace/services';
+import { buildWorkspaceIndex, MARKDOWN_DOCUMENT_PROFILE, TEXT_DOCUMENT_PROFILE } from '../../workspace/services';
 
 const loadFolderTreeMock = vi.hoisted(() => vi.fn());
 const grantWorkspaceDirectoryScopeMock = vi.hoisted(() => vi.fn(async () => undefined));
@@ -39,7 +39,7 @@ function createContext(overrides: Partial<CommandContext> = {}): CommandContext 
   } as unknown as CommandContext;
 }
 
-function getWorkspaceCommand(id: 'openFolder' | 'showRelationGraph') {
+function getWorkspaceCommand(id: 'openFolder' | 'showRelationGraph' | 'showDocumentDiagnostics') {
   const command = createWorkspaceCommands().find((entry) => entry.id === id);
   if (!command) throw new Error(`Missing command: ${id}`);
   return command;
@@ -136,5 +136,35 @@ describe('workspace commands', () => {
 
     expect(command.enabled?.(noRelationContext)).toBe(true);
     expect(command.enabled?.(textContext)).toBe(false);
+  });
+
+  it('opens document diagnostics from the menu command for Markdown documents only', async () => {
+    const openDocumentDiagnostics = vi.fn();
+    const command = getWorkspaceCommand('showDocumentDiagnostics');
+    const markdownContext = createContext({
+      documentStore: {
+        currentDocument: {
+          path: '/workspace/current.md',
+          profile: MARKDOWN_DOCUMENT_PROFILE,
+        },
+      } as CommandContext['documentStore'],
+      openDocumentDiagnostics,
+    });
+    const textContext = createContext({
+      documentStore: {
+        currentDocument: {
+          path: '/workspace/query.sql',
+          profile: TEXT_DOCUMENT_PROFILE,
+        },
+      } as CommandContext['documentStore'],
+      openDocumentDiagnostics,
+    });
+
+    expect(command.enabled?.(markdownContext)).toBe(true);
+    expect(command.enabled?.(textContext)).toBe(false);
+    expect(command.enabled?.(createContext())).toBe(false);
+    await command.run(markdownContext);
+
+    expect(openDocumentDiagnostics).toHaveBeenCalledTimes(1);
   });
 });

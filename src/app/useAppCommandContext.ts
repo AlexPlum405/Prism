@@ -51,6 +51,7 @@ interface UseAppCommandContextInput {
   localePreference: unknown;
   openAbout: () => void;
   openBacklinks: () => void;
+  openDocumentDiagnostics: () => void;
   openDocumentLinks: () => void;
   openDocumentProperties: () => void;
   openQuickOpen: () => void;
@@ -79,6 +80,7 @@ export function useAppCommandContext({
   localePreference,
   openAbout,
   openBacklinks,
+  openDocumentDiagnostics,
   openDocumentLinks,
   openDocumentProperties,
   openQuickOpen,
@@ -114,9 +116,11 @@ export function useAppCommandContext({
     openDocumentLinks,
     openBacklinks,
     openRelationGraph,
+    openDocumentDiagnostics,
   }), [
     openAbout,
     openBacklinks,
+    openDocumentDiagnostics,
     openDocumentLinks,
     openDocumentProperties,
     openQuickOpen,

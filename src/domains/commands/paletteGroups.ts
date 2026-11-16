@@ -153,6 +153,8 @@ const paletteGroupByCommand = {
   exportOverwritePrevious: 'export',
   exportSettings: 'export',
 
+  showDocumentDiagnostics: 'diagnostics',
+
   showDocumentLinks: 'links',
   showBacklinks: 'links',
   showRelationGraph: 'links',

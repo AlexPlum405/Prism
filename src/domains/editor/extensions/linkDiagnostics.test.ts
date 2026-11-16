@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getMarkdownHeadingSlug, scanMarkdownLinks } from './linkDiagnostics';
+import {
+  getLinkTargetPath,
+  getLinkTargetPathCandidates,
+  getMarkdownHeadingSlug,
+  scanMarkdownLinks,
+} from './linkDiagnostics';
 
 describe('markdown link diagnostics', () => {
   it('builds stable heading slugs for Chinese and English headings', () => {
@@ -107,6 +112,17 @@ describe('markdown link diagnostics', () => {
       workspaceFiles: ['/repo/docs/assets/existing.png'],
       workspaceRoot: '/repo',
     })).toEqual([]);
+  });
+
+  it('exposes disk-check candidates for a target outside the workspace index', () => {
+    expect(getLinkTargetPathCandidates(getLinkTargetPath('guide.md#section'), {
+      currentPath: '/repo/docs/page.md',
+      workspaceRoot: '/repo',
+    })).toEqual([
+      'guide.md',
+      '/repo/docs/guide.md',
+      '/repo/guide.md',
+    ]);
   });
 
   it('reports empty link targets', () => {

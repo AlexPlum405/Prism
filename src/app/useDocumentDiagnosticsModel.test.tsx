@@ -103,7 +103,7 @@ describe('useDocumentDiagnosticsModel', () => {
     }));
 
     act(() => {
-      result.current.handleLinkDiagnosticsClick();
+      result.current.openDocumentDiagnostics();
       result.current.handleTypographyDiagnosticsClick();
     });
 
@@ -130,10 +130,58 @@ describe('useDocumentDiagnosticsModel', () => {
     });
 
     act(() => {
-      result.current.handleLinkDiagnosticsClick();
+      result.current.openDocumentDiagnostics();
     });
 
     expect(result.current.linkDiagnosticsVisible).toBe(true);
     expect(result.current.displayedDiagnostics).toEqual(result.current.actionableDiagnostics);
+  });
+
+  it('does not report a link as missing when the target exists on disk but is outside the workspace index', async () => {
+    const existsPath = vi.fn(async () => true);
+    const { result } = renderHook(() => useDocumentDiagnosticsModel({
+      currentDocument: createDocument('[MIT](LICENSE)'),
+      existsPath,
+      fileTree: [{ path: '/workspace/other.md', name: 'other.md', kind: 'file' }],
+      jumpToLine: vi.fn(),
+      rootPath: '/workspace',
+    }));
+
+    await waitFor(() => expect(existsPath).toHaveBeenCalled(), { timeout: 3000 });
+    await waitFor(() => {
+      expect(result.current.documentDiagnostics.some((diagnostic) => diagnostic.source === 'link-diagnostics')).toBe(false);
+    }, { timeout: 3000 });
+  });
+
+  it('still reports a link as missing when the target is absent from both the index and disk', async () => {
+    const existsPath = vi.fn(async () => false);
+    const { result } = renderHook(() => useDocumentDiagnosticsModel({
+      currentDocument: createDocument('[MIT](LICENSE)'),
+      existsPath,
+      fileTree: [{ path: '/workspace/other.md', name: 'other.md', kind: 'file' }],
+      jumpToLine: vi.fn(),
+      rootPath: '/workspace',
+    }));
+
+    await waitFor(() => {
+      expect(result.current.actionableDiagnostics).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: 'link', target: 'LICENSE' }),
+      ]));
+    }, { timeout: 3000 });
+  });
+
+  it('keeps a menu-opened diagnostics panel visible even when there are no issues', async () => {
+    const { result } = renderDiagnosticsModel('# 标题');
+
+    act(() => {
+      result.current.openDocumentDiagnostics();
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+    });
+
+    expect(result.current.linkDiagnosticsVisible).toBe(true);
+    expect(result.current.displayedDiagnostics).toEqual([]);
   });
 });
