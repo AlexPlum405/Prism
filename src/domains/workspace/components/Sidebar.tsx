@@ -2,16 +2,28 @@ import { FileNode, SidebarTab } from '../types';
 import { FileTree } from './FileTree';
 import { OutlinePanel } from './OutlinePanel';
 import { useI18n } from '../../i18n';
+import { PLUS_PATH, VIEW_LIST_PATH, VIEW_TREE_PATH } from '../../../components/icons/islandIconPaths';
 
+/* 页脚图标路径取自 components/icons/islandIconPaths，与标题栏侧栏开关共用
+   同一套 20×20 / 纯 fill / 1.20–1.30 圆头笔画。过去这排是实心小块 +
+   stroke 加号，线宽和留白都跟外壳图标对不上。 */
 const IconPlus = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M9.32 3.35a.68.68 0 0 1 1.36 0v5.97h5.97a.68.68 0 1 1 0 1.36h-5.97v5.97a.68.68 0 1 1-1.36 0v-5.97H3.35a.68.68 0 1 1 0-1.36h5.97V3.35Z" />
+    <path d={PLUS_PATH} />
   </svg>
 );
 
-const IconGrid = () => (
+/** 树/网格视图：2×2 空心小方块，保留原本「方块」的语义但换成细线环。 */
+const IconViewTree = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path d="M5.2 3.35h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05H5.2A1.05 1.05 0 0 1 4.15 7.5V4.4c0-.58.47-1.05 1.05-1.05Zm6.5 0h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05h-3.1a1.05 1.05 0 0 1-1.05-1.05V4.4c0-.58.47-1.05 1.05-1.05Zm-6.5 8.1h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05H5.2a1.05 1.05 0 0 1-1.05-1.05v-3.1c0-.58.47-1.05 1.05-1.05Zm6.5 0h3.1c.58 0 1.05.47 1.05 1.05v3.1c0 .58-.47 1.05-1.05 1.05h-3.1a1.05 1.05 0 0 1-1.05-1.05v-3.1c0-.58.47-1.05 1.05-1.05Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d={VIEW_TREE_PATH} />
+  </svg>
+);
+
+/** 列表视图：三条圆头横线，点击后形状明显改变，空工作区里也有反馈。 */
+const IconViewList = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d={VIEW_LIST_PATH} />
   </svg>
 );
 
@@ -97,6 +109,8 @@ export function Sidebar({
         )}
       </div>
 
+      {/* 三列等宽端头让中间的工作区名真正落在页脚中心；两态图标不同，
+          点下去立刻有可见反馈（空工作区里树/列表内容相同也不会像没反应）。 */}
       <div className="island-sidebar__footer">
         <button
           type="button"
@@ -116,16 +130,16 @@ export function Sidebar({
         >
           {footerLabel}
         </button>
-        <span className="island-sidebar__spacer" />
         <button
           type="button"
           className="island-sidebar__icon-btn"
           data-active={fileTreeMode === 'tree' ? 'true' : undefined}
           title={fileTreeMode === 'tree' ? t('status.switchToList') : t('status.switchToTree')}
           aria-label={fileTreeMode === 'tree' ? t('status.switchToList') : t('status.switchToTree')}
+          aria-pressed={fileTreeMode === 'tree'}
           onClick={onToggleFileTreeMode}
         >
-          <IconGrid />
+          {fileTreeMode === 'tree' ? <IconViewTree /> : <IconViewList />}
         </button>
       </div>
     </div>

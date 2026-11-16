@@ -3,10 +3,10 @@ import { useCallback, useRef, useState, type KeyboardEvent, type PointerEvent, t
 /**
  * 岛与岛之间的缝。
  *
- * 缝本身是 16px 的留白（画布色），不是线：静置时里面什么都没有，鼠标进入
- * 才淡入一个 14×64 的抓手。拖动时抓手跟着走，读数条挂在抓手右侧，
- * 旧边界虚影由父级画在「原本的位置」上——所以虚影不在这里渲染，
- * 这里只负责上报位移。
+ * 缝本身是 16px 的留白（画布色），静置时什么都没有，鼠标进入只改变光标。
+ * 拖动时只给必要的数值反馈：当前两侧宽度的读数条，和画在「原本位置」上的
+ * 旧边界虚影（由父级渲染）。抓手胶囊与双向箭头图标已移除——它们既不提供
+ * 信息，又会让整条缝在拖动时显得很吵。
  */
 
 export interface IslandGutterProps {
@@ -27,16 +27,6 @@ export interface IslandGutterProps {
   onResize: (nextValue: number) => void;
   onResizeEnd: () => void;
   onReset: () => void;
-}
-
-function MoveHorizontalIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      <path d="M1 6h10" />
-      <path d="M3.4 3.6 1 6l2.4 2.4" />
-      <path d="M8.6 3.6 11 6l-2.4 2.4" />
-    </svg>
-  );
 }
 
 export function IslandGutter({
@@ -123,12 +113,8 @@ export function IslandGutter({
         onDoubleClick={onReset}
         onKeyDown={handleKeyDown}
       />
-      <div className="island-grip" aria-hidden="true">
-        <span /><span /><span /><span />
-      </div>
       {dragging && (
         <div className="island-readout" aria-hidden="true">
-          <span className="island-readout__icon"><MoveHorizontalIcon /></span>
           <span>{startName} {Math.round(value)} · {endName} {Math.round(partnerValue)}</span>
           {deltaLabel && <span className="island-readout__delta">{deltaLabel}</span>}
         </div>

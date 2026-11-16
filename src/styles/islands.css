@@ -21,9 +21,8 @@
   --island-code: #f7f5f0; /* 预览里的代码块 */
   --island-segment: #e5e1d8; /* 分段控件槽底 */
 
-  /* —— 线（只允许出现在抓手/读数条/文档 hr） —— */
+  /* —— 线（只允许出现在读数条/文档 hr） —— */
   --island-hairline: #e4e0d8;
-  --island-grip: #d8d2c4;
   --island-ghost: #cfc9bc;
 
   /* —— 文字 —— */
@@ -73,7 +72,6 @@ body.dark {
   --island-code: #201e1c;
   --island-segment: #2b2926;
   --island-hairline: #34312d;
-  --island-grip: #3b3833;
   --island-ghost: #3f3b35;
   --island-text: #f2efe9;
   --island-text-secondary: #b8b3a9;
@@ -157,48 +155,26 @@ body.dark {
   cursor: col-resize;
 }
 
+/* 键盘聚焦只在缝中央给一小段提示；整条命中区画 outline 会在拖动时
+   变成一条贯穿窗口高度的彩色长框，比抓手还抢眼。 */
 .island-gutter__hit:focus-visible {
-  outline: 2px solid var(--island-accent);
-  outline-offset: -1px;
-  border-radius: var(--island-radius-sm);
+  outline: none;
 }
 
-/* ---- 抓手：14×64，悬停淡入 ---- */
-
-.island-grip {
+.island-gutter__hit:focus-visible::after {
+  content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 14px;
-  height: 64px;
-  margin: -32px 0 0 -7px;
-  border-radius: 7px;
-  background: var(--island-surface);
-  border: 1px solid var(--island-grip);
-  box-shadow: var(--island-shadow-soft);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  opacity: 0;
-  transition: opacity 120ms ease;
+  width: 12px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--island-accent);
+  border-radius: 6px;
   pointer-events: none;
 }
 
-.island-grip span {
-  width: 6px;
-  height: 1.5px;
-  border-radius: 1px;
-  background: #a8a192;
-}
-
-.island-gutter:hover .island-grip,
-.island-gutter[data-dragging='true'] .island-grip {
-  opacity: 1;
-}
-
-/* ---- 拖动读数条：204×30，强调色描边 ---- */
+/* ---- 拖动读数条：只保留数值，不再放抓手和箭头图标 ---- */
 
 .island-readout {
   position: absolute;
@@ -207,7 +183,7 @@ body.dark {
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   height: 30px;
   padding: 0 10px;
   border-radius: var(--island-radius-sm);
@@ -219,13 +195,6 @@ body.dark {
   white-space: nowrap;
   pointer-events: none;
   z-index: 6;
-}
-
-.island-readout__icon {
-  width: 12px;
-  height: 12px;
-  color: var(--island-accent);
-  flex: 0 0 auto;
 }
 
 .island-readout__delta {
@@ -342,82 +311,81 @@ body.island-resizing * {
   flex-direction: column;
 }
 
+/* 页脚：两端等宽图标按钮 + 中间居中的工作区名。用 grid 而不是 flex + spacer：
+   左右列等宽，中间列的中心才等于整行中心，标题不会随文字长短左右飘。 */
 .island-sidebar__footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 24px;
   align-items: center;
-  gap: 10px;
+  column-gap: 6px;
   flex: 0 0 auto;
-  height: 26px;
+  height: 28px;
 }
 
-.island-sidebar__add {
+/* 两个按钮共用同一套点击区与图标尺寸：15px、无常驻白底，
+   和标题栏那排细线图标保持同一视觉重量。 */
+.island-sidebar__add,
+.island-sidebar__icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
   padding: 0;
   border: 0;
-  border-radius: var(--island-radius-sm);
-  background: var(--island-surface);
+  border-radius: 7px;
+  background: transparent;
   color: var(--island-text-secondary);
-  box-shadow: var(--island-shadow-soft);
   cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
 }
 
-.island-sidebar__add svg {
-  width: 13px;
-  height: 13px;
+.island-sidebar__add svg,
+.island-sidebar__icon-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.island-sidebar__add:hover,
+.island-sidebar__icon-btn:hover {
+  background: var(--island-hover);
+  color: var(--island-text);
+}
+
+.island-sidebar__icon-btn[data-active='true'] {
+  color: var(--island-text);
+}
+
+.island-sidebar__add:focus-visible,
+.island-sidebar__icon-btn:focus-visible,
+.island-sidebar__footer-label:focus-visible {
+  outline: 2px solid var(--island-accent);
+  outline-offset: 1px;
 }
 
 .island-sidebar__footer-label {
   min-width: 0;
-  padding: 0;
+  max-width: 100%;
+  padding: 0 4px;
   border: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--island-text-muted);
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0;
-  text-align: left;
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  transition: color 120ms ease;
 }
 
-.island-sidebar__spacer {
-  flex: 1;
-}
-
-.island-sidebar__icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--island-text-secondary);
-  cursor: pointer;
-}
-
-/* 网格 14、收起 13（SPEC 5.6 的第 5、6 个图标） */
-.island-sidebar__icon-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.island-sidebar__icon-btn:last-child svg {
-  width: 13px;
-  height: 13px;
-}
-
-.island-sidebar__icon-btn[data-active='true'] {
+.island-sidebar__footer-label:hover {
   color: var(--island-text);
 }
 

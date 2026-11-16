@@ -5,6 +5,7 @@ import { getRuntimePlatform } from '../../domains/workspace/services';
 import { useI18n } from '../../domains/i18n';
 import type { DocumentSaveStatus } from '../../domains/document/types';
 import { MenuDropdown } from './MenuDropdown';
+import { PANEL_RING } from '../icons/islandIconPaths';
 import type { MenuSection } from './types';
 import styles from './TitleBar.module.css';
 
@@ -28,15 +29,10 @@ const IS_MACOS = RUNTIME_PLATFORM === 'mac';
 const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
 
 /**
- * 侧栏图标：外框直接复用 ViewModeSwitch 的 IconSplit 超椭圆；内框是这条外框路径的
- * 仿射内缩，同源同曲率，所以环厚恒定 1.30，不会在四角堆出实心块。
+ * 侧栏图标：外框/内框路径取自 components/icons/islandIconPaths，与侧栏页脚的
+ * 视图按钮共用同一条超椭圆环（纯 fill、evenodd 挖空、环厚 1.30）。
  * 展开态叠一道 1.20 悬浮细缝（左栏 26%，上下各留 0.9），收起态换成 1.20 圆头右向箭头。
  */
-const PANEL_OUTER =
-  'M4.9 3.15h10.2c1.15 0 1.8.12 2.33.4.43.23.78.58 1.01 1.01.28.53.4 1.18.4 2.33v6.22c0 1.15-.12 1.8-.4 2.33-.23.43-.58.78-1.01 1.01-.53.28-1.18.4-2.33.4H4.9c-1.15 0-1.8-.12-2.33-.4a2.42 2.42 0 0 1-1.01-1.01c-.28-.53-.4-1.18-.4-2.33V6.89c0-1.15.12-1.8.4-2.33.23-.43.58-.78 1.01-1.01.53-.28 1.18-.4 2.33-.4Z';
-const PANEL_INNER =
-  'M5.65 4.45h8.7c0.981 0 1.535 0.097 1.987 0.324c0.367 0.186 0.665 0.47 0.861 0.818c0.239 0.429 0.341 0.956 0.341 1.888v5.04c0 0.932 -0.102 1.458 -0.341 1.888c-0.196 0.348 -0.495 0.632 -0.861 0.818c-0.452 0.227 -1.006 0.324 -1.987 0.324H5.65c-0.981 0 -1.535 -0.097 -1.987 -0.324a 2.064 1.961 0 0 1 -0.861 -0.818c-0.239 -0.429 -0.341 -0.956 -0.341 -1.888V7.48c0 -0.932 0.102 -1.458 0.341 -1.888c0.196 -0.348 0.495 -0.632 0.861 -0.818c0.452 -0.227 1.006 -0.324 1.987 -0.324Z';
-const PANEL_RING = PANEL_OUTER + PANEL_INNER;
 
 const IconPanelLeftOn = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">

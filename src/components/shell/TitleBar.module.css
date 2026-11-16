@@ -770,11 +770,8 @@
   }
 }
 
-/* 设计稿里第一个菜单项（文件）是 600 + 主色，其余 400 + 次色 */
-.inlineMenuItemWrapper:first-child .inlineMenuItem {
-  font-weight: 600;
-  color: var(--island-text);
-}
+/* 菜单项一律 400 + 次色，含第一个「文件」；不再给首项单独加粗上主色，
+   否则整行菜单看起来像两个层级。悬停/展开时才统一变深。 */
 
 /* 标题文本：设计稿是 Inter 13 / 500 / 次级色（主题里的 14px 正文衬线不适用于外壳） */
 :global(.app-titlebar) .title,
