@@ -27,6 +27,14 @@ export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
       run: (context) => context.documentStore.setViewMode('edit'),
     },
     {
+      id: 'livePreview',
+      category: 'view',
+      keywords: ['live', 'preview', 'wysiwyg', '单窗', '所见即所得'],
+      enabled: hasDocument,
+      checked: (context) => context.settingsStore.livePreview,
+      run: (context) => context.settingsStore.setLivePreview(!context.settingsStore.livePreview),
+    },
+    {
       id: 'splitMode',
       category: 'view',
       keywords: ['split'],

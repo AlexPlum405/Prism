@@ -11,6 +11,7 @@ import type { DocxTheme } from '../exportSettings';
 import type { TextRun as DocxTextRun } from 'docx';
 import {
   createDocxImageRun,
+  getDocxImageMaxWidth,
   rasterizeLinkedDocxImage,
   renderMarkdownImage,
   type DocxBlock,
@@ -234,7 +235,12 @@ export async function inlineToRuns(
         const image = await renderMarkdownImage(String(child.url ?? ''), input?.documentPath, imageScale);
         if (image) {
           const alt = String(child.alt || child.title || 'Markdown image');
-          nested.push(createDocxImageRun(docx, rasterizeLinkedDocxImage(image), { title: alt, description: alt, name: alt }));
+          nested.push(createDocxImageRun(
+            docx,
+            rasterizeLinkedDocxImage(image),
+            { title: alt, description: alt, name: alt },
+            { maxWidth: getDocxImageMaxWidth(child.data?.prismImageSize) },
+          ));
           continue;
         }
         const fallback = String(child.alt || child.title || child.url || t('export.fallback.imageUnavailable'));
@@ -330,7 +336,7 @@ export async function paragraphBlocksFromInlineChildren(
           title: alt,
           description: alt,
           name: alt,
-        }),
+        }, { maxWidth: getDocxImageMaxWidth(child.data?.prismImageSize) }),
       ],
     }));
   }

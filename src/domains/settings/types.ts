@@ -123,6 +123,10 @@ export interface SettingsState {
   editorLineHeight: number;
   previewFontFamily: string;
   previewFontSize: number;
+  /** 0 表示跟随主题的版心宽度。 */
+  previewLineWidth: number;
+  /** 空字符串表示跟随主题的强调色。 */
+  previewAccent: string;
   defaultViewMode: DefaultViewMode;
   exportDefaults: {
     format: ExportDefaultFormat;
@@ -148,6 +152,8 @@ export interface SettingsState {
   autoSaveStrategy: AutoSaveStrategy;
   showLineNumbers: boolean;
   wordWrap: boolean;
+  /** 单窗预览：藏起非当前行的 Markdown 标记。 */
+  livePreview: boolean;
   previewChartCopyDefault: PreviewChartCopyDefault;
   customFonts: CustomFont[];
   editorFontSource: FontSource;
@@ -178,6 +184,8 @@ export const DEFAULT_SETTINGS: SettingsState = {
   editorLineHeight: 1.72,
   previewFontFamily: 'inherit',
   previewFontSize: 16,
+  previewLineWidth: 0,
+  previewAccent: '',
   defaultViewMode: 'edit',
   exportDefaults: {
     format: 'pdf',
@@ -203,6 +211,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   autoSaveStrategy: 'balanced',
   showLineNumbers: false,
   wordWrap: true,
+  livePreview: false,
   previewChartCopyDefault: 'image',
   customFonts: [],
   editorFontSource: { kind: 'theme', value: '' },

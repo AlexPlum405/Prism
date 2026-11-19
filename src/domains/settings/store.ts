@@ -178,6 +178,9 @@ interface SettingsStore extends SettingsState {
   setEditorLineHeight: (lineHeight: number) => void;
   setPreviewFontFamily: (family: string) => void;
   setPreviewFontSize: (size: number) => void;
+  setPreviewLineWidth: (width: number) => void;
+  setPreviewAccent: (accent: string) => void;
+  setLivePreview: (enabled: boolean) => void;
   setEditorFontSource: (source: FontSource) => void;
   setPreviewFontSource: (source: FontSource) => void;
   addCustomFont: (font: CustomFont) => void;
@@ -292,6 +295,21 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setPreviewFontSize: (previewFontSize) => {
     set({ previewFontSize });
+    get().saveSettings();
+  },
+
+  setPreviewLineWidth: (previewLineWidth) => {
+    set({ previewLineWidth });
+    get().saveSettings();
+  },
+
+  setLivePreview: (livePreview) => {
+    set({ livePreview });
+    get().saveSettings();
+  },
+
+  setPreviewAccent: (previewAccent) => {
+    set({ previewAccent });
     get().saveSettings();
   },
 
@@ -715,6 +733,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         editorLineHeight,
         previewFontFamily,
         previewFontSize,
+        previewLineWidth,
+        previewAccent,
         defaultViewMode,
         exportDefaults,
         shortcutStyle,
@@ -723,6 +743,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         autoSaveStrategy,
         showLineNumbers,
         wordWrap,
+        livePreview,
         previewChartCopyDefault,
         customFonts,
         editorFontSource,
@@ -748,6 +769,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           editorLineHeight,
           previewFontFamily,
           previewFontSize,
+          previewLineWidth,
+          previewAccent,
           defaultViewMode,
           exportDefaults,
           shortcutStyle,
@@ -756,6 +779,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           autoSaveStrategy,
           showLineNumbers,
           wordWrap,
+          livePreview,
           previewChartCopyDefault,
           customFonts,
           editorFontSource,

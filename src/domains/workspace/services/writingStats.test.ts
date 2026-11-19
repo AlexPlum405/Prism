@@ -7,7 +7,9 @@ describe('computeWritingStats', () => {
       chineseChars: 0,
       englishWords: 0,
       characters: 0,
+      paragraphCount: 0,
       readingMinutes: 0,
+      sentenceCount: 0,
       wordCount: 0,
     });
   });
@@ -49,5 +51,40 @@ const hidden = "隐藏";
       chineseChars: 801,
       readingMinutes: 3,
     });
+  });
+
+  it('counts readable paragraphs and ignores blank lines and headings-only blocks', () => {
+    const stats = computeWritingStats([
+      '# 标题',
+      '',
+      '第一段。',
+      '还是第一段。',
+      '',
+      '',
+      '第二段，含 English words。',
+      '',
+      '- 列表一项',
+      '- 列表二项',
+    ].join('\n'));
+
+    expect(stats.paragraphCount).toBe(4);
+  });
+
+  it('counts sentences by both Chinese and English terminators', () => {
+    expect(computeWritingStats('第一句。第二句！第三句？Done. Next one!').sentenceCount).toBe(5);
+  });
+
+  it('does not count code blocks as paragraphs or sentences', () => {
+    const stats = computeWritingStats([
+      '正文。',
+      '',
+      '```ts',
+      'const a = 1;',
+      'const b = 2;',
+      '```',
+    ].join('\n'));
+
+    expect(stats.paragraphCount).toBe(1);
+    expect(stats.sentenceCount).toBe(1);
   });
 });

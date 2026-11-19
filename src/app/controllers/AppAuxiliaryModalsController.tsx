@@ -1,8 +1,9 @@
 import { AboutModal } from '../../components/shell/AboutModal';
 import { CommandPalette, type CommandPaletteMode } from '../../components/shell/CommandPalette';
+import { DocumentStatisticsPanel } from '../../components/shell/DocumentStatisticsPanel';
 import { ShortcutPanel } from '../../components/shell/ShortcutPanel';
 import type { OpenDocument } from '../../domains/document/types';
-import type { RecentFile, WorkspaceIndex } from '../../domains/workspace/services';
+import type { RecentFile, WorkspaceIndex, WritingStats } from '../../domains/workspace/services';
 import type { FileNode } from '../../domains/workspace/types';
 
 interface AppAuxiliaryModalsControllerProps {
@@ -16,11 +17,14 @@ interface AppAuxiliaryModalsControllerProps {
   workspaceIndexing: boolean;
   workspaceRoot: string | null;
   shortcutPanelVisible: boolean;
+  statisticsVisible: boolean;
+  writingStats: WritingStats;
   onAboutCheckUpdate: () => void;
   onAboutClose: () => void;
   onCommandPaletteClose: () => void;
   onCommandPaletteExecute: (commandId: string) => void;
   onShortcutPanelClose: () => void;
+  onStatisticsClose: () => void;
 }
 
 export function AppAuxiliaryModalsController({
@@ -31,6 +35,8 @@ export function AppAuxiliaryModalsController({
   files,
   recentFiles,
   shortcutPanelVisible,
+  statisticsVisible,
+  writingStats,
   workspaceIndex,
   workspaceIndexing,
   workspaceRoot,
@@ -39,6 +45,7 @@ export function AppAuxiliaryModalsController({
   onCommandPaletteClose,
   onCommandPaletteExecute,
   onShortcutPanelClose,
+  onStatisticsClose,
 }: AppAuxiliaryModalsControllerProps) {
   return (
     <>
@@ -58,6 +65,12 @@ export function AppAuxiliaryModalsController({
         mode={commandPaletteMode}
         onClose={onCommandPaletteClose}
         onExecute={onCommandPaletteExecute}
+      />
+
+      <DocumentStatisticsPanel
+        visible={statisticsVisible}
+        stats={writingStats}
+        onClose={onStatisticsClose}
       />
 
       <AboutModal

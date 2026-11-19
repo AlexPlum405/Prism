@@ -66,5 +66,12 @@ export function createWorkspaceCommands(): CommandDefinition[] {
       ),
       run: (context) => context.openDocumentDiagnostics?.(),
     },
+    {
+      id: 'showDocumentStatistics',
+      category: 'view',
+      keywords: ['statistics', 'count', 'words', '统计', '字数', '写作'],
+      enabled: (context) => Boolean(context.documentStore.currentDocument),
+      run: (context) => context.openDocumentStatistics?.(),
+    },
   ] satisfies CommandDefinition[];
 }

@@ -30,6 +30,18 @@ describe('normalizeSettings', () => {
     expect(settings.wordWrap).toBe(DEFAULT_SETTINGS.wordWrap);
   });
 
+  it('normalizes the preview line width and accent color', () => {
+    expect(normalizeSettings({ previewLineWidth: 720 }).previewLineWidth).toBe(720);
+    expect(normalizeSettings({ previewLineWidth: 99999 }).previewLineWidth).toBe(1600);
+    expect(normalizeSettings({ previewLineWidth: -20 }).previewLineWidth).toBe(0);
+    expect(normalizeSettings({}).previewLineWidth).toBe(0);
+
+    expect(normalizeSettings({ previewAccent: '#A3E635' }).previewAccent).toBe('#a3e635');
+    expect(normalizeSettings({ previewAccent: '#abc' }).previewAccent).toBe('#abc');
+    expect(normalizeSettings({ previewAccent: 'red' }).previewAccent).toBe('');
+    expect(normalizeSettings({ previewAccent: 'javascript:alert(1)' }).previewAccent).toBe('');
+  });
+
   it('normalizes the interface theme', () => {
     expect(normalizeSettings({ uiTheme: 'night-paper' }).uiTheme).toBe('night-paper');
     expect(normalizeSettings({ uiTheme: 'miaoyan' }).uiTheme).toBe('miaoyan');

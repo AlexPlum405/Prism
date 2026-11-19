@@ -26,12 +26,14 @@ import {
 } from '../extensions/markdownHighlight';
 import { createHiddenSearchPanel } from '../extensions/search';
 import { editorSelectionPlugin, lineFlashField } from '../extensions/selection';
+import { getLivePreviewExtension } from '../extensions/livePreview';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import {
   editorContentThemeCompartment,
   editorDarkThemeCompartment,
   editorLineNumbersCompartment,
   editorLineWrappingCompartment,
+  editorLivePreviewCompartment,
   editorLinkCompletionCompartment,
   editorPhrasesCompartment,
   editorTypographyCompartment,
@@ -78,6 +80,7 @@ interface UseEditorRuntimeModelInput {
   enableMarkdownCompletions: boolean;
   isEditorDark: boolean;
   isUpdatingFromPropsRef: MutableRefObject<boolean>;
+  livePreview: boolean;
   locale: unknown;
   onChangeRef: MutableRefObject<(content: string) => void>;
   onCursorChangeRef: MutableRefObject<((cursor: { line: number; column: number }) => void) | undefined>;
@@ -131,6 +134,7 @@ export function useEditorRuntimeModel({
   enableMarkdownCompletions,
   isEditorDark,
   isUpdatingFromPropsRef,
+  livePreview,
   locale,
   onChangeRef,
   onCursorChangeRef,
@@ -246,6 +250,7 @@ export function useEditorRuntimeModel({
           editorFontFamily,
           editorUsesThemeFont,
         )),
+        editorLivePreviewCompartment.of(getLivePreviewExtension(livePreview)),
         compatibilityMarkdownPlugin,
         editorSelectionPlugin,
         bracketMatching(),
@@ -436,6 +441,14 @@ export function useEditorRuntimeModel({
       effects: editorLineWrappingCompartment.reconfigure(getLineWrappingExtensions(wordWrap)),
     });
   }, [viewRef, wordWrap]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: editorLivePreviewCompartment.reconfigure(getLivePreviewExtension(livePreview)),
+    });
+  }, [livePreview, viewRef]);
 
   useEffect(() => {
     const view = viewRef.current;

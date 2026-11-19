@@ -16,6 +16,10 @@ export function grantMarkdownFileScopeNative(path: string): Promise<void> {
   return invokeNativeCommand('grant_markdown_file_scope', { path });
 }
 
+export function grantImportFileScopeNative(path: string): Promise<void> {
+  return invokeNativeCommand('grant_import_file_scope', { path });
+}
+
 export function grantWorkspaceDirectoryScopeNative(path: string): Promise<void> {
   return invokeNativeCommand('grant_workspace_directory_scope', { path });
 }

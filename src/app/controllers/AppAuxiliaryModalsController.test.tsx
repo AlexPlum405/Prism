@@ -59,6 +59,16 @@ function renderController(overrides: Partial<Parameters<typeof AppAuxiliaryModal
     files: [],
     recentFiles: [],
     shortcutPanelVisible: true,
+    statisticsVisible: false,
+    writingStats: {
+      chineseChars: 0,
+      englishWords: 0,
+      characters: 0,
+      paragraphCount: 0,
+      readingMinutes: 0,
+      sentenceCount: 0,
+      wordCount: 0,
+    },
     workspaceIndex: null,
     workspaceIndexing: false,
     workspaceRoot: null,
@@ -67,6 +77,7 @@ function renderController(overrides: Partial<Parameters<typeof AppAuxiliaryModal
     onCommandPaletteClose: vi.fn(),
     onCommandPaletteExecute: vi.fn(),
     onShortcutPanelClose: vi.fn(),
+    onStatisticsClose: vi.fn(),
     ...overrides,
   };
 

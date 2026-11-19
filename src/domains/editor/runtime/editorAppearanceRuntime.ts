@@ -18,6 +18,7 @@ import { createSlashMenuCompletionSource } from '../extensions/slashMenu';
 
 export const editorLineNumbersCompartment = new Compartment();
 export const editorLineWrappingCompartment = new Compartment();
+export const editorLivePreviewCompartment = new Compartment();
 export const editorDarkThemeCompartment = new Compartment();
 export const editorContentThemeCompartment = new Compartment();
 export const editorTypographyCompartment = new Compartment();

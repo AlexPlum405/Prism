@@ -25,6 +25,11 @@ import {
 import { EXPORT_PAGE_SPLIT_EPSILON, prepareExportAtomicPagination } from '../pagination';
 import { collectExportCss } from '../render/exportCss';
 import { collectExportPdfLinkRects, type ExportPdfLinkRect } from './pdfLinks';
+import {
+  addPdfOutline,
+  collectExportPdfBookmarks,
+  type ExportPdfBookmark,
+} from './pdfBookmarks';
 import { captureCurrentWebviewPdf, getPdfCaptureCapability } from './pdfCaptureClient';
 import { createPdfCaptureTempSession } from './pdfCaptureTemp';
 import {
@@ -76,6 +81,7 @@ interface PdfRenderedPage {
 interface PdfRenderResult {
   pages: PdfRenderedPage[];
   linkRects: ExportPdfLinkRect[];
+  bookmarks: ExportPdfBookmark[];
   pageCssHeight: number;
   contentCssWidth: number;
 }
@@ -89,6 +95,7 @@ interface WebkitPdfCaptureLayout {
   contentWidth: number;
   contentHeight: number;
   linkRects: ExportPdfLinkRect[];
+  bookmarks: ExportPdfBookmark[];
   margins: typeof pdfPageMarginsPoints[keyof typeof pdfPageMarginsPoints];
 }
 
@@ -271,6 +278,13 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
       throw new Error(t('export.error.pdfTooManyPages', { count: pageCount, max: PDF_EXPORT_MAX_PAGES }));
     }
     const linkRects = collectExportPdfLinkRects(target);
+    const bookmarks = collectExportPdfBookmarks(target, {
+      pageCssHeight,
+      pageCount,
+      cssPxToPdfPoint,
+      pageHeight: paper.height,
+      margins,
+    });
 
     return {
       rect: {
@@ -286,6 +300,7 @@ async function prepareWebkitPdfCaptureDocument(input: ExportDocumentInput): Prom
       contentWidth,
       contentHeight,
       linkRects,
+      bookmarks,
       margins,
     };
   } finally {
@@ -361,10 +376,15 @@ function addExportPdfLinkAnnotations(
   }
 }
 
-async function overlayPdfChrome(input: ExportDocumentInput, targetPath: string) {
-  if (!input.pageHeaderFooter && !input.pdfPageNumbers) return;
+async function overlayPdfChrome(
+  input: ExportDocumentInput,
+  targetPath: string,
+  bookmarks: ExportPdfBookmark[] = [],
+) {
+  const needsChrome = Boolean(input.pageHeaderFooter || input.pdfPageNumbers);
+  if (!needsChrome && bookmarks.length === 0) return;
 
-  reportProgress(input, exportProgressMessages.applyPdfChrome());
+  if (needsChrome) reportProgress(input, exportProgressMessages.applyPdfChrome());
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const bytes = await readFile(targetPath);
   const pdf = await PDFDocument.load(bytes);
@@ -422,6 +442,7 @@ async function overlayPdfChrome(input: ExportDocumentInput, targetPath: string) 
     }
   }
 
+  await addPdfOutline(pdf, bookmarks);
   await writeFile(targetPath, await pdf.save());
 }
 
@@ -495,7 +516,7 @@ async function exportPdfWithNativeCapture(input: ExportDocumentInput, targetPath
     await tempSession.cleanup().catch(() => undefined);
   }
 
-  await overlayPdfChrome(input, targetPath);
+  await overlayPdfChrome(input, targetPath, layout.bookmarks);
   return true;
 }
 
@@ -512,6 +533,8 @@ async function exportPdfRaster(input: ExportDocumentInput, targetPath: string) {
   const renderedPages = await createRenderedPdfPages(input, {
     contentWidth,
     contentHeight,
+    pageHeight,
+    margins,
     scale: input.pngScale ?? PDF_EXPORT_RASTER_SCALE,
   });
   reportProgress(input, exportProgressMessages.generateFile('PDF'));
@@ -595,6 +618,7 @@ async function exportPdfRaster(input: ExportDocumentInput, targetPath: string) {
     }
   }
 
+  await addPdfOutline(pdf, renderedPages.bookmarks);
   const bytes = await pdf.save();
   reportProgress(input, exportProgressMessages.writeFile('PDF'));
   await writeFile(targetPath, bytes);
@@ -624,7 +648,13 @@ export async function exportPdf(input: ExportDocumentInput, outputPath?: string)
 
 async function createRenderedPdfPages(
   input: ExportDocumentInput,
-  options: { contentWidth: number; contentHeight: number; scale?: number },
+  options: {
+    contentWidth: number;
+    contentHeight: number;
+    pageHeight: number;
+    margins: typeof pdfPageMarginsPoints[keyof typeof pdfPageMarginsPoints];
+    scale?: number;
+  },
 ): Promise<PdfRenderResult> {
   const { default: html2canvas } = await import('html2canvas');
   const iframe = await createStandaloneExportFrame(input);
@@ -660,6 +690,13 @@ async function createRenderedPdfPages(
       throw new Error(t('export.error.pdfTooManyPages', { count: pageCount, max: PDF_EXPORT_MAX_PAGES }));
     }
     const linkRects = collectExportPdfLinkRects(target);
+    const bookmarks = collectExportPdfBookmarks(target, {
+      pageCssHeight,
+      pageCount,
+      cssPxToPdfPoint,
+      pageHeight: options.pageHeight,
+      margins: options.margins,
+    });
     const requestedScale = normalizeExportRasterScale(options.scale ?? PDF_EXPORT_RASTER_SCALE);
     const backgroundColor = normalizeCssColorFunctionsForRaster(
       target.ownerDocument.defaultView?.getComputedStyle(target).backgroundColor ?? '',
@@ -739,6 +776,7 @@ async function createRenderedPdfPages(
     return {
       pages,
       linkRects,
+      bookmarks,
       pageCssHeight,
       contentCssWidth: width,
     };

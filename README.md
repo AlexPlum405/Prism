@@ -101,6 +101,13 @@ Prism 1.0.0 is the first official public release. It is currently published for 
 - Document properties
 - Relation graph for local Markdown workspaces
 
+### Import
+
+- Web pages (`.html` / `.htm` / `.xhtml`) → Markdown, keeping headings, lists, tables and links
+- Word (`.docx`) → Markdown, keeping headings, bold/italic/strikethrough, lists, tables, links and images
+- Embedded images are extracted into an `assets/` folder next to the new document
+- Markdown and plain text import unchanged, without reinterpreting the syntax
+
 ### Export
 
 - HTML

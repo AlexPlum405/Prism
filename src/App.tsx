@@ -9,6 +9,7 @@ import { useAppFileActionsModel } from './app/useAppFileActionsModel';
 import { useAppSaveConflictModel } from './app/useAppSaveConflictModel';
 import { useAppWorkspaceContextMenu } from './app/useAppWorkspaceContextMenu';
 import { useAppWritingStatsModel } from './app/useAppWritingStatsModel';
+import { useDocumentStatisticsModel } from './app/useDocumentStatisticsModel';
 import { useAppAuxiliaryModalsModel } from './app/useAppAuxiliaryModalsModel';
 import { useAppRecoveryModel, shouldShowRecoveryPrompt } from './app/useAppRecoveryModel';
 import { useAppDocumentPropertiesModel } from './app/useAppDocumentPropertiesModel';
@@ -97,6 +98,12 @@ function App() {
     setSelectionText,
     writingStats,
   } = useAppWritingStatsModel({ currentDocument });
+
+  const {
+    statisticsVisible,
+    openDocumentStatistics,
+    closeDocumentStatistics,
+  } = useDocumentStatisticsModel();
 
   const {
     workspaceIndex,
@@ -224,6 +231,7 @@ function App() {
     openBacklinks: documentInsight.openBacklinks,
     openDocumentLinks: documentInsight.openDocumentLinks,
     openDocumentDiagnostics: documentInsight.openDocumentDiagnostics,
+    openDocumentStatistics,
     openDocumentProperties,
     openQuickOpen,
     openRelationGraph: documentInsight.openRelationGraph,
@@ -389,6 +397,8 @@ function App() {
         files={workspace.fileTree}
         recentFiles={settings.recentFiles}
         shortcutPanelVisible={shortcutPanelVisible}
+        statisticsVisible={statisticsVisible}
+        writingStats={writingStats}
         workspaceIndex={workspaceIndex}
         workspaceIndexing={workspaceIndexing}
         workspaceRoot={workspace.rootPath}
@@ -397,6 +407,7 @@ function App() {
         onCommandPaletteClose={closeCommandPalette}
         onCommandPaletteExecute={(commandId) => handleCommandAction(commandId)}
         onShortcutPanelClose={closeShortcutPanel}
+        onStatisticsClose={closeDocumentStatistics}
       />
       {settingsVisible && (
         <Suspense fallback={null}>

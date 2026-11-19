@@ -58,6 +58,7 @@ interface UseAppCommandContextInput {
   openRelationGraph: () => void;
   openSettings: () => void;
   openShortcuts: () => void;
+  openDocumentStatistics: () => void;
   openWorkspaceSearch: () => void;
   recentFiles: RecentFileEntry[];
   requestExportPath: RequestExportPath;
@@ -87,6 +88,7 @@ export function useAppCommandContext({
   openRelationGraph,
   openSettings,
   openShortcuts,
+  openDocumentStatistics,
   openWorkspaceSearch,
   recentFiles,
   requestExportPath,
@@ -117,11 +119,13 @@ export function useAppCommandContext({
     openBacklinks,
     openRelationGraph,
     openDocumentDiagnostics,
+    openDocumentStatistics,
   }), [
     openAbout,
     openBacklinks,
     openDocumentDiagnostics,
     openDocumentLinks,
+    openDocumentStatistics,
     openDocumentProperties,
     openQuickOpen,
     openRelationGraph,

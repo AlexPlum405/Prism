@@ -24,6 +24,7 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 2. **原型对齐**：以现有妙言界面为基准，动手前先读 `CONTEXT.md` 与 `docs/adr/`。
 3. **用户裁决**：用户否定即调整，不辩护方案，体验优先。
 4. **如实汇报**：未验证不说「完成」，阻塞与不确定直接说。
+5. **能力清单同步**：`docs/prism-capabilities.md` 是当前能力的唯一盘点真源，采用“人工能力地图 + 自动附录”。新增、修改、删除任何用户可见功能、命令、菜单、设置、格式、诊断、主题、语言或平台能力时，必须在同一变更中更新对应 `CAP-*` 行、决策与变更记录；命令/设置/格式改动后运行 `npm run capabilities:sync`，提交前跑 `npm run capabilities:check`。未同步视为未完成。功能落地若改变产品边界，同时更新 `CONTEXT.md` 或新增 ADR。
 
 ## 代码
 

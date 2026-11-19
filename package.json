@@ -23,7 +23,9 @@
     "macos:register-text-default": "node scripts/register-macos-markdown-default.mjs --text",
     "release:mac-dmg:skip-finder": "bash scripts/package-macos-dmg-skip-finder.sh",
     "release:manifest": "node scripts/generate-updater-manifest.mjs",
-    "release:manifest:check": "node scripts/generate-updater-manifest.mjs --check"
+    "release:manifest:check": "node scripts/generate-updater-manifest.mjs --check",
+    "capabilities:sync": "node scripts/sync-capability-appendix.mjs",
+    "capabilities:check": "node scripts/sync-capability-appendix.mjs --check"
   },
   "repository": {
     "type": "git",

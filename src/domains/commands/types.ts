@@ -19,6 +19,7 @@ export type CommandId =
   | 'new'
   | 'newWindow'
   | 'open'
+  | 'importDocument'
   | 'openFolder'
   | 'quickOpen'
   | 'save'
@@ -28,6 +29,7 @@ export type CommandId =
   | 'showBacklinks'
   | 'showRelationGraph'
   | 'showDocumentDiagnostics'
+  | 'showDocumentStatistics'
   | 'templateReadme'
   | 'templatePrd'
   | 'templateMeeting'
@@ -148,6 +150,7 @@ export type CommandId =
   | 'focusMode'
   | 'typewriterMode'
   | 'wordWrap'
+  | 'livePreview'
   | 'statusBar'
   | 'actualSize'
   | 'zoomIn'
@@ -210,6 +213,7 @@ export interface CommandContext {
   openBacklinks?: () => void;
   openRelationGraph?: () => void;
   openDocumentDiagnostics?: () => void;
+  openDocumentStatistics?: () => void;
 }
 
 export interface CommandDefinition {

@@ -172,6 +172,12 @@ fn build_app_menu(
         )?)
         .item(&command_menu_item(
             handle,
+            "importDocument",
+            &menu_label(labels, "importDocument", "导入为 Markdown..."),
+            None,
+        )?)
+        .item(&command_menu_item(
+            handle,
             "openFolder",
             &menu_label(labels, "openFolder", "打开文件夹..."),
             Some("CmdOrCtrl+Shift+KeyO"),
@@ -299,6 +305,12 @@ fn build_app_menu(
             &menu_label(labels, "previewMode", "预览"),
             Some("CmdOrCtrl+Key3"),
         )?)
+        .item(&command_menu_item(
+            handle,
+            "livePreview",
+            &menu_label(labels, "livePreview", "单窗预览"),
+            Some("CmdOrCtrl+Key4"),
+        )?)
         .separator()
         .item(&command_menu_item(
             handle,
@@ -308,6 +320,7 @@ fn build_app_menu(
         )?)
         .item(&command_menu_item(handle, "showOutline", &menu_label(labels, "showOutline", "大纲"), None)?)
         .item(&command_menu_item(handle, "showDocumentDiagnostics", &menu_label(labels, "showDocumentDiagnostics", "文档诊断"), None)?)
+        .item(&command_menu_item(handle, "showDocumentStatistics", &menu_label(labels, "showDocumentStatistics", "写作统计"), None)?)
         .separator()
         .item(&command_menu_item(
             handle,
@@ -382,6 +395,7 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
             "new" => emit_frontend_command(app, "new"),
             "newWindow" => emit_frontend_command(app, "newWindow"),
             "open" => emit_frontend_command(app, "open"),
+            "importDocument" => emit_frontend_command(app, "importDocument"),
             "openFolder" => emit_frontend_command(app, "openFolder"),
             "quickOpen" => emit_frontend_command(app, "quickOpen"),
             "save" => emit_frontend_command(app, "save"),
@@ -400,12 +414,14 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
             "showSearch" => emit_frontend_command(app, "showSearch"),
             "showReplace" => emit_frontend_command(app, "showReplace"),
             "workspaceSearch" => emit_frontend_command(app, "workspaceSearch"),
+            "livePreview" => emit_frontend_command(app, "livePreview"),
             "sourceMode" => emit_frontend_command(app, "sourceMode"),
             "splitMode" => emit_frontend_command(app, "splitMode"),
             "previewMode" => emit_frontend_command(app, "previewMode"),
             "toggleSidebar" => emit_frontend_command(app, "toggleSidebar"),
             "showOutline" => emit_frontend_command(app, "showOutline"),
             "showDocumentDiagnostics" => emit_frontend_command(app, "showDocumentDiagnostics"),
+            "showDocumentStatistics" => emit_frontend_command(app, "showDocumentStatistics"),
             "actualSize" => emit_frontend_command(app, "actualSize"),
             "zoomIn" => emit_frontend_command(app, "zoomIn"),
             "zoomOut" => emit_frontend_command(app, "zoomOut"),
@@ -568,6 +584,7 @@ pub fn run() {
             commands::export_resources::read_export_resource,
             commands::export_resources::preflight_export,
             commands::file_scope::grant_markdown_file_scope,
+            commands::file_scope::grant_import_file_scope,
             commands::file_scope::grant_workspace_directory_scope,
             commands::trash::move_path_to_trash,
             commands::system_open::open_path_with_system,

@@ -348,6 +348,13 @@ function migratePreviewFontSource(saved: Partial<SettingsState>): FontSource {
   return DEFAULT_SETTINGS.previewFontSource;
 }
 
+function normalizePreviewAccent(value: unknown) {
+  if (typeof value !== 'string') return DEFAULT_SETTINGS.previewAccent;
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(trimmed) ? trimmed.toLowerCase() : '';
+}
+
 export function normalizeSettings(saved: Partial<SettingsState>): SettingsState {
   const exportDefaults =
     saved.exportDefaults && typeof saved.exportDefaults === 'object'
@@ -391,6 +398,8 @@ export function normalizeSettings(saved: Partial<SettingsState>): SettingsState 
     ),
     previewFontFamily: stringOrDefault(saved.previewFontFamily, DEFAULT_SETTINGS.previewFontFamily),
     previewFontSize: numberInRange(saved.previewFontSize, DEFAULT_SETTINGS.previewFontSize, 10, 36),
+    previewLineWidth: numberInRange(saved.previewLineWidth, DEFAULT_SETTINGS.previewLineWidth, 0, 1600),
+    previewAccent: normalizePreviewAccent(saved.previewAccent),
     defaultViewMode: isDefaultViewMode(saved.defaultViewMode)
       ? saved.defaultViewMode
       : DEFAULT_SETTINGS.defaultViewMode,
@@ -465,6 +474,7 @@ export function normalizeSettings(saved: Partial<SettingsState>): SettingsState 
       : inferAutoSaveStrategy(autoSaveInterval),
     showLineNumbers: booleanOrDefault(saved.showLineNumbers, DEFAULT_SETTINGS.showLineNumbers),
     wordWrap: booleanOrDefault(saved.wordWrap, DEFAULT_SETTINGS.wordWrap),
+    livePreview: booleanOrDefault(saved.livePreview, DEFAULT_SETTINGS.livePreview),
     previewChartCopyDefault: isPreviewChartCopyDefault(saved.previewChartCopyDefault)
       ? saved.previewChartCopyDefault
       : DEFAULT_SETTINGS.previewChartCopyDefault,

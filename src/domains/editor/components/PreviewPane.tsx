@@ -1117,6 +1117,8 @@ export function PreviewPane({
   } | null>(null);
   const previewFontFamily = useSettingsStore((s) => s.previewFontFamily);
   const previewFontSize = useSettingsStore((s) => s.previewFontSize);
+  const previewLineWidth = useSettingsStore((s) => s.previewLineWidth);
+  const previewAccent = useSettingsStore((s) => s.previewAccent);
   const themeContract = getThemeContract(contentTheme);
   const effectivePreviewFontSize = previewFontSize === DEFAULT_SETTINGS.previewFontSize
     ? themeContract.preview.fontSize
@@ -1678,6 +1680,10 @@ export function PreviewPane({
         style={{
           fontFamily: previewFontFamily === 'inherit' ? undefined : previewFontFamily,
           fontSize: `${effectivePreviewFontSize}px`,
+          maxWidth: previewLineWidth > 0 ? `${previewLineWidth}px` : undefined,
+          marginLeft: previewLineWidth > 0 ? 'auto' : undefined,
+          marginRight: previewLineWidth > 0 ? 'auto' : undefined,
+          ['--accent' as string]: previewAccent || undefined,
         }}
         dangerouslySetInnerHTML={{ __html: html }}
       />

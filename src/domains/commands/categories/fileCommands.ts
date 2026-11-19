@@ -6,6 +6,8 @@ import {
 import { openPrismWindow } from '../../../lib/openWindow';
 import { executeFileAction } from '../../../lib/fileActions';
 import { openSelectedDocument } from '../../../lib/openDocumentFlow';
+import { importDocumentFromPath } from '../../../lib/importDocumentFlow';
+import { IMPORT_FILE_FILTERS } from '../../import/importFormat';
 import { loadFolderTree } from '../../workspace/lib/loadFolderTree';
 import {
   createDocumentFileSession,
@@ -128,6 +130,39 @@ async function handleOpen(context: CommandContext): Promise<void> {
       title: t('command.openFileFailedTitle'),
       kind: 'error',
     });
+  }
+}
+
+async function handleImport(context: CommandContext): Promise<void> {
+  const selected = await openDialog({
+    multiple: false,
+    filters: IMPORT_FILE_FILTERS,
+    title: t('import.pickTitle'),
+  });
+
+  if (!selected || Array.isArray(selected)) return;
+
+  try {
+    const result = await importDocumentFromPath(selected, {
+      documentStore: context.documentStore,
+      showToast: context.showToast,
+      workspaceStore: context.workspaceStore,
+    });
+    const name = basename(result.path);
+
+    context.showToast?.(
+      result.assetCount > 0
+        ? t('import.doneWithAssets', { name, count: result.assetCount })
+        : t('import.done', { name }),
+      'success',
+    );
+
+    if (result.warnings.length > 0) {
+      context.showToast?.(t('import.warnings', { message: result.warnings.join(' ') }), 'warning');
+    }
+  } catch (err) {
+    console.error('[Command] Failed to import document:', err);
+    context.showToast?.(t('import.failed', { message: formatUnknownError(err) }), 'error');
   }
 }
 
@@ -343,6 +378,12 @@ export function createFileCommands(): CommandDefinition[] {
       keywords: ['open', 'file'],
       shortcuts: [{ code: 'KeyO', mod: true }],
       run: handleOpen,
+    },
+    {
+      id: 'importDocument',
+      category: 'file',
+      keywords: ['import', 'html', 'docx', 'word', 'web', '导入', '转换', 'word 转 markdown'],
+      run: handleImport,
     },
     {
       id: 'save',

@@ -83,6 +83,7 @@ const menuModel: MenuModel = {
     { command: 'newWindow' },
     { type: 'separator' },
     { command: 'open' },
+    { command: 'importDocument' },
     { command: 'openFolder' },
     {
       label: 'openRecent',
@@ -228,6 +229,7 @@ const menuModel: MenuModel = {
     { command: 'showOutline' },
   ],
   view: [
+    { command: 'livePreview' },
     { command: 'sourceMode' },
     { command: 'splitMode' },
     { command: 'previewMode' },
@@ -242,6 +244,7 @@ const menuModel: MenuModel = {
     { command: 'wordWrap' },
     { command: 'statusBar' },
     { command: 'showDocumentDiagnostics' },
+    { command: 'showDocumentStatistics' },
     { type: 'separator' },
     {
       label: 'theme',

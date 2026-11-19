@@ -713,6 +713,46 @@ export function SettingsModal({ initialSection = 'general', visible, onClose }: 
             </div>
             <div className="settings-row">
               <div>
+                <div className="row-label">{t('settings.previewLineWidth.label')}</div>
+                <div className="row-hint">
+                  {settings.previewLineWidth > 0
+                    ? `${settings.previewLineWidth}px`
+                    : t('settings.previewLineWidth.theme')}
+                </div>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1200}
+                step={20}
+                value={settings.previewLineWidth}
+                onChange={(e) => settings.setPreviewLineWidth(Number(e.target.value))}
+                style={{ width: 160 }}
+              />
+            </div>
+            <div className="settings-row">
+              <div>
+                <div className="row-label">{t('settings.previewAccent.label')}</div>
+                <div className="row-hint">
+                  {settings.previewAccent || t('settings.previewAccent.theme')}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="color"
+                  value={settings.previewAccent || '#1c5d33'}
+                  onChange={(e) => settings.setPreviewAccent(e.target.value)}
+                  aria-label={t('settings.previewAccent.label')}
+                />
+                {settings.previewAccent && (
+                  <button type="button" onClick={() => settings.setPreviewAccent('')}>
+                    {t('settings.previewAccent.theme')}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="settings-row">
+              <div>
                 <div className="row-label">{t('settings.importFont.label')}</div>
                 <div className="row-hint">{t('settings.importFont.hint')}</div>
               </div>

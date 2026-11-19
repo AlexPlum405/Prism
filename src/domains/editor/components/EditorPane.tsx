@@ -199,6 +199,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     const isEditorDark = useSettingsStore((s) => shouldUseDarkEditor(s.contentTheme, s.theme));
     const showLineNumbers = useSettingsStore((s) => s.showLineNumbers);
     const wordWrap = useSettingsStore((s) => s.wordWrap);
+    const livePreview = useSettingsStore((s) => s.livePreview);
     const editorFontSize = useSettingsStore((s) => s.fontSize);
     const editorFontFamily = useSettingsStore((s) => s.editorFontFamily);
     const editorFontSource = useSettingsStore((s) => s.editorFontSource);
@@ -545,6 +546,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       updateTableToolbar,
       viewRef,
       wordWrap,
+      livePreview,
       workspaceLinkFiles,
       workspaceRootPath,
     });

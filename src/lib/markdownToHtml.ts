@@ -18,6 +18,8 @@ import {
   type DocumentFrontMatterProperties,
 } from '../domains/editor/extensions/frontMatterProperties';
 import { getMarkdownHeadingSlug } from '../domains/markdown';
+import { remarkImageSize } from '../domains/markdown/remarkImageSize';
+import { imageSizeStyle, parseImageSizeFromText } from '../domains/markdown/imageSize';
 import { t } from '../domains/i18n/runtime';
 
 const MERMAID_ALIAS_DIRECTIVES: Record<string, string> = {
@@ -1309,10 +1311,13 @@ function renderCommonMarkdownInline(value: string, options: { allowImages?: bool
           const alt = value.slice(index + 2, labelEndIndex);
           const src = value.slice(labelEndIndex + 2, hrefEndIndex).trim();
           const safeSrc = renderCommonPreviewHrefAttribute(src, 'media');
+          const sizeAttribute = parseImageSizeFromText(value, hrefEndIndex + 1);
+          const sizeStyle = sizeAttribute ? imageSizeStyle(sizeAttribute.size) : null;
+          const styleAttribute = sizeStyle ? ` style="${escapeGeneratedHtml(sizeStyle)}"` : '';
           output.push(safeSrc
-            ? `<img src="${safeSrc}" alt="${escapeGeneratedHtml(alt)}">`
-            : `<img alt="${escapeGeneratedHtml(alt)}">`);
-          index = hrefEndIndex + 1;
+            ? `<img src="${safeSrc}" alt="${escapeGeneratedHtml(alt)}"${styleAttribute}>`
+            : `<img alt="${escapeGeneratedHtml(alt)}"${styleAttribute}>`);
+          index = sizeAttribute ? sizeAttribute.endIndex : hrefEndIndex + 1;
           continue;
         }
       }
@@ -2435,6 +2440,7 @@ function renderMarkdownWithUnifiedPipeline(content: string, options: MarkdownToH
   if (featureHints.markmap) processor = processor.use(remarkMarkmap);
   if (featureHints.plantUml) processor = processor.use(remarkPlantUml);
 
+  processor = processor.use(remarkImageSize);
   processor = processor.use(remarkRehype, { allowDangerousHtml: featureHints.rawHtml });
   if (featureHints.rawHtml) processor = processor.use(rehypeRaw);
   if (featureHints.math && options.renderMath !== false) {

@@ -1,0 +1,29 @@
+.panel {
+  width: min(440px, calc(100vw - 48px));
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row dt {
+  font-size: 12px;
+  color: var(--text-muted, #6b6b6b);
+  letter-spacing: 0.02em;
+}
+
+.row dd {
+  margin: 0;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}

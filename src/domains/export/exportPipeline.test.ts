@@ -1012,11 +1012,13 @@ describe('export pipeline image progress', () => {
   let iframeScrollMetrics: { width: number; height: number } | null = null;
   let iframeLinkRect: { left: number; top: number; width: number; height: number } | null = null;
   let iframePlantUmlRect: { left: number; top: number; width: number; height: number } | null = null;
+  let iframeHeadingTops: Record<string, number> | null = null;
 
   beforeEach(() => {
     iframeScrollMetrics = null;
     iframeLinkRect = null;
     iframePlantUmlRect = null;
+    iframeHeadingTops = null;
     fsMock.writeFile.mockClear();
     fsMock.writeTextFile.mockClear();
     mermaidMock.initialize.mockClear();
@@ -1086,6 +1088,10 @@ describe('export pipeline image progress', () => {
                       return linkRect
                         ? createTestRect(linkRect.left, linkRect.top, linkRect.width, linkRect.height)
                         : createTestRect(0, 0, 0, 0);
+                    }
+                    if (/^H[1-6]$/.test((this as HTMLElement).tagName) && iframeHeadingTops) {
+                      const headingTop = iframeHeadingTops[(this as HTMLElement).textContent?.trim() ?? ''];
+                      if (headingTop !== undefined) return createTestRect(0, headingTop, 600, 24);
                     }
                     return createTestRect(0, 0, 0, 0);
                   };
@@ -1465,8 +1471,54 @@ describe('export pipeline image progress', () => {
     expect(action.lookup(PDFName.of('URI'), PDFString).asString()).toBe('https://example.com/');
   });
 
-  it('inserts pdf pagination spacers before atomic blocks that would be cut by a page boundary', async () => {
-    const root = document.createElement('div');
+  it('writes pdf outline bookmarks for exported headings', async () => {
+    fsMock.writeFile.mockClear();
+    canvasRenderMock.render.mockClear();
+    iframeScrollMetrics = { width: 980, height: 1200 };
+    iframeHeadingTops = { '第一章 概述': 100, '1.1 背景': 400, '第二章 结论': 1100 };
+
+    try {
+      await exportPdf(createInput({
+        content: [
+          '# 第一章 概述',
+          '',
+          '正文',
+          '',
+          '## 1.1 背景',
+          '',
+          '正文',
+          '',
+          '# 第二章 结论',
+        ].join('\n'),
+      }), '/tmp/outline.pdf');
+    } finally {
+      iframeScrollMetrics = null;
+      iframeHeadingTops = null;
+    }
+
+    const bytes = fsMock.writeFile.mock.calls[0][1] as Uint8Array;
+    const { PDFArray, PDFDict, PDFDocument, PDFName } = await import('pdf-lib');
+    const pdf = await PDFDocument.load(bytes);
+    const outline = pdf.context.lookup(pdf.catalog.get(PDFName.of('Outlines')), PDFDict);
+    expect(Number(outline.get(PDFName.of('Count')))).toBe(3);
+
+    const first = pdf.context.lookup(outline.get(PDFName.of('First')), PDFDict);
+    const firstTitle = first.get(PDFName.of('Title')) as unknown as { decodeText: () => string };
+    expect(firstTitle.decodeText()).toBe('第一章 概述');
+
+    const child = pdf.context.lookup(first.get(PDFName.of('First')), PDFDict);
+    const childTitle = child.get(PDFName.of('Title')) as unknown as { decodeText: () => string };
+    expect(childTitle.decodeText()).toBe('1.1 背景');
+
+    const second = pdf.context.lookup(first.get(PDFName.of('Next')), PDFDict);
+    const secondTitle = second.get(PDFName.of('Title')) as unknown as { decodeText: () => string };
+    expect(secondTitle.decodeText()).toBe('第二章 结论');
+
+    const dest = pdf.context.lookup(first.get(PDFName.of('Dest')), PDFArray);
+    expect(dest.get(0).toString()).toBe(pdf.getPage(0).ref.toString());
+  });
+
+  it('inserts pdf pagination spacers before atomic blocks that would be cut by a page boundary', async () => {    const root = document.createElement('div');
     const block = document.createElement('div');
     block.className = 'prism-export-atomic';
     root.appendChild(block);

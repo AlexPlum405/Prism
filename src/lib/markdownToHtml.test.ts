@@ -872,6 +872,28 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('<img src="./assets/image.png" alt="ok">');
   });
 
+  it('applies image size attributes without leaking the syntax into output', () => {
+    const html = markdownToHtml('![封面](assets/cover.png){width=320}');
+
+    expect(html).toContain('src="assets/cover.png"');
+    expect(html).toContain('style="width: 320px; height: auto;"');
+    expect(html).not.toContain('{width=320}');
+  });
+
+  it('supports percentage image widths', () => {
+    const html = markdownToHtml('![封面](assets/cover.png){width=40%}');
+
+    expect(html).toContain('style="width: 40%; height: auto;"');
+  });
+
+  it('applies image size attributes on the large-preview fast path', () => {
+    const markdown = `${buildCommonFastPathMarkdown()}\n\n![尺寸图](assets/sized.png){width=200}\n`;
+    const html = markdownToHtml(markdown, largePreviewRenderOptions);
+
+    expect(html).toContain('style="width: 200px; height: auto;"');
+    expect(html).not.toContain('{width=200}');
+  });
+
   it('renders supported callout blockquotes with scoped metadata classes', () => {
     const html = markdownToHtml([
       '> [!WARNING] 发布前确认',

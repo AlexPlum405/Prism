@@ -30,6 +30,22 @@ fn is_supported_document_path(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+/// 导入来源格式：只读授权，比文档格式多出网页与 Word，但仍然是一份白名单。
+const IMPORT_SOURCE_EXTENSIONS: &[&str] = &[
+    "html", "htm", "xhtml", "docx", "md", "markdown", "mdown", "mkd", "txt", "text", "csv", "tsv",
+    "log",
+];
+
+fn is_import_source_path(path: &Path) -> bool {
+    extension_for_path(path)
+        .map(|extension| {
+            IMPORT_SOURCE_EXTENSIONS
+                .iter()
+                .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+        })
+        .unwrap_or(false)
+}
+
 fn is_sensitive_directory(app: &AppHandle, path: &Path) -> bool {
     if path.parent().is_none() {
         return true;
@@ -102,6 +118,34 @@ pub fn grant_markdown_file_scope(app: AppHandle, path: String) -> Result<(), Str
     Ok(())
 }
 
+/// 导入来源文件的只读授权。
+///
+/// 与 `grant_markdown_file_scope` 分开：导入要读 .html / .docx，但文档打开
+/// 仍然只认 Markdown / Text；合成一个命令等于顺手放宽了打开文件的白名单。
+#[tauri::command]
+pub fn grant_import_file_scope(app: AppHandle, path: String) -> Result<(), String> {
+    let file_path = canonicalize_existing_path(&path)?;
+    path::ensure_file(&file_path, "grant_import_file_scope").map_err(|error| error.message)?;
+    if !is_import_source_path(&file_path) {
+        return Err("This file type cannot be imported".to_string());
+    }
+
+    let scope = app.fs_scope();
+    scope
+        .allow_file(&file_path)
+        .map_err(|err| err.to_string())?;
+
+    if let Some(parent) = file_path.parent() {
+        if !is_sensitive_directory(&app, parent) {
+            scope
+                .allow_directory(parent, true)
+                .map_err(|err| err.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn grant_workspace_directory_scope(app: AppHandle, path: String) -> Result<(), String> {
     let directory_path = canonicalize_existing_path(&path)?;
@@ -137,5 +181,20 @@ mod tests {
         assert!(!is_supported_document_path(Path::new("image.png")));
         assert!(!is_supported_document_path(Path::new("draft")));
         assert!(!is_supported_document_path(Path::new("app.ts")));
+    }
+
+    #[test]
+    fn allows_import_source_extensions() {
+        assert!(is_import_source_path(Path::new("page.html")));
+        assert!(is_import_source_path(Path::new("page.HTM")));
+        assert!(is_import_source_path(Path::new("spec.docx")));
+        assert!(is_import_source_path(Path::new("notes.md")));
+    }
+
+    #[test]
+    fn rejects_non_importable_extensions() {
+        assert!(!is_import_source_path(Path::new("contract.pdf")));
+        assert!(!is_import_source_path(Path::new("archive.zip")));
+        assert!(!is_import_source_path(Path::new("image.png")));
     }
 }

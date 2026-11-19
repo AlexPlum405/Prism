@@ -408,6 +408,23 @@ export function createDocxImageRun(
   } as any);
 }
 
+/**
+ * Markdown 里写的 `{width=…}` 换算成 DOCX 的像素宽度上限。
+ * 百分比按版心宽度折算，绝对值直接使用，最终仍由 constrainDocxImageSize 兜底。
+ */
+export function getDocxImageMaxWidth(
+  size?: { width?: string },
+  containerWidth = DOCX_IMAGE_MAX_WIDTH,
+) {
+  if (!size?.width) return undefined;
+  const numeric = Number.parseFloat(size.width);
+  if (!Number.isFinite(numeric) || numeric <= 0) return undefined;
+  const target = size.width.endsWith('%')
+    ? (containerWidth * numeric) / 100
+    : numeric;
+  return Math.max(1, Math.round(Math.min(containerWidth, target)));
+}
+
 export function constrainDocxImageSize(
   image: Pick<ExportDocxImage | MermaidDocxImage, 'width' | 'height'>,
   options: { maxWidth?: number; maxHeight?: number } = {},

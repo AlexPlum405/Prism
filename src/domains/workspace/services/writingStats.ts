@@ -2,7 +2,9 @@ export interface WritingStats {
   chineseChars: number;
   englishWords: number;
   characters: number;
+  paragraphCount: number;
   readingMinutes: number;
+  sentenceCount: number;
   wordCount: number;
 }
 
@@ -32,6 +34,29 @@ function stripMarkdownNoise(markdown: string) {
     .join('\n');
 }
 
+function countParagraphs(plain: string) {
+  let count = 0;
+  let inBlock = false;
+  for (const line of plain.split(/\r?\n/)) {
+    if (line.trim()) {
+      if (!inBlock) {
+        count += 1;
+        inBlock = true;
+      }
+    } else {
+      inBlock = false;
+    }
+  }
+  return count;
+}
+
+function countSentences(plain: string) {
+  return plain
+    .split(/[。！？!?；;…]+|\.(?=\s|$)/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => /[\p{L}\p{N}]/u.test(sentence)).length;
+}
+
 export function computeWritingStats(markdown: string): WritingStats {
   const plain = stripMarkdownNoise(markdown);
   const chineseChars = plain.match(/\p{Script=Han}/gu)?.length ?? 0;
@@ -46,7 +71,9 @@ export function computeWritingStats(markdown: string): WritingStats {
     chineseChars,
     englishWords,
     characters,
+    paragraphCount: countParagraphs(plain),
     readingMinutes,
+    sentenceCount: countSentences(plain),
     wordCount: chineseChars + englishWords,
   };
 }

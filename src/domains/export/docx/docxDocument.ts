@@ -14,6 +14,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { remarkImageSize } from '../../markdown/remarkImageSize';
 import type { Paragraph as DocxParagraph, TextRun as DocxTextRun } from 'docx';
 import { writeFile } from '../../../platform/tauri/fileSystem';
 import { t } from '../../i18n/runtime';
@@ -661,7 +662,7 @@ export async function exportDocx(input: ExportDocumentInput, outputPath?: string
 
   reportCitationPlaceholderWarning(input);
   reportProgress(input, exportProgressMessages.parseMarkdown());
-  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
+  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath).use(remarkImageSize);
   const tree = processor.runSync(processor.parse(input.content)) as any;
   reportProgress(input, exportProgressMessages.applyTheme());
   const baseTheme = getDocxThemeByContentTheme(input.contentTheme);

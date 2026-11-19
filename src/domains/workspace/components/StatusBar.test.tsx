@@ -7,7 +7,9 @@ const writingStats: WritingStats = {
   chineseChars: 42,
   englishWords: 18,
   characters: 96,
+  paragraphCount: 3,
   readingMinutes: 2,
+  sentenceCount: 5,
   wordCount: 60,
 };
 
@@ -15,7 +17,9 @@ const selectionStats: WritingStats = {
   chineseChars: 4,
   englishWords: 2,
   characters: 14,
+  paragraphCount: 1,
   readingMinutes: 1,
+  sentenceCount: 1,
   wordCount: 6,
 };
 
