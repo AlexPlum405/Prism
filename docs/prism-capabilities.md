@@ -225,3 +225,4 @@ Text 扩展名：`txt`、`text`、`sql`、`json`、`jsonc`、`yaml`、`yml`、`t
 | 2026-11-19 | 真机验收修复 | 导入来源改走独立的只读授权（`grant_import_file_scope`，白名单含 html/docx），不再复用只认 Markdown/Text 的打开授权；`saveSettings` 白名单补入 `livePreview`、`previewLineWidth`、`previewAccent`，单窗预览与外观控件不再重启丢失 |
 | 2026-11-19 | 文件级导入 | `CAP-FILE-09` 从 Not supported 转为 Stable：新增「导入为 Markdown」（网页/Word/纯文本 → `.md`），图片拆到 `assets/`；合并原 `CAP-FILE-10`，从不做清单移除 |
 | 2026-11-19 | PDF 书签 | `CAP-EXPORT-09` 从 Not supported 转为 Stable：按标题写 /Outlines，原生捕获与光栅化两条通路共用分页参数；`CAP-EXPORT-02` 补书签能力与测试锚点 |
+| 2026-11-20 | 外观收敛 + 侧栏图标 | 启动窗口默认 1440×1000 → 1240×840，并按显示器可用区再收窄 12%（`window_fit`），从 Finder 打开的文档窗口同样生效；侧栏页脚图标改为按渲染尺寸画网格（16 单位画布 / 1px 线 / 整数坐标），灰边像素由 34% 降到 0；视图切换图标换成「导轨 + 三级缩进」，与平铺态共用墨迹框 |

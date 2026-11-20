@@ -326,8 +326,8 @@ body.island-resizing * {
 
 .island-sidebar__add svg,
 .island-sidebar__icon-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
 }
 

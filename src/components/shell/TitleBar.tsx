@@ -5,7 +5,7 @@ import { getRuntimePlatform } from '../../domains/workspace/services';
 import { useI18n } from '../../domains/i18n';
 import type { DocumentSaveStatus } from '../../domains/document/types';
 import { MenuDropdown } from './MenuDropdown';
-import { PANEL_RING } from '../icons/islandIconPaths';
+import { PANEL_CHEVRON, PANEL_DIVIDER, PANEL_RING } from '../icons/islandIconPaths';
 import type { MenuSection } from './types';
 import styles from './TitleBar.module.css';
 
@@ -29,29 +29,22 @@ const IS_MACOS = RUNTIME_PLATFORM === 'mac';
 const IS_WINDOWS = RUNTIME_PLATFORM === 'windows';
 
 /**
- * 侧栏图标：外框/内框路径取自 components/icons/islandIconPaths，与侧栏页脚的
- * 视图按钮共用同一条超椭圆环（纯 fill、evenodd 挖空、环厚 1.30）。
- * 展开态叠一道 1.20 悬浮细缝（左栏 26%，上下各留 0.9），收起态换成 1.20 圆头右向箭头。
+ * 侧栏图标：环、竖线、箭头都取自 components/icons/islandIconPaths 的 16 单位
+ * 网格（1px 环厚、整数坐标），与侧栏页脚的视图按钮同一套线宽。
+ * 展开态在环内叠一道 1px 竖线标出左栏，收起态换成右向箭头。
  */
 
 const IconPanelLeftOn = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
     <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
-    <rect x="5.78" y="5.35" width="1.2" height="9.3" rx="0.6" />
+    <path d={PANEL_DIVIDER} />
   </svg>
 );
 
 const IconPanelLeftOff = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
     <path fillRule="evenodd" clipRule="evenodd" d={PANEL_RING} />
-    <path
-      d="M9.8 8.7L11.8 10L9.8 11.3"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <path d={PANEL_CHEVRON} />
   </svg>
 );
 

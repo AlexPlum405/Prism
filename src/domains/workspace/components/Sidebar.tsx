@@ -4,25 +4,25 @@ import { OutlinePanel } from './OutlinePanel';
 import { useI18n } from '../../i18n';
 import { PLUS_PATH, VIEW_LIST_PATH, VIEW_TREE_PATH } from '../../../components/icons/islandIconPaths';
 
-/* 页脚图标路径取自 components/icons/islandIconPaths，与标题栏侧栏开关共用
-   同一套 20×20 / 纯 fill / 1.20–1.30 圆头笔画。过去这排是实心小块 +
-   stroke 加号，线宽和留白都跟外壳图标对不上。 */
+/* 页脚三个图标走 islandIconPaths 的 16 档：viewBox 16×16、按 16px 渲染、
+   整数坐标、1px 线。这样坐标正好落在设备像素边界上，2 倍屏下每根线是整数
+   个设备像素，不会被抗锯齿摊成灰边。 */
 const IconPlus = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
     <path d={PLUS_PATH} />
   </svg>
 );
 
-/** 树/网格视图：2×2 空心小方块，保留原本「方块」的语义但换成细线环。 */
+/** 树形视图：导轨 + 三条缩进横线，缩进表示层级，不再用方块。 */
 const IconViewTree = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
-    <path fillRule="evenodd" clipRule="evenodd" d={VIEW_TREE_PATH} />
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d={VIEW_TREE_PATH} />
   </svg>
 );
 
-/** 列表视图：三条圆头横线，点击后形状明显改变，空工作区里也有反馈。 */
+/** 列表视图：三条等长横线，与树形态共用行距和墨迹框，切换时不跳。 */
 const IconViewList = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
     <path d={VIEW_LIST_PATH} />
   </svg>
 );
