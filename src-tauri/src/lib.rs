@@ -542,6 +542,17 @@ pub fn run() {
                 )?;
             }
 
+            // 开窗前先把主窗口收到屏幕可用区内：配置里的尺寸是理想值，
+            // 小屏上直接照搬会让窗口比屏幕还高。
+            if let Some(window) = app.get_webview_window("main") {
+                if let Err(error) = commands::window::fit_window_to_screen(
+                    &window,
+                    commands::window::DEFAULT_WINDOW_SIZE,
+                ) {
+                    eprintln!("[window] Failed to fit main window to screen: {error}");
+                }
+            }
+
             commands::startup_files::register_startup_files(app);
             seed_initial_documents(app);
 

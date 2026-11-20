@@ -221,13 +221,16 @@ fn open_startup_file_window(
     path: &str,
     sequence: usize,
 ) -> tauri::Result<()> {
-    tauri::WebviewWindowBuilder::new(
+    /// 双击文稿开新窗时的理想尺寸，比主窗口小一档。
+    const OPENED_WINDOW_SIZE: (f64, f64) = (1100.0, 760.0);
+
+    let window = tauri::WebviewWindowBuilder::new(
         app,
         startup_file_window_label(sequence),
         tauri::WebviewUrl::App(startup_file_window_url(path)),
     )
     .title("Prism")
-    .inner_size(1100.0, 760.0)
+    .inner_size(OPENED_WINDOW_SIZE.0, OPENED_WINDOW_SIZE.1)
     .min_inner_size(900.0, 620.0)
     .resizable(true)
     .maximizable(true)
@@ -239,6 +242,12 @@ fn open_startup_file_window(
     .hidden_title(true)
     .visible(false)
     .build()?;
+
+    // 与主窗口同一套收敛规则：小屏上 760 可能超出可用高度。
+    if let Err(error) = crate::commands::window::fit_window_to_screen(&window, OPENED_WINDOW_SIZE) {
+        eprintln!("[window] Failed to fit opened file window to screen: {error}");
+    }
+
     Ok(())
 }
 
