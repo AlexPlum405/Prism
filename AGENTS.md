@@ -2,7 +2,7 @@
 
 ## 项目
 
-Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档单窗口，视觉采用**妙言风格**。核心能力（编辑/分栏/预览、自动保存、KaTeX、Mermaid、导出）已实现。
+Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档单窗口，视觉采用**妙言风格**。核心能力（源码/单窗/分栏/预览四态、自动保存、KaTeX、Mermaid、导出）已实现。
 
 分层：`src/app`（组合与模型）、`src/components`（通用 UI）、`src/domains/*`（按领域切分）、`src/lib`（无 UI 的纯逻辑与 worker）、`src/platform`（Tauri 与事件适配）、`src/styles`（令牌与主题）、`src-tauri`（Rust 侧）。
 
@@ -68,11 +68,7 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 
 ## 待办
 
-不破坏妙言视觉，不移动已确认保留的入口；按序推进：
-
-斜杠菜单 → 工作区索引 → 链接/反链/图谱 → 属性 → 模板 → 块操作 → 导出保真
-
-状态栏降噪与命令面板整理已完成：底部状态栏已撤掉，状态区只读；命令面板只做快速打开与全文搜索，命令入口以菜单和快捷键为主。
+不破坏妙言视觉，不移动已确认保留的入口。早期路线图（斜杠菜单、工作区索引、链接/反链/图谱、属性、模板、块操作）已落地或划定边界，现役缺口只以 `docs/prism-capabilities.md` 中标 `Beta` 的 `CAP-*` 行为准，不在本文件维护第二份顺序表。
 
 ## Agent skills
 

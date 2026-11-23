@@ -46,6 +46,7 @@ docs/releases/prism-windows-1.0.0-confidence-pack/
     03-titlebar-window-controls.png
     04-file-association-explorer.png
     05-split-preview.png
+    05b-single-pane.png
     06-theme-miaoyan.png
     07-theme-nocturne-dark.png
     08-diagrams-formulas.png
@@ -245,7 +246,7 @@ Set-Content -Encoding UTF8 "$Root\Examples\data.json" "{`"name`":`"Prism`"}"
 
 | ID | 优先级 | 验收 |
 |---|---|---|
-| WIN-WRITE-001 | P0 | 源码 / 单窗 / 分栏 / 预览四态切换正常；`Ctrl+1`–`Ctrl+4` 与标题栏 `ViewModeSwitch` 图标组、菜单「视图」勾选状态三者互相一致。仅当验证 commit 含 `176e24b8`（单窗所见即所得）时适用；若严格验证 `e03f199e`，该项为源码 / 分栏 / 预览三态，按三态执行并在证据中注明 commit 口径 |
+| WIN-WRITE-001 | P0 | 源码 / 单窗 / 分栏 / 预览四态切换正常；标题栏 `ViewModeSwitch` 图标组与菜单「视图」勾选状态一致，`Ctrl+/` 只切源码。仅当验证 commit 含 `176e24b8`（单窗所见即所得）时适用；若严格验证 `e03f199e`，该项为源码 / 分栏 / 预览三态，按三态执行并在证据中注明 commit 口径 |
 | WIN-WRITE-002 | P0 | Markdown 预览包含标题、表格、任务列表、代码块、KaTeX、Mermaid、PlantUML、Markmap |
 | WIN-WRITE-003 | P0 | 搜索 / 替换正常，预览模式触发替换时按既定逻辑处理 |
 | WIN-WRITE-004 | P2 / 条件项 | 仅当验证 commit 包含 `912c9fb5` 时执行：`Ctrl` + 鼠标滚轮调整编辑 / 预览字号；输入框内不误触。若严格验证 `e03f199e`，标记 `Not Run: not in 1.0.0 target commit` |
@@ -256,6 +257,7 @@ Set-Content -Encoding UTF8 "$Root\Examples\data.json" "{`"name`":`"Prism`"}"
 截图：
 
 - `05-split-preview.png`
+- `05b-single-pane.png`（四态口径才需要：单窗视图渲染标题与列表，对应 `WIN-WRITE-001`）
 - `06-theme-miaoyan.png`
 - `07-theme-nocturne-dark.png`
 - `08-diagrams-formulas.png`

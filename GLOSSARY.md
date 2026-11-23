@@ -83,7 +83,7 @@ Text Document 第一批白名单为：`.txt`、`.text`、`.sql`、`.json`、`.js
 Markdown Document 与 Text Document 的边界详见 ADR-0007。
 
 ### 视图模式（View mode）
-四态互斥：`edit`（源码）/ `wysiwyg`（单窗，Markdown 按成品渲染、光标所在行回源码）/ `split`（分栏）/ `preview`（预览），快捷键 `Cmd+1`–`Cmd+4`。主入口在标题栏右上角的 `ViewModeSwitch` 图标组；菜单"视图"中作为 `checkable` 项呈现。状态区不承载视图模式切换。
+四态互斥：`edit`（源码）/ `wysiwyg`（单窗，Markdown 按成品渲染、光标所在行回源码）/ `split`（分栏）/ `preview`（预览）。主入口是标题栏右上角的 `ViewModeSwitch` 图标组，菜单「视图」逐项列出四态并带勾选；只有源码模式另配 `Cmd+/`，`Cmd+1`–`Cmd+6` 归标题级别，不用于切视图。状态区不承载视图模式切换。
 
 ### 专注模式（Focus mode）
 `F8` 触发。侧栏、菜单栏、标题栏 `opacity: 0.25`，鼠标 hover 恢复。不同于全屏 `F11`。
@@ -149,7 +149,7 @@ Toggle 使用原生 HTML `details/summary`，以保证 Markdown 源码可读并�
 ### 模板系统（Templates）
 模板系统第一版只做本地 Markdown 模板插入，不做模板市场、在线模板库、模板同步、复杂脚本变量或 Notion 式数据库模板。
 
-内置模板优先覆盖常见写作场景：会议纪要、PRD、技术方案、周报、公众号长文、学术笔记。入口为斜杠菜单 `/template` 与命令面板 `插入模板`。选择模板后把普通 Markdown 内容插入当前光标位置；如果当前文档为空，也可以作为整篇文档模板。
+内置模板优先覆盖常见写作场景：会议纪要、PRD、技术方案、周报、公众号长文、学术笔记。入口为斜杠菜单 `/template` 与菜单「插入 → 模板」。选择模板后把普通 Markdown 内容插入当前光标位置；如果当前文档为空，也可以作为整篇文档模板。
 
 模板内容可以包含 YAML Front Matter、标题、列表、Callout、Mermaid 占位等标准 Markdown/HTML。第一版最多支持简单占位符：`{{date}}`、`{{title}}`、`{{author}}`。
 
@@ -163,7 +163,7 @@ Prism 可以提供轻量文档关系图谱，但不做 Obsidian 式重型知识�
 ### Front Matter 属性面板
 YAML Front Matter 可视化属性面板可以做，但保持轻量，只服务写作、搜索、导出和模板。第一版字段包括：`title`、`tags`、`description`、`author`、`date`、`status`、`export`。
 
-入口第一版为命令面板 `打开文档属性`；如果后续被证明高频，再考虑固定入口。面板可视化编辑字段，保存时写回文档顶部 YAML Front Matter。`export` 字段可服务导出模板，例如默认主题、是否显示目录、纸张尺寸等。
+入口第一版为菜单「导航 → 文档属性」；如果后续被证明高频，再考虑固定入口。面板可视化编辑字段，保存时写回文档顶部 YAML Front Matter。`export` 字段可服务导出模板，例如默认主题、是否显示目录、纸张尺寸等。
 
 属性面板不是 Notion database properties，不支持 relation、rollup、formula、多类型复杂字段或数据库视图。
 
@@ -172,10 +172,10 @@ Prism 不做完整 block editor，只做基于 Markdown 文本范围的当前段
 
 第一版操作包括：上移当前段落、下移当前段落、复制当前段落、删除当前段落、把选区转成引用、把选区转成 Callout、把选区转成任务列表、折叠当前标题章节、复制当前标题章节。
 
-入口为命令面板与右键菜单。后续可评估行首轻量 handle，但第一版不做常驻拖拽把手、不做 Notion 式块数据库、不做整篇文档拖拽重排、不隐藏 Markdown 源码。
+入口为「格式」菜单与右键菜单。后续可评估行首轻量 handle，但第一版不做常驻拖拽把手、不做 Notion 式块数据库、不做整篇文档拖拽重排、不隐藏 Markdown 源码。
 
 ### 快速打开与工作区搜索
-快速打开与搜索属于写作导航增强，不是 IDE 搜索中心。第一版支持 `Cmd+P` 快速打开当前工作区 Markdown Document 与 Text Document，`Cmd+Shift+F` 全文搜索当前工作区 Markdown Document 与 Text Document，命令面板显示最近打开文档。搜索结果点击直接打开文档。
+快速打开与搜索属于写作导航增强，不是 IDE 搜索中心。第一版支持 `Cmd+Shift+O` 快速打开当前工作区 Markdown Document 与 Text Document，`Cmd+Shift+F` 全文搜索当前工作区 Markdown Document 与 Text Document，命令面板显示最近打开文档。搜索结果点击直接打开文档。
 
 搜索支持文件名、标题、路径的模糊匹配；不实现 IDE 式复杂 search/replace 全套，不索引二进制文件，不做云端搜索。该能力应与 `[[` 页面链接搜索、backlinks、关系图谱共用同一套工作区索引，但页面链接、backlinks 和关系图谱只对 Markdown Document 产生文档关系语义。
 

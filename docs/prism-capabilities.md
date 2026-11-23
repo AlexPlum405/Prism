@@ -83,7 +83,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 
 | ID | 用户任务 | 当前能力 | 状态 | 证据 | 决策 |
 | --- | --- | --- | --- | --- | --- |
-| CAP-FLOW-01 | 在源码/单窗/分栏/预览间切换 | 四态互斥，`Cmd+1/2/3/4`（⌘4 为单窗） | Stable | `ViewModeSwitch.test.tsx` | Keep |
+| CAP-FLOW-01 | 在源码/单窗/分栏/预览间切换 | 四态互斥；入口为标题栏 `ViewModeSwitch` 图标组与菜单「视图」勾选，源码模式另有 `Cmd+/`；`Cmd+1`–`Cmd+6` 归标题级别 | Stable | `ViewModeSwitch.test.tsx` | Keep |
 | CAP-FLOW-02 | 单窗写作不打断 | 单窗模式内即写即见，不再来回切预览；表格显示为真表格，点一下才回源码编辑 | Beta | `wysiwygPreview.test.ts`、`ViewModeSwitch.test.tsx` | Keep |
 | CAP-FLOW-03 | 专注写作 | 专注模式 `F8`、打字机模式 `F9` | Stable | `typewriter.test.ts` | Keep |
 | CAP-FLOW-04 | 演示文稿 | 基于分隔线的演示叠加层 | Beta | `presentation.test.ts` | Keep |
@@ -134,7 +134,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | ID | 用户任务 | 当前能力 | 状态 | 证据 | 决策 |
 | --- | --- | --- | --- | --- | --- |
 | CAP-NAV-01 | 浏览工作区 | 文件树（当前层级/递归）、右键菜单 | Stable | `FileTree.test.tsx` | Keep |
-| CAP-NAV-02 | 快速找文件 | `Cmd+P` 快速打开 | Stable | `quickOpen.test.ts` | Keep |
+| CAP-NAV-02 | 快速找文件 | `Cmd+Shift+O` 快速打开 | Stable | `quickOpen.test.ts` | Keep |
 | CAP-NAV-03 | 全文搜索 | `Cmd+Shift+F` | Stable | `workspaceIndexQuery.test.ts` | Keep |
 | CAP-NAV-04 | 文档之间跳转 | `[[` 页面链接、出链面板 | Stable | `documentLinks.test.ts` | Keep |
 | CAP-NAV-05 | 找到谁引用了我 | 反链面板 | Stable | `backlinks.test.ts` | Keep |
@@ -228,3 +228,4 @@ Text 扩展名：`txt`、`text`、`sql`、`json`、`jsonc`、`yaml`、`yml`、`t
 | 2026-11-20 | 外观收敛 + 侧栏图标 | 启动窗口默认 1440×1000 → 1240×840，并按显示器可用区再收窄 12%（`window_fit`），从 Finder 打开的文档窗口同样生效；侧栏页脚图标改为按渲染尺寸画网格（16 单位画布 / 1px 线 / 整数坐标），灰边像素由 34% 降到 0；视图切换图标换成「导轨 + 三级缩进」，与平铺态共用墨迹框 |
 | 2026-11-23 | 标题栏单行化 | 妙言外壳撤销独立菜单栏，文件/编辑/插入/格式/导航/视图/导出/窗口/帮助 回到标题栏，与红绿灯、文件名同一行；`.app-chrome` 组合头与 `MenuBar` 组件一并移除，菜单只保留一处实现（`TitleBar.renderInlineMenu`） |
 | 2026-11-23 | 单窗所见即所得 | 旧「单窗预览」只是藏标记，读起来仍是源码，判定为无效功能并删除；视图模式新增第四档「单窗」：标题按级别放大、粗体/斜体/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、图片与分隔线按成品渲染、代码块整块底色，光标所在行回源码；表格按表头/对齐/斑马纹渲染，点击或方向键把光标送进表格后整块回源码（不做成 ProseMirror 双引擎，装饰层可撤销）。编辑器语法树补 GFM，与预览口径一致 |
+| 2026-11-23 | 文档口径校正 | 四态视图上线后文档把快捷键写错：视图切换从未注册过 `Cmd+1`–`Cmd+4`（该区间归标题级别 `h1`–`h6`），实际入口只有 `ViewModeSwitch` 图标组与菜单「视图」，源码模式另有 `Cmd+/`；快速打开实际是 `Cmd+Shift+O`，不是 `Cmd+P`；命令面板只做快速打开与全文搜索，不能执行任意命令，因此「命令面板执行 `单窗模式`/`插入模板`/`打开文档属性`」这类写法一并纠正为菜单路径。涉及 `CAP-FLOW-01`、`CAP-NAV-02`、`GLOSSARY.md`、迁移指南、Windows 验收计划 |
