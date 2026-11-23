@@ -113,7 +113,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | CAP-TRUST-03 | 找出标题/表格/渲染问题 | 标题锚点、表格、渲染诊断 | Beta | `diagnostics/adapters.test.ts` | Keep |
 | CAP-TRUST-04 | 改善中文排版 | 排版建议（`info` 级） | Beta | `typographyDiagnostics.test.ts` | Keep |
 | CAP-TRUST-05 | 导出前知道风险 | 导出预检、失败诊断 | Stable | `preflight.test.ts`、`diagnostics.test.ts` | Keep |
-| CAP-TRUST-06 | 回滚到历史版本 | 无版本历史，只有恢复快照 | Not supported | `CONTEXT.md` | Defer |
+| CAP-TRUST-06 | 回滚到历史版本 | 无版本历史，只有恢复快照 | Not supported | `GLOSSARY.md` | Defer |
 
 ### F. 导出与交付
 
@@ -140,7 +140,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | CAP-NAV-05 | 找到谁引用了我 | 反链面板 | Stable | `backlinks.test.ts` | Keep |
 | CAP-NAV-06 | 看关系图 | 轻量关系图谱，1–2 跳 | Beta | `relationGraph.test.ts` | Keep |
 | CAP-NAV-07 | 管理文档元数据 | Front Matter 属性面板 | Beta | `frontMatterProperties.test.ts` | Keep |
-| CAP-NAV-08 | 重型知识图谱 | 标签宇宙图、块节点、3D、常驻右栏 | Not supported | `CONTEXT.md` | Stop |
+| CAP-NAV-08 | 重型知识图谱 | 标签宇宙图、块节点、3D、常驻右栏 | Not supported | `GLOSSARY.md` | Stop |
 
 ### H. 外观与个性化
 
@@ -163,7 +163,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | CAP-SYS-03 | 调整偏好 | 设置 6 分区 | Stable | `SettingsModal.test.tsx` | Keep |
 | CAP-SYS-04 | 获得帮助/更新 | 关于、Markdown 参考、迁移指南、GitHub、反馈、检查更新 | Limited | `updateService.test.ts` | Keep |
 | CAP-SYS-05 | 在目标平台使用 | macOS 正式；Windows/Linux 待真机验证 | Limited | `README.md` | Keep |
-| CAP-SYS-06 | 数据留在本地 | 本地文件、无账号、无云同步 | Stable | `CONTEXT.md` | Keep |
+| CAP-SYS-06 | 数据留在本地 | 本地文件、无账号、无云同步 | Stable | `GLOSSARY.md` | Keep |
 
 ## 3. 明确不做 / 暂不做
 
@@ -213,7 +213,7 @@ Text 扩展名：`txt`、`text`、`sql`、`json`、`jsonc`、`yaml`、`yml`、`t
 2. **状态必须有证据**：标 `Stable` 必须能指向测试或发布验证；没有证据只能标 `Beta` / `Limited`。
 3. **命令/设置/格式不手写**：改完代码运行 `npm run capabilities:sync`；CI 运行 `npm run capabilities:check`。
 4. **每个功能变更同一 PR 更新本文档**：修改对应 `CAP-*` 行、决策与变更记录；未同步视为未完成。
-5. **产品边界变化同步 `CONTEXT.md` 或新增 ADR**。
+5. **产品边界变化同步 `GLOSSARY.md` 或新增 ADR**。
 
 ## 6. 变更记录
 

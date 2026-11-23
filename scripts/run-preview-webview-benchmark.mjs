@@ -480,7 +480,7 @@ async function measureFixture(fixture, defaultViewMode) {
     screenshotMs: Math.round(screenshot.elapsedMs * 10) / 10,
     lastSession: lastSession.value,
     actions,
-    // 应用侧分阶段埋点：这是 CONTEXT.md 要求的「证明 DOM commit 是否为瓶颈」的证据。
+    // 应用侧分阶段埋点：这是 GLOSSARY.md 要求的「证明 DOM commit 是否为瓶颈」的证据。
     perfTrace,
     stageBreakdown: summarizeStages(perfTrace),
     domCommitMetric: perfTrace.status === 'ok'

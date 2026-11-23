@@ -1183,7 +1183,7 @@ export function PreviewPane({
 
   // DOM commit 归因：本 effect 在 React 把 html 写入 #write 之后运行，
   // 因此 preview_dom_committed 是 commit 完成点；随后两帧 rAF 近似首次绘制。
-  // CONTEXT.md 要求先证明 DOM commit 是否为瓶颈，才可改渲染策略。
+  // GLOSSARY.md 要求先证明 DOM commit 是否为瓶颈，才可改渲染策略。
   useEffect(() => {
     if (!html) return;
     if (!isPerfInstrumentationEnabled()) return;

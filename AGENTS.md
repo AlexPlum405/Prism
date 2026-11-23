@@ -6,7 +6,7 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 
 分层：`src/app`（组合与模型）、`src/components`（通用 UI）、`src/domains/*`（按领域切分）、`src/lib`（无 UI 的纯逻辑与 worker）、`src/platform`（Tauri 与事件适配）、`src/styles`（令牌与主题）、`src-tauri`（Rust 侧）。
 
-术语与决策见 `CONTEXT.md`，架构决策见 `docs/adr/`（0001–0008）。`docs/prism-openai-redesign.html` 仅作历史原型，不再是标准。
+术语与决策见 `GLOSSARY.md`，架构决策见 `docs/adr/`（0001–0008）。`docs/prism-openai-redesign.html` 仅作历史原型，不再是标准。
 
 ## 语言
 
@@ -21,10 +21,10 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 ## 流程
 
 1. **先设计后编码**：新功能与重构走 brainstorming → writing-plans → executing-plans，不跳过设计阶段。
-2. **原型对齐**：以现有妙言界面为基准，动手前先读 `CONTEXT.md` 与 `docs/adr/`。
+2. **原型对齐**：以现有妙言界面为基准，动手前先读 `GLOSSARY.md` 与 `docs/adr/`。
 3. **用户裁决**：用户否定即调整，不辩护方案，体验优先。
 4. **如实汇报**：未验证不说「完成」，阻塞与不确定直接说。
-5. **能力清单同步**：`docs/prism-capabilities.md` 是当前能力的唯一盘点真源，采用“人工能力地图 + 自动附录”。新增、修改、删除任何用户可见功能、命令、菜单、设置、格式、诊断、主题、语言或平台能力时，必须在同一变更中更新对应 `CAP-*` 行、决策与变更记录；命令/设置/格式改动后运行 `npm run capabilities:sync`，提交前跑 `npm run capabilities:check`。未同步视为未完成。功能落地若改变产品边界，同时更新 `CONTEXT.md` 或新增 ADR。
+5. **能力清单同步**：`docs/prism-capabilities.md` 是当前能力的唯一盘点真源，采用“人工能力地图 + 自动附录”。新增、修改、删除任何用户可见功能、命令、菜单、设置、格式、诊断、主题、语言或平台能力时，必须在同一变更中更新对应 `CAP-*` 行、决策与变更记录；命令/设置/格式改动后运行 `npm run capabilities:sync`，提交前跑 `npm run capabilities:check`。未同步视为未完成。功能落地若改变产品边界，同时更新 `GLOSSARY.md` 或新增 ADR。
 
 ## 代码
 
@@ -74,9 +74,20 @@ Tauri 2 + React + TypeScript 的 macOS Markdown 编辑器，Typora 式单文档�
 
 状态栏降噪与命令面板整理已完成：底部状态栏已撤掉，状态区只读；命令面板只做快速打开与全文搜索，命令入口以菜单和快捷键为主。
 
+## Agent skills
+
+### Issue tracker
+
+Issues 与 PRD 都记在 GitHub Issues（`AlexPlum405/Prism`），统一用 `gh` CLI 读写。详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+五个 canonical 角色与标签字符串同名：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+单上下文布局：根目录 `GLOSSARY.md` 承载术语与关键决策，`docs/adr/` 承载架构决策。详见 `docs/agents/domain.md`。
+
 ## 协作
 
-- **Issue**：GitHub Issues（`AlexPlum405/Prism`），用 `gh` CLI，详见 `docs/agents/issue-tracker.md`。
-- **标签**：needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix。
-- **领域文档**：单上下文布局，`CONTEXT.md` + `docs/adr/`。
 - **规则文件**：本文件是唯一真身，`CLAUDE.md` 是指向它的软链，改规则只动这里。

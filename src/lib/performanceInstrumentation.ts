@@ -1,7 +1,7 @@
 /**
  * 文档打开链路分阶段埋点。
  *
- * 目的：把 `openCommandToLastSessionMs` 拆成可归因的阶段，回答 CONTEXT.md
+ * 目的：把 `openCommandToLastSessionMs` 拆成可归因的阶段，回答 GLOSSARY.md
  * 「真实预览性能基准」要求的问题——DOM commit 或后处理是否真的是瓶颈。
  * 在此之前不得改动预览渲染策略。
  *

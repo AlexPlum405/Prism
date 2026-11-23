@@ -2,6 +2,8 @@
 
 Prism 是一个 Markdown 桌面编辑器（Tauri 2 + React + TypeScript），产品定位为 Typora 式的单活动文档窗口体验。本文档记录领域专家级别的语言与核心决策，供 AI 协作者与后续维护者对齐。
 
+> 本文档原名 `CONTEXT.md`，2026-11-23 更名为 `GLOSSARY.md`，以对齐 agent 技能的通用约定；`docs/archive/`、`docs/plans/` 等历史文档里的旧引用保持原样，不再回改。术语以本文为准，架构决策以 `docs/adr/` 为准。
+
 ## 术语表
 
 ### Prototype（设计原型）
@@ -17,7 +19,7 @@ Prism 是一个 Markdown 桌面编辑器（Tauri 2 + React + TypeScript），产
 OpenAI 原型中的部分原则仍可作为辅助约束：克制、留白、少装饰、少强色块。但不能继续套用纯黑白双锚点、强 pill 体系或大号 display 排印作为唯一判断标准。
 
 ### 能力清单（Capability Inventory）
-`docs/prism-capabilities.md` 是 Prism 当前能力的唯一盘点真源，采用“人工能力地图 + 代码自动附录”：人工维护 60–80 项用户任务能力、成熟度、证据与 Keep/Build/Defer/Stop 决策；命令、设置项、文件与导出格式由 `npm run capabilities:sync` 生成，`npm run capabilities:check` 校验过期。它回答“当前有什么、证据在哪、下一步做什么”，`CONTEXT.md` 与 `docs/adr/` 回答“为什么这样设计”。任何新增、修改、删除功能都必须在同一变更中更新能力清单；产品边界变化还要同步本文档或新增 ADR。
+`docs/prism-capabilities.md` 是 Prism 当前能力的唯一盘点真源，采用“人工能力地图 + 代码自动附录”：人工维护 60–80 项用户任务能力、成熟度、证据与 Keep/Build/Defer/Stop 决策；命令、设置项、文件与导出格式由 `npm run capabilities:sync` 生成，`npm run capabilities:check` 校验过期。它回答“当前有什么、证据在哪、下一步做什么”，`GLOSSARY.md` 与 `docs/adr/` 回答“为什么这样设计”。任何新增、修改、删除功能都必须在同一变更中更新能力清单；产品边界变化还要同步本文档或新增 ADR。
 
 ### 单活动文档窗口（Single-active-document window）
 Prism 没有标签页。每个窗口同一时间只有一个活动文档；系统打开、主菜单打开和新建文档默认新开窗口（`Ctrl+Shift+N`），工作区文件树、快速打开和最近文件属于当前工作区导航，可以在当前窗口切换活动文档。
