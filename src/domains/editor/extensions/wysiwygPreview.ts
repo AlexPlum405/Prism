@@ -11,21 +11,29 @@
  */
 import { syntaxTree } from '@codemirror/language';
 import type { SyntaxNode } from '@lezer/common';
-import type { EditorState, Extension } from '@codemirror/state';
+import { Prec, StateField, type EditorState, type Extension } from '@codemirror/state';
 import {
   Decoration,
   EditorView,
-  ViewPlugin,
   WidgetType,
+  keymap,
   type DecorationSet,
-  type ViewUpdate,
 } from '@codemirror/view';
 import { readFile } from '../../../platform/tauri/fileSystem';
 import { resolveMarkdownImagePath } from './imageDiagnostics';
 import { TaskListCheckboxWidget, taskListCheckboxTheme } from './taskListCheckbox';
 
+/** 表格单元格的对齐方式，`null` 表示 Markdown 没表态（浏览器默认左对齐）。 */
+export type WysiwygTableAlign = 'left' | 'center' | 'right' | null;
+
+export interface WysiwygTableData {
+  align: WysiwygTableAlign[];
+  header: string[];
+  rows: string[][];
+}
+
 /** 需要隐藏或替换的行内区间。 */
-export type WysiwygInlineKind = 'hidden' | 'image' | 'rule' | 'bullet' | 'checkbox';
+export type WysiwygInlineKind = 'hidden' | 'image' | 'rule' | 'bullet' | 'checkbox' | 'table';
 
 export interface WysiwygInlineRange {
   from: number;
@@ -39,6 +47,8 @@ export interface WysiwygInlineRange {
   text?: string;
   /** 复选框 widget 用 */
   checked?: boolean;
+  /** 表格 widget 用 */
+  table?: WysiwygTableData;
 }
 
 export interface WysiwygLineRange {
@@ -84,6 +94,65 @@ function parseImageWidth(attributes: string | undefined): string | undefined {
   if (!attributes) return undefined;
   const width = /(?:^|\s)width\s*=\s*(\d+(?:\.\d+)?)(px|%)?/.exec(attributes);
   return width ? `${width[1]}${width[2] ?? 'px'}` : undefined;
+}
+
+const TABLE_DELIMITER_CELL_RE = /^:?-+:?$/;
+
+/**
+ * 按 GFM 规则切一行表格：`|` 分隔，`\|` 是转义；首尾那根管子会切出两个空壳，要去掉。
+ * 不处理单元格内的 `|`（Markdown 里本来就得写成 `\|`）。
+ */
+export function splitTableRow(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  const cells: string[] = [];
+  let current = '';
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const char = trimmed[index];
+    if (char === '\\' && trimmed[index + 1] === '|') {
+      current += '|';
+      index += 1;
+      continue;
+    }
+    if (char === '|') {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  cells.push(current.trim());
+  if (cells.length > 0 && cells[0] === '') cells.shift();
+  if (cells.length > 0 && cells[cells.length - 1] === '') cells.pop();
+  return cells;
+}
+
+/** 纯函数：把一段 GFM 表格源码解析成表头 / 对齐 / 数据行。 */
+export function parseWysiwygTable(source: string): WysiwygTableData | null {
+  const lines = source.split('\n').filter((line) => line.trim().length > 0);
+  if (lines.length < 2) return null;
+  const header = splitTableRow(lines[0]);
+  const delimiter = splitTableRow(lines[1]);
+  if (header.length === 0 || delimiter.length < header.length) return null;
+  if (!delimiter.slice(0, header.length).every((cell) => TABLE_DELIMITER_CELL_RE.test(cell))) return null;
+
+  const align = delimiter.slice(0, header.length).map((cell): WysiwygTableAlign => {
+    const left = cell.startsWith(':');
+    const right = cell.endsWith(':');
+    if (left && right) return 'center';
+    if (right) return 'right';
+    if (left) return 'left';
+    return null;
+  });
+
+  const rows = lines.slice(2).map((line) => {
+    const cells = splitTableRow(line);
+    // 列数不齐时补空、截断，渲染出来永远是规整的矩形。
+    while (cells.length < header.length) cells.push('');
+    return cells.slice(0, header.length);
+  });
+
+  return { align, header, rows };
 }
 
 /**
@@ -205,6 +274,24 @@ export function collectWysiwygPlan(state: EditorState, activeLines: Set<number>)
           }
         }
         return undefined;
+      }
+
+      if (name === 'Table') {
+        const firstLine = lineOf(node.from);
+        const lastLine = lineOf(Math.max(node.from, node.to - 1));
+        // 光标进表格就整块回源码——用管道符编辑单元格比在渲染结果上改更准。
+        for (let line = firstLine; line <= lastLine; line += 1) {
+          if (activeLines.has(line)) return false;
+        }
+        const table = parseWysiwygTable(state.doc.sliceString(node.from, node.to));
+        if (!table) return false;
+        pushInline({
+          from: state.doc.line(firstLine).from,
+          to: state.doc.line(lastLine).to,
+          kind: 'table',
+          table,
+        });
+        return false;
       }
 
       if (name === 'Image') {
@@ -380,8 +467,104 @@ class WysiwygRuleWidget extends WidgetType {
   }
 }
 
-function buildDecorations(view: EditorView, documentPath: string | undefined): DecorationSet {
-  const plan = collectWysiwygPlan(view.state, lineNumbersInSelection(view.state));
+const CELL_INLINE_RE = /(\*\*[^*\n]+\*\*)|(\*[^*\n]+\*)|(`[^`\n]+`)|(~~[^~\n]+~~)|(\[[^\]\n]+\]\([^)\s]+\))/g;
+const CELL_LINK_RE = /^\[([^\]\n]+)\]\(([^)\s]+)\)$/;
+
+/** 单元格里的少量行内标记：粗/斜/删除线/行内代码/链接。样式与正文保持一致。 */
+function appendInline(parent: HTMLElement, text: string) {
+  let cursor = 0;
+  for (const match of text.matchAll(CELL_INLINE_RE)) {
+    const index = match.index ?? 0;
+    if (index > cursor) parent.appendChild(document.createTextNode(text.slice(cursor, index)));
+    const token = match[0];
+    if (token.startsWith('**') || token.startsWith('__')) {
+      const element = document.createElement('strong');
+      element.textContent = token.slice(2, -2);
+      parent.appendChild(element);
+    } else if (token.startsWith('~~')) {
+      const element = document.createElement('del');
+      element.textContent = token.slice(2, -2);
+      parent.appendChild(element);
+    } else if (token.startsWith('`')) {
+      const element = document.createElement('code');
+      element.className = 'cm-wy-table-code';
+      element.textContent = token.slice(1, -1);
+      parent.appendChild(element);
+    } else if (token.startsWith('[')) {
+      const link = CELL_LINK_RE.exec(token);
+      const element = document.createElement('span');
+      element.className = 'cm-wy-table-link';
+      element.textContent = link?.[1] ?? token;
+      if (link) element.title = link[2];
+      parent.appendChild(element);
+    } else {
+      const element = document.createElement('em');
+      element.textContent = token.slice(1, -1);
+      parent.appendChild(element);
+    }
+    cursor = index + token.length;
+  }
+  if (cursor < text.length) parent.appendChild(document.createTextNode(text.slice(cursor)));
+}
+
+class WysiwygTableWidget extends WidgetType {
+  constructor(
+    private readonly data: WysiwygTableData,
+    private readonly from: number,
+    private readonly source: string,
+  ) {
+    super();
+  }
+
+  eq(other: WysiwygTableWidget) {
+    return other.source === this.source && other.from === this.from;
+  }
+
+  private cell(tag: 'th' | 'td', text: string, align: WysiwygTableAlign) {
+    const element = document.createElement(tag);
+    if (align) element.style.textAlign = align;
+    appendInline(element, text);
+    return element;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'cm-wy-table';
+    const table = document.createElement('table');
+
+    const head = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    this.data.header.forEach((text, index) => {
+      headRow.appendChild(this.cell('th', text, this.data.align[index] ?? null));
+    });
+    head.appendChild(headRow);
+    table.appendChild(head);
+
+    if (this.data.rows.length > 0) {
+      const body = document.createElement('tbody');
+      for (const row of this.data.rows) {
+        const rowElement = document.createElement('tr');
+        row.forEach((text, index) => {
+          rowElement.appendChild(this.cell('td', text, this.data.align[index] ?? null));
+        });
+        body.appendChild(rowElement);
+      }
+      table.appendChild(body);
+    }
+
+    wrapper.appendChild(table);
+    // 点一下把光标放进表格，整块回源码——和 Typora 一样「点进去才编辑」。
+    wrapper.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      view.dispatch({ selection: { anchor: this.from }, scrollIntoView: true });
+      view.focus();
+    });
+    return wrapper;
+  }
+}
+
+function buildDecorations(state: EditorState, documentPath: string | undefined): DecorationSet {
+  const plan = collectWysiwygPlan(state, lineNumbersInSelection(state));
   const decorations = [];
 
   for (const line of plan.lines) {
@@ -408,6 +591,20 @@ function buildDecorations(view: EditorView, documentPath: string | undefined): D
       );
       continue;
     }
+    if (range.kind === 'table' && range.table) {
+      // 块级替换：区间从行首到行尾，widget 必须是块元素，否则 CodeMirror 会拒绝。
+      decorations.push(
+        Decoration.replace({
+          widget: new WysiwygTableWidget(
+            range.table,
+            range.from,
+            state.doc.sliceString(range.from, range.to),
+          ),
+          block: true,
+        }).range(range.from, range.to),
+      );
+      continue;
+    }
     if (range.kind === 'rule') {
       decorations.push(
         Decoration.replace({ widget: new WysiwygRuleWidget() }).range(range.from, range.to),
@@ -424,6 +621,69 @@ function buildDecorations(view: EditorView, documentPath: string | undefined): D
   return Decoration.set(decorations, true);
 }
 
+interface TableBlock {
+  from: number;
+  to: number;
+  firstLine: number;
+  lastLine: number;
+}
+
+/** 找出当前「渲染成表格」的块（光标在表格里时它不算，因为那时表格是源码）。 */
+function renderedTableBlocks(state: EditorState): TableBlock[] {
+  const plan = collectWysiwygPlan(state, lineNumbersInSelection(state));
+  const blocks: TableBlock[] = [];
+  for (const range of plan.inline) {
+    if (range.kind !== 'table') continue;
+    blocks.push({
+      from: range.from,
+      to: range.to,
+      firstLine: state.doc.lineAt(range.from).number,
+      lastLine: state.doc.lineAt(range.to).number,
+    });
+  }
+  return blocks;
+}
+
+/**
+ * 纯函数：方向键走到表格边界时，光标应该落到哪里；不在边界就返回 null。
+ *
+ * 表格是块级替换，光标在它外面时方向键会整块跳过——键盘永远进不去。
+ * 所以向上/向下各接管一次，把光标送进表格，表格随之回源码。
+ */
+export function tableEntryAnchor(
+  state: EditorState,
+  direction: 'up' | 'down',
+): number | null {
+  const selection = state.selection.main;
+  if (!selection.empty) return null;
+  const line = state.doc.lineAt(selection.head);
+  // 廉价前置判断：相邻行不是管道行就不值得跑一遍语法树。
+  const neighborNumber = direction === 'down' ? line.number + 1 : line.number - 1;
+  if (neighborNumber < 1 || neighborNumber > state.doc.lines) return null;
+  const neighbor = state.doc.line(neighborNumber);
+  if (!neighbor.text.trimStart().startsWith('|')) return null;
+
+  const block = renderedTableBlocks(state).find((entry) => (
+    direction === 'down' ? entry.firstLine === neighborNumber : entry.lastLine === neighborNumber
+  ));
+  if (!block) return null;
+  return direction === 'down' ? block.from : block.to;
+}
+
+function wysiwygTableKeymap(): Extension {
+  const enterTable = (view: EditorView, direction: 'up' | 'down') => {
+    const anchor = tableEntryAnchor(view.state, direction);
+    if (anchor == null) return false;
+    view.dispatch({ selection: { anchor }, scrollIntoView: true });
+    return true;
+  };
+
+  return Prec.high(keymap.of([
+    { key: 'ArrowDown', run: (view) => enterTable(view, 'down') },
+    { key: 'ArrowUp', run: (view) => enterTable(view, 'up') },
+  ]));
+}
+
 export interface WysiwygOptions {
   enabled: boolean;
   documentPath?: string;
@@ -432,23 +692,27 @@ export interface WysiwygOptions {
 export function getWysiwygExtension({ enabled, documentPath }: WysiwygOptions): Extension {
   if (!enabled) return [];
 
-  const plugin = ViewPlugin.fromClass(
-    class {
-      decorations: DecorationSet;
-
-      constructor(view: EditorView) {
-        this.decorations = buildDecorations(view, documentPath);
+  /**
+   * 必须是 StateField 而不是 ViewPlugin：表格是块级替换（`block: true`），
+   * CodeMirror 只允许状态字段提供块级装饰，ViewPlugin 会直接抛
+   * 「Block decorations may not be specified via plugins」。
+   */
+  const field = StateField.define<DecorationSet>({
+    create: (state) => buildDecorations(state, documentPath),
+    update: (decorations, transaction) => {
+      if (transaction.docChanged || transaction.selection) {
+        return buildDecorations(transaction.state, documentPath);
       }
-
-      update(update: ViewUpdate) {
-        if (update.docChanged || update.selectionSet || update.viewportChanged) {
-          this.decorations = buildDecorations(update.view, documentPath);
-        }
-      }
+      return decorations.map(transaction.changes);
     },
-    { decorations: (value) => value.decorations },
-  );
+    provide: (value) => EditorView.decorations.from(value),
+  });
 
   // 复选框的尺寸/光标样式复用源码模式那套 theme，只在单窗模式下生效。
-  return [plugin, taskListCheckboxTheme, EditorView.editorAttributes.of({ class: 'cm-wysiwyg' })];
+  return [
+    field,
+    wysiwygTableKeymap(),
+    taskListCheckboxTheme,
+    EditorView.editorAttributes.of({ class: 'cm-wysiwyg' }),
+  ];
 }

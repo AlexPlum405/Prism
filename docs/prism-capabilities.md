@@ -77,14 +77,14 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | CAP-WRITE-09 | 选中后快速操作 | 选区浮动工具栏、表格浮动工具栏 | Stable | `SelectionFloatingToolbar.test.tsx` | Keep |
 | CAP-WRITE-10 | 快速插图 | 粘贴/拖拽入库到 `assets/<doc>/` | Beta | `imagePaste.test.ts` | Keep |
 | CAP-WRITE-11 | 控制图片大小 | `{width=320}` / `{width=40%}` 属性；预览/PDF/PNG 一致，DOCX 按版心折算；缩放手柄待补 | Beta | `imageSize.test.ts`、`docxImage.test.ts` | Keep |
-| CAP-WRITE-12 | 单窗所见即所得 | 视图「单窗」：标题按级别放大、粗/斜/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、任务列表换真复选框、图片与分隔线按成品渲染、代码块整块底色；光标所在行回源码 | Beta | `wysiwygPreview.test.ts` | Keep |
+| CAP-WRITE-12 | 单窗所见即所得 | 视图「单窗」：标题按级别放大、粗/斜/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、任务列表换真复选框、表格按表头/对齐/斑马纹渲染、图片与分隔线按成品渲染、代码块整块底色；光标所在行（或所在表格）回源码，点表格或用方向键走到表格边界即可进入 | Beta | `wysiwygPreview.test.ts` | Keep |
 
 ### C. 视图与写作心流
 
 | ID | 用户任务 | 当前能力 | 状态 | 证据 | 决策 |
 | --- | --- | --- | --- | --- | --- |
 | CAP-FLOW-01 | 在源码/单窗/分栏/预览间切换 | 四态互斥，`Cmd+1/2/3/4`（⌘4 为单窗） | Stable | `ViewModeSwitch.test.tsx` | Keep |
-| CAP-FLOW-02 | 单窗写作不打断 | 单窗模式内即写即见，不再来回切预览；表格仍按源码显示 | Beta | `wysiwygPreview.test.ts`、`ViewModeSwitch.test.tsx` | Keep |
+| CAP-FLOW-02 | 单窗写作不打断 | 单窗模式内即写即见，不再来回切预览；表格显示为真表格，点一下才回源码编辑 | Beta | `wysiwygPreview.test.ts`、`ViewModeSwitch.test.tsx` | Keep |
 | CAP-FLOW-03 | 专注写作 | 专注模式 `F8`、打字机模式 `F9` | Stable | `typewriter.test.ts` | Keep |
 | CAP-FLOW-04 | 演示文稿 | 基于分隔线的演示叠加层 | Beta | `presentation.test.ts` | Keep |
 | CAP-FLOW-05 | 快速定位结构 | 侧栏文件树、大纲、快速打开 | Stable | `FileTree.test.tsx`、`quickOpen.test.ts` | Keep |
@@ -227,4 +227,4 @@ Text 扩展名：`txt`、`text`、`sql`、`json`、`jsonc`、`yaml`、`yml`、`t
 | 2026-11-19 | PDF 书签 | `CAP-EXPORT-09` 从 Not supported 转为 Stable：按标题写 /Outlines，原生捕获与光栅化两条通路共用分页参数；`CAP-EXPORT-02` 补书签能力与测试锚点 |
 | 2026-11-20 | 外观收敛 + 侧栏图标 | 启动窗口默认 1440×1000 → 1240×840，并按显示器可用区再收窄 12%（`window_fit`），从 Finder 打开的文档窗口同样生效；侧栏页脚图标改为按渲染尺寸画网格（16 单位画布 / 1px 线 / 整数坐标），灰边像素由 34% 降到 0；视图切换图标换成「导轨 + 三级缩进」，与平铺态共用墨迹框 |
 | 2026-11-23 | 标题栏单行化 | 妙言外壳撤销独立菜单栏，文件/编辑/插入/格式/导航/视图/导出/窗口/帮助 回到标题栏，与红绿灯、文件名同一行；`.app-chrome` 组合头与 `MenuBar` 组件一并移除，菜单只保留一处实现（`TitleBar.renderInlineMenu`） |
-| 2026-11-23 | 单窗所见即所得 | 旧「单窗预览」只是藏标记，读起来仍是源码，判定为无效功能并删除；视图模式新增第四档「单窗」：标题按级别放大、粗体/斜体/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、图片与分隔线按成品渲染、代码块整块底色，光标所在行回源码。编辑器语法树补 GFM，与预览口径一致 |
+| 2026-11-23 | 单窗所见即所得 | 旧「单窗预览」只是藏标记，读起来仍是源码，判定为无效功能并删除；视图模式新增第四档「单窗」：标题按级别放大、粗体/斜体/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、图片与分隔线按成品渲染、代码块整块底色，光标所在行回源码；表格按表头/对齐/斑马纹渲染，点击或方向键把光标送进表格后整块回源码（不做成 ProseMirror 双引擎，装饰层可撤销）。编辑器语法树补 GFM，与预览口径一致 |

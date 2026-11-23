@@ -159,6 +159,51 @@ html .cm-editor.cm-wysiwyg .cm-wy-fence {
   padding: 0 14px;
 }
 
+/* —— 表格 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-table {
+  margin: 10px 0;
+  overflow-x: auto;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-table table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.96em;
+  line-height: 1.6;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-table th,
+html .cm-editor.cm-wysiwyg .cm-wy-table td {
+  border: 1px solid var(--wy-rule);
+  padding: 6px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-table th {
+  background: var(--wy-code-bg);
+  font-weight: 650;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--wy-code-bg) 55%, transparent);
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-table-code {
+  font-family: 'SFMono-Regular', 'Menlo', 'JetBrains Mono', monospace;
+  font-size: 0.92em;
+  padding: 0.06em 0.3em;
+  border-radius: 4px;
+  background: var(--wy-inline-bg);
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-table-link {
+  color: var(--wy-marker);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* —— 图片 —— */
 html .cm-editor.cm-wysiwyg .cm-wy-image {
   display: inline-flex;

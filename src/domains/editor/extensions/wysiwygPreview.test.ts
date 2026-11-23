@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { GFM } from '@lezer/markdown';
-import { collectWysiwygPlan } from './wysiwygPreview';
+import { collectWysiwygPlan, parseWysiwygTable, tableEntryAnchor } from './wysiwygPreview';
 
 function planFor(doc: string, cursorLine = 99) {
   const state = EditorState.create({ doc, extensions: [markdown({ extensions: [GFM] })] });
@@ -110,5 +110,70 @@ describe('collectWysiwygPlan', () => {
     const { hidden, lineClasses } = planFor('> 引用正文\n\n正文', 3);
     expect(hidden).toEqual(['> ']);
     expect(lineClasses.some((line) => line.className === 'cm-wy-quote')).toBe(true);
+  });
+
+  const TABLE = [
+    '| 章节 | 字数 | 状态 |',
+    '| :--- | ---: | :---: |',
+    '| 第一章 | 1200 | 完成 |',
+    '| 第二章 | 900 | 草稿 |',
+  ].join('\n');
+
+  it('表格整块换成表头/对齐/数据行齐全的表格块', () => {
+    const { widgets, hidden } = planFor(`\n${TABLE}\n`, 6);
+    expect(hidden).toEqual([]);
+    expect(widgets).toHaveLength(1);
+    expect(widgets[0]).toMatchObject({
+      kind: 'table',
+      table: {
+        align: ['left', 'right', 'center'],
+        header: ['章节', '字数', '状态'],
+        rows: [['第一章', '1200', '完成'], ['第二章', '900', '草稿']],
+      },
+    });
+  });
+
+  it('表格块覆盖整块源码，且不碰首尾之外的字符', () => {
+    const { state, widgets } = planFor(`前言\n\n${TABLE}\n\n后记`, 9);
+    const range = widgets[0];
+    expect(range && state.doc.sliceString(range.from, range.to)).toBe(TABLE);
+  });
+
+  it('光标进表格就整块回源码，方便用管道符改单元格', () => {
+    const { widgets } = planFor(`\n${TABLE}\n`, 3);
+    expect(widgets.filter((range) => range.kind === 'table')).toEqual([]);
+  });
+
+  it('单元格里的 | 可以转义，列数不齐时补齐成矩形', () => {
+    const table = parseWysiwygTable('| a | b |\n| --- | --- |\n| 1 \\| 2 |\n| 3 | 4 | 多余 |');
+    expect(table?.header).toEqual(['a', 'b']);
+    expect(table?.rows).toEqual([['1 | 2', ''], ['3', '4']]);
+  });
+
+  it('分隔行不是合法表格时不当表格处理', () => {
+    expect(parseWysiwygTable('| a | b |\n| nope | --- |\n| 1 | 2 |')).toBeNull();
+  });
+
+  it('方向键走到表格边界时把光标送进表格，其余位置不接管', () => {
+    const doc = `前言\n\n${TABLE}\n\n后记`;
+    const make = (lineNumber: number) => {
+      const base = EditorState.create({
+        doc,
+        selection: { anchor: doc.split('\n').slice(0, lineNumber - 1).join('\n').length + (lineNumber > 1 ? 1 : 0) },
+        extensions: [markdown({ extensions: [GFM] })],
+      });
+      return base;
+    };
+
+    const tableStart = doc.indexOf('| 章节');
+    const tableEnd = doc.indexOf('\n\n后记');
+
+    // 表格上方按向下：落进第一行
+    expect(tableEntryAnchor(make(2), 'down')).toBe(tableStart);
+    // 表格下方按向上：落到最后一行的行尾
+    expect(tableEntryAnchor(make(7), 'up')).toBe(tableEnd);
+    // 离表格还远：不接管
+    expect(tableEntryAnchor(make(1), 'down')).toBeNull();
+    expect(tableEntryAnchor(make(2), 'up')).toBeNull();
   });
 });
