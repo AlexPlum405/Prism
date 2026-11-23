@@ -186,7 +186,7 @@ fn build_app_menu(
             handle,
             "quickOpen",
             &menu_label(labels, "quickOpen", "快速打开..."),
-            Some("CmdOrCtrl+KeyP"),
+            Some("CmdOrCtrl+Alt+KeyO"),
         )?)
         .separator()
         .item(&command_menu_item(
@@ -286,37 +286,41 @@ fn build_app_menu(
         )?)
         .build()?;
 
+    // 视图切换不挂加速键：Cmd+1–Cmd+6 在前端归标题级别（h1–h6），
+    // 抢占会废掉写作最高频的格式化键。这里原先写的是 `CmdOrCtrl+Key1`..`Key4`，
+    // 而 "Key1" 不是合法 Code 名（数字应用 `Digit1`），accelerator 解析失败，
+    // 菜单既不显示快捷键也不生效——等于从来没绑上，别再改回数字键。
     let view_menu = SubmenuBuilder::new(handle, "View")
         .item(&command_menu_item(
             handle,
             "sourceMode",
             &menu_label(labels, "sourceMode", "编辑"),
-            Some("CmdOrCtrl+Key1"),
+            None,
         )?)
         .item(&command_menu_item(
             handle,
             "splitMode",
             &menu_label(labels, "splitMode", "分栏"),
-            Some("CmdOrCtrl+Key2"),
+            None,
         )?)
         .item(&command_menu_item(
             handle,
             "previewMode",
             &menu_label(labels, "previewMode", "预览"),
-            Some("CmdOrCtrl+Key3"),
+            None,
         )?)
         .item(&command_menu_item(
             handle,
             "wysiwygMode",
             &menu_label(labels, "wysiwygMode", "单窗"),
-            Some("CmdOrCtrl+Key4"),
+            None,
         )?)
         .separator()
         .item(&command_menu_item(
             handle,
             "toggleSidebar",
             &menu_label(labels, "toggleSidebar", "切换侧边栏"),
-            Some("CmdOrCtrl+KeyB"),
+            Some("CmdOrCtrl+Shift+KeyL"),
         )?)
         .item(&command_menu_item(handle, "showOutline", &menu_label(labels, "showOutline", "大纲"), None)?)
         .item(&command_menu_item(handle, "showDocumentDiagnostics", &menu_label(labels, "showDocumentDiagnostics", "文档诊断"), None)?)
@@ -326,19 +330,19 @@ fn build_app_menu(
             handle,
             "actualSize",
             &menu_label(labels, "actualSize", "实际大小"),
-            Some("CmdOrCtrl+Digit0"),
+            Some("CmdOrCtrl+Shift+Digit9"),
         )?)
         .item(&command_menu_item(
             handle,
             "zoomIn",
             &menu_label(labels, "zoomIn", "放大"),
-            Some("CmdOrCtrl+Equal"),
+            Some("CmdOrCtrl+Shift+Equal"),
         )?)
         .item(&command_menu_item(
             handle,
             "zoomOut",
             &menu_label(labels, "zoomOut", "缩小"),
-            Some("CmdOrCtrl+Minus"),
+            Some("CmdOrCtrl+Shift+Minus"),
         )?)
         .build()?;
 

@@ -317,7 +317,7 @@ async function prepareFixtures() {
     '[missing](./missing.md)',
     '',
   ].join('\n'), 'utf8');
-  await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+Shift+P、编辑和保存。\n', 'utf8');
+  await fs.writeFile(targetFile, '# Target\n\n用于验证 Cmd+Alt+O 快速打开、编辑和保存。\n', 'utf8');
   await fs.writeFile(startupMarkdownFile, '# 中文 路径\n\n用于验证 .markdown、中文和空格路径启动。\n', 'utf8');
   await fs.writeFile(jsonFile, JSON.stringify({ prism: true, smoke: 'json launch' }, null, 2), 'utf8');
   await fs.writeFile(sqlFile, 'select id, title from notes where archived = false;\n', 'utf8');
@@ -812,7 +812,7 @@ async function runSmoke() {
     for (const attempt of [1, 2, 3]) {
       clickRelative(bounds, 315, 83);
       await delay(150);
-      key('key code 35 using {command down, shift down}');
+      key('keystroke "o" using {command down, option down}');
       await delay(1000);
       const quickOpenAfter = await capture(`05-quick-open-opened-attempt-${attempt}`, bounds);
       const diff = await diffImages(quickOpenBefore, quickOpenAfter);
@@ -825,7 +825,7 @@ async function runSmoke() {
       await delay(250);
     }
     if (!quickOpenDiff) {
-      throw new Error('Cmd+Shift+P quick open did not visibly change after retries.');
+      throw new Error('Cmd+Alt+O quick open did not visibly change after retries.');
     }
     key(`key code 125
     delay 0.05
@@ -842,7 +842,7 @@ async function runSmoke() {
     await handleMacPermissionPromptIfPresent();
     await capture('05a-quick-open-target-opened', bounds);
     const targetConfig = await waitForLastSession(targetFile);
-    record('Cmd+Shift+P opens workspace target file', 'pass', {
+    record('Cmd+Alt+O opens workspace target file', 'pass', {
       diff: quickOpenDiff,
       lastSession: targetConfig.lastSession,
     });
