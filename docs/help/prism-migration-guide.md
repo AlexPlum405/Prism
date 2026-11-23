@@ -16,17 +16,18 @@ Prism 不复制任何一个竞品的完整心智。迁移时先理解下面几�
 
 ## 从 Typora 迁移
 
-Typora 用户通常期待编辑和预览融合。Prism 当前采用三态视图：
+Typora 用户通常期待编辑和预览融合。Prism 当前采用四态视图：
 
 | 期待 | Prism 对应能力 | 在 app 中验证 |
 |---|---|---|
 | 写作时直接操作 Markdown 内容 | 源码编辑是主编辑面，保留纯 Markdown 可读性 | 打开 Markdown Document，使用命令面板执行 `源码模式`，或按 `Cmd/Ctrl + /` |
+| 写作时所见即所得 | 单窗模式把 Markdown 按成品渲染：标题按级别放大、粗/斜/删除线真实生效、行内代码带底色、列表换圆点或复选框、表格渲染成真表格、图片与分隔线按成品显示；只有光标所在行回源码 | 命令面板执行 `单窗模式`，或按 `Cmd/Ctrl + 4` |
 | 写作时同时看结果 | 分栏模式显示编辑器和完整预览 | 命令面板执行 `分栏模式`，或点击右上视图切换 |
 | 只读检查最终阅读效果 | 预览模式显示完整预览，支持 KaTeX、Mermaid、表格、代码块等 | 命令面板执行 `预览模式`，再用右键或诊断入口定位源码 |
 | 常用格式快捷键 | 粗体、斜体、链接、代码块、列表、任务列表、引用等已注册为命令 | 打开 `帮助 -> 快捷键`，或在命令面板搜索 `bold`、`link`、`table`、`task` |
-| 导出 PDF/HTML/图片/DOCX | Prism 支持 HTML、PDF、PNG、DOCX，并先用诊断体系暴露缺失图片、断链、Mermaid/KaTeX 错误等风险 | 命令面板搜索 `export`，或使用状态栏导出入口；有错误时查看 `ERROR n` |
+| 导出 PDF/HTML/图片/DOCX | Prism 支持 HTML、PDF、PNG、DOCX，并先用诊断体系暴露缺失图片、断链、Mermaid/KaTeX 错误等风险 | 命令面板搜索 `export`，或使用菜单「文件 → 导出」；有错误时查看 `ERROR n` |
 
-需要注意：Prism 不承诺 Typora 式所见即所得编辑。Prism 的编辑面保持 Markdown 源码清晰，预览面承担完整阅读和导出基准。
+需要注意：「单窗」提供 Typora 式所见即所得，实现方式是装饰层而非双引擎——文档模型仍是 Markdown 源码，光标所在行回源码即可直接改标记。要完整阅读与导出基准时用预览模式。
 
 ## 从妙言迁移
 
@@ -35,10 +36,10 @@ Typora 用户通常期待编辑和预览融合。Prism 当前采用三态视图�
 | 期待 | Prism 对应能力 | 在 app 中验证 |
 |---|---|---|
 | 本地文件为主 | Prism 直接打开和保存本地 Markdown Document；Text Document 支持常见文档/数据/配置文本 | 用打开对话框打开 `.md`、`.markdown`、`.txt`、`.sql`、`.json`、`.yaml` 等文件 |
-| 分栏编辑/预览 | 三态视图中的分栏模式是主路径之一 | 命令面板执行 `分栏模式` |
+| 分栏编辑/预览 | 四态视图中的分栏模式是主路径之一 | 命令面板执行 `分栏模式` |
 | 中文长文排版 | 默认 `MiaoYan` 主题和暗色 `Nocturne` 已用排版 fixture 校准 920px 阅读列宽 | 查看 `docs/verification/prism-preview-typography-snapshots-2026-06-17/` 截图，或在 app 里切换主题后打开长文 |
 | 轻量写作器气质 | Prism 保留克制浅色界面、低对比边框、紧凑工具区，但按 ADR-0006 建立跨平台一致结构 | 对比 macOS/Windows/Linux 时，主工作区结构应一致，差异只留给系统 chrome 和菜单 |
-| 文档关系 | 只有当前 Markdown Document 存在出链或反链时，状态栏才显示图谱按钮 | 准备带 `[[内部链接]]` 或 Markdown 相对链接的工作区，观察状态栏图谱按钮显隐 |
+| 文档关系 | 只有当前 Markdown Document 存在出链或反链时，菜单「视图 → 关系图谱」才可用 | 准备带 `[[内部链接]]` 或 Markdown 相对链接的工作区，观察菜单项可用状态 |
 
 需要注意：Prism 不以 macOS AppKit 拟态作为唯一审美。它保留妙言式的写作温度，但主结构、命令组织、状态反馈和导出诊断要在 macOS、Windows、Linux 都成立。
 
@@ -48,7 +49,7 @@ MarkText 用户通常熟悉跨平台、开源、Markdown-first 的桌面编辑�
 
 | 期待 | Prism 对应能力 | 在 app 中验证 |
 |---|---|---|
-| 跨平台 Markdown 桌面应用 | Prism 基于 Tauri 2 + React + TypeScript，视觉口径按 ADR-0006 收束为跨平台写作器 | 阅读 `CONTEXT.md` 和 ADR-0006；真机外观仍需按平台补验 |
+| 跨平台 Markdown 桌面应用 | Prism 基于 Tauri 2 + React + TypeScript，视觉口径按 ADR-0006 收束为跨平台写作器 | 阅读 `GLOSSARY.md` 和 ADR-0006；真机外观仍需按平台补验 |
 | Markdown-first | Markdown Document 拥有预览、导出、链接诊断、Mermaid、KaTeX、关系图谱语义 | 打开 `.md/.markdown` 后切换预览、执行导出、查看诊断 |
 | 常见文本文件也能打开 | Text Document 支持 `.txt/.text/.sql/.json/.jsonc/.yaml/.yml/.toml/.xml/.csv/.tsv/.log/.ini/.conf/.env` | 打开这些文件，确认进入编辑模式且不显示 Markdown 预览/图谱 |
 | 搜索和工作区导航 | 当前文档搜索、替换、工作区全文搜索、快速打开已注册命令 | `Cmd/Ctrl + F` 搜索当前文档；`Cmd/Ctrl + Shift + F` 搜索工作区；命令面板执行 `快速打开` |

@@ -83,7 +83,7 @@ Text Document 第一批白名单为：`.txt`、`.text`、`.sql`、`.json`、`.js
 Markdown Document 与 Text Document 的边界详见 ADR-0007。
 
 ### 视图模式（View mode）
-三态互斥：`edit`（源码）/ `split`（分栏）/ `preview`（预览）。主入口在标题栏右上角的 `ViewModeSwitch` 图标组；菜单"视图"中作为 `checkable` 项呈现。状态区不承载视图模式切换。
+四态互斥：`edit`（源码）/ `wysiwyg`（单窗，Markdown 按成品渲染、光标所在行回源码）/ `split`（分栏）/ `preview`（预览），快捷键 `Cmd+1`–`Cmd+4`。主入口在标题栏右上角的 `ViewModeSwitch` 图标组；菜单"视图"中作为 `checkable` 项呈现。状态区不承载视图模式切换。
 
 ### 专注模式（Focus mode）
 `F8` 触发。侧栏、菜单栏、标题栏 `opacity: 0.25`，鼠标 hover 恢复。不同于全屏 `F11`。

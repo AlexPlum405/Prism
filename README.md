@@ -44,7 +44,7 @@ Markdown is easy to write, but the result often still looks like a draft. Prism 
 
 Prism 1.0.0 focuses on five things:
 
-- **A document-like writing surface**: edit, split, and preview modes for notes, essays, and technical documents.
+- **A document-like writing surface**: edit, single-pane, split, and preview modes for notes, essays, and technical documents.
 - **Themes with real personality**: MiaoYan, Inkstone, Slate, Mono, and Nocturne Dark each tune typography, tables, code, and blocks.
 - **Knowledge structure**: links, backlinks, and a graph view for local Markdown workspaces.
 - **Three languages**: Chinese, English, and Japanese UI are part of the product, not a post-release note.
@@ -79,7 +79,7 @@ Prism 1.0.0 is the first official public release. It is currently published for 
 ### Writing
 
 - Local Markdown and text document editing
-- Edit, split, and preview modes
+- Edit, single-pane, split, and preview modes
 - Auto-save and dirty-state tracking
 - Search, replace, selection, and keyboard-driven editing
 - Sidebar file tree, outline, context menus, and status bar
@@ -189,7 +189,7 @@ npm run build
 Issues and pull requests are welcome. For visual bugs, include:
 
 - OS and app version
-- View mode: edit, split, or preview
+- View mode: edit, single-pane, split, or preview
 - Current theme
 - A screenshot or minimal Markdown sample
 
