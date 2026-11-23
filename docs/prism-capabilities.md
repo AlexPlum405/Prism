@@ -134,7 +134,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | ID | 用户任务 | 当前能力 | 状态 | 证据 | 决策 |
 | --- | --- | --- | --- | --- | --- |
 | CAP-NAV-01 | 浏览工作区 | 文件树（当前层级/递归）、右键菜单 | Stable | `FileTree.test.tsx` | Keep |
-| CAP-NAV-02 | 快速找文件 | `Cmd+Shift+O` 快速打开 | Stable | `quickOpen.test.ts` | Keep |
+| CAP-NAV-02 | 快速找文件 | `Cmd+Alt+O` 快速打开（`Cmd+Shift+O` 归「打开文件夹」） | Stable | `quickOpen.test.ts` | Keep |
 | CAP-NAV-03 | 全文搜索 | `Cmd+Shift+F` | Stable | `workspaceIndexQuery.test.ts` | Keep |
 | CAP-NAV-04 | 文档之间跳转 | `[[` 页面链接、出链面板 | Stable | `documentLinks.test.ts` | Keep |
 | CAP-NAV-05 | 找到谁引用了我 | 反链面板 | Stable | `backlinks.test.ts` | Keep |
@@ -228,4 +228,5 @@ Text 扩展名：`txt`、`text`、`sql`、`json`、`jsonc`、`yaml`、`yml`、`t
 | 2026-11-20 | 外观收敛 + 侧栏图标 | 启动窗口默认 1440×1000 → 1240×840，并按显示器可用区再收窄 12%（`window_fit`），从 Finder 打开的文档窗口同样生效；侧栏页脚图标改为按渲染尺寸画网格（16 单位画布 / 1px 线 / 整数坐标），灰边像素由 34% 降到 0；视图切换图标换成「导轨 + 三级缩进」，与平铺态共用墨迹框 |
 | 2026-11-23 | 标题栏单行化 | 妙言外壳撤销独立菜单栏，文件/编辑/插入/格式/导航/视图/导出/窗口/帮助 回到标题栏，与红绿灯、文件名同一行；`.app-chrome` 组合头与 `MenuBar` 组件一并移除，菜单只保留一处实现（`TitleBar.renderInlineMenu`） |
 | 2026-11-23 | 单窗所见即所得 | 旧「单窗预览」只是藏标记，读起来仍是源码，判定为无效功能并删除；视图模式新增第四档「单窗」：标题按级别放大、粗体/斜体/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、图片与分隔线按成品渲染、代码块整块底色，光标所在行回源码；表格按表头/对齐/斑马纹渲染，点击或方向键把光标送进表格后整块回源码（不做成 ProseMirror 双引擎，装饰层可撤销）。编辑器语法树补 GFM，与预览口径一致 |
-| 2026-11-23 | 文档口径校正 | 四态视图上线后文档把快捷键写错：视图切换从未注册过 `Cmd+1`–`Cmd+4`（该区间归标题级别 `h1`–`h6`），实际入口只有 `ViewModeSwitch` 图标组与菜单「视图」，源码模式另有 `Cmd+/`；快速打开实际是 `Cmd+Shift+O`，不是 `Cmd+P`；命令面板只做快速打开与全文搜索，不能执行任意命令，因此「命令面板执行 `单窗模式`/`插入模板`/`打开文档属性`」这类写法一并纠正为菜单路径。涉及 `CAP-FLOW-01`、`CAP-NAV-02`、`GLOSSARY.md`、迁移指南、Windows 验收计划 |
+| 2026-11-23 | 文档口径校正 | 四态视图上线后文档把快捷键写错：视图切换从未注册过 `Cmd+1`–`Cmd+4`（该区间归标题级别 `h1`–`h6`），实际入口只有 `ViewModeSwitch` 图标组与菜单「视图」，源码模式另有 `Cmd+/`；快速打开曾误写为 `Cmd+P`；命令面板只做快速打开与全文搜索，不能执行任意命令，因此「命令面板执行 `单窗模式`/`插入模板`/`打开文档属性`」这类写法一并纠正为菜单路径。涉及 `CAP-FLOW-01`、`CAP-NAV-02`、`GLOSSARY.md`、迁移指南、Windows 验收计划 |
+| 2026-11-23 | 快捷键去重 | `quickOpen` 与 `openFolder` 共用 `Cmd+Shift+O`，分发按 registry 顺序取首个匹配，后者永远打不到；`autoFormat` 与 `toggleSidebar` 共用 `Cmd+Shift+L`，侧栏同样打不开。改为 `quickOpen` = `Cmd+Alt+O`、`autoFormat` = `Cmd+Alt+L`，`Cmd+Shift+O` 保留给打开文件夹、`Cmd+Shift+L` 保留给侧栏；`registry.test.ts` 新增快捷键唯一性用例，同类冲突在测试阶段就会失败。内置新手指南 `src-tauri/resources/Initial/Guide/介绍 Prism.md` 同步四态与键位 |

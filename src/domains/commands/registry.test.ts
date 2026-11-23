@@ -234,6 +234,35 @@ describe('command registry', () => {
     expect(commandRegistryById.size).toBe(commandRegistry.length);
   });
 
+  it('binds each shortcut combination to a single command', () => {
+    // 分发走 findCommandByKeyboardEvent，取 registry 顺序里第一个匹配项；
+    // 两条命令同键时后者永远打不到，且菜单与快捷键面板会显示两个相同键位。
+    const owners = new Map<string, string>();
+    const conflicts: string[] = [];
+
+    for (const command of commandRegistry) {
+      for (const shortcut of command.shortcuts ?? []) {
+        const combination = [
+          shortcut.code,
+          shortcut.platforms?.join(',') ?? 'all',
+          shortcut.mod ? 'mod' : '',
+          shortcut.ctrl ? 'ctrl' : '',
+          shortcut.meta ? 'meta' : '',
+          shortcut.shift ? 'shift' : '',
+          shortcut.alt ? 'alt' : '',
+        ].join('|');
+        const owner = owners.get(combination);
+        if (owner && owner !== command.id) {
+          conflicts.push(`${combination} -> ${owner} / ${command.id}`);
+          continue;
+        }
+        owners.set(combination, command.id);
+      }
+    }
+
+    expect(conflicts).toEqual([]);
+  });
+
   it('keeps redo available through both Shift+Mod+Z and Mod+Y', () => {
     expect(commandRegistryById.get('redo')?.shortcuts).toEqual([
       { code: 'KeyZ', mod: true, shift: true },
@@ -494,7 +523,7 @@ describe('command registry', () => {
     await runCommand('quickOpen', context);
 
     expect(openQuickOpen).toHaveBeenCalledTimes(1);
-    expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyO', mod: true, shift: true }]);
+    expect(commandRegistryById.get('quickOpen')?.shortcuts).toEqual([{ code: 'KeyO', mod: true, alt: true }]);
     expect(commandRegistryById.get('print')?.shortcuts).toEqual([{ code: 'KeyP', mod: true }]);
   });
 
@@ -763,7 +792,7 @@ describe('command registry', () => {
       'autoFormat',
     ]));
     expect(commandRegistryById.get('autoFormat')?.shortcuts).toEqual([
-      { code: 'KeyL', mod: true, shift: true },
+      { code: 'KeyL', mod: true, alt: true },
     ]);
     expect(formatText).not.toEqual(expect.arrayContaining([
       'moveParagraphUp',

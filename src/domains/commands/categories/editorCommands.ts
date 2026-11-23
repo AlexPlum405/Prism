@@ -494,7 +494,7 @@ export function createEditorCommands(deps: EditorCommandDeps): CommandDefinition
       id: 'autoFormat',
       category: 'format',
       keywords: ['format', 'tidy', 'markdown', '排版'],
-      shortcuts: [{ code: 'KeyL', mod: true, shift: true }],
+      shortcuts: [{ code: 'KeyL', mod: true, alt: true }],
       enabled: hasDocument,
       run: () => emitEditorCommand('autoFormat'),
     },

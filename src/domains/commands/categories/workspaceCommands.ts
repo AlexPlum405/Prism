@@ -44,7 +44,7 @@ export function createWorkspaceCommands(): CommandDefinition[] {
       id: 'quickOpen',
       category: 'file',
       keywords: ['quick', 'open', 'file', 'workspace'],
-      shortcuts: [{ code: 'KeyO', mod: true, shift: true }],
+      shortcuts: [{ code: 'KeyO', mod: true, alt: true }],
       enabled: (context) => Boolean(context.workspaceStore.rootPath && context.workspaceStore.fileTree.length > 0),
       run: (context) => context.openQuickOpen?.(),
     },

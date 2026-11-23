@@ -175,7 +175,7 @@ Prism 不做完整 block editor，只做基于 Markdown 文本范围的当前段
 入口为「格式」菜单与右键菜单。后续可评估行首轻量 handle，但第一版不做常驻拖拽把手、不做 Notion 式块数据库、不做整篇文档拖拽重排、不隐藏 Markdown 源码。
 
 ### 快速打开与工作区搜索
-快速打开与搜索属于写作导航增强，不是 IDE 搜索中心。第一版支持 `Cmd+Shift+O` 快速打开当前工作区 Markdown Document 与 Text Document，`Cmd+Shift+F` 全文搜索当前工作区 Markdown Document 与 Text Document，命令面板显示最近打开文档。搜索结果点击直接打开文档。
+快速打开与搜索属于写作导航增强，不是 IDE 搜索中心。第一版支持 `Cmd+Alt+O` 快速打开当前工作区 Markdown Document 与 Text Document，`Cmd+Shift+F` 全文搜索当前工作区 Markdown Document 与 Text Document，命令面板显示最近打开文档。搜索结果点击直接打开文档。
 
 搜索支持文件名、标题、路径的模糊匹配；不实现 IDE 式复杂 search/replace 全套，不索引二进制文件，不做云端搜索。该能力应与 `[[` 页面链接搜索、backlinks、关系图谱共用同一套工作区索引，但页面链接、backlinks 和关系图谱只对 Markdown Document 产生文档关系语义。
 

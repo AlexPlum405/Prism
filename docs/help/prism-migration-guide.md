@@ -52,7 +52,7 @@ MarkText 用户通常熟悉跨平台、开源、Markdown-first 的桌面编辑�
 | 跨平台 Markdown 桌面应用 | Prism 基于 Tauri 2 + React + TypeScript，视觉口径按 ADR-0006 收束为跨平台写作器 | 阅读 `GLOSSARY.md` 和 ADR-0006；真机外观仍需按平台补验 |
 | Markdown-first | Markdown Document 拥有预览、导出、链接诊断、Mermaid、KaTeX、关系图谱语义 | 打开 `.md/.markdown` 后切换预览、执行导出、查看诊断 |
 | 常见文本文件也能打开 | Text Document 支持 `.txt/.text/.sql/.json/.jsonc/.yaml/.yml/.toml/.xml/.csv/.tsv/.log/.ini/.conf/.env` | 打开这些文件，确认进入编辑模式且不显示 Markdown 预览/图谱 |
-| 搜索和工作区导航 | 当前文档搜索、替换、工作区全文搜索、快速打开已注册命令 | `Cmd/Ctrl + F` 搜索当前文档；`Cmd/Ctrl + Shift + F` 搜索工作区；`Cmd/Ctrl + Shift + O` 快速打开 |
+| 搜索和工作区导航 | 当前文档搜索、替换、工作区全文搜索、快速打开已注册命令 | `Cmd/Ctrl + F` 搜索当前文档；`Cmd/Ctrl + Shift + F` 搜索工作区；`Cmd/Ctrl + Alt + O` 快速打开 |
 | 导出更可信 | 导出前诊断和失败详情显示阶段、对象、原因、下一步 | 准备缺失图片或 Mermaid 错误的文档，触发导出前诊断 |
 
 需要注意：Prism 不把常见源码文件纳入默认承诺。`.js/.ts/.py/.rs/.go/.java/.c/.cpp/.css/.html` 等不进入默认文件关联、默认工作区索引或产品定位。
@@ -75,10 +75,12 @@ MarkText 用户通常熟悉跨平台、开源、Markdown-first 的桌面编辑�
 | 另存为 | `Cmd/Ctrl + Shift + S`，或菜单「文件 → 另存为」 |
 | 当前文档搜索 | `Cmd/Ctrl + F` |
 | 工作区全文搜索 | `Cmd/Ctrl + Shift + F` |
-| 快速打开 | `Cmd/Ctrl + Shift + O` |
+| 快速打开 | `Cmd/Ctrl + Alt + O` |
+| 打开文件夹 | `Cmd/Ctrl + Shift + O` |
 | 替换 | `Cmd/Ctrl + H` |
 | 视图模式 | 标题栏右上角的视图切换图标，或菜单「视图」 |
 | 源码模式 | `Cmd/Ctrl + /` |
+| 自动排版 | `Cmd/Ctrl + Alt + L` |
 | 侧栏 | `Cmd/Ctrl + Shift + L` |
 | 专注模式 | `F8` |
 | 打字机模式 | `F9` |
