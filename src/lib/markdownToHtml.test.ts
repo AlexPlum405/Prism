@@ -749,6 +749,7 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('<a href="https://example.com">通过</a>');
   });
 
+  // 这条走完整 unified 管道（大预览路径 + 语法高亮），单跑约 2s，全量并发下会超过 5s 默认超时。
   it('falls back to the full unified pipeline for large preview complex tables', () => {
     const html = markdownToHtml([
       buildCommonFastPathMarkdown(),
@@ -762,7 +763,7 @@ describe('markdownToHtml compatibility modes', () => {
     expect(html).toContain('<strong>预览</strong>');
     expect(html).toContain('<a href="https://example.com">通过</a>');
     expect(html).not.toContain('prism-simple-table');
-  });
+  }, 15000);
 
   it('renders common GFM inline and list syntax only when needed', () => {
     const html = markdownToHtml([
