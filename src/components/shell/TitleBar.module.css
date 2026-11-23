@@ -214,6 +214,7 @@
   gap: 18px;
   height: 100%;
   min-width: 0;
+  flex: 0 1 auto;
   overflow: visible;
 }
 
@@ -236,6 +237,7 @@
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background var(--duration-hover) var(--ease-out),
@@ -247,6 +249,29 @@
   /* 设计稿的菜单项没有药丸底，只靠字色深浅变化，避免在 52px 行里压出块状。 */
   color: var(--island-text);
   background: transparent;
+}
+
+/* 妙言外壳：菜单和红绿灯、文件名同排。悬停底与旧独立菜单栏同一套（6px 圆角、
+   #ededed），间距收到 10 让九项菜单在 1240 宽窗口里也不会撞到右侧状态区。 */
+:global(html[data-content-theme='miaoyan']) .inlineMenu {
+  gap: 10px;
+  margin-left: 6px;
+}
+
+:global(html[data-content-theme='miaoyan']) .inlineMenuItem {
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-family: var(--miaoyan-font);
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+:global(html[data-content-theme='miaoyan']) .inlineMenuItem:hover,
+:global(html[data-content-theme='miaoyan']) .inlineMenuItem.active {
+  background: var(--miaoyan-selection);
+  color: var(--miaoyan-text);
 }
 
 .windowsCenterTitle {

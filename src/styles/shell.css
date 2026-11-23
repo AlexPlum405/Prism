@@ -22,13 +22,8 @@ body {
 
 .app { display: flex; flex-direction: column; height: 100%; }
 
-/* 标题栏 + 菜单栏的组合头；Miaoyan 主题需要在标题栏下恢复独立菜单栏。 */
-.app-chrome {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  min-height: 0;
-}
+/* 外壳头部只有标题栏一行：菜单与文件名、侧栏开关同排，不再另起一行。
+   （曾经为妙言主题单开过一条独立菜单栏，两行叠起来把红绿灯挤到了菜单上方。） */
 
 button {
   font-family: inherit;
@@ -48,14 +43,12 @@ button:focus-visible {
 
 /* ---- 专注模式：软退让（ADR-0004） ---- */
 body.focus-mode .app-titlebar,
-body.focus-mode .app-menubar,
 body.focus-mode .app-sidebar {
   opacity: 0.25;
   transition: opacity var(--duration-feedback) var(--ease-out);
 }
 
 body.focus-mode .app-titlebar:hover,
-body.focus-mode .app-menubar:hover,
 body.focus-mode .app-sidebar:hover {
   opacity: 1;
 }

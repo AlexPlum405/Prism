@@ -22,7 +22,6 @@ import { AppWorkspaceViewController } from './app/controllers/AppWorkspaceViewCo
 import type { EditorPaneHandle } from './domains/editor/components/EditorPane';
 import { WindowShell } from './components/shell/WindowShell';
 import { TitleBar } from './components/shell/TitleBar';
-import { MenuBar } from './components/shell/MenuBar';
 import { StatusBar } from './domains/workspace/components/StatusBar';
 
 export { shouldShowRecoveryPrompt };
@@ -61,8 +60,6 @@ function App() {
   } = useAppStoreSnapshotModel();
 
   useNativeMenuLabels();
-
-  const miaoyanChrome = settings.uiTheme === 'miaoyan';
 
   const editorRef = useRef<EditorPaneHandle>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
@@ -266,11 +263,10 @@ function App() {
 
   return (
       <WindowShell>
-      <div className="app-chrome">
       <TitleBar
         docName={titleDocName}
         isDirty={titleDirty}
-        menuSections={miaoyanChrome ? undefined : menuSections}
+        menuSections={menuSections}
         onMenuAction={handleCommandAction}
         onRenameDocument={currentDocument?.path ? handleTitlebarRename : undefined}
         saveError={currentDocument?.saveError ?? null}
@@ -297,8 +293,6 @@ function App() {
           </div>
         ) : undefined}
       />
-      {miaoyanChrome && <MenuBar sections={menuSections} onAction={handleCommandAction} />}
-      </div>
       <AppWorkspaceViewController
         activePath={currentDocument?.path}
         currentDocument={currentDocument}

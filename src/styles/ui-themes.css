@@ -60,29 +60,6 @@ html[data-ui-theme='miaoyan'] .island-gutter__hit {
 html[data-ui-theme='miaoyan'] .app-titlebar {
   background: #fff;
 }
-html[data-ui-theme='miaoyan'] .app-menubar {
-  height: 28px;
-  padding: 0 22px;
-  gap: 2px;
-  border-bottom: 1px solid #e8e8e8;
-  background: #fafafa;
-}
-html[data-ui-theme='miaoyan'] .app-menubar [class*='menuItem']:not([class*='Wrapper']) {
-  height: 20px;
-  padding: 0 7px;
-  border-radius: 6px;
-  color: #262626;
-  font-family: var(--miaoyan-font);
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.6px;
-}
-html[data-ui-theme='miaoyan'] .app-menubar [class*='menuItem']:not([class*='Wrapper']):hover,
-html[data-ui-theme='miaoyan'] .app-menubar [class*='menuItem']:not([class*='Wrapper'])[class*='active'] {
-  background: #ededed;
-  color: #262626;
-}
 html[data-ui-theme='miaoyan'] .island-sidebar__segment {
   background: transparent;
   border: 0;

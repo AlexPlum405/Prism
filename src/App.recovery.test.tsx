@@ -67,10 +67,6 @@ vi.mock('./components/shell/TitleBar', () => ({
   ),
 }));
 
-vi.mock('./components/shell/MenuBar', () => ({
-  MenuBar: () => <div data-testid="menu-bar" />,
-}));
-
 vi.mock('./domains/workspace/components/Sidebar', () => ({
   Sidebar: () => <div data-testid="sidebar" />,
 }));
