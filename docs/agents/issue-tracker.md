@@ -4,8 +4,6 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 ## Conventions
 
-> 本机 `gh` 为 2.91.0，子 issue 的 `--parent` 与依赖的 `--blocked-by` 旗标需 2.94+；在当前版本上直接走下文各条的 `gh api` 回退路径，不要照抄首选命令。
-
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
 - **Read an issue**: `gh issue view <number> --json number,title,body,labels,comments`.
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
