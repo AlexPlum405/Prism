@@ -11,7 +11,7 @@ import {
   isSamePath,
   SUPPORTED_DOCUMENT_EXTENSIONS,
 } from '../domains/workspace/services';
-import type { OpenDocument } from '../domains/document/types';
+import type { DocumentViewMode, OpenDocument } from '../domains/document/types';
 import { useDocumentStore } from '../domains/document/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
 import {
@@ -79,7 +79,7 @@ interface OpenDocumentOptions {
   confirmLargeDocument?: boolean;
   entryPoint: OpenDocumentEntryPoint;
   restoreScrollState?: { editorRatio: number; previewRatio: number };
-  restoreViewMode?: 'edit' | 'split' | 'preview';
+  restoreViewMode?: DocumentViewMode;
   shouldAbort?: () => boolean;
   skipFileScopeGrant?: boolean;
   skipWorkspaceSync?: boolean;

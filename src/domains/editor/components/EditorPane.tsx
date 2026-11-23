@@ -199,7 +199,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     const isEditorDark = useSettingsStore((s) => shouldUseDarkEditor(s.contentTheme, s.theme));
     const showLineNumbers = useSettingsStore((s) => s.showLineNumbers);
     const wordWrap = useSettingsStore((s) => s.wordWrap);
-    const livePreview = useSettingsStore((s) => s.livePreview);
+    // 单窗（所见即所得）是视图模式，不再是一个独立开关。
+    const wysiwyg = useDocumentStore((s) => s.currentDocument?.viewMode === 'wysiwyg');
     const editorFontSize = useSettingsStore((s) => s.fontSize);
     const editorFontFamily = useSettingsStore((s) => s.editorFontFamily);
     const editorFontSource = useSettingsStore((s) => s.editorFontSource);
@@ -546,7 +547,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       updateTableToolbar,
       viewRef,
       wordWrap,
-      livePreview,
+      wysiwyg,
       workspaceLinkFiles,
       workspaceRootPath,
     });

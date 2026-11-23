@@ -27,12 +27,12 @@ export function createViewCommands(deps: ViewCommandDeps): CommandDefinition[] {
       run: (context) => context.documentStore.setViewMode('edit'),
     },
     {
-      id: 'livePreview',
+      id: 'wysiwygMode',
       category: 'view',
-      keywords: ['live', 'preview', 'wysiwyg', '单窗', '所见即所得'],
-      enabled: hasDocument,
-      checked: (context) => context.settingsStore.livePreview,
-      run: (context) => context.settingsStore.setLivePreview(!context.settingsStore.livePreview),
+      keywords: ['wysiwyg', 'typora', 'live', 'preview', '单窗', '所见即所得'],
+      enabled: canPreview,
+      checked: (context) => context.documentStore.currentDocument?.viewMode === 'wysiwyg',
+      run: (context) => context.documentStore.setViewMode('wysiwyg'),
     },
     {
       id: 'splitMode',

@@ -2,8 +2,9 @@ import { useDocumentStore } from '../store';
 import styles from './ViewModeSwitch.module.css';
 import { useI18n } from '../../i18n';
 import type { I18nKey } from '../../i18n';
+import type { DocumentViewMode } from '../types';
 
-type ViewMode = 'edit' | 'split' | 'preview';
+type ViewMode = DocumentViewMode;
 
 const IconEdit = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
@@ -17,6 +18,23 @@ const IconSplit = () => (
   </svg>
 );
 
+/**
+ * 单窗（所见即所得）：一页纸 + 一行粗标题 + 两行正文。
+ * 和「编辑」的纸笔、「分栏」的两栏、「预览」的眼睛一样，都是 20 网格上的实心块。
+ */
+const IconWysiwyg = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M6.2 2.6h7.6a2.6 2.6 0 0 1 2.6 2.6v9.6a2.6 2.6 0 0 1-2.6 2.6H6.2a2.6 2.6 0 0 1-2.6-2.6V5.2a2.6 2.6 0 0 1 2.6-2.6Zm0 1.3a1.3 1.3 0 0 0-1.3 1.3v9.6a1.3 1.3 0 0 0 1.3 1.3h7.6a1.3 1.3 0 0 0 1.3-1.3V5.2a1.3 1.3 0 0 0-1.3-1.3H6.2Z"
+    />
+    <rect x="6.5" y="5.9" width="7" height="1.7" rx="0.85" />
+    <rect x="6.5" y="9.2" width="7" height="1.2" rx="0.6" />
+    <rect x="6.5" y="12.1" width="4.9" height="1.2" rx="0.6" />
+  </svg>
+);
+
 const IconPreview = () => (
   <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M10 2.95c3.32 0 5.86 2.05 7.37 4.93.7 1.34.7 2.9 0 4.24-1.51 2.88-4.05 4.93-7.37 4.93s-5.86-2.05-7.37-4.93a4.55 4.55 0 0 1 0-4.24C4.14 5 6.68 2.95 10 2.95Zm0 1.36c-2.77 0-4.88 1.68-6.17 4.2a3.2 3.2 0 0 0 0 2.98c1.29 2.52 3.4 4.2 6.17 4.2s4.88-1.68 6.17-4.2a3.2 3.2 0 0 0 0-2.98c-1.29-2.52-3.4-4.2-6.17-4.2Zm0 2.45a3.24 3.24 0 1 1 0 6.48 3.24 3.24 0 0 1 0-6.48Zm0 1.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78Z" />
@@ -25,6 +43,7 @@ const IconPreview = () => (
 
 const VIEW_MODES: Array<{ key: ViewMode; labelKey: I18nKey; icon: () => JSX.Element }> = [
   { key: 'edit', labelKey: 'document.view.edit', icon: IconEdit },
+  { key: 'wysiwyg', labelKey: 'document.view.wysiwyg', icon: IconWysiwyg },
   { key: 'split', labelKey: 'document.view.split', icon: IconSplit },
   { key: 'preview', labelKey: 'document.view.preview', icon: IconPreview },
 ];

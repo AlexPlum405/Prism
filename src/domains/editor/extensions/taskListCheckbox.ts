@@ -10,7 +10,8 @@ import {
 
 const TASK_LIST_MARKER_RE = /^(\s*(?:[-+*]|\d+[.)])\s+)\[( |x|X)\](?=\s|$)/;
 
-class TaskListCheckboxWidget extends WidgetType {
+/** 单窗模式复用同一个复选框：点击语义必须和源码模式完全一致。 */
+export class TaskListCheckboxWidget extends WidgetType {
   constructor(
     private readonly checked: boolean,
     private readonly from: number,

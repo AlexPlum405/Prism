@@ -180,7 +180,6 @@ interface SettingsStore extends SettingsState {
   setPreviewFontSize: (size: number) => void;
   setPreviewLineWidth: (width: number) => void;
   setPreviewAccent: (accent: string) => void;
-  setLivePreview: (enabled: boolean) => void;
   setEditorFontSource: (source: FontSource) => void;
   setPreviewFontSource: (source: FontSource) => void;
   addCustomFont: (font: CustomFont) => void;
@@ -300,11 +299,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setPreviewLineWidth: (previewLineWidth) => {
     set({ previewLineWidth });
-    get().saveSettings();
-  },
-
-  setLivePreview: (livePreview) => {
-    set({ livePreview });
     get().saveSettings();
   },
 
@@ -743,7 +737,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         autoSaveStrategy,
         showLineNumbers,
         wordWrap,
-        livePreview,
         previewChartCopyDefault,
         customFonts,
         editorFontSource,
@@ -779,7 +772,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           autoSaveStrategy,
           showLineNumbers,
           wordWrap,
-          livePreview,
           previewChartCopyDefault,
           customFonts,
           editorFontSource,

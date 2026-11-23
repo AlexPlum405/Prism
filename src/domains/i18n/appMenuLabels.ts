@@ -30,7 +30,7 @@ export const NATIVE_MENU_ACTIONS = [
   'showSearch',
   'showReplace',
   'workspaceSearch',
-  'livePreview',
+  'wysiwygMode',
   'sourceMode',
   'splitMode',
   'previewMode',

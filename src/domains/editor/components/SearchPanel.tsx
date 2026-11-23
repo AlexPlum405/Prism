@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
+import type { DocumentViewMode } from '../../document/types';
 
 export type SearchMode = 'find' | 'replace';
 export type SearchAction = 'input' | 'next' | 'prev' | 'all' | 'replace' | 'replaceAll';
 
 export interface SearchPanelProps {
   visible: boolean;
-  viewMode: 'edit' | 'split' | 'preview';
+  viewMode: DocumentViewMode;
   content: string;
   onClose: () => void;
   onSearch: (action: SearchAction, params: SearchParams) => void;

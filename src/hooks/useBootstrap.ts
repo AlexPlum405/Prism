@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invokeNativeCommand } from '../platform/tauri/nativeCommands';
 import { exists } from '../platform/tauri/fileSystem';
+import type { DocumentViewMode } from '../domains/document/types';
 import { useDocumentStore } from '../domains/document/store';
 import { useSettingsStore } from '../domains/settings/store';
 import { useWorkspaceStore } from '../domains/workspace/store';
@@ -88,7 +89,7 @@ export function useBootstrap(input: boolean | UseBootstrapOptions = true) {
 
     const openFile = async (
       path: string,
-      restoreViewMode?: 'edit' | 'split' | 'preview',
+      restoreViewMode?: DocumentViewMode,
       restoreScrollState?: { editorRatio: number; previewRatio: number },
       openOptions: { skipFileScopeGrant?: boolean; skipWorkspaceSync?: boolean } = {},
     ) => {

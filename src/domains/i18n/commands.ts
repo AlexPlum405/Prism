@@ -127,7 +127,7 @@ const commandLabelKeys: Record<CommandId, I18nKey> = {
   selectionUnorderedList: 'command.selectionUnorderedList',
   selectionOrderedList: 'command.selectionOrderedList',
   selectionTaskList: 'command.selectionTaskList',
-  livePreview: 'command.livePreview',
+  wysiwygMode: 'command.wysiwygMode',
   sourceMode: 'command.sourceMode',
   splitMode: 'command.splitMode',
   previewMode: 'command.previewMode',

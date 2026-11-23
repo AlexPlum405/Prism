@@ -2,6 +2,9 @@
 @import './tokens.css';
 @import './shell.css';
 @import './editor.css';
+/* 单窗渲染层：靠三层选择器压过主题的「染色不变形」，与导入顺序无关，
+   放在 editor.css 之后只是为了读起来跟源码样式挨着。 */
+@import './wysiwyg.css';
 @import './preview.css';
 @import './floating.css';
 @import './export.css';

@@ -1,5 +1,7 @@
 import type { DocumentProfile } from '../workspace/services';
 
+export type DocumentViewMode = 'edit' | 'split' | 'preview' | 'wysiwyg';
+
 export type DocumentSaveStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict';
 export type DocumentSaveIssue = 'external-modified' | 'missing' | 'permission-denied' | 'unavailable';
 
@@ -16,7 +18,7 @@ export interface OpenDocument {
   saveStatus: DocumentSaveStatus;
   saveError: string | null;
   saveIssue?: DocumentSaveIssue | null;
-  viewMode: 'edit' | 'split' | 'preview';
+  viewMode: DocumentViewMode;
   scrollState: DocumentScrollState;
   cursor?: { line: number; column: number };
 }

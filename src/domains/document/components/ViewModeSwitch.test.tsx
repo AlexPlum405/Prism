@@ -10,22 +10,24 @@ beforeEach(() => {
 });
 
 describe('ViewModeSwitch', () => {
-  it('shows edit, split, and preview controls for Markdown documents', () => {
+  it('shows edit, single-pane, split, and preview controls for Markdown documents', () => {
     useDocumentStore.getState().openDocument('/tmp/readme.md', 'readme.md', '# Readme');
 
     render(<ViewModeSwitch />);
 
     expect(screen.getByRole('button', { name: '编辑' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '单窗' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '分栏' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '预览' })).toBeInTheDocument();
   });
 
-  it('hides split and preview controls for plain text documents', () => {
+  it('hides single-pane, split and preview controls for plain text documents', () => {
     useDocumentStore.getState().openDocument('/tmp/query.sql', 'query.sql', 'select 1;');
 
     render(<ViewModeSwitch />);
 
     expect(screen.getByRole('button', { name: '编辑' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '单窗' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '分栏' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '预览' })).not.toBeInTheDocument();
   });

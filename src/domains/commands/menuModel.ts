@@ -229,7 +229,7 @@ const menuModel: MenuModel = {
     { command: 'showOutline' },
   ],
   view: [
-    { command: 'livePreview' },
+    { command: 'wysiwygMode' },
     { command: 'sourceMode' },
     { command: 'splitMode' },
     { command: 'previewMode' },

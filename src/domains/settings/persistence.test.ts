@@ -48,11 +48,10 @@ describe('settings 持久化白名单', () => {
     });
   });
 
-  it('把单窗预览、行宽与强调色写进配置文件', async () => {
+  it('把行宽与强调色写进配置文件', async () => {
     useSettingsStore.setState({
       previewLineWidth: 720,
       previewAccent: '#3366ff',
-      livePreview: true,
     });
 
     await useSettingsStore.getState().saveSettings();
@@ -60,7 +59,6 @@ describe('settings 持久化白名单', () => {
     const config = writtenConfig();
     expect(config.previewLineWidth).toBe(720);
     expect(config.previewAccent).toBe('#3366ff');
-    expect(config.livePreview).toBe(true);
   });
 
   it('默认值也会落盘，避免读回时缺字段', async () => {
@@ -69,6 +67,5 @@ describe('settings 持久化白名单', () => {
     const config = writtenConfig();
     expect(config.previewLineWidth).toBe(DEFAULT_SETTINGS.previewLineWidth);
     expect(config.previewAccent).toBe(DEFAULT_SETTINGS.previewAccent);
-    expect(config.livePreview).toBe(DEFAULT_SETTINGS.livePreview);
   });
 });

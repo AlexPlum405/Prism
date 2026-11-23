@@ -307,8 +307,8 @@ fn build_app_menu(
         )?)
         .item(&command_menu_item(
             handle,
-            "livePreview",
-            &menu_label(labels, "livePreview", "单窗预览"),
+            "wysiwygMode",
+            &menu_label(labels, "wysiwygMode", "单窗"),
             Some("CmdOrCtrl+Key4"),
         )?)
         .separator()
@@ -414,7 +414,7 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
             "showSearch" => emit_frontend_command(app, "showSearch"),
             "showReplace" => emit_frontend_command(app, "showReplace"),
             "workspaceSearch" => emit_frontend_command(app, "workspaceSearch"),
-            "livePreview" => emit_frontend_command(app, "livePreview"),
+            "wysiwygMode" => emit_frontend_command(app, "wysiwygMode"),
             "sourceMode" => emit_frontend_command(app, "sourceMode"),
             "splitMode" => emit_frontend_command(app, "splitMode"),
             "previewMode" => emit_frontend_command(app, "previewMode"),

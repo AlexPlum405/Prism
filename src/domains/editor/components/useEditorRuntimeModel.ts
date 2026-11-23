@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type MutableRefObject, type RefObject }
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
+import { GFM } from '@lezer/markdown';
 import { bracketMatching, foldKeymap, indentOnInput } from '@codemirror/language';
 import { search } from '@codemirror/search';
 import { EditorState, Prec } from '@codemirror/state';
@@ -26,14 +27,14 @@ import {
 } from '../extensions/markdownHighlight';
 import { createHiddenSearchPanel } from '../extensions/search';
 import { editorSelectionPlugin, lineFlashField } from '../extensions/selection';
-import { getLivePreviewExtension } from '../extensions/livePreview';
+import { getWysiwygExtension } from '../extensions/wysiwygPreview';
 import { scrollPrimarySelectionToCenter } from '../extensions/typewriter';
 import {
   editorContentThemeCompartment,
   editorDarkThemeCompartment,
   editorLineNumbersCompartment,
   editorLineWrappingCompartment,
-  editorLivePreviewCompartment,
+  editorWysiwygCompartment,
   editorLinkCompletionCompartment,
   editorPhrasesCompartment,
   editorTypographyCompartment,
@@ -80,7 +81,8 @@ interface UseEditorRuntimeModelInput {
   enableMarkdownCompletions: boolean;
   isEditorDark: boolean;
   isUpdatingFromPropsRef: MutableRefObject<boolean>;
-  livePreview: boolean;
+  /** 单窗（所见即所得）：按成品渲染，光标所在行回源码。 */
+  wysiwyg: boolean;
   locale: unknown;
   onChangeRef: MutableRefObject<(content: string) => void>;
   onCursorChangeRef: MutableRefObject<((cursor: { line: number; column: number }) => void) | undefined>;
@@ -134,7 +136,7 @@ export function useEditorRuntimeModel({
   enableMarkdownCompletions,
   isEditorDark,
   isUpdatingFromPropsRef,
-  livePreview,
+  wysiwyg,
   locale,
   onChangeRef,
   onCursorChangeRef,
@@ -250,7 +252,9 @@ export function useEditorRuntimeModel({
           editorFontFamily,
           editorUsesThemeFont,
         )),
-        editorLivePreviewCompartment.of(getLivePreviewExtension(livePreview)),
+        editorWysiwygCompartment.of(
+          getWysiwygExtension({ enabled: wysiwyg, documentPath: currentDocumentPath }),
+        ),
         compatibilityMarkdownPlugin,
         editorSelectionPlugin,
         bracketMatching(),
@@ -272,7 +276,9 @@ export function useEditorRuntimeModel({
           ...foldKeymap,
           indentWithTab,
         ]),
-        markdown(),
+        // GFM：删除线、任务列表、表格都按扩展语法解析，
+        // 编辑器的语法树要和预览（remark-gfm）一致，否则单窗渲染会漏掉 ~~删除线~~。
+        markdown({ extensions: [GFM] }),
         editorDarkThemeCompartment.of(getDarkThemeExtensions(isEditorDark)),
         EditorView.theme({
           '&': { flex: 1, minHeight: 0, backgroundColor: 'transparent' },
@@ -446,9 +452,11 @@ export function useEditorRuntimeModel({
     const view = viewRef.current;
     if (!view) return;
     view.dispatch({
-      effects: editorLivePreviewCompartment.reconfigure(getLivePreviewExtension(livePreview)),
+      effects: editorWysiwygCompartment.reconfigure(
+        getWysiwygExtension({ enabled: wysiwyg, documentPath: currentDocumentPath }),
+      ),
     });
-  }, [livePreview, viewRef]);
+  }, [wysiwyg, currentDocumentPath, viewRef]);
 
   useEffect(() => {
     const view = viewRef.current;

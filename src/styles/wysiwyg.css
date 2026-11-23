@@ -1,0 +1,204 @@
+/* ============================================================
+   单窗（所见即所得）渲染层
+   ------------------------------------------------------------
+   源码模式守「染色不变形」：标题不加粗、不放大，粗体只换颜色。
+   单窗模式反过来——它要看起来像成品，所以这里允许换形：
+   标题按级别放大、粗体变粗、斜体倾斜、行内代码带底色、引用带竖线。
+
+   所有规则都挂在 .cm-editor.cm-wysiwyg 下（三层选择器），
+   足以压过 editor.css / ui-themes.css 里带主题属性的 !important 规则，
+   又不会漏到普通源码模式。
+   ============================================================ */
+
+html .cm-editor.cm-wysiwyg {
+  --wy-marker: var(--accent, #7a3dad);
+  --wy-rule: var(--theme-divider, var(--border-color, rgba(0, 0, 0, 0.14)));
+  --wy-code-bg: var(--c-chalk, rgba(0, 0, 0, 0.045));
+  --wy-inline-bg: var(--c-chalk, rgba(0, 0, 0, 0.06));
+  --wy-quote-bar: color-mix(in srgb, var(--wy-marker) 55%, transparent);
+}
+
+/* —— 标题：按级别给真实字号与字重 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-h1 {
+  font-size: 1.9em;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  padding-top: 0.62em;
+  padding-bottom: 0.2em;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-h2 {
+  font-size: 1.52em;
+  font-weight: 700;
+  line-height: 1.36;
+  letter-spacing: -0.005em;
+  padding-top: 0.58em;
+  padding-bottom: 0.18em;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-h3 {
+  font-size: 1.28em;
+  font-weight: 650;
+  line-height: 1.42;
+  padding-top: 0.5em;
+  padding-bottom: 0.14em;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-h4 {
+  font-size: 1.12em;
+  font-weight: 650;
+  line-height: 1.5;
+  padding-top: 0.42em;
+  padding-bottom: 0.12em;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-h5 {
+  font-size: 1.02em;
+  font-weight: 650;
+  line-height: 1.55;
+  padding-top: 0.36em;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-h6 {
+  font-size: 0.94em;
+  font-weight: 650;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  padding-top: 0.32em;
+  color: var(--text-secondary);
+}
+
+/* 标题里的行内元素继承字重，别让 .cm-md-heading 的 400 把标题拉回常规 */
+html .cm-editor.cm-wysiwyg .cm-wy-h1 .cm-md-heading,
+html .cm-editor.cm-wysiwyg .cm-wy-h2 .cm-md-heading,
+html .cm-editor.cm-wysiwyg .cm-wy-h3 .cm-md-heading,
+html .cm-editor.cm-wysiwyg .cm-wy-h4 .cm-md-heading,
+html .cm-editor.cm-wysiwyg .cm-wy-h5 .cm-md-heading,
+html .cm-editor.cm-wysiwyg .cm-wy-h6 .cm-md-heading {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+}
+
+/* —— 行内：真正的粗/斜/删除线/行内代码 —— */
+html .cm-editor.cm-wysiwyg .cm-md-strong { font-weight: 700 !important; }
+
+html .cm-editor.cm-wysiwyg .cm-md-emphasis { font-style: italic !important; }
+
+html .cm-editor.cm-wysiwyg .cm-md-strike { text-decoration: line-through !important; }
+
+html .cm-editor.cm-wysiwyg .cm-md-code-inline {
+  font-family: 'SFMono-Regular', 'Menlo', 'JetBrains Mono', monospace !important;
+  font-size: 0.92em !important;
+  padding: 0.08em 0.34em;
+  border-radius: 4px;
+  background: var(--wy-inline-bg) !important;
+}
+
+html .cm-editor.cm-wysiwyg .cm-md-link-text {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+
+/* —— 引用：左侧竖线 + 缩进 + 淡化 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-quote {
+  padding-left: 14px;
+  border-left: 3px solid var(--wy-quote-bar);
+  margin: 2px 0;
+}
+
+/* —— 列表：圆点 / 数字 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-bullet {
+  display: inline-block;
+  width: 1.05em;
+  text-align: center;
+  color: var(--wy-marker);
+  font-weight: 700;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-ordered {
+  font-variant-numeric: tabular-nums;
+}
+
+/* —— 分隔线 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-rule {
+  display: inline-block;
+  width: 100%;
+  height: 1px;
+  background: var(--wy-rule);
+  vertical-align: middle;
+}
+
+/* —— 代码块：整块底色 + 收掉围栏行 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-code {
+  background: var(--wy-code-bg);
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-code-start {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 8px;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-code-end {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding-bottom: 8px;
+}
+
+/* 围栏本身（```lang）只有代码块被点开时才保留，其余时候收成一条细边 */
+html .cm-editor.cm-wysiwyg .cm-wy-fence {
+  height: 0.5em;
+  line-height: 0.5em;
+  font-size: 0.5em;
+  overflow: hidden;
+  padding: 0 14px;
+}
+
+/* —— 图片 —— */
+html .cm-editor.cm-wysiwyg .cm-wy-image {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+  vertical-align: top;
+  margin: 6px 0;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-image img {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-image[data-state='loading'] img {
+  min-width: 120px;
+  min-height: 48px;
+  background: var(--wy-inline-bg);
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-image[data-state='error'] img {
+  display: none;
+}
+
+html .cm-editor.cm-wysiwyg .cm-wy-image-alt {
+  font-size: 0.82em;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 加载失败时把原始路径显示出来，方便定位断链 */
+html .cm-editor.cm-wysiwyg .cm-wy-image[data-state='error']::before {
+  content: attr(data-src);
+  display: block;
+  padding: 8px 10px;
+  border: 1px dashed var(--wy-rule);
+  border-radius: 6px;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}

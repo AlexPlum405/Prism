@@ -77,14 +77,14 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 | CAP-WRITE-09 | 选中后快速操作 | 选区浮动工具栏、表格浮动工具栏 | Stable | `SelectionFloatingToolbar.test.tsx` | Keep |
 | CAP-WRITE-10 | 快速插图 | 粘贴/拖拽入库到 `assets/<doc>/` | Beta | `imagePaste.test.ts` | Keep |
 | CAP-WRITE-11 | 控制图片大小 | `{width=320}` / `{width=40%}` 属性；预览/PDF/PNG 一致，DOCX 按版心折算；缩放手柄待补 | Beta | `imageSize.test.ts`、`docxImage.test.ts` | Keep |
-| CAP-WRITE-12 | 单窗混合写作 | 视图菜单「单窗预览」：非当前行隐藏 `#`/`**`/`` ` ``/`>` 等标记，当前行保留源码 | Beta | `livePreview.test.ts` | Keep |
+| CAP-WRITE-12 | 单窗所见即所得 | 视图「单窗」：标题按级别放大、粗/斜/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、任务列表换真复选框、图片与分隔线按成品渲染、代码块整块底色；光标所在行回源码 | Beta | `wysiwygPreview.test.ts` | Keep |
 
 ### C. 视图与写作心流
 
 | ID | 用户任务 | 当前能力 | 状态 | 证据 | 决策 |
 | --- | --- | --- | --- | --- | --- |
-| CAP-FLOW-01 | 在源码/分栏/预览间切换 | 三态互斥，`Cmd+1/2/3` | Stable | `ViewModeSwitch.test.tsx` | Keep |
-| CAP-FLOW-02 | 单窗写作不打断 | 无单窗模式；需切换视图 | Not supported | `SplitView.tsx` | Build |
+| CAP-FLOW-01 | 在源码/单窗/分栏/预览间切换 | 四态互斥，`Cmd+1/2/3/4`（⌘4 为单窗） | Stable | `ViewModeSwitch.test.tsx` | Keep |
+| CAP-FLOW-02 | 单窗写作不打断 | 单窗模式内即写即见，不再来回切预览；表格仍按源码显示 | Beta | `wysiwygPreview.test.ts`、`ViewModeSwitch.test.tsx` | Keep |
 | CAP-FLOW-03 | 专注写作 | 专注模式 `F8`、打字机模式 `F9` | Stable | `typewriter.test.ts` | Keep |
 | CAP-FLOW-04 | 演示文稿 | 基于分隔线的演示叠加层 | Beta | `presentation.test.ts` | Keep |
 | CAP-FLOW-05 | 快速定位结构 | 侧栏文件树、大纲、快速打开 | Stable | `FileTree.test.tsx`、`quickOpen.test.ts` | Keep |
@@ -169,7 +169,7 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 
 | 边界 | 当前结论 | 原因 | 如果要做，前置条件 |
 | --- | --- | --- | --- |
-| 完整 WYSIWYG（完全隐藏标记） | 暂不做 | 与源码真源、导出一致性、性能冲突；维护成本高 | 单窗混合模式验证成功，且用户明确要求 |
+| 换 ProseMirror 的双引擎 WYSIWYG | 暂不做 | 会出现第二套文档模型，撤销/搜索/诊断/导出要各写一遍；现有单窗层已覆盖写作需要 | 单窗层在长文档上出现性能或保真瓶颈 |
 | 自定义 CSS 入口 | 暂缓 | 已有主题包与行宽/强调色控件；完整 CSS 的支持与安全成本高 | 先验证令牌控件的使用率 |
 | 版本历史 | 不做 | 与恢复快照定位不同，成本高 | 用户明确需要回滚工作流 |
 | AI / 插件 / 云同步 / 协作 / 移动端 | 不做 | 与本地优先写作器定位冲突 | 产品定位改变 |
@@ -182,12 +182,12 @@ Prism 的竞争点不是“功能数量”，而是这条闭环：
 ### A. 命令（157）
 
 ```text
-new, newWindow, open, importDocument, openFolder, quickOpen, save, saveAs, openDocumentProperties, showDocumentLinks, showBacklinks, showRelationGraph, showDocumentDiagnostics, showDocumentStatistics, templateReadme, templatePrd, templateMeeting, templateWeekly, templateTechnicalPlan, templateArticle, templatePaperDraft, templateReadingNote, templateResearchSummary, templateWhitePaper, print, openCurrentLocation, copyCurrentFilePath, fileProperties, closeDocument, exportHtml, exportPdf, exportDocx, exportPng, exportWithPrevious, exportOverwritePrevious, exportSettings, undo, redo, cut, copy, paste, pastePlain, selectAll, showSearch, workspaceSearch, showReplace, copyPlain, copyMd, copyHtml, link, insertImage, insertCallout, insertToggle, codeBlock, mathBlock, quote, orderedList, unorderedList, taskList, insertTable, formatTable, addTableRow, addTableColumn, deleteTableRow, deleteTableColumn, alignTableColumnLeft, alignTableColumnCenter, alignTableColumnRight, insertTableRowAbove, insertTableRowBelow, insertTableColumnLeft, insertTableColumnRight, moveTableRowUp, moveTableRowDown, moveTableColumnLeft, moveTableColumnRight, selectTable, copyTableMarkdown, copyTableHtml, copyTableCsv, copyTableTsv, sortTableAsc, sortTableDesc, convertTableToHtml, convertHtmlTableToMarkdown, hr, footnote, linkReference, toc, yaml, bold, italic, underline, strikethrough, inlineCode, paragraph, h1, h2, h3, h4, h5, h6, increaseHeading, decreaseHeading, clearFormat, autoFormat, moveParagraphUp, moveParagraphDown, duplicateParagraph, deleteParagraph, moveSectionUp, moveSectionDown, duplicateSection, foldCurrentHeading, selectionQuote, selectionCallout, selectionCalloutNote, selectionCalloutWarning, selectionCalloutTip, selectionCalloutImportant, selectionUnorderedList, selectionOrderedList, selectionTaskList, sourceMode, splitMode, previewMode, presentationMode, toggleSidebar, showFiles, showDocs, showOutline, focusMode, typewriterMode, wordWrap, livePreview, statusBar, actualSize, zoomIn, zoomOut, devTools, themeMiaoyan, themeInkstone, themeSlate, themeMono, themeNocturne, themeCarbon, minimize, fullscreen, alwaysOnTop, preferences, mdReference, migrationGuide, showShortcuts, checkUpdate, github, feedback, about
+new, newWindow, open, importDocument, openFolder, quickOpen, save, saveAs, openDocumentProperties, showDocumentLinks, showBacklinks, showRelationGraph, showDocumentDiagnostics, showDocumentStatistics, templateReadme, templatePrd, templateMeeting, templateWeekly, templateTechnicalPlan, templateArticle, templatePaperDraft, templateReadingNote, templateResearchSummary, templateWhitePaper, print, openCurrentLocation, copyCurrentFilePath, fileProperties, closeDocument, exportHtml, exportPdf, exportDocx, exportPng, exportWithPrevious, exportOverwritePrevious, exportSettings, undo, redo, cut, copy, paste, pastePlain, selectAll, showSearch, workspaceSearch, showReplace, copyPlain, copyMd, copyHtml, link, insertImage, insertCallout, insertToggle, codeBlock, mathBlock, quote, orderedList, unorderedList, taskList, insertTable, formatTable, addTableRow, addTableColumn, deleteTableRow, deleteTableColumn, alignTableColumnLeft, alignTableColumnCenter, alignTableColumnRight, insertTableRowAbove, insertTableRowBelow, insertTableColumnLeft, insertTableColumnRight, moveTableRowUp, moveTableRowDown, moveTableColumnLeft, moveTableColumnRight, selectTable, copyTableMarkdown, copyTableHtml, copyTableCsv, copyTableTsv, sortTableAsc, sortTableDesc, convertTableToHtml, convertHtmlTableToMarkdown, hr, footnote, linkReference, toc, yaml, bold, italic, underline, strikethrough, inlineCode, paragraph, h1, h2, h3, h4, h5, h6, increaseHeading, decreaseHeading, clearFormat, autoFormat, moveParagraphUp, moveParagraphDown, duplicateParagraph, deleteParagraph, moveSectionUp, moveSectionDown, duplicateSection, foldCurrentHeading, selectionQuote, selectionCallout, selectionCalloutNote, selectionCalloutWarning, selectionCalloutTip, selectionCalloutImportant, selectionUnorderedList, selectionOrderedList, selectionTaskList, sourceMode, splitMode, previewMode, presentationMode, toggleSidebar, showFiles, showDocs, showOutline, focusMode, typewriterMode, wordWrap, wysiwygMode, statusBar, actualSize, zoomIn, zoomOut, devTools, themeMiaoyan, themeInkstone, themeSlate, themeMono, themeNocturne, themeCarbon, minimize, fullscreen, alwaysOnTop, preferences, mdReference, migrationGuide, showShortcuts, checkUpdate, github, feedback, about
 ```
 
-### B. 设置项（33 个顶层键 + 16 个导出键）
+### B. 设置项（32 个顶层键 + 16 个导出键）
 
-顶层：`settingsVersion`、`locale`、`theme`、`uiTheme`、`contentTheme`、`fontSize`、`editorFontFamily`、`editorLineHeight`、`previewFontFamily`、`previewFontSize`、`previewLineWidth`、`previewAccent`、`defaultViewMode`、`exportDefaults`、`shortcutStyle`、`autoSaveEnabled`、`autoSaveInterval`、`autoSaveStrategy`、`showLineNumbers`、`wordWrap`、`livePreview`、`previewChartCopyDefault`、`customFonts`、`editorFontSource`、`previewFontSource`、`recentFiles`、`recentFilesLimit`、`exportHistory`、`pandoc`、`citation`、`restoreLastSession`、`lastSession`、`windowState`
+顶层：`settingsVersion`、`locale`、`theme`、`uiTheme`、`contentTheme`、`fontSize`、`editorFontFamily`、`editorLineHeight`、`previewFontFamily`、`previewFontSize`、`previewLineWidth`、`previewAccent`、`defaultViewMode`、`exportDefaults`、`shortcutStyle`、`autoSaveEnabled`、`autoSaveInterval`、`autoSaveStrategy`、`showLineNumbers`、`wordWrap`、`previewChartCopyDefault`、`customFonts`、`editorFontSource`、`previewFontSource`、`recentFiles`、`recentFilesLimit`、`exportHistory`、`pandoc`、`citation`、`restoreLastSession`、`lastSession`、`windowState`
 
 导出：`format`、`pngScale`、`htmlIncludeTheme`、`pdfPaper`、`pdfMargin`、`pdfPageNumbers`、`pageHeaderFooter`、`pageHeaderText`、`pageFooterText`、`templateId`、`frontMatterOverrides`、`toc`、`defaultLocation`、`customDirectory`、`docxFontPolicy`、`docxCustomFontId`
 
@@ -227,3 +227,4 @@ Text 扩展名：`txt`、`text`、`sql`、`json`、`jsonc`、`yaml`、`yml`、`t
 | 2026-11-19 | PDF 书签 | `CAP-EXPORT-09` 从 Not supported 转为 Stable：按标题写 /Outlines，原生捕获与光栅化两条通路共用分页参数；`CAP-EXPORT-02` 补书签能力与测试锚点 |
 | 2026-11-20 | 外观收敛 + 侧栏图标 | 启动窗口默认 1440×1000 → 1240×840，并按显示器可用区再收窄 12%（`window_fit`），从 Finder 打开的文档窗口同样生效；侧栏页脚图标改为按渲染尺寸画网格（16 单位画布 / 1px 线 / 整数坐标），灰边像素由 34% 降到 0；视图切换图标换成「导轨 + 三级缩进」，与平铺态共用墨迹框 |
 | 2026-11-23 | 标题栏单行化 | 妙言外壳撤销独立菜单栏，文件/编辑/插入/格式/导航/视图/导出/窗口/帮助 回到标题栏，与红绿灯、文件名同一行；`.app-chrome` 组合头与 `MenuBar` 组件一并移除，菜单只保留一处实现（`TitleBar.renderInlineMenu`） |
+| 2026-11-23 | 单窗所见即所得 | 旧「单窗预览」只是藏标记，读起来仍是源码，判定为无效功能并删除；视图模式新增第四档「单窗」：标题按级别放大、粗体/斜体/删除线真实生效、行内代码带底色、引用带竖线、列表换圆点、图片与分隔线按成品渲染、代码块整块底色，光标所在行回源码。编辑器语法树补 GFM，与预览口径一致 |

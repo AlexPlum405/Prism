@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DocumentSaveIssue, DocumentScrollState, DocumentState } from './types';
+import { DocumentSaveIssue, DocumentScrollState, DocumentState, DocumentViewMode } from './types';
 import type { FileSnapshot } from './fileSnapshot';
 import { useSettingsStore } from '../settings/store';
 import { t } from '../i18n';
@@ -16,7 +16,7 @@ interface DocumentStore extends DocumentState {
   updateContent: (content: string) => void;
   updateDocumentPath: (oldPath: string, newPath: string, name: string) => void;
   updateScrollState: (scrollState: Partial<DocumentScrollState>) => void;
-  setViewMode: (viewMode: 'edit' | 'split' | 'preview') => void;
+  setViewMode: (viewMode: DocumentViewMode) => void;
   updateFileSnapshot: (path: string, snapshot: FileSnapshot | null) => void;
   markSaving: (path?: string) => void;
   markSaved: (path?: string, snapshot?: FileSnapshot | null, savedContent?: string) => void;
@@ -35,8 +35,9 @@ const DEFAULT_SCROLL_STATE: DocumentScrollState = {
   previewRatio: 0,
 };
 
-function viewModeForProfile(profile: DocumentProfile, requested: 'edit' | 'split' | 'preview') {
-  return profile.supportsPreview ? requested : 'edit';
+function viewModeForProfile(profile: DocumentProfile, requested: DocumentViewMode): DocumentViewMode {
+  // 纯文本文档既没有预览，也谈不上所见即所得，只能留在源码模式。
+  return profile.supportsPreview || requested === 'edit' ? requested : 'edit';
 }
 
 export const useDocumentStore = create<DocumentStore>((set) => ({

@@ -8,7 +8,7 @@ export function isUiTheme(value: unknown): value is UiTheme {
   return typeof value === 'string' && UI_THEMES.includes(value as UiTheme);
 }
 export type { LocalePreference };
-export type DefaultViewMode = 'edit' | 'split' | 'preview';
+export type DefaultViewMode = 'edit' | 'split' | 'preview' | 'wysiwyg';
 export type ShortcutStyle = 'auto' | 'mac' | 'windows';
 export type ExportDefaultFormat = 'html' | 'pdf' | 'docx' | 'png';
 export type AutoSaveStrategy = 'instant' | 'balanced' | 'battery';
@@ -152,8 +152,6 @@ export interface SettingsState {
   autoSaveStrategy: AutoSaveStrategy;
   showLineNumbers: boolean;
   wordWrap: boolean;
-  /** 单窗预览：藏起非当前行的 Markdown 标记。 */
-  livePreview: boolean;
   previewChartCopyDefault: PreviewChartCopyDefault;
   customFonts: CustomFont[];
   editorFontSource: FontSource;
@@ -211,7 +209,6 @@ export const DEFAULT_SETTINGS: SettingsState = {
   autoSaveStrategy: 'balanced',
   showLineNumbers: false,
   wordWrap: true,
-  livePreview: false,
   previewChartCopyDefault: 'image',
   customFonts: [],
   editorFontSource: { kind: 'theme', value: '' },

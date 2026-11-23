@@ -5,7 +5,7 @@ import { PreviewPane } from './PreviewPane';
 import { buildSearchPattern, countMatches, SearchAction, SearchMode, SearchPanel, SearchParams } from './SearchPanel';
 import { ContextMenu, type ContextMenuItem } from '../../../components/shell/ContextMenu';
 import { useDocumentStore } from '../../document/store';
-import type { DocumentScrollState } from '../../document/types';
+import type { DocumentScrollState, DocumentViewMode } from '../../document/types';
 import { useSettingsStore } from '../../settings/store';
 import { DEFAULT_SETTINGS } from '../../settings/types';
 import { getThemeContract } from '../../themes';
@@ -60,7 +60,7 @@ interface SplitViewProps {
   content: string;
   documentPath?: string;
   scrollState?: DocumentScrollState;
-  viewMode: 'edit' | 'split' | 'preview';
+  viewMode: DocumentViewMode;
   /**
    * 浮岛外壳传入的宽度与拖拽回调。不传时退回「两块各占一半」的老行为，
    * 这样只测排版逻辑的用例不必搭一套布局。
@@ -300,7 +300,7 @@ function setScrollRatio(element: HTMLElement, ratio: number) {
   element.scrollTop = Math.max(0, Math.min(1, ratio)) * Math.max(0, maxScroll);
 }
 
-export function shouldSyncPreviewScrollToEditor(viewMode: 'edit' | 'split' | 'preview') {
+export function shouldSyncPreviewScrollToEditor(viewMode: DocumentViewMode) {
   return viewMode === 'split';
 }
 
@@ -1384,7 +1384,8 @@ export const SplitView = forwardRef<EditorPaneHandle, SplitViewProps>(
     };
 
     const isPreviewOnly = viewMode === 'preview';
-    const showPreview = viewMode !== 'edit';
+    // 单窗（所见即所得）是「只有编辑器、但按成品渲染」，所以不挂预览面板。
+    const showPreview = viewMode === 'split' || viewMode === 'preview';
     const isSplit = viewMode === 'split';
     const shouldRenderEditor = viewMode !== 'preview' || editorActivated;
     const getPreviewScroller = useCallback(() => previewContainerRef.current, []);

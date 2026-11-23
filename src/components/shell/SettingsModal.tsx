@@ -454,6 +454,7 @@ export function SettingsModal({ initialSection = 'general', visible, onClose }: 
                 style={selectStyle}
               >
                 <option value="edit">{t('settings.view.edit')}</option>
+                <option value="wysiwyg">{t('settings.view.wysiwyg')}</option>
                 <option value="split">{t('settings.view.split')}</option>
                 <option value="preview">{t('settings.view.preview')}</option>
               </select>

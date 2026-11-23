@@ -150,7 +150,7 @@ export type CommandId =
   | 'focusMode'
   | 'typewriterMode'
   | 'wordWrap'
-  | 'livePreview'
+  | 'wysiwygMode'
   | 'statusBar'
   | 'actualSize'
   | 'zoomIn'

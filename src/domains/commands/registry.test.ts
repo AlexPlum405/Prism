@@ -126,7 +126,6 @@ function createCommandContext(overrides: Partial<CommandContext> = {}): CommandC
       setPreviewFontSize: vi.fn(),
       setPreviewLineWidth: vi.fn(),
       setPreviewAccent: vi.fn(),
-      setLivePreview: vi.fn(),
       setEditorFontSource: vi.fn(),
       setPreviewFontSource: vi.fn(),
       addCustomFont: vi.fn(),
@@ -470,7 +469,9 @@ describe('command registry', () => {
     };
 
     Object.values(getMenuSections(context)).forEach(collectMenuText);
-    expect(visibleText.join('\n')).not.toMatch(/插件市场|插件 API|plugin marketplace|marketplace|prism:\/\/|deep\s*link|deeplink|云同步|移动端|实时协作|WYSIWYG/i);
+    // 单窗（wysiwygMode）已经是正式视图，不再是「暂不做的平台特性」；
+    // 这里继续守住插件市场、深链、云同步这些没有做的事。
+    expect(visibleText.join('\n')).not.toMatch(/插件市场|插件 API|plugin marketplace|marketplace|prism:\/\/|deep\s*link|deeplink|云同步|移动端|实时协作/i);
   });
 
   it('opens quick-open from the Navigate menu when a workspace has markdown files', async () => {
